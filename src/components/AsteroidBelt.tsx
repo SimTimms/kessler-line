@@ -2,8 +2,12 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { NEPTUNE_DEF, RED_PLANET_DEF } from '../config/worldConfig';
+import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
 
-const COUNT_PER_TYPE = 120; // 360 total across 3 geometry types
+const COUNT_PER_TYPE = 520; // 360 total across 3 geometry types
+const GROUP_Y = 6000; // matches the <group position={[0, 5000, 0]}> offset below
+const COLLIDER_Y_MIN = -300;
+const COLLIDER_Y_MAX = 300;
 
 // Module-level constants derived from world config
 const NEP_POS = new THREE.Vector3(...NEPTUNE_DEF.position);
@@ -57,7 +61,7 @@ export default function AsteroidBelt() {
 
         // Scatter radially in the belt plane (perpendicular to path)
         const angle = rng() * Math.PI * 2;
-        const radius = 600 + rng() * 1800; // 600–2400 units from path axis
+        const radius = 200 + rng() * 1800; // 600–2400 units from path axis
         const alongAxis = (rng() - 0.5) * pathLength * 0.04; // slight along-axis jitter
 
         const pos = beltCenter
@@ -91,6 +95,40 @@ export default function AsteroidBelt() {
     }
     return result;
   }, []);
+
+  // Asteroids whose world Y (pos.y + GROUP_Y) falls in the collidable zone
+  const collidableAsteroids = useMemo(() => {
+    const result: { id: string; worldPos: THREE.Vector3; radius: number }[] = [];
+    asteroidData.forEach((group, typeIdx) => {
+      group.forEach((data, i) => {
+        const worldY = data.position.y + GROUP_Y;
+        if (worldY >= COLLIDER_Y_MIN && worldY <= COLLIDER_Y_MAX) {
+          result.push({
+            id: `asteroid-${typeIdx}-${i}`,
+            worldPos: new THREE.Vector3(data.position.x, worldY, data.position.z),
+            radius: Math.max(data.scale.x, data.scale.y, data.scale.z),
+          });
+        }
+      });
+    });
+    return result;
+  }, [asteroidData]);
+
+  useEffect(() => {
+    for (const ast of collidableAsteroids) {
+      const pos = ast.worldPos;
+      registerCollidable({
+        id: ast.id,
+        getWorldPosition: (target) => target.copy(pos),
+        shape: { type: 'sphere', radius: ast.radius },
+      });
+    }
+    return () => {
+      for (const ast of collidableAsteroids) {
+        unregisterCollidable(ast.id);
+      }
+    };
+  }, [collidableAsteroids]);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
@@ -142,7 +180,7 @@ export default function AsteroidBelt() {
   const dodeGeo = useMemo(() => new THREE.DodecahedronGeometry(1, 0), []);
 
   return (
-    <group position={[0, 5000, 0]}>
+    <group position={[0, GROUP_Y, 0]}>
       <instancedMesh ref={icosRef} args={[icosGeo, material, COUNT_PER_TYPE]} />
       <instancedMesh ref={octaRef} args={[octaGeo, material, COUNT_PER_TYPE]} />
       <instancedMesh ref={dodeRef} args={[dodeGeo, material, COUNT_PER_TYPE]} />

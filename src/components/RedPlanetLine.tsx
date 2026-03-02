@@ -2,13 +2,13 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { RED_PLANET_DEF } from '../config/worldConfig';
+import { EARTH_DEF } from '../config/worldConfig';
 
 interface RedPlanetLineProps {
   shipPositionRef: { current: THREE.Vector3 };
 }
 
-const planetPos = new THREE.Vector3(...RED_PLANET_DEF.position);
+const planetPos = new THREE.Vector3(...EARTH_DEF.position);
 // Scratch vectors — avoid allocating on every frame
 const _dir = new THREE.Vector3();
 const _labelPos = new THREE.Vector3();

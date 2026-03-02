@@ -10,20 +10,29 @@ import {
   unregisterCollidable,
 } from '../context/CollisionRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
+import { driveSignatureOnRef } from '../context/DriveSignatureScan';
 
-const THRUST = 10; // units per second²
+export const THRUST = 2.2; // units per second²
 const YAW_THRUST = 1.0; // radians per second²
 export const SHIP_RADIUS = 3; // bounding sphere radius (world units, tune as needed)
 const RESTITUTION = 0.4; // bounciness: 0 = dead stop, 1 = elastic
-const DAMAGE_MULTIPLIER = 1.5; // hull damage = impactSpeed * multiplier * delta
+const DAMAGE_MULTIPLIER = 1.2; // hull damage = impactSpeed * multiplier (impulse; 500 m/s = 100 dmg)
 const SHIP_COLLISION_ID = 'spaceship';
 const DOCKING_PORT_RADIUS = 2; // port detection sphere radius (world units)
 const DOCKING_PORT_LOCAL_Z = 9; // local -Z = world forward; tune to align with ship nose
 
 export let power = 100; // global: 0–100, decreases by 1 per active thrust key per second
 export let hullIntegrity = 100; // global: 0–100, decreases on collision
-export let fuel = 100; // global: 0–100, drains while thrusting, refills while docked
+export let fuel = 100; // global: 0–100, drains while thrusting, refills via Refuel button
+export let o2 = 100; // global: 0–100, depletes constantly, refills via Transfer O2 button
 export const shipVelocity = new THREE.Vector3(); // updated each frame; read by HUD
+export const shipAcceleration = { current: 0 }; // instantaneous linear acceleration magnitude (units/s²); read by GForceFog
+export const shipQuaternion = new THREE.Quaternion(); // updated each frame; read by EjectedCargo
+
+export const isRefueling = { current: false }; // set by Refuel button while docked
+export const isTransferringO2 = { current: false }; // set by Transfer O2 button while docked
+export const thrustMultiplier = { current: 1 }; // set by thrust slider in App.tsx; range 0.5–50
+export const shipDestroyed = { current: false }; // set true when hull reaches 0
 
 export function drainPower(amount: number) {
   power = Math.max(0, power - amount);
@@ -95,12 +104,13 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'KeyW') thrustForward.current = true;
       if (e.code === 'KeyS') thrustReverse.current = true;
-      if (e.code === 'KeyD') thrustLeft.current = true;
-      if (e.code === 'KeyA') thrustRight.current = true;
+      if (e.code === 'KeyA') thrustLeft.current = true;
+      if (e.code === 'KeyD') thrustRight.current = true;
       if (e.code === 'KeyE') thrustStrafeLeft.current = true;
       if (e.code === 'KeyQ') thrustStrafeRight.current = true;
       if (e.code === 'Space' && dockedTo.current) {
         dockedTo.current = null; // release from dock
+        window.dispatchEvent(new CustomEvent('ShipUndocked'));
         // Push ship away from docking bay along its local forward direction
         if (groupRef.current) {
           const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(groupRef.current.quaternion);
@@ -112,8 +122,8 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'KeyW') thrustForward.current = false;
       if (e.code === 'KeyS') thrustReverse.current = false;
-      if (e.code === 'KeyD') thrustLeft.current = false;
-      if (e.code === 'KeyA') thrustRight.current = false;
+      if (e.code === 'KeyA') thrustLeft.current = false;
+      if (e.code === 'KeyD') thrustRight.current = false;
       if (e.code === 'KeyE') thrustStrafeLeft.current = false;
       if (e.code === 'KeyQ') thrustStrafeRight.current = false;
     };
@@ -127,6 +137,7 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
+    if (shipDestroyed.current) return;
 
     // ---- DOCKED: follow the bay's world position and rotation, ignore all physics ----
     if (dockedTo.current) {
@@ -143,7 +154,10 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
         groupRef.current.position.copy(_collidablePos.current).sub(_localForward.current);
       }
       shipVelocity.set(0, 0, 0);
-      fuel = Math.min(100, fuel + 10 * delta); // refuel at 10 units/second while docked
+      shipAcceleration.current = 0;
+      if (isRefueling.current) fuel = Math.min(100, fuel + 10 * delta);
+      if (isTransferringO2.current) o2 = Math.min(100, o2 + 10 * delta);
+      o2 = Math.max(0, o2 - 1 * delta);
       if (positionRef) positionRef.current.copy(groupRef.current.position);
       minimapShipPosition.copy(groupRef.current.position);
       return;
@@ -159,9 +173,15 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
     // Linear thrust along ship's current local forward (so rotation changes thrust direction)
     _localForward.current.set(0, 0, -1).applyQuaternion(groupRef.current.quaternion);
     if (thrustForward.current)
-      velocity.current.addScaledVector(_localForward.current, THRUST * delta);
+      velocity.current.addScaledVector(
+        _localForward.current,
+        THRUST * thrustMultiplier.current * delta
+      );
     if (thrustReverse.current)
-      velocity.current.addScaledVector(_localForward.current, -THRUST * delta);
+      velocity.current.addScaledVector(
+        _localForward.current,
+        -THRUST * thrustMultiplier.current * delta
+      );
 
     // Lateral (strafe) thrust along ship's local right axis
     _localRight.current.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
@@ -173,6 +193,15 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
     // No drag — space physics: velocity and angular velocity carry on indefinitely
     groupRef.current.position.addScaledVector(velocity.current, delta);
     shipVelocity.copy(velocity.current);
+    groupRef.current.getWorldQuaternion(shipQuaternion);
+
+    // Track linear acceleration magnitude for G-force fog effect
+    const isLinearThrusting =
+      thrustForward.current ||
+      thrustReverse.current ||
+      thrustStrafeLeft.current ||
+      thrustStrafeRight.current;
+    shipAcceleration.current = isLinearThrusting ? THRUST * thrustMultiplier.current : 0;
 
     // Power and fuel drain: 1 unit per active thrust key per second
     const keysHeld =
@@ -185,6 +214,9 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
     if (keysHeld > 0) {
       power = Math.max(0, power - keysHeld * delta);
       fuel = Math.max(0, fuel - keysHeld * delta);
+    }
+    if (driveSignatureOnRef.current) {
+      power = Math.max(0, power - 2 * delta);
     }
 
     // Collision detection: ship sphere (SHIP_RADIUS) vs all registered collidable shapes
@@ -312,9 +344,9 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
         // Velocity component directed into the obstacle (negative = moving toward it)
         const impactSpeed = velocity.current.dot(_collisionNormal.current);
 
-        // Damage proportional to how fast the ship hits the surface
+        // Impulse damage proportional to impact speed — no delta so 500 m/s = instant kill
         if (impactSpeed < 0) {
-          damageHull(Math.abs(impactSpeed) * DAMAGE_MULTIPLIER * delta);
+          damageHull(Math.abs(impactSpeed) * DAMAGE_MULTIPLIER);
         }
 
         // Separation: push ship out of overlap
@@ -328,6 +360,16 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
           );
         }
       }
+    }
+
+    // Destruction: hide ship, stop physics, and fire event when hull is gone
+    if (hullIntegrity <= 0) {
+      shipDestroyed.current = true;
+      groupRef.current.visible = false;
+      velocity.current.set(0, 0, 0);
+      angularVelocity.current = 0;
+      window.dispatchEvent(new CustomEvent('ShipDestroyed'));
+      return;
     }
 
     // Docking port check: dock only when the nose port enters a docking bay
@@ -348,13 +390,17 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
           .subVectors(_portWorldPos.current, _collidablePos.current)
           .applyQuaternion(_invBoxQuat.current);
         const he = c.shape.halfExtents;
-        const px = _localShipPos.current.x - THREE.MathUtils.clamp(_localShipPos.current.x, -he.x, he.x);
-        const py = _localShipPos.current.y - THREE.MathUtils.clamp(_localShipPos.current.y, -he.y, he.y);
-        const pz = _localShipPos.current.z - THREE.MathUtils.clamp(_localShipPos.current.z, -he.z, he.z);
+        const px =
+          _localShipPos.current.x - THREE.MathUtils.clamp(_localShipPos.current.x, -he.x, he.x);
+        const py =
+          _localShipPos.current.y - THREE.MathUtils.clamp(_localShipPos.current.y, -he.y, he.y);
+        const pz =
+          _localShipPos.current.z - THREE.MathUtils.clamp(_localShipPos.current.z, -he.z, he.z);
         return Math.sqrt(px * px + py * py + pz * pz) < DOCKING_PORT_RADIUS;
       });
       if (bayEntry && velocity.current.length() < 4) {
         dockedTo.current = bayEntry.id;
+        window.dispatchEvent(new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } }));
         velocity.current.set(0, 0, 0);
         angularVelocity.current = 0;
         // Snap rotation and position — same math as the per-frame docked update,
@@ -371,6 +417,12 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
       }
     }
 
+    // Lock ship to Y=0 plane — cancel any vertical drift from collisions or thrust
+    velocity.current.y = 0;
+    groupRef.current.position.y = 0;
+
+    o2 = Math.max(0, o2 - 1 * delta);
+
     if (positionRef) {
       positionRef.current.copy(groupRef.current.position);
     }
@@ -379,7 +431,7 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef }:
 
   return (
     <>
-      <group ref={setGroupRef} rotation={[0, Math.PI, 0]}>
+      <group ref={setGroupRef} rotation={[0, 0, 0]}>
         <primitive object={gltf.scene} scale={scale} />
         {/* Docking port at ship nose — local -Z = world forward due to Math.PI rotation */}
         <group ref={dockingPortRef} position={[0, 0, DOCKING_PORT_LOCAL_Z]}>

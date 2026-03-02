@@ -17,6 +17,7 @@ export type ColliderShape =
 
 export interface CollidableEntry {
   id: string;
+  stationId?: string;
 
   /** Write current world position into `target` and return it. */
   getWorldPosition: (target: THREE.Vector3) => THREE.Vector3;

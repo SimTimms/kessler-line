@@ -1,4 +1,4 @@
-export const MINIMAP_SCALE = 1 / 100;
+export const MINIMAP_SCALE = 1 / 600;
 
 export interface WorldObjectDef {
   id: string;
@@ -12,7 +12,7 @@ export interface WorldObjectDef {
 export const SPACE_STATION_DEF: WorldObjectDef = {
   id: 'space-station',
   label: 'Space Station',
-  position: [0, 0, -500],
+  position: [0, 0, -1500],
   minimapColor: '#00cfff',
   minimapRadius: 0.5,
 };
@@ -20,7 +20,7 @@ export const SPACE_STATION_DEF: WorldObjectDef = {
 export const FUEL_STATION_DEF: WorldObjectDef = {
   id: 'fuel-station',
   label: 'Fuel Station',
-  position: [0, 0, 160],
+  position: [200, 0, 2060],
   minimapColor: '#00cfff',
   minimapRadius: 0.5,
 };
@@ -29,9 +29,8 @@ export const NEPTUNE_DEF: WorldObjectDef = {
   id: 'neptune',
   label: 'Neptune',
   position: [0, -7000, 0],
-  minimapColor: '#4488ff',
-  minimapRadius: 0.15,
-  minimapScenePos: [0, 0, -22],
+  minimapColor: '#00aaff',
+  minimapRadius: 0.5,
 };
 
 export const RED_PLANET_DEF: WorldObjectDef = {
@@ -39,7 +38,23 @@ export const RED_PLANET_DEF: WorldObjectDef = {
   label: 'Red Planet',
   position: [3500, -5000, -12000],
   minimapColor: '#ff3300',
-  minimapRadius: 0.12,
+  minimapRadius: 0.5,
+};
+
+export const EARTH_DEF: WorldObjectDef = {
+  id: 'earth',
+  label: 'Earth',
+  position: [800, -500, -1000],
+  minimapColor: '#2277ff',
+  minimapRadius: 0.5,
+};
+
+export const GREEN_PLANET_DEF: WorldObjectDef = {
+  id: 'green-planet',
+  label: 'Green Planet',
+  position: [2000, -2000, -500],
+  minimapColor: '#00ff00',
+  minimapRadius: 0.5,
 };
 
 export const RADIO_BEACON_DEFS: WorldObjectDef[] = [

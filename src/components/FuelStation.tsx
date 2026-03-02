@@ -72,7 +72,7 @@ export default function FuelStation({
         <PowerSource scale={1} />
         <primitive object={gltf.scene} scale={scale} />
         <group position={[0, 0, 104]}>
-          <DockingBay dimensions={new THREE.Vector3(40, 1, 10)} rotation={[0, 0, 0]} />
+          <DockingBay stationId="fuel-station" dimensions={new THREE.Vector3(40, 1, 10)} rotation={[0, 0, 0]} />
         </group>
       </group>
     </>

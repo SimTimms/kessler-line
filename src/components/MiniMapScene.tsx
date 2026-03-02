@@ -5,8 +5,10 @@ import {
   MINIMAP_SCALE,
   SPACE_STATION_DEF,
   NEPTUNE_DEF,
+  GREEN_PLANET_DEF,
   RADIO_BEACON_DEFS,
   type WorldObjectDef,
+  RED_PLANET_DEF,
 } from '../config/worldConfig';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 
@@ -17,15 +19,46 @@ interface MiniMapSceneProps {
 }
 
 function Dot({ def, onHover }: { def: WorldObjectDef; onHover: (info: HoverInfo | null) => void }) {
-  const [x, , z] = def.minimapScenePos ??
-    [def.position[0] * MINIMAP_SCALE, 0, def.position[2] * MINIMAP_SCALE];
+  const [x, , z] = def.minimapScenePos ?? [
+    def.position[0] * MINIMAP_SCALE,
+    0,
+    def.position[2] * MINIMAP_SCALE,
+  ];
   return (
     <mesh
       position={[x, 0, z]}
-      onPointerEnter={(e) => onHover({ label: def.label, x: e.nativeEvent.clientX, y: e.nativeEvent.clientY })}
+      onPointerEnter={(e) =>
+        onHover({ label: def.label, x: e.nativeEvent.clientX, y: e.nativeEvent.clientY })
+      }
       onPointerLeave={() => onHover(null)}
     >
-      <sphereGeometry args={[def.minimapRadius ?? 0.3, 8, 8]} />
+      <sphereGeometry args={[def.minimapRadius ?? 0.1, 8, 8]} />
+      <meshBasicMaterial color={def.minimapColor} />
+    </mesh>
+  );
+}
+
+function Planet({
+  def,
+  onHover,
+}: {
+  def: WorldObjectDef;
+  onHover: (info: HoverInfo | null) => void;
+}) {
+  const [x, , z] = def.minimapScenePos ?? [
+    def.position[0] * MINIMAP_SCALE,
+    0,
+    def.position[2] * MINIMAP_SCALE,
+  ];
+  return (
+    <mesh
+      position={[x, -1000, z]}
+      onPointerEnter={(e) =>
+        onHover({ label: def.label, x: e.nativeEvent.clientX, y: e.nativeEvent.clientY })
+      }
+      onPointerLeave={() => onHover(null)}
+    >
+      <sphereGeometry args={[def.minimapRadius ?? 0.3, 32, 32]} />
       <meshBasicMaterial color={def.minimapColor} />
     </mesh>
   );
@@ -39,20 +72,24 @@ export default function MiniMapScene({ onHover }: MiniMapSceneProps) {
     shipDotRef.current.position.set(
       minimapShipPosition.x * MINIMAP_SCALE,
       0,
-      minimapShipPosition.z * MINIMAP_SCALE,
+      minimapShipPosition.z * MINIMAP_SCALE
     );
   });
 
   return (
     <>
       <Dot def={SPACE_STATION_DEF} onHover={onHover} />
-      <Dot def={NEPTUNE_DEF} onHover={onHover} />
+      <Planet def={NEPTUNE_DEF} onHover={onHover} />
+      <Planet def={GREEN_PLANET_DEF} onHover={onHover} />
+      <Planet def={RED_PLANET_DEF} onHover={onHover} />
       {RADIO_BEACON_DEFS.map((def) => (
         <Dot key={def.id} def={def} onHover={onHover} />
       ))}
       <mesh
         ref={shipDotRef}
-        onPointerEnter={(e) => onHover({ label: 'Your Ship', x: e.nativeEvent.clientX, y: e.nativeEvent.clientY })}
+        onPointerEnter={(e) =>
+          onHover({ label: 'Your Ship', x: e.nativeEvent.clientX, y: e.nativeEvent.clientY })
+        }
         onPointerLeave={() => onHover(null)}
       >
         <sphereGeometry args={[0.25, 8, 8]} />

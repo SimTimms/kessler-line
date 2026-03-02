@@ -25,14 +25,17 @@ export default function MiniMap() {
   const [tooltip, setTooltip] = useState<HoverInfo | null>(null);
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0, 0, 8, 0.88)',
-      zIndex: 10,
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 8, 0.88)',
+        zIndex: 10,
+      }}
+    >
       <Canvas
         orthographic
-        camera={{ position: [0, 10, 0], up: [0, 0, -1], near: -100, far: 100 }}
+        camera={{ position: [0, 10, 0], up: [0, 0, -1], near: -100, far: 5000 }}
         gl={{ antialias: false }}
       >
         <CameraFrustum />
@@ -40,33 +43,40 @@ export default function MiniMap() {
       </Canvas>
 
       {tooltip && (
-        <div style={{
-          position: 'fixed',
-          left: tooltip.x + 14,
-          top: tooltip.y - 10,
-          background: 'rgba(0, 0, 8, 0.9)',
-          color: '#00ff88',
-          fontFamily: 'monospace',
-          fontSize: 13,
-          padding: '4px 10px',
-          borderRadius: 3,
-          border: '1px solid rgba(0,255,136,0.5)',
-          pointerEvents: 'none',
-          whiteSpace: 'nowrap',
-          letterSpacing: '0.05em',
-        }}>
+        <div
+          style={{
+            position: 'fixed',
+            left: tooltip.x + 14,
+            top: tooltip.y - 10,
+            background: 'rgba(0, 0, 8, 0.9)',
+            color: '#00ff88',
+            fontFamily: 'monospace',
+            fontSize: 13,
+            padding: '4px 10px',
+            borderRadius: 3,
+            border: '1px solid rgba(0,255,136,0.5)',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.05em',
+          }}
+        >
           {tooltip.label}
         </div>
       )}
 
       {/* Subtle corner label so the user knows M closes it */}
-      <div style={{
-        position: 'fixed', top: 16, right: 20,
-        color: 'rgba(0,255,136,0.4)',
-        fontFamily: 'monospace', fontSize: 12,
-        letterSpacing: '0.1em',
-        pointerEvents: 'none',
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          top: 16,
+          right: 20,
+          color: 'rgba(0,255,136,0.4)',
+          fontFamily: 'monospace',
+          fontSize: 12,
+          letterSpacing: '0.1em',
+          pointerEvents: 'none',
+        }}
+      >
         [M] CLOSE MAP
       </div>
     </div>

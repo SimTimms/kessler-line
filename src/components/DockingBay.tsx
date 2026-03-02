@@ -4,6 +4,7 @@ import { registerCollidable, unregisterCollidable } from '../context/CollisionRe
 import { selectTarget } from '../context/TargetSelection';
 
 interface DockingBayProps {
+  stationId?: string;
   scale?: number;
   dimensions: THREE.Vector3;
   stationGroupRef?: { current: THREE.Group | null };
@@ -12,13 +13,14 @@ interface DockingBayProps {
 }
 
 export default function DockingBay({
+  stationId,
   scale = 1,
   stationGroupRef,
   position,
   dimensions,
   rotation = [0, Math.PI, 0],
 }: DockingBayProps) {
-  const COLLISION_ID = `docking-bay-${Math.random()}`;
+  const COLLISION_ID = stationId ? `docking-bay-${stationId}` : `docking-bay-${Math.random()}`;
 
   const groupRef = useRef<THREE.Group>(null!);
 
@@ -36,6 +38,7 @@ export default function DockingBay({
   useEffect(() => {
     registerCollidable({
       id: COLLISION_ID,
+      stationId,
       getWorldPosition: (target) => {
         if (groupRef.current) groupRef.current.getWorldPosition(target);
         return target;
