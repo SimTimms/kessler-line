@@ -41,6 +41,7 @@ interface AsteroidData {
   scale: THREE.Vector3;
   rotation: THREE.Euler;
   rotSpeed: THREE.Vector3;
+  color: THREE.Color;
 }
 
 export default function AsteroidBelt() {
@@ -90,7 +91,18 @@ export default function AsteroidBelt() {
           (rng() - 0.5) * 0.005
         );
 
-        result[typeIdx].push({ position: pos, scale, rotation, rotSpeed });
+        // Vary colors across brown, cool-grey, and reddish rock tones
+        const colorType = Math.floor(rng() * 3);
+        let color: THREE.Color;
+        if (colorType === 0) {
+          color = new THREE.Color().setHSL(0.07, 0.15 + rng() * 0.2, 0.28 + rng() * 0.22); // warm brown
+        } else if (colorType === 1) {
+          color = new THREE.Color().setHSL(0.55, 0.04 + rng() * 0.08, 0.22 + rng() * 0.28); // cool grey
+        } else {
+          color = new THREE.Color().setHSL(0.03, 0.25 + rng() * 0.2, 0.22 + rng() * 0.22); // reddish
+        }
+
+        result[typeIdx].push({ position: pos, scale, rotation, rotSpeed, color });
       }
     }
     return result;
@@ -142,8 +154,10 @@ export default function AsteroidBelt() {
         dummy.rotation.copy(data.rotation);
         dummy.updateMatrix();
         ref.current.setMatrixAt(i, dummy.matrix);
+        ref.current.setColorAt(i, data.color);
       });
       ref.current.instanceMatrix.needsUpdate = true;
+      if (ref.current.instanceColor) ref.current.instanceColor.needsUpdate = true;
     });
   }, [asteroidData, dummy]);
 
@@ -165,14 +179,67 @@ export default function AsteroidBelt() {
     });
   });
 
+  const craterBumpTexture = useMemo(() => {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+    const rng = mulberry32(42);
+
+    // Mid-grey base (no displacement)
+    ctx.fillStyle = '#888';
+    ctx.fillRect(0, 0, size, size);
+
+    // Grainy surface noise
+    for (let i = 0; i < 6000; i++) {
+      const x = rng() * size;
+      const y = rng() * size;
+      const s = 1 + rng() * 3;
+      const v = 100 + Math.floor(rng() * 80);
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(x, y, s, s);
+    }
+
+    return new THREE.CanvasTexture(canvas);
+  }, []);
+
+  const craterTexture = useMemo(() => {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+    const rng = mulberry32(42);
+
+    // Mid-grey base (no displacement)
+    ctx.fillStyle = '#555';
+    ctx.fillRect(0, 0, size, size);
+
+    // Grainy surface noise
+    for (let i = 0; i < 116000; i++) {
+      const x = rng() * size;
+      const y = rng() * size;
+      const s = 1 + rng() * 3;
+      const v = 100 + Math.floor(rng() * 80);
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(x, y, s, s);
+    }
+
+    return new THREE.CanvasTexture(canvas);
+  }, []);
+
   const material = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: '#7a6a55',
+        color: '#ffffff',
         roughness: 0.92,
-        metalness: 0.05,
+        metalness: 1.05,
+        bumpMap: craterBumpTexture,
+        map: craterTexture,
+        bumpScale: 1.2,
       }),
-    []
+    [craterBumpTexture]
   );
 
   const icosGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 0), []);

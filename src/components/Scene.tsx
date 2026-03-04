@@ -22,6 +22,7 @@ import ShipExplosion from './ShipExplosion';
 import SpaceDebris from './SpaceDebris';
 import { sceneCamera } from '../context/CameraRef';
 import AIShip from './AIShip';
+import SolarSystem from './SolarSystem';
 
 import {
   RADIO_BEACON_DEFS,
@@ -30,7 +31,6 @@ import {
   FUEL_STATION_DEF,
   RED_PLANET_DEF,
   GREEN_PLANET_DEF,
-  NEPTUNE_DEF,
   EARTH_DEF,
 } from '../config/worldConfig';
 
@@ -76,13 +76,16 @@ function ShipDepthOfField({ shipPosRef }: { shipPosRef: { current: THREE.Vector3
 
   return (
     <EffectComposer>
-      <DepthOfField ref={dofRef} focalLength={402} bokehScale={1} height={480} />
+      <DepthOfField ref={dofRef} focalLength={402} bokehScale={0.1} height={480} />
     </EffectComposer>
   );
 }
 
 export default function Scene() {
-  const spaceshipPos = useRef(new THREE.Vector3());
+  // Neptune starts at orbit angle 1.2 rad within SolarSystem (position=[0,-1000,0], scale=1.3)
+  // orbitRadius=5500 → world XZ ≈ [cos(1.2)*5500*1.3, -sin(1.2)*5500*1.3] ≈ [2591, -6664]
+  const NEPTUNE_START: [number, number, number] = [2591, 0, -6400];
+  const spaceshipPos = useRef(new THREE.Vector3(...NEPTUNE_START));
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const stationGroupRef = useRef<THREE.Group | null>(null);
   const beaconGroupRef = useRef<THREE.Group | null>(null);
@@ -95,12 +98,12 @@ export default function Scene() {
       <CameraCapture />
       <fogExp2 attach="fog" args={[0x000000, 0.0004]} />
       <OrbitCamera followTarget={spaceshipPos} />
-      <SunCycle />
       <Spaceship
         url="/spaceship.glb"
         scale={1}
         positionRef={spaceshipPos}
         shipGroupRef={spaceshipGroupRef}
+        initialPosition={NEPTUNE_START}
       />
 
       <group position={[1000, 0, 100]}>
@@ -143,16 +146,13 @@ export default function Scene() {
         stationGroupRef={stationGroupRef}
         beaconGroupRef={beaconGroupRef}
       />
-      <Neptune position={NEPTUNE_DEF.position} scale={40} color={0xffffff} />
-      <Neptune position={RED_PLANET_DEF.position} scale={40} color={0xff4422} />
-      <Neptune position={GREEN_PLANET_DEF.position} scale={5} color={0x00ff00} />
-      <EarthPlanet position={EARTH_DEF.position} scale={55} />
+      <SolarSystem />
       <AsteroidBelt />
       <SpaceDebris />
       <EjectedCargo />
       <RedPlanetLine shipPositionRef={spaceshipPos} />
       <VelocityIndicator shipPositionRef={spaceshipPos} />
-      <AIShip id="0" url="/spaceship.glb" scale={1} position={[100, 0, -100]} />
+      <AIShip id="0" url="/spaceship.glb" scale={1} position={[100, 0, -2000]} />
       <ShipExplosion shipPositionRef={spaceshipPos} />
       <ShipDepthOfField shipPosRef={spaceshipPos} />
     </Canvas>

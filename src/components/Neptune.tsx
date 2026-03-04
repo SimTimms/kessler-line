@@ -19,7 +19,7 @@ interface NeptuneProps {
 
 export default function Neptune({
   position = NEPTUNE_DEF.position,
-  scale = 50,
+  scale = 1,
   color = 0xffffff,
 }: NeptuneProps) {
   const gltf = useGLTF('/neptune.glb') as unknown as GLTFWithParser;
@@ -41,7 +41,7 @@ export default function Neptune({
   }, [gltf, scene, color]);
 
   return (
-    <group position={position} scale={scale}>
+    <group position={position} scale={3}>
       <primitive object={scene} />
     </group>
   );

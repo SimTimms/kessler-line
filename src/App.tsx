@@ -275,15 +275,16 @@ function App() {
           }}
           style={{
             padding: '6px 14px',
-            background: spotlightOn ? 'rgba(0,200,255,0.15)' : 'rgba(60,60,60,0.5)',
+            background: spotlightOn ? 'rgba(0,200,255,0.05)' : 'rgba(60,60,60,0.1)',
             color: spotlightOn ? '#00cfff' : '#888',
-            border: `1px solid ${spotlightOn ? '#00cfff' : '#555'}`,
-            borderRadius: 4,
+            borderRadius: 0,
             cursor: 'pointer',
             userSelect: 'none',
+            outline: 'none',
+            width: '150px',
           }}
         >
-          SPOTLIGHT: {spotlightOn ? 'ON' : 'OFF'}
+          SPOTLIGHT
         </button>
         <button
           onClick={() => {

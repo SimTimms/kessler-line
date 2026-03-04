@@ -275,8 +275,8 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
         intensity={4}
         angle={0.58}
         penumbra={0.85}
-        decay={0}
-        distance={100}
+        decay={0.2}
+        distance={500}
         castShadow={false}
       />
 
