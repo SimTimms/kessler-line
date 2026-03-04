@@ -53,16 +53,51 @@ export function BinocularCameraControls() {
       zoomVelocity.current += e.deltaY * 0.01;
     };
 
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        isDragging.current = true;
+        lastX.current = e.touches[0].clientX;
+        lastY.current = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      isDragging.current = false;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current || e.touches.length !== 1) return;
+      e.preventDefault();
+
+      const dx = e.touches[0].clientX - lastX.current;
+      const dy = e.touches[0].clientY - lastY.current;
+
+      lastX.current = e.touches[0].clientX;
+      lastY.current = e.touches[0].clientY;
+
+      yaw.current -= dx * 0.005;
+      pitch.current -= dy * 0.005;
+
+      const limit = Math.PI / 2 - 0.1;
+      pitch.current = Math.max(-limit, Math.min(limit, pitch.current));
+    };
+
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('wheel', handleWheel);
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
 
     return () => {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
     };
   }, [cam]);
 

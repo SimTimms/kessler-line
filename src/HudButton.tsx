@@ -19,7 +19,7 @@ export const HudButton = ({
       cursor: 'pointer',
       userSelect: 'none',
       outline: 'none',
-      width: '150px',
+      width: '100px',
     }}
   >
     {title}

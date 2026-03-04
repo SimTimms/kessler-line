@@ -25,6 +25,12 @@ import {
   isTransferringO2,
   thrustMultiplier,
   shipDestroyed,
+  mobileThrustForward,
+  mobileThrustReverse,
+  mobileThrustLeft,
+  mobileThrustRight,
+  mobileThrustStrafeLeft,
+  mobileThrustStrafeRight,
 } from '../context/ShipState';
 import { getCollidables } from '../context/CollisionRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
@@ -145,40 +151,39 @@ export function useShipPhysics({
     }
 
     // ── Yaw ──────────────────────────────────────────────────────────────────
-    if (thrustLeft.current) angularVelocity.current -= YAW_THRUST * delta;
-    if (thrustRight.current) angularVelocity.current += YAW_THRUST * delta;
+    const yawLeft   = thrustLeft.current        || mobileThrustLeft.current;
+    const yawRight  = thrustRight.current       || mobileThrustRight.current;
+    const fwd       = thrustForward.current     || mobileThrustForward.current;
+    const rev       = thrustReverse.current     || mobileThrustReverse.current;
+    const strL      = thrustStrafeLeft.current  || mobileThrustStrafeLeft.current;
+    const strR      = thrustStrafeRight.current || mobileThrustStrafeRight.current;
+
+    if (yawLeft)  angularVelocity.current -= YAW_THRUST * delta;
+    if (yawRight) angularVelocity.current += YAW_THRUST * delta;
     groupRef.current.rotation.y += angularVelocity.current * delta;
 
-    // ── Linear thrust ─────────────────────────────────────────────────────────
     _localForward.set(0, 0, -1).applyQuaternion(groupRef.current.quaternion);
-    if (thrustForward.current)
-      velocity.current.addScaledVector(_localForward, THRUST * thrustMultiplier.current * delta);
-    if (thrustReverse.current)
-      velocity.current.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * delta);
+    if (fwd) velocity.current.addScaledVector(_localForward,  THRUST * thrustMultiplier.current * delta);
+    if (rev) velocity.current.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * delta);
 
     _localRight.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
-    if (thrustStrafeLeft.current) velocity.current.addScaledVector(_localRight, -THRUST * delta);
-    if (thrustStrafeRight.current) velocity.current.addScaledVector(_localRight, THRUST * delta);
+    if (strL) velocity.current.addScaledVector(_localRight, -THRUST * delta);
+    if (strR) velocity.current.addScaledVector(_localRight,  THRUST * delta);
 
     groupRef.current.position.addScaledVector(velocity.current, delta);
     shipVelocity.copy(velocity.current);
     groupRef.current.getWorldQuaternion(shipQuaternion);
 
-    const isLinearThrusting =
-      thrustForward.current ||
-      thrustReverse.current ||
-      thrustStrafeLeft.current ||
-      thrustStrafeRight.current;
+    const isLinearThrusting = fwd || rev || strL || strR;
     shipAcceleration.current = isLinearThrusting ? THRUST * thrustMultiplier.current : 0;
 
-    // ── Power, fuel, O2 drain ─────────────────────────────────────────────────
     const keysHeld =
-      (thrustForward.current ? 1 : 0) +
-      (thrustReverse.current ? 1 : 0) +
-      (thrustLeft.current ? 1 : 0) +
-      (thrustRight.current ? 1 : 0) +
-      (thrustStrafeLeft.current ? 1 : 0) +
-      (thrustStrafeRight.current ? 1 : 0);
+      (fwd      ? 1 : 0) +
+      (rev      ? 1 : 0) +
+      (yawLeft  ? 1 : 0) +
+      (yawRight ? 1 : 0) +
+      (strL     ? 1 : 0) +
+      (strR     ? 1 : 0);
     if (keysHeld > 0) {
       setPower(Math.max(0, power - keysHeld * delta));
       setFuel(Math.max(0, fuel - keysHeld * delta));
@@ -187,14 +192,7 @@ export function useShipPhysics({
       setPower(Math.max(0, power - 2 * delta));
     }
 
-    // ── Thruster point light ──────────────────────────────────────────────────
-    const anyThrusting =
-      thrustForward.current ||
-      thrustReverse.current ||
-      thrustStrafeLeft.current ||
-      thrustStrafeRight.current ||
-      thrustLeft.current ||
-      thrustRight.current;
+    const anyThrusting = fwd || rev || strL || strR || yawLeft || yawRight;
     const targetIntensity = anyThrusting ? 400 * thrustMultiplier.current : 0;
     thrusterLightIntensity.current = THREE.MathUtils.lerp(
       thrusterLightIntensity.current,

@@ -33,6 +33,14 @@ export const shipVelocity = new THREE.Vector3();      // updated each frame; rea
 export const shipAcceleration = { current: 0 };       // linear acceleration magnitude (units/s²)
 export const shipQuaternion = new THREE.Quaternion(); // updated each frame; read by EjectedCargo
 
+// ── Mobile thrust inputs (set by MobileControls overlay) ─────────────────────
+export const mobileThrustForward     = { current: false };
+export const mobileThrustReverse     = { current: false };
+export const mobileThrustLeft        = { current: false };
+export const mobileThrustRight       = { current: false };
+export const mobileThrustStrafeLeft  = { current: false };
+export const mobileThrustStrafeRight = { current: false };
+
 export const isRefueling = { current: false };        // set by Refuel button while docked
 export const isTransferringO2 = { current: false };   // set by Transfer O2 button while docked
 export const thrustMultiplier = { current: 1 };       // set by thrust slider in App.tsx; range 0.5–50

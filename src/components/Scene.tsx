@@ -92,7 +92,7 @@ export default function Scene() {
 
   return (
     <Canvas
-      style={{ width: '100vw', height: '100vh', background: '#000000' }}
+      style={{ width: '100vw', height: '100vh', background: '#000000', touchAction: 'none' }}
       camera={{ near: 0.01, far: 20000 }}
     >
       <CameraCapture />

@@ -2,6 +2,14 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { thrustMultiplier } from './Spaceship';
+import {
+  mobileThrustForward,
+  mobileThrustReverse,
+  mobileThrustLeft,
+  mobileThrustRight,
+  mobileThrustStrafeLeft,
+  mobileThrustStrafeRight,
+} from '../context/ShipState';
 
 const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.15; // seconds — short, intense burn (jittered ±30%)
@@ -194,7 +202,7 @@ export default function ThrusterParticles({
     const emitRate = EMIT_RATE * Math.sqrt(m);
 
     // Main engines — both nozzles fire together on reverse thrust
-    if (thrustReverse.current) {
+    if (thrustReverse.current || mobileThrustReverse.current) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
         mainAccum.current[key] += emitRate * delta;
         const count = Math.floor(mainAccum.current[key]);
@@ -206,13 +214,15 @@ export default function ThrusterParticles({
       mainAccum.current.reverseA = mainAccum.current.reverseB = 0;
     }
 
-    // RCS thrusters
+    // RCS thrusters — combine keyboard + mobile inputs
+    const combined = (a: { current: boolean }, b: { current: boolean }) =>
+      ({ current: a.current || b.current }) as { current: boolean };
     const rcsInputs: [RcsKey, { current: boolean }][] = [
-      ['forward', thrustForward],
-      ['left', thrustLeft],
-      ['right', thrustRight],
-      ['strafeLeft', thrustStrafeLeft],
-      ['strafeRight', thrustStrafeRight],
+      ['forward',     combined(thrustForward,    mobileThrustForward)],
+      ['left',        combined(thrustLeft,        mobileThrustLeft)],
+      ['right',       combined(thrustRight,       mobileThrustRight)],
+      ['strafeLeft',  combined(thrustStrafeLeft,  mobileThrustStrafeLeft)],
+      ['strafeRight', combined(thrustStrafeRight, mobileThrustStrafeRight)],
     ];
     for (const [key, ref] of rcsInputs) {
       if (ref.current) {

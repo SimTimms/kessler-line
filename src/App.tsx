@@ -20,6 +20,7 @@ import MagneticHUD from './components/MagneticHUD';
 import { driveSignatureOnRef } from './context/DriveSignatureScan';
 import DriveSignatureHUD from './components/DriveSignatureHUD';
 import { HudButton } from './HudButton';
+import MobileControls from './components/MobileControls';
 
 // Full-screen overlay that darkens the canvas to simulate G-force blackout.
 // Sits above the canvas but below the HUD via DOM order (no z-index needed).
@@ -209,6 +210,7 @@ function App() {
       </TimeProvider>
       <GForceOverlay />
       <ShipDestroyedOverlay />
+      <MobileControls />
       <PowerHUD />
       <MagneticHUD />
       <DriveSignatureHUD />
@@ -269,7 +271,7 @@ function App() {
         }}
       >
         <HudButton
-          title="SPOTLIGHT"
+          title="SPTLGHT"
           onClickEvent={() => {
             const next = !spotlightOnRef.current;
             spotlightOnRef.current = next;
@@ -342,7 +344,7 @@ function App() {
           <div
             style={{
               position: 'fixed',
-              bottom: 16,
+              bottom: 76,
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
@@ -351,10 +353,10 @@ function App() {
               gap: 5,
               fontFamily: 'monospace',
               fontSize: 12,
-              background: 'rgba(0,0,0,0.55)',
+              background: 'rgba(0,0,0,0.15)',
+              backdropFilter: 'blur(10px)',
               padding: '8px 16px',
-              borderRadius: 6,
-              border: `1px solid ${isDanger ? 'rgba(255,40,140,0.85)' : 'rgba(0,200,255,0.3)'}`,
+              border: `1px solid ${isDanger ? 'rgba(255,40,140,0.25)' : 'rgba(0,200,255,0.23)'}`,
               userSelect: 'none',
             }}
           >
