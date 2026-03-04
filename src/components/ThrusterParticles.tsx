@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { thrustMultiplier } from './Spaceship';
 
-const EMIT_RATE = 90; // particles per second per emitter
+const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.15; // seconds — short, intense burn (jittered ±30%)
 const BASE_SPEED = 102; // world units/second (jittered ±30%)
 

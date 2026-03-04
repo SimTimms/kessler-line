@@ -34,7 +34,13 @@ interface SpaceshipProps {
   initialPosition?: [number, number, number];
 }
 
-export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef, initialPosition }: SpaceshipProps) {
+export default function Spaceship({
+  url,
+  scale = 1,
+  positionRef,
+  shipGroupRef,
+  initialPosition,
+}: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
   const dockingPortRef = useRef<THREE.Group>(null!);
@@ -75,7 +81,14 @@ export default function Spaceship({ url, scale = 1, positionRef, shipGroupRef, i
       <group ref={setGroupRef} rotation={[0, 0, 0]} position={initialPosition}>
         <primitive object={gltf.scene} scale={scale} />
         {/* Thruster point light — rear of ship, activates when any thruster fires */}
-        <pointLight ref={thrusterLightRef} position={[0, 0, 8]} color="#88ccff" intensity={0} distance={40} decay={2} />
+        <pointLight
+          ref={thrusterLightRef}
+          position={[0, 0, -10]}
+          color="#88ccff"
+          intensity={0}
+          distance={40}
+          decay={2}
+        />
         {/* Docking port at ship nose — local +Z = forward direction of port */}
         <group ref={dockingPortRef} position={[0, 0, DOCKING_PORT_LOCAL_Z]}>
           <mesh>

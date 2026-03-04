@@ -77,9 +77,9 @@ export function useShipPhysics({
 
   const thrustForward = useRef(false);
   const thrustReverse = useRef(false);
-  const thrustLeft = useRef(false);    // A: yaw left
-  const thrustRight = useRef(false);   // D: yaw right
-  const thrustStrafeLeft = useRef(false);  // Q: strafe port
+  const thrustLeft = useRef(false); // A: yaw left
+  const thrustRight = useRef(false); // D: yaw right
+  const thrustStrafeLeft = useRef(false); // Q: strafe port
   const thrustStrafeRight = useRef(false); // E: strafe starboard
 
   useEffect(() => {
@@ -157,18 +157,18 @@ export function useShipPhysics({
       velocity.current.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * delta);
 
     _localRight.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
-    if (thrustStrafeLeft.current)
-      velocity.current.addScaledVector(_localRight, -THRUST * delta);
-    if (thrustStrafeRight.current)
-      velocity.current.addScaledVector(_localRight, THRUST * delta);
+    if (thrustStrafeLeft.current) velocity.current.addScaledVector(_localRight, -THRUST * delta);
+    if (thrustStrafeRight.current) velocity.current.addScaledVector(_localRight, THRUST * delta);
 
     groupRef.current.position.addScaledVector(velocity.current, delta);
     shipVelocity.copy(velocity.current);
     groupRef.current.getWorldQuaternion(shipQuaternion);
 
     const isLinearThrusting =
-      thrustForward.current || thrustReverse.current ||
-      thrustStrafeLeft.current || thrustStrafeRight.current;
+      thrustForward.current ||
+      thrustReverse.current ||
+      thrustStrafeLeft.current ||
+      thrustStrafeRight.current;
     shipAcceleration.current = isLinearThrusting ? THRUST * thrustMultiplier.current : 0;
 
     // ── Power, fuel, O2 drain ─────────────────────────────────────────────────
@@ -189,12 +189,17 @@ export function useShipPhysics({
 
     // ── Thruster point light ──────────────────────────────────────────────────
     const anyThrusting =
-      thrustForward.current || thrustReverse.current ||
-      thrustStrafeLeft.current || thrustStrafeRight.current ||
-      thrustLeft.current || thrustRight.current;
-    const targetIntensity = anyThrusting ? 4 * thrustMultiplier.current : 0;
+      thrustForward.current ||
+      thrustReverse.current ||
+      thrustStrafeLeft.current ||
+      thrustStrafeRight.current ||
+      thrustLeft.current ||
+      thrustRight.current;
+    const targetIntensity = anyThrusting ? 400 * thrustMultiplier.current : 0;
     thrusterLightIntensity.current = THREE.MathUtils.lerp(
-      thrusterLightIntensity.current, targetIntensity, delta * 20
+      thrusterLightIntensity.current,
+      targetIntensity,
+      delta * 20
     );
     if (thrusterLightRef.current)
       thrusterLightRef.current.intensity = thrusterLightIntensity.current;
@@ -334,7 +339,9 @@ export function useShipPhysics({
       });
       if (bayEntry && velocity.current.length() < 4) {
         dockedTo.current = bayEntry.id;
-        window.dispatchEvent(new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } }));
+        window.dispatchEvent(
+          new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
+        );
         velocity.current.set(0, 0, 0);
         angularVelocity.current = 0;
         bayEntry.getWorldPosition(_collidablePos);

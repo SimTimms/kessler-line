@@ -46,7 +46,9 @@ export default function SpaceParticles({ shipPositionRef }: SpaceParticlesProps)
     for (let i = 0; i < COUNT; i++) {
       const b = i * 3;
       // Wrap each axis — keeps the field centred on the ship as it moves
-      const sx = ship.x, sy = ship.y, sz = ship.z;
+      const sx = ship.x,
+        sy = ship.y,
+        sz = ship.z;
       if (arr[b + 0] - sx > HALF) arr[b + 0] -= HALF * 2;
       else if (arr[b + 0] - sx < -HALF) arr[b + 0] += HALF * 2;
       if (arr[b + 1] - sy > HALF) arr[b + 1] -= HALF * 2;

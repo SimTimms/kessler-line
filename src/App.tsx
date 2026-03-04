@@ -19,6 +19,7 @@ import { magneticOnRef } from './context/MagneticScan';
 import MagneticHUD from './components/MagneticHUD';
 import { driveSignatureOnRef } from './context/DriveSignatureScan';
 import DriveSignatureHUD from './components/DriveSignatureHUD';
+import { HudButton } from './HudButton';
 
 // Full-screen overlay that darkens the canvas to simulate G-force blackout.
 // Sits above the canvas but below the HUD via DOM order (no z-index needed).
@@ -267,65 +268,37 @@ function App() {
           gap: 10,
         }}
       >
-        <button
-          onClick={() => {
+        <HudButton
+          title="SPOTLIGHT"
+          onClickEvent={() => {
             const next = !spotlightOnRef.current;
             spotlightOnRef.current = next;
             setSpotlightOn(next);
           }}
-          style={{
-            padding: '6px 14px',
-            background: spotlightOn ? 'rgba(0,200,255,0.05)' : 'rgba(60,60,60,0.1)',
-            color: spotlightOn ? '#00cfff' : '#888',
-            borderRadius: 0,
-            cursor: 'pointer',
-            userSelect: 'none',
-            outline: 'none',
-            width: '150px',
-          }}
-        >
-          SPOTLIGHT
-        </button>
-        <button
-          onClick={() => {
+          isActive={spotlightOn}
+        />
+        <HudButton
+          title="MAGSCAN"
+          onClickEvent={() => {
             setMagneticOn((prev) => {
               const next = !prev;
               magneticOnRef.current = next;
               return next;
             });
           }}
-          style={{
-            padding: '6px 14px',
-            background: magneticOn ? 'rgba(0,200,255,0.15)' : 'rgba(60,60,60,0.5)',
-            color: magneticOn ? '#00cfff' : '#888',
-            border: `1px solid ${magneticOn ? '#00cfff' : '#555'}`,
-            borderRadius: 4,
-            cursor: 'pointer',
-            userSelect: 'none',
-          }}
-        >
-          MAGNETIC: {magneticOn ? 'ON' : 'OFF'}
-        </button>
-        <button
-          onClick={() => {
+          isActive={magneticOn}
+        />
+        <HudButton
+          title="DRVSIG"
+          onClickEvent={() => {
             setDriveSignatureOn((prev) => {
               const next = !prev;
               driveSignatureOnRef.current = next;
               return next;
             });
           }}
-          style={{
-            padding: '6px 14px',
-            background: driveSignatureOn ? 'rgba(255,68,68,0.15)' : 'rgba(60,60,60,0.5)',
-            color: driveSignatureOn ? '#ff4444' : '#888',
-            border: `1px solid ${driveSignatureOn ? '#ff4444' : '#555'}`,
-            borderRadius: 4,
-            cursor: 'pointer',
-            userSelect: 'none',
-          }}
-        >
-          DRIVE SIG: {driveSignatureOn ? 'ON' : 'OFF'}
-        </button>
+          isActive={driveSignatureOn}
+        />
       </div>
       {/* Listen to Message — appears once the RadioBeacon has been hit */}
       {beaconActivated && (

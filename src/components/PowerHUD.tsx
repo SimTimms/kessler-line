@@ -90,37 +90,64 @@ export default function PowerHUD() {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const powerColor = displayPower > 50 ? '#00ff88' : displayPower > 20 ? '#ffaa00' : '#ff3333';
-  const hullColor = displayHull > 50 ? '#00ff88' : displayHull > 20 ? '#ffaa00' : '#ff3333';
-  const fuelColor = displayFuel > 50 ? '#00ff88' : displayFuel > 20 ? '#ffaa00' : '#ff3333';
-  const o2Color = displayO2 > 50 ? '#00ff88' : displayO2 > 20 ? '#ffaa00' : '#ff3333';
-  const gForceColor = displayGForce < 3 ? '#00ff88' : displayGForce < 6 ? '#ffaa00' : '#ff3333';
+  const powerColor =
+    displayPower > 50
+      ? 'rgba(0,200,255,1)'
+      : displayPower > 20
+        ? '#ffaa00'
+        : 'rgba(255, 40, 140, 0.85)';
+  const hullColor =
+    displayHull > 50
+      ? 'rgba(0,200,255,1)'
+      : displayHull > 20
+        ? '#ffaa00'
+        : 'rgba(255, 40, 140, 0.85)';
+  const fuelColor =
+    displayFuel > 50
+      ? 'rgba(0,200,255,1)'
+      : displayFuel > 20
+        ? '#ffaa00'
+        : 'rgba(255, 40, 140, 0.85)';
+  const o2Color =
+    displayO2 > 50 ? 'rgba(0,200,255,1)' : displayO2 > 20 ? '#ffaa00' : 'rgba(255, 40, 140, 0.85)';
+  const gForceColor =
+    displayGForce < 3
+      ? 'rgba(0,200,255,1)'
+      : displayGForce < 6
+        ? '#ffaa00'
+        : 'rgba(255, 40, 140, 0.85)';
 
   return (
     <>
       {/* Stats overlay — pointer-events:none so mouse passes through to the canvas */}
-      <div style={{
-        position: 'fixed',
-        top: 16,
-        left: 16,
-        fontFamily: 'monospace',
-        fontSize: 18,
-        pointerEvents: 'none',
-        userSelect: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          top: 16,
+          left: 16,
+          fontFamily: 'monospace',
+          fontSize: 14,
+          pointerEvents: 'none',
+          userSelect: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+        }}
+      >
         <div style={{ color: powerColor }}>PWR: {displayPower}</div>
         <div style={{ color: hullColor }}>HUL: {displayHull}</div>
         <div style={{ color: fuelColor }}>FUL: {displayFuel}</div>
         <div style={{ color: o2Color }}>O2: {displayO2}</div>
         <div style={{ color: gForceColor }}>GF: {displayGForce.toFixed(1)}g</div>
-        <div style={{ color: '#ff8800' }}>VEL: {displayVelocity.toFixed(1)} m/s</div>
+        <div style={{ color: 'rgba(0,200,255,1)' }}>VEL: {displayVelocity.toFixed(1)} m/s</div>
         {displayCargo.length > 0 && (
           <>
-            <div style={{ color: 'rgba(0, 200, 255, 0.4)', marginTop: 8, fontSize: 14 }}>───────</div>
-            <div style={{ color: '#a0e8ff', fontSize: 14, letterSpacing: '0.05em' }}>CARGO HOLD</div>
+            <div style={{ color: 'rgba(0, 200, 255, 0.4)', marginTop: 8, fontSize: 14 }}>
+              ───────
+            </div>
+            <div style={{ color: '#a0e8ff', fontSize: 14, letterSpacing: '0.05em' }}>
+              CARGO HOLD
+            </div>
             {displayCargo.map((item) => (
               <div
                 key={item.name}
@@ -145,9 +172,7 @@ export default function PowerHUD() {
             <div style={{ color: '#00cfff', marginTop: 8 }}>TGT: {targetName}</div>
             <div style={{ color: '#00cfff' }}>
               REL: {relSpeed.toFixed(1)} m/s
-              {targetName === 'Docking Bay' && relSpeed < 4 && (
-                <span> [docking velocity]</span>
-              )}
+              {targetName === 'Docking Bay' && relSpeed < 4 && <span> [docking velocity]</span>}
             </div>
           </>
         )}
@@ -158,7 +183,14 @@ export default function PowerHUD() {
         <div style={dialogStyle}>
           {ejectState.step === 'confirm' && (
             <>
-              <p style={{ margin: '0 0 6px', fontSize: 11, letterSpacing: '0.12em', color: 'rgba(0, 200, 255, 0.5)' }}>
+              <p
+                style={{
+                  margin: '0 0 6px',
+                  fontSize: 11,
+                  letterSpacing: '0.12em',
+                  color: 'rgba(0, 200, 255, 0.5)',
+                }}
+              >
                 CARGO MANAGEMENT
               </p>
               <p style={{ margin: '0 0 20px', fontSize: 14, color: '#a0e8ff', lineHeight: 1.6 }}>
@@ -180,10 +212,24 @@ export default function PowerHUD() {
 
           {ejectState.step === 'quantity' && (
             <>
-              <p style={{ margin: '0 0 6px', fontSize: 11, letterSpacing: '0.12em', color: 'rgba(0, 200, 255, 0.5)' }}>
+              <p
+                style={{
+                  margin: '0 0 6px',
+                  fontSize: 11,
+                  letterSpacing: '0.12em',
+                  color: 'rgba(0, 200, 255, 0.5)',
+                }}
+              >
                 SELECT QUANTITY TO EJECT
               </p>
-              <p style={{ margin: '0 0 16px', fontSize: 22, color: '#ff6666', letterSpacing: '0.06em' }}>
+              <p
+                style={{
+                  margin: '0 0 16px',
+                  fontSize: 22,
+                  color: '#ff6666',
+                  letterSpacing: '0.06em',
+                }}
+              >
                 {ejectState.amount}x {ejectState.item.name.toUpperCase()}
               </p>
               <input
@@ -191,9 +237,7 @@ export default function PowerHUD() {
                 min={1}
                 max={ejectState.item.quantity}
                 value={ejectState.amount}
-                onChange={(e) =>
-                  setEjectState({ ...ejectState, amount: parseInt(e.target.value) })
-                }
+                onChange={(e) => setEjectState({ ...ejectState, amount: parseInt(e.target.value) })}
                 style={{ width: '100%', marginBottom: 20, accentColor: '#ff6666' }}
               />
               <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
