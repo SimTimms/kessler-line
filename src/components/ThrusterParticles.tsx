@@ -20,10 +20,10 @@ const BASE_SPEED = 102; // world units/second (jittered ±30%)
 const MAIN_MAX = 250;
 const MAIN_EMITTERS = {
   reverseA: {
-    localPos: new THREE.Vector3(-2.5, 2.5, -9.5),
+    localPos: new THREE.Vector3(-3.5, 2.5, -9.5),
     localDir: new THREE.Vector3(0, 0, -1),
   },
-  reverseB: { localPos: new THREE.Vector3(2.5, 2.5, -9.5), localDir: new THREE.Vector3(0, 0, -1) },
+  reverseB: { localPos: new THREE.Vector3(3.5, 2.5, -9.5), localDir: new THREE.Vector3(0, 0, -1) },
 } as const;
 type MainKey = keyof typeof MAIN_EMITTERS;
 
@@ -218,10 +218,10 @@ export default function ThrusterParticles({
     const combined = (a: { current: boolean }, b: { current: boolean }) =>
       ({ current: a.current || b.current }) as { current: boolean };
     const rcsInputs: [RcsKey, { current: boolean }][] = [
-      ['forward',     combined(thrustForward,    mobileThrustForward)],
-      ['left',        combined(thrustLeft,        mobileThrustLeft)],
-      ['right',       combined(thrustRight,       mobileThrustRight)],
-      ['strafeLeft',  combined(thrustStrafeLeft,  mobileThrustStrafeLeft)],
+      ['forward', combined(thrustForward, mobileThrustForward)],
+      ['left', combined(thrustLeft, mobileThrustLeft)],
+      ['right', combined(thrustRight, mobileThrustRight)],
+      ['strafeLeft', combined(thrustStrafeLeft, mobileThrustStrafeLeft)],
       ['strafeRight', combined(thrustStrafeRight, mobileThrustStrafeRight)],
     ];
     for (const [key, ref] of rcsInputs) {
@@ -255,7 +255,7 @@ export default function ThrusterParticles({
   return (
     <>
       {/* Main engines — two larger nozzles */}
-      <points frustumCulled={false}>
+      <points frustumCulled={false} position={[0, -2, 0]}>
         <bufferGeometry ref={mainGeoRef}>
           <bufferAttribute attach="attributes-position" args={[mainPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[mainCol, 3]} />

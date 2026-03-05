@@ -72,7 +72,7 @@ export default function Sun({ radius }: SunProps) {
   const godRayTexture = useMemo(() => createGodRayTexture(), []);
 
   return (
-    <group position={[0, -10, 0]}>
+    <group position={[0, 0, 0]}>
       {/* Blazing white-hot core */}
       <mesh>
         <sphereGeometry args={[radius, 48, 48]} />

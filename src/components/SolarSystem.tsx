@@ -1,6 +1,4 @@
 import Sun from './Sun';
-import OrbitingEarth from './OrbitingEarth';
-import OrbitingNeptune from './OrbitingNeptune';
 import OrbitingPlanet from './OrbitingPlanet';
 
 // ─── Sizing helpers ────────────────────────────────────────────────────────────
@@ -9,20 +7,16 @@ import OrbitingPlanet from './OrbitingPlanet';
 //   display_radius = SUN_RADIUS × (planet_km / 696340)^0.4
 
 const SUN_RADIUS = 600;
-const r = (realKm: number) => Math.pow(realKm / 696_340, 0.4) * SUN_RADIUS;
-
-// neptune.glb has an intrinsic radius of ~7 scene units at scale=1
-// (back-calculated from original scene usage). Neptune/Mars GLB scale must be
-// divided by that factor so the rendered size matches the formula above.
-const NEPTUNE_GLB_UNIT_RADIUS = 7;
+const r = (realKm: number) => Math.pow(realKm / 696_340, 2) * SUN_RADIUS;
 
 // ─── Orbital radius helper ─────────────────────────────────────────────────────
 // True-scale orbits would bury all inner planets inside the Sun's visual radius.
-// Power-0.35 compression anchored to Neptune at 5500 units keeps all orbits
-// outside the Sun while preserving the inner/outer planet spread.
-//   orbit(au) = 5500 × (au / 30.07)^0.35
+// Power-0.40 compression anchored to Neptune at 5500 units — same exponent as
+// the planet size formula — keeps the two scales self-consistent so the visual
+// ratio between orbit spacing and planet size matches reality's relative ordering.
+//   orbit(au) = 5500 × (au / 30.07)^0.40
 
-const orbit = (au: number) => 5500 * Math.pow(au / 30.07, 0.35);
+const orbit = (au: number) => 5500 * Math.pow(au / 30.07, 0.4);
 
 // ─── Speed helpers ─────────────────────────────────────────────────────────────
 // Orbital: 1 Earth year = 30 real seconds
@@ -33,14 +27,17 @@ const ov = (years: number) => (2 * Math.PI) / (years * 30);
 const sv = (earthDays: number) => 0.04 / earthDays;
 
 // ─── Planet configs ────────────────────────────────────────────────────────────
-// Earth and Neptune are rendered by dedicated components (texture / GLB).
-// All others use OrbitingPlanet with a flat-shaded sphere.
+// Entries with `dedicated: true` are rendered by their own components
+// (OrbitingEarth, OrbitingNeptune) and are skipped by the OrbitingPlanet map.
+// Orbital order is preserved so consumers can index by position (e.g. PLANETS[7]
+// is Neptune, PLANETS[2] is Earth).
 
-const PLANETS = [
+export const PLANETS = [
   {
+    // 0 — Mercury
     name: 'Mercury',
     radius: r(2_440), // ≈  63
-    orbitRadius: orbit(0.387), // ≈ 1200
+    orbitRadius: orbit(0.387), // ≈  963
     orbitalSpeed: ov(0.241),
     spinSpeed: sv(58.6), // very slow spin
     axialTilt: 0.03 * (Math.PI / 180),
@@ -49,9 +46,10 @@ const PLANETS = [
     emissive: '#050505',
   },
   {
+    // 1 — Venus
     name: 'Venus',
     radius: r(6_051), // ≈  90
-    orbitRadius: orbit(0.723), // ≈ 1490
+    orbitRadius: orbit(0.723), // ≈ 1236
     orbitalSpeed: ov(0.615),
     spinSpeed: sv(-243), // retrograde, very slow
     axialTilt: 2.6 * (Math.PI / 180),
@@ -60,9 +58,23 @@ const PLANETS = [
     emissive: '#1a1000',
   },
   {
+    // 2 — Earth  (dedicated rendering via OrbitingEarth)
+    name: 'Earth',
+    radius: r(6_371), // ≈  92
+    orbitRadius: orbit(1.0), // ≈ 1409
+    orbitalSpeed: ov(1.0),
+    spinSpeed: sv(1.0),
+    axialTilt: 23.4 * (Math.PI / 180),
+    initialAngle: 2.5,
+    color: '#2a7bde',
+    emissive: '#001220',
+    dedicated: true,
+  },
+  {
+    // 3 — Mars
     name: 'Mars',
     radius: r(3_390), // ≈  71
-    orbitRadius: orbit(1.524), // ≈ 1940
+    orbitRadius: orbit(1.524), // ≈ 1672
     orbitalSpeed: ov(1.881),
     spinSpeed: sv(1.03),
     axialTilt: 25.2 * (Math.PI / 180),
@@ -71,9 +83,10 @@ const PLANETS = [
     emissive: '#110200',
   },
   {
+    // 4 — Jupiter
     name: 'Jupiter',
     radius: r(71_492), // ≈ 241
-    orbitRadius: orbit(5.203), // ≈ 2980
+    orbitRadius: orbit(5.203), // ≈ 2727
     orbitalSpeed: ov(11.86),
     spinSpeed: sv(0.41), // fastest spin in the solar system
     axialTilt: 3.1 * (Math.PI / 180),
@@ -82,9 +95,10 @@ const PLANETS = [
     emissive: '#100800',
   },
   {
+    // 5 — Saturn
     name: 'Saturn',
     radius: r(60_268), // ≈ 225
-    orbitRadius: orbit(9.537), // ≈ 3680
+    orbitRadius: orbit(9.537), // ≈ 3472
     orbitalSpeed: ov(29.46),
     spinSpeed: sv(0.44),
     axialTilt: 26.7 * (Math.PI / 180),
@@ -94,9 +108,10 @@ const PLANETS = [
     rings: true,
   },
   {
+    // 6 — Uranus
     name: 'Uranus',
     radius: r(25_559), // ≈ 160
-    orbitRadius: orbit(19.19), // ≈ 4700
+    orbitRadius: orbit(19.19), // ≈ 4596
     orbitalSpeed: ov(84.01),
     spinSpeed: sv(-0.72), // retrograde
     axialTilt: 97.8 * (Math.PI / 180), // nearly on its side
@@ -104,45 +119,49 @@ const PLANETS = [
     color: '#7de8e8',
     emissive: '#001a1a',
   },
+  {
+    // 7 — Neptune  (dedicated rendering via OrbitingNeptune)
+    name: 'Neptune',
+    radius: r(24_622), // ≈ 157 display; GLB scale = radius / NEPTUNE_GLB_UNIT_RADIUS
+    orbitRadius: orbit(30.07), // = 5500
+    orbitalSpeed: ov(164.8),
+    spinSpeed: sv(0.67),
+    axialTilt: 28.3 * (Math.PI / 180),
+    initialAngle: 1.2,
+    color: '#4169e8',
+    emissive: '#000818',
+  },
 ] as const;
 
-// Earth and Neptune sizes for their dedicated components
-const EARTH_SCALE = r(6_371); // ≈  92
-const NEPTUNE_SCALE = r(24_622) / NEPTUNE_GLB_UNIT_RADIUS; // ≈  22
-
-const EARTH_ORBIT_RADIUS = orbit(1.0); // ≈ 1620
-const NEPTUNE_ORBIT_RADIUS = orbit(30.07); // = 5500
-
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ───────────────────────────────────────────────────────────────
 
 interface SolarSystemProps {
   position?: [number, number, number];
   scale?: number;
 }
 
-export default function SolarSystem({ position = [0, -1000, 0], scale = 1.3 }: SolarSystemProps) {
+export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSystemProps) {
   return (
     <group position={position} scale={scale}>
       <Sun radius={SUN_RADIUS} />
 
-      {PLANETS.map((p) => (
-        <OrbitingPlanet
-          key={p.name}
-          planetName={p.name}
-          orbitRadius={p.orbitRadius}
-          radius={p.radius}
-          color={p.color}
-          emissive={p.emissive}
-          orbitalSpeed={p.orbitalSpeed}
-          spinSpeed={p.spinSpeed}
-          axialTilt={p.axialTilt}
-          initialAngle={p.initialAngle}
-          rings={'rings' in p ? p.rings : false}
-        />
-      ))}
-
-      <OrbitingEarth scale={EARTH_SCALE} orbitRadius={EARTH_ORBIT_RADIUS} />
-      <OrbitingNeptune scale={NEPTUNE_SCALE} orbitRadius={NEPTUNE_ORBIT_RADIUS} />
+      {PLANETS.map((p) =>
+        'dedicated' in p ? null : (
+          <OrbitingPlanet
+            key={p.name}
+            planetName={p.name}
+            orbitRadius={p.orbitRadius}
+            radius={p.radius}
+            color={p.color}
+            emissive={p.emissive}
+            orbitalSpeed={p.orbitalSpeed}
+            spinSpeed={p.spinSpeed}
+            axialTilt={p.axialTilt}
+            initialAngle={p.initialAngle}
+            rings={'rings' in p ? p.rings : false}
+          />
+        )
+      )}
     </group>
   );
 }

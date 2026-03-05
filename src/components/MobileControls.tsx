@@ -76,6 +76,7 @@ export default function MobileControls() {
     <>
       {/* Movement cluster — bottom left: FWD on top, STR-L / REV / STR-R below */}
       <div
+        className="mob-move"
         style={{
           position: 'fixed',
           bottom: 80,
@@ -88,15 +89,16 @@ export default function MobileControls() {
         }}
       >
         <div style={SPACER} />
-        <ThrustBtn icon="▲" label="FWD" ref={mobileThrustForward} />
+        <ThrustBtn icon="▲" label="FWD" ref={mobileThrustReverse} />
         <div style={SPACER} />
         <ThrustBtn icon="◄" label="STR L" ref={mobileThrustStrafeLeft} />
-        <ThrustBtn icon="▼" label="REV" ref={mobileThrustReverse} />
+        <ThrustBtn icon="▼" label="REV" ref={mobileThrustForward} />
         <ThrustBtn icon="►" label="STR R" ref={mobileThrustStrafeRight} />
       </div>
 
       {/* Rotation cluster — bottom right */}
       <div
+        className="mob-rot"
         style={{
           position: 'fixed',
           bottom: 80,

@@ -8,6 +8,7 @@ export const HudButton = ({
   title: string;
 }) => (
   <button
+    className="hud-btn"
     onClick={() => {
       onClickEvent();
     }}

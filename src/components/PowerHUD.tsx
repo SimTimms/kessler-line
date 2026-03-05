@@ -121,6 +121,7 @@ export default function PowerHUD() {
     <>
       {/* Stats overlay — pointer-events:none so mouse passes through to the canvas */}
       <div
+        className="power-hud"
         style={{
           position: 'fixed',
           top: 16,

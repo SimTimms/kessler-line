@@ -36,7 +36,7 @@ interface SpaceshipProps {
 
 export default function Spaceship({
   url,
-  scale = 1,
+  scale = 2,
   positionRef,
   shipGroupRef,
   initialPosition,
@@ -79,7 +79,7 @@ export default function Spaceship({
   return (
     <>
       <group ref={setGroupRef} rotation={[0, 0, 0]} position={initialPosition}>
-        <primitive object={gltf.scene} scale={scale} />
+        <primitive object={gltf.scene} scale={scale} rotation={[0, Math.PI / 2, 0]} />
         {/* Thruster point light — rear of ship, activates when any thruster fires */}
         <pointLight
           ref={thrusterLightRef}
