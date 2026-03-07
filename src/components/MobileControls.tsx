@@ -79,8 +79,8 @@ export default function MobileControls() {
         className="mob-move"
         style={{
           position: 'fixed',
-          bottom: 80,
-          left: 16,
+          bottom: 10,
+          left: 10,
           display: 'grid',
           gridTemplateColumns: '44px 44px 44px',
           gridTemplateRows: '44px 44px',
@@ -101,8 +101,8 @@ export default function MobileControls() {
         className="mob-rot"
         style={{
           position: 'fixed',
-          bottom: 80,
-          right: 16,
+          bottom: 10,
+          right: 10,
           display: 'flex',
           gap: 8,
           pointerEvents: 'none',

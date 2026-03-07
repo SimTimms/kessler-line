@@ -1,24 +1,23 @@
 :root {
   height: 100vh;
-    width: 100vw;
-    position: fixed;
-    left: 0;
-    top: 0;
-    margin-left: 0;
-    padding: 0;
+  width: 100vw;
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin-left: 0;
+  padding: 0;
 }
-
 
 body {
   margin: 0;
   display: flex;
   place-items: center;
-height:100vh;
-width:100vw;
-position: fixed;
-left:0;
-top:0;
-padding: 0;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 0;
 }
 
 h1 {
@@ -38,9 +37,9 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: none;
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
 }

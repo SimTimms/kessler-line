@@ -15,22 +15,25 @@ export const HudButton = ({
   power: number;
   onPowerChange: (level: number) => void;
 }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      width: 100,
+    }}
+  >
     <button
       className="hud-btn"
       onClick={onClickEvent}
       style={{
-        padding: '6px 14px',
-        background: isActive ? 'rgba(0,200,255,0.05)' : 'rgba(60,60,60,0.1)',
+        background: isActive ? 'rgba(0,200,255,0.0)' : 'rgba(60,60,60,0)',
         color: isActive ? '#00cfff' : '#888',
         borderRadius: 0,
         cursor: 'pointer',
         userSelect: 'none',
-        outline: 'none',
-        width: '70px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        outline: 'none !important',
       }}
     >
       <Icon size={18} strokeWidth={1.5} />

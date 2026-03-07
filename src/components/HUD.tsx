@@ -171,15 +171,13 @@ export const HUD = ({
       <div
         style={{
           position: 'fixed',
-          bottom: 16,
           left: 16,
           fontFamily: 'monospace',
           fontSize: 14,
-          padding: '6px 14px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
-          backdropFilter: 'blur(10px)',
+          gap: 1,
+          bottom: 110,
         }}
       >
         <HudButton
