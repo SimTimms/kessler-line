@@ -94,9 +94,9 @@ export default function Spaceship({
           <mesh>
             <boxGeometry args={[2, 2, 2]} />
             <meshBasicMaterial
-              color="#00aaff"
+              color="#ffffff"
               transparent
-              opacity={0.4}
+              opacity={0.004}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
             />

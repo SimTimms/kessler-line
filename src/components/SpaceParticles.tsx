@@ -2,7 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const COUNT = 1500;
+const COUNT = 6000;
 const HALF = 150; // half-extent of the wrapping cube (300 units across)
 
 function makeParticleTexture(): THREE.Texture {
@@ -61,7 +61,7 @@ export default function SpaceParticles({ shipPositionRef }: SpaceParticlesProps)
   });
 
   return (
-    <points>
+    <points frustumCulled={false}>
       <bufferGeometry ref={geoRef}>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>

@@ -157,12 +157,12 @@ export default function SpaceDebris() {
 
   // Register sphere colliders for each debris piece
   useEffect(() => {
-    debrisEntries.forEach((entry) => {
+    debrisEntries.forEach((entry, i) => {
       registerCollidable({
         id: entry.id,
-        // Static position — no mesh ref needed
         getWorldPosition: (target) => target.copy(entry.position),
         shape: { type: 'sphere', radius: entry.radius },
+        getObject3D: () => meshRefs.current[i],
       });
     });
     return () => {

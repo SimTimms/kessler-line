@@ -17,9 +17,11 @@ import EjectedCargo from './EjectedCargo';
 import VelocityIndicator from './VelocityIndicator';
 import ShipExplosion from './ShipExplosion';
 import SpaceDebris from './SpaceDebris';
+import ProximityHighlight from './ProximityHighlight';
 import { sceneCamera } from '../context/CameraRef';
 import AIShip from './AIShip';
 import SolarSystem, { PLANETS } from './SolarSystem';
+import { shipPosRef } from '../context/ShipPos';
 import {
   RADIO_BEACON_DEFS,
   BEACON_AUDIO,
@@ -136,11 +138,12 @@ export default function Scene() {
   // Neptune starts at orbit angle 1.2 rad within SolarSystem (position=[0,-1000,0], scale=1.3)
   // orbitRadius=5500 → world XZ ≈ [cos(1.2)*5500*1.3, -sin(1.2)*5500*1.3] ≈ [2591, -6664]
   const NEPTUNE_START: [number, number, number] = [
-    PLANETS[7].orbitRadius * 1.3 * Math.cos(1.2),
+    PLANETS[0].orbitRadius,
     0,
-    -PLANETS[7].orbitRadius * 1.3 * Math.sin(1.2),
+    -PLANETS[0].orbitRadius,
   ];
-  const spaceshipPos = useRef(new THREE.Vector3(...NEPTUNE_START));
+  shipPosRef.current.set(...NEPTUNE_START);
+  const spaceshipPos = shipPosRef;
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const stationGroupRef = useRef<THREE.Group | null>(null);
   const beaconGroupRef = useRef<THREE.Group | null>(null);
@@ -167,7 +170,7 @@ export default function Scene() {
       <group position={SPACE_STATION_DEF.position}>
         <SpaceStation
           url="/space_station.glb"
-          scale={0.04}
+          scale={0.004}
           collisionRadius={25}
           stationGroupRef={stationGroupRef}
         />
@@ -201,10 +204,11 @@ export default function Scene() {
         stationGroupRef={stationGroupRef}
         beaconGroupRef={beaconGroupRef}
       />
-      <SolarSystem scale={1} />
+      <SolarSystem scale={4} />
       <AsteroidBelt />
       <SpaceDebris />
       <EjectedCargo />
+      <ProximityHighlight />
       <RedPlanetLine shipPositionRef={spaceshipPos} />
       <VelocityIndicator shipPositionRef={spaceshipPos} />
       <AIShip id="0" url="/spaceship.glb" scale={1} position={[100, 0, -2000]} />

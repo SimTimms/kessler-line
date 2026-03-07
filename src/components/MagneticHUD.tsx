@@ -1,11 +1,10 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { sceneCamera } from '../context/CameraRef';
-import { magneticOnRef } from '../context/MagneticScan';
+import { magneticOnRef, magneticScanRangeRef } from '../context/MagneticScan';
 import { debrisEntries } from './SpaceDebris';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 
-const SCAN_RADIUS = 10000;
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
 
 // Only metallic (magnetic) entries need tracking
@@ -101,7 +100,7 @@ export default function MagneticHUD() {
         const marker = markers[i];
 
         const dist = minimapShipPosition.distanceTo(entry.position);
-        if (dist > SCAN_RADIUS) {
+        if (dist > magneticScanRangeRef.current) {
           marker.root.style.display = 'none';
           continue;
         }

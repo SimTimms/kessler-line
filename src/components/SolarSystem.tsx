@@ -6,8 +6,9 @@ import OrbitingPlanet from './OrbitingPlanet';
 // radii use a power-0.4 compression that preserves relative ordering.
 //   display_radius = SUN_RADIUS × (planet_km / 696340)^0.4
 
-const SUN_RADIUS = 600;
-const r = (realKm: number) => Math.pow(realKm / 696_340, 2) * SUN_RADIUS;
+const SUN_RADIUS = 100;
+const ORBIT_SPEED = 500;
+const r = (realKm: number) => Math.pow(realKm / 696_340, 0.2) * SUN_RADIUS;
 
 // ─── Orbital radius helper ─────────────────────────────────────────────────────
 // True-scale orbits would bury all inner planets inside the Sun's visual radius.
@@ -37,8 +38,8 @@ export const PLANETS = [
     // 0 — Mercury
     name: 'Mercury',
     radius: r(2_440), // ≈  63
-    orbitRadius: orbit(0.387), // ≈  963
-    orbitalSpeed: ov(0.241),
+    orbitRadius: orbit(0.387 * SUN_RADIUS), // ≈  963
+    orbitalSpeed: ov(0.241 * ORBIT_SPEED),
     spinSpeed: sv(58.6), // very slow spin
     axialTilt: 0.03 * (Math.PI / 180),
     initialAngle: 0.3,
@@ -49,8 +50,8 @@ export const PLANETS = [
     // 1 — Venus
     name: 'Venus',
     radius: r(6_051), // ≈  90
-    orbitRadius: orbit(0.723), // ≈ 1236
-    orbitalSpeed: ov(0.615),
+    orbitRadius: orbit(0.723 * SUN_RADIUS), // ≈ 1236
+    orbitalSpeed: ov(0.615 * ORBIT_SPEED),
     spinSpeed: sv(-243), // retrograde, very slow
     axialTilt: 2.6 * (Math.PI / 180),
     initialAngle: 1.4,
@@ -61,21 +62,20 @@ export const PLANETS = [
     // 2 — Earth  (dedicated rendering via OrbitingEarth)
     name: 'Earth',
     radius: r(6_371), // ≈  92
-    orbitRadius: orbit(1.0), // ≈ 1409
-    orbitalSpeed: ov(1.0),
+    orbitRadius: orbit(1.0 * SUN_RADIUS), // ≈ 1409
+    orbitalSpeed: ov(1.0 * ORBIT_SPEED),
     spinSpeed: sv(1.0),
     axialTilt: 23.4 * (Math.PI / 180),
     initialAngle: 2.5,
     color: '#2a7bde',
     emissive: '#001220',
-    dedicated: true,
   },
   {
     // 3 — Mars
     name: 'Mars',
     radius: r(3_390), // ≈  71
-    orbitRadius: orbit(1.524), // ≈ 1672
-    orbitalSpeed: ov(1.881),
+    orbitRadius: orbit(1.524 * SUN_RADIUS), // ≈ 1672
+    orbitalSpeed: ov(1.881 * ORBIT_SPEED),
     spinSpeed: sv(1.03),
     axialTilt: 25.2 * (Math.PI / 180),
     initialAngle: 4.2,
@@ -86,8 +86,8 @@ export const PLANETS = [
     // 4 — Jupiter
     name: 'Jupiter',
     radius: r(71_492), // ≈ 241
-    orbitRadius: orbit(5.203), // ≈ 2727
-    orbitalSpeed: ov(11.86),
+    orbitRadius: orbit(5.203 * SUN_RADIUS), // ≈ 2727
+    orbitalSpeed: ov(11.86 * ORBIT_SPEED),
     spinSpeed: sv(0.41), // fastest spin in the solar system
     axialTilt: 3.1 * (Math.PI / 180),
     initialAngle: 0.9,
@@ -98,8 +98,8 @@ export const PLANETS = [
     // 5 — Saturn
     name: 'Saturn',
     radius: r(60_268), // ≈ 225
-    orbitRadius: orbit(9.537), // ≈ 3472
-    orbitalSpeed: ov(29.46),
+    orbitRadius: orbit(9.537 * SUN_RADIUS), // ≈ 3472
+    orbitalSpeed: ov(29.46 * ORBIT_SPEED),
     spinSpeed: sv(0.44),
     axialTilt: 26.7 * (Math.PI / 180),
     initialAngle: 5.5,
@@ -111,8 +111,8 @@ export const PLANETS = [
     // 6 — Uranus
     name: 'Uranus',
     radius: r(25_559), // ≈ 160
-    orbitRadius: orbit(19.19), // ≈ 4596
-    orbitalSpeed: ov(84.01),
+    orbitRadius: orbit(19.19 * SUN_RADIUS), // ≈ 4596
+    orbitalSpeed: ov(84.01 * ORBIT_SPEED),
     spinSpeed: sv(-0.72), // retrograde
     axialTilt: 97.8 * (Math.PI / 180), // nearly on its side
     initialAngle: 3.5,
@@ -123,8 +123,8 @@ export const PLANETS = [
     // 7 — Neptune  (dedicated rendering via OrbitingNeptune)
     name: 'Neptune',
     radius: r(24_622), // ≈ 157 display; GLB scale = radius / NEPTUNE_GLB_UNIT_RADIUS
-    orbitRadius: orbit(30.07), // = 5500
-    orbitalSpeed: ov(164.8),
+    orbitRadius: orbit(30.07 * SUN_RADIUS), // = 5500
+    orbitalSpeed: ov(164.8 * ORBIT_SPEED),
     spinSpeed: sv(0.67),
     axialTilt: 28.3 * (Math.PI / 180),
     initialAngle: 1.2,
@@ -132,6 +132,11 @@ export const PLANETS = [
     emissive: '#000818',
   },
 ] as const;
+
+// ─── World scale ──────────────────────────────────────────────────────────────
+// SolarSystem is rendered in Scene.tsx with this scale. Any consumer that needs
+// world-space planet positions must multiply solarPlanetPositions by this value.
+export const SOLAR_SYSTEM_SCALE = 4;
 
 // ─── Component ───────────────────────────────────────────────────────────────
 

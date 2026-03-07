@@ -40,6 +40,7 @@ export default function SpaceStation({ url, scale = 1, collisionRadius = 10405, 
         return target;
       },
       shape: { type: 'box', halfExtents: new THREE.Vector3(10, 10.5, 20) },
+      getObject3D: () => groupRef.current,
     });
     return () => {
       unregisterCollidable(COLLISION_ID);

@@ -7,115 +7,21 @@ import DockingDialog from './components/DockingDialog';
 import NPCContactDialog, { type NPCHailDetail } from './components/NPCContactDialog';
 import { TimeProvider } from './context/TimeProvider';
 import { spotlightOnRef } from './components/LaserRay';
-import {
-  isRefueling,
-  isTransferringO2,
-  thrustMultiplier,
-  shipAcceleration,
-  THRUST,
-} from './components/Spaceship';
+import { isRefueling, isTransferringO2, thrustMultiplier } from './components/Spaceship';
 import { setCargo, clearCargo } from './context/Inventory';
 import { magneticOnRef } from './context/MagneticScan';
 import MagneticHUD from './components/MagneticHUD';
 import { driveSignatureOnRef } from './context/DriveSignatureScan';
 import DriveSignatureHUD from './components/DriveSignatureHUD';
-import { proximityScanOnRef, proximityScanRangeRef } from './context/ProximityScan';
+import { proximityScanOnRef } from './context/ProximityScan';
 import ProximityHUD from './components/ProximityHUD';
-import { HudButton } from './components/HudButton';
 import MobileControls from './components/MobileControls';
-
+import { HUD } from './components/HUD';
+import { ShipDestroyedOverlay } from './components/ShipDestroyedOverlay';
+import { GForceOverlay } from './GForceOverlay';
 // Full-screen overlay that darkens the canvas to simulate G-force blackout.
 // Sits above the canvas but below the HUD via DOM order (no z-index needed).
 // Uses direct DOM mutation via RAF — no React re-renders.
-function GForceOverlay() {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const gForceRef = useRef(0);
-
-  useEffect(() => {
-    let rafId: number;
-    let lastTime = performance.now();
-
-    const update = (now: number) => {
-      const delta = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
-
-      // Normalise: max acceleration = THRUST × 50× multiplier
-      const normalizedAccel = Math.min(shipAcceleration.current / (THRUST * 50), 1);
-      // Builds quickly, dissipates slowly — like a real g-force blackout
-      const rate = normalizedAccel > gForceRef.current ? 3.0 : 0.8;
-      gForceRef.current += (normalizedAccel - gForceRef.current) * delta * rate;
-
-      if (overlayRef.current) {
-        overlayRef.current.style.opacity = String(gForceRef.current * 0.95);
-      }
-
-      rafId = requestAnimationFrame(update);
-    };
-
-    rafId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafId);
-  }, []);
-
-  return (
-    <div
-      ref={overlayRef}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: '#000',
-        opacity: 0,
-        pointerEvents: 'none',
-      }}
-    />
-  );
-}
-
-function ShipDestroyedOverlay() {
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onDestroyed = () => {
-      if (overlayRef.current) overlayRef.current.style.display = 'flex';
-    };
-    window.addEventListener('ShipDestroyed', onDestroyed);
-    return () => window.removeEventListener('ShipDestroyed', onDestroyed);
-  }, []);
-
-  return (
-    <div
-      ref={overlayRef}
-      style={{
-        display: 'none',
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.75)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        gap: 12,
-        pointerEvents: 'none',
-        zIndex: 200,
-      }}
-    >
-      <div
-        style={{
-          color: '#ff2222',
-          fontSize: 52,
-          fontFamily: 'monospace',
-          fontWeight: 'bold',
-          letterSpacing: '0.08em',
-        }}
-      >
-        HULL BREACH
-      </div>
-      <div
-        style={{ color: '#ff7777', fontSize: 22, fontFamily: 'monospace', letterSpacing: '0.12em' }}
-      >
-        SHIP DESTROYED
-      </div>
-    </div>
-  );
-}
 
 function App() {
   const [thrustLevel, setThrustLevel] = useState(1);
@@ -123,7 +29,6 @@ function App() {
   const [magneticOn, setMagneticOn] = useState(false);
   const [driveSignatureOn, setDriveSignatureOn] = useState(false);
   const [proximity, setProximity] = useState(false);
-  const [proximityRange, setProximityRange] = useState(500);
   const [docked, setDocked] = useState(false);
   const [dockedStation, setDockedStation] = useState<string | null>(null);
   const [activeMission, setActiveMission] = useState<'kronos4' | 'mars' | 'neptune' | null>(null);
@@ -262,124 +167,20 @@ function App() {
         />
       )}
 
-      {/* Spotlight toggle */}
-      <div
-        className="hud-row"
-        style={{
-          position: 'fixed',
-          bottom: 16,
-          left: 16,
-          fontFamily: 'monospace',
-          fontSize: 14,
-          padding: '6px 14px',
-          display: 'flex',
-          gap: 10,
-        }}
-      >
-        <HudButton
-          title="SPTLGHT"
-          onClickEvent={() => {
-            const next = !spotlightOnRef.current;
-            spotlightOnRef.current = next;
-            setSpotlightOn(next);
-          }}
-          isActive={spotlightOn}
-        />
-        <HudButton
-          title="MAGSCAN"
-          onClickEvent={() => {
-            setMagneticOn((prev) => {
-              const next = !prev;
-              magneticOnRef.current = next;
-              return next;
-            });
-          }}
-          isActive={magneticOn}
-        />
-        <HudButton
-          title="DRVSIG"
-          onClickEvent={() => {
-            setDriveSignatureOn((prev) => {
-              const next = !prev;
-              driveSignatureOnRef.current = next;
-              return next;
-            });
-          }}
-          isActive={driveSignatureOn}
-        />
-        <HudButton
-          title="PROX"
-          onClickEvent={() => {
-            setProximity((prev) => {
-              const next = !prev;
-              proximityScanOnRef.current = next;
-              return next;
-            });
-          }}
-          isActive={proximity}
-        />
-      </div>
-      {/* Proximity range slider — appears when PROX is active */}
-      {proximity && (
-        <div
-          className="prox-panel"
-          style={{
-            position: 'fixed',
-            bottom: 8,
-            right: 16,
-            fontFamily: 'monospace',
-            fontSize: 12,
-            background: 'rgba(0,0,0,0.15)',
-            backdropFilter: 'blur(10px)',
-            padding: '6px 12px',
-            border: '1px solid rgba(68,255,204,0.25)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-            userSelect: 'none',
-          }}
-        >
-          <div
-            className="prox-label"
-            style={{ color: '#44ffcc', letterSpacing: 1, fontWeight: 'bold' }}
-          >
-            PROX RNG: {proximityRange}u
-          </div>
-          <div
-            className="prox-label"
-            style={{ color: '#44ffcc', letterSpacing: 1, fontWeight: 'bold' }}
-          >
-            PWR: {(proximityRange / 500).toFixed(1)}/s
-          </div>
-          <input
-            type="range"
-            min={100}
-            max={2000}
-            step={100}
-            value={proximityRange}
-            className="prox-slider"
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              setProximityRange(v);
-              proximityScanRangeRef.current = v;
-            }}
-          />
-          <div
-            className="prox-ticks"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              width: 200,
-              color: '#666',
-              fontSize: 10,
-            }}
-          >
-            <span>100u</span>
-            <span>2000u</span>
-          </div>
-        </div>
-      )}
-
+      <HUD
+        spotlightOn={spotlightOn}
+        setSpotlightOn={setSpotlightOn}
+        spotlightOnRef={spotlightOnRef}
+        magneticOn={magneticOn}
+        setMagneticOn={setMagneticOn}
+        magneticOnRef={magneticOnRef}
+        driveSignatureOn={driveSignatureOn}
+        setDriveSignatureOn={setDriveSignatureOn}
+        driveSignatureOnRef={driveSignatureOnRef}
+        proximity={proximity}
+        setProximity={setProximity}
+        proximityScanOnRef={proximityScanOnRef}
+      />
       {/* Listen to Message — appears once the RadioBeacon has been hit */}
       {beaconActivated && (
         <button

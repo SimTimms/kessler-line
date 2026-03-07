@@ -51,6 +51,7 @@ export default function DockingBay({
         type: 'box',
         halfExtents: new THREE.Vector3(dimensions.x * 0.5, dimensions.y * 0.5, dimensions.z * 0.5),
       },
+      getObject3D: () => groupRef.current,
     });
     return () => {
       unregisterCollidable(COLLISION_ID);

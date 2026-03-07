@@ -76,6 +76,7 @@ export default function AIShip({ id, url, position, scale = 1 }: AIShipProps) {
         return target;
       },
       shape: { type: 'box', halfExtents: new THREE.Vector3(9, 3, 10) },
+      getObject3D: () => groupRef.current,
     });
     return () => unregisterCollidable(collisionId);
   }, [collisionId]);

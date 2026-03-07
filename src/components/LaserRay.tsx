@@ -210,7 +210,7 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
         <meshBasicMaterial
           color="#ffffff"
           transparent
-          opacity={0.95}
+          opacity={0.25}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
@@ -222,7 +222,7 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
         <meshBasicMaterial
           color="#00ffff"
           transparent
-          opacity={0.1}
+          opacity={0.0005}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}

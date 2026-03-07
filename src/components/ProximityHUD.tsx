@@ -19,10 +19,10 @@ function getLabelFromId(id: string): string {
 }
 
 function getColor(ratio: number): string {
-  if (ratio < 0.25) return '#ff3300';
-  if (ratio < 0.5)  return '#ff8800';
-  if (ratio < 0.75) return '#ffee00';
-  return '#44ffcc';
+  if (ratio < 0.35) return 'rgba(255, 40, 140, 0.9)';
+  if (ratio < 0.5) return 'rgba(255, 40, 140, 0.5)';
+  if (ratio < 0.75) return 'rgba(0, 200, 255, 0.3)';
+  return 'rgba(0, 200, 255, 0.1)';
 }
 
 // ─── Marker DOM structure ─────────────────────────────────────────────────────
@@ -146,28 +146,29 @@ export default function ProximityHUD() {
         let sy = (-_ndc.y * 0.5 + 0.5) * H;
 
         const onScreen =
-          !isBehind &&
-          sx > EDGE_PAD && sx < W - EDGE_PAD &&
-          sy > EDGE_PAD && sy < H - EDGE_PAD;
+          !isBehind && sx > EDGE_PAD && sx < W - EDGE_PAD && sy > EDGE_PAD && sy < H - EDGE_PAD;
 
         if (onScreen) {
           const SIZE = 18;
           styleOnScreen(marker, SIZE, color);
           marker.root.style.left = `${sx - SIZE * 0.5}px`;
-          marker.root.style.top  = `${sy - SIZE * 0.5}px`;
+          marker.root.style.top = `${sy - SIZE * 0.5}px`;
         } else {
-          if (isBehind) { sx = W - sx; sy = H - sy; }
+          if (isBehind) {
+            sx = W - sx;
+            sy = H - sy;
+          }
           const dx = sx - cx;
           const dy = sy - cy;
           const scale = Math.min(
             (cx - EDGE_PAD) / (Math.abs(dx) || 1),
-            (cy - EDGE_PAD) / (Math.abs(dy) || 1),
+            (cy - EDGE_PAD) / (Math.abs(dy) || 1)
           );
           const ex = scale < 1 ? cx + dx * scale : sx;
           const ey = scale < 1 ? cy + dy * scale : sy;
           styleOffScreen(marker, color);
           marker.root.style.left = `${ex - 7}px`;
-          marker.root.style.top  = `${ey - 7}px`;
+          marker.root.style.top = `${ey - 7}px`;
         }
       }
 

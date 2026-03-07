@@ -28,7 +28,7 @@ export const FUEL_STATION_DEF: WorldObjectDef = {
 export const NEPTUNE_DEF: WorldObjectDef = {
   id: 'neptune',
   label: 'Neptune',
-  position: [0, -7000, 0],
+  position: [0, 0, 0],
   minimapColor: '#00aaff',
   minimapRadius: 0.5,
 };
@@ -44,7 +44,7 @@ export const RED_PLANET_DEF: WorldObjectDef = {
 export const EARTH_DEF: WorldObjectDef = {
   id: 'earth',
   label: 'Earth',
-  position: [800, -500, -1000],
+  position: [800, 0, -1000],
   minimapColor: '#2277ff',
   minimapRadius: 0.5,
 };
@@ -56,6 +56,65 @@ export const GREEN_PLANET_DEF: WorldObjectDef = {
   minimapColor: '#00ff00',
   minimapRadius: 0.5,
 };
+
+export const MERCURY_DEF: WorldObjectDef = {
+  id: 'mercury',
+  label: 'Mercury',
+  position: [300, 0, -400],
+  minimapColor: '#a0978f',
+  minimapRadius: 0.5,
+};
+
+export const VENUS_DEF: WorldObjectDef = {
+  id: 'venus',
+  label: 'Venus',
+  position: [600, 0, -700],
+  minimapColor: '#e8cda0',
+  minimapRadius: 0.5,
+};
+
+export const MARS_DEF: WorldObjectDef = {
+  id: 'mars',
+  label: 'Mars',
+  position: [3500, 0, -12000],
+  minimapColor: '#c1440e',
+  minimapRadius: 0.5,
+};
+
+export const JUPITER_DEF: WorldObjectDef = {
+  id: 'jupiter',
+  label: 'Jupiter',
+  position: [8000, 0, -5000],
+  minimapColor: '#c88b3a',
+  minimapRadius: 0.5,
+};
+
+export const SATURN_DEF: WorldObjectDef = {
+  id: 'saturn',
+  label: 'Saturn',
+  position: [-6000, 0, 4000],
+  minimapColor: '#e4d191',
+  minimapRadius: 0.5,
+};
+
+export const URANUS_DEF: WorldObjectDef = {
+  id: 'uranus',
+  label: 'Uranus',
+  position: [-4000, 0, -3000],
+  minimapColor: '#b2e0e8',
+  minimapRadius: 0.5,
+};
+
+export const SOLAR_SYSTEM_PLANETS: WorldObjectDef[] = [
+  MERCURY_DEF,
+  VENUS_DEF,
+  EARTH_DEF,
+  MARS_DEF,
+  JUPITER_DEF,
+  SATURN_DEF,
+  URANUS_DEF,
+  NEPTUNE_DEF,
+];
 
 export const RADIO_BEACON_DEFS: WorldObjectDef[] = [
   { id: 'beacon-0', label: 'Radio Beacon 1', position: [80, 0, -1760], minimapColor: '#00ff88' },

@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
 import type React from 'react';
+import {
+  Zap,
+  Shield,
+  Droplets,
+  Wind,
+  Gauge,
+  Activity,
+  Crosshair,
+  ArrowLeftRight,
+} from 'lucide-react';
 import { power, hullIntegrity, fuel, o2, shipVelocity, shipAcceleration } from './Spaceship';
 import { selectedTargetName, selectedTargetVelocity } from '../context/TargetSelection';
 import { cargo, type CargoItem, reduceCargoItem } from '../context/Inventory';
@@ -132,15 +142,38 @@ export default function PowerHUD() {
           userSelect: 'none',
           display: 'flex',
           flexDirection: 'column',
+          backdropFilter: 'blur(2px)',
           gap: 4,
+          zIndex: 100,
+          padding: 10,
+          background: 'rgba(0,200,255,0.1)',
+          border: '1px solid rgba(0,200,255,0.2)',
         }}
       >
-        <div style={{ color: powerColor }}>PWR: {displayPower}</div>
-        <div style={{ color: hullColor }}>HUL: {displayHull}</div>
-        <div style={{ color: fuelColor }}>FUL: {displayFuel}</div>
-        <div style={{ color: o2Color }}>O2: {displayO2}</div>
-        <div style={{ color: gForceColor }}>GF: {displayGForce.toFixed(1)}g</div>
-        <div style={{ color: 'rgba(0,200,255,1)' }}>VEL: {displayVelocity.toFixed(1)} m/s</div>
+        <div style={{ color: powerColor, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Zap size={13} strokeWidth={1.5} />
+          {displayPower}
+        </div>
+        <div style={{ color: hullColor, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Shield size={13} strokeWidth={1.5} />
+          {displayHull}
+        </div>
+        <div style={{ color: fuelColor, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Droplets size={13} strokeWidth={1.5} />
+          {displayFuel}
+        </div>
+        <div style={{ color: o2Color, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Wind size={13} strokeWidth={1.5} />
+          {displayO2}
+        </div>
+        <div style={{ color: gForceColor, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Gauge size={13} strokeWidth={1.5} />
+          {displayGForce.toFixed(1)}g
+        </div>
+        <div style={{ color: 'rgba(0,200,255,1)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Activity size={13} strokeWidth={1.5} />
+          {displayVelocity.toFixed(1)} m/s
+        </div>
         {displayCargo.length > 0 && (
           <>
             <div style={{ color: 'rgba(0, 200, 255, 0.4)', marginTop: 8, fontSize: 14 }}>
@@ -170,9 +203,21 @@ export default function PowerHUD() {
         )}
         {targetName && (
           <>
-            <div style={{ color: '#00cfff', marginTop: 8 }}>TGT: {targetName}</div>
-            <div style={{ color: '#00cfff' }}>
-              REL: {relSpeed.toFixed(1)} m/s
+            <div
+              style={{
+                color: '#00cfff',
+                marginTop: 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Crosshair size={13} strokeWidth={1.5} />
+              {targetName}
+            </div>
+            <div style={{ color: '#00cfff', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ArrowLeftRight size={13} strokeWidth={1.5} />
+              {relSpeed.toFixed(1)} m/s
               {targetName === 'Docking Bay' && relSpeed < 4 && <span> [docking velocity]</span>}
             </div>
           </>

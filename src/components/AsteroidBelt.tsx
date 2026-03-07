@@ -1,17 +1,16 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { NEPTUNE_DEF, RED_PLANET_DEF } from '../config/worldConfig';
 import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
 
 const COUNT_PER_TYPE = 520; // 360 total across 3 geometry types
-const GROUP_Y = 6000; // matches the <group position={[0, 5000, 0]}> offset below
-const COLLIDER_Y_MIN = -300;
-const COLLIDER_Y_MAX = 300;
+const GROUP_Y = 0; // matches the <group position={[0, 5000, 0]}> offset below
+const COLLIDER_Y_MIN = -100;
+const COLLIDER_Y_MAX = 100;
 
 // Module-level constants derived from world config
-const NEP_POS = new THREE.Vector3(...NEPTUNE_DEF.position);
-const RED_POS = new THREE.Vector3(...RED_PLANET_DEF.position);
+const NEP_POS = new THREE.Vector3(6084, 0, -6084);
+const RED_POS = new THREE.Vector3(6084, 0, -3084);
 
 // Perpendicular basis vectors for the belt plane (computed once)
 const _beltDir = new THREE.Vector3().subVectors(RED_POS, NEP_POS).normalize();

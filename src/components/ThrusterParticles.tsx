@@ -12,8 +12,8 @@ import {
 } from '../context/ShipState';
 
 const EMIT_RATE = 900; // particles per second per emitter
-const BASE_LIFETIME = 0.15; // seconds — short, intense burn (jittered ±30%)
-const BASE_SPEED = 102; // world units/second (jittered ±30%)
+const BASE_LIFETIME = 0.025; // seconds — short, intense burn (jittered ±30%)
+const BASE_SPEED = 200; // world units/second (jittered ±30%)
 
 // ── Main engine emitters (two front nozzles — reverse thrust) ────────────
 // Spaced apart on the X axis; tune offsets to match model nozzle positions.
@@ -255,7 +255,7 @@ export default function ThrusterParticles({
   return (
     <>
       {/* Main engines — two larger nozzles */}
-      <points frustumCulled={false} position={[0, -2, 0]}>
+      <points frustumCulled={false} position={[0, -2, -3]}>
         <bufferGeometry ref={mainGeoRef}>
           <bufferAttribute attach="attributes-position" args={[mainPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[mainCol, 3]} />

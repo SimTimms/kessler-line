@@ -33,11 +33,7 @@ export function OrbitCamera({ followTarget }: OrbitCameraProps) {
 
       spherical.current.theta -= dx * 0.005;
       spherical.current.phi -= dy * 0.005;
-      spherical.current.phi = THREE.MathUtils.clamp(
-        spherical.current.phi,
-        0.05,
-        Math.PI - 0.05
-      );
+      spherical.current.phi = THREE.MathUtils.clamp(spherical.current.phi, 0.05, Math.PI - 0.05);
     };
 
     const onPointerUp = () => {
@@ -46,11 +42,7 @@ export function OrbitCamera({ followTarget }: OrbitCameraProps) {
 
     const onWheel = (e: WheelEvent) => {
       spherical.current.radius *= 1 + e.deltaY * 0.001;
-      spherical.current.radius = THREE.MathUtils.clamp(
-        spherical.current.radius,
-        2,
-        500
-      );
+      spherical.current.radius = THREE.MathUtils.clamp(spherical.current.radius, 2, 10500);
     };
 
     canvas.addEventListener('pointerdown', onPointerDown);

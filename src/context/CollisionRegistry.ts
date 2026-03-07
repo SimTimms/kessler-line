@@ -27,6 +27,9 @@ export interface CollidableEntry {
 
   /** Shape definition */
   shape: ColliderShape;
+
+  /** Returns the actual rendered Three.js object for wireframe overlay, if available. */
+  getObject3D?: () => THREE.Object3D | null;
 }
 
 const registry = new Map<string, CollidableEntry>();

@@ -1,11 +1,10 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { sceneCamera } from '../context/CameraRef';
-import { driveSignatureOnRef } from '../context/DriveSignatureScan';
+import { driveSignatureOnRef, driveSignatureRangeRef } from '../context/DriveSignatureScan';
 import { getDriveSignatures } from '../context/DriveSignatureRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 
-const SCAN_RADIUS = 10000;
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
 
 // ─── Marker DOM structure ────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ export default function DriveSignatureHUD() {
 
         entry.getPosition(_pos);
         const dist = minimapShipPosition.distanceTo(_pos);
-        if (dist > SCAN_RADIUS) {
+        if (dist > driveSignatureRangeRef.current) {
           marker.root.style.display = 'none';
           continue;
         }
