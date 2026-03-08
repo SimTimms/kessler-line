@@ -1,0 +1,44 @@
+.radio-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: fixed;
+  top: 56px;
+  right: 0;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 6px 14px;
+}
+
+.radio-label {
+  color: rgba(0, 200, 255, 0.8);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+
+.radio-no-signal {
+  color: rgba(0, 200, 255, 0.4);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-family: monospace;
+}
+
+.radio-signal-btn {
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(0, 200, 255, 0.8);
+  border: 1px solid rgba(0, 200, 255, 0.5);
+  font-family: monospace;
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 0.06em;
+  text-align: left;
+  border-radius: 3px;
+}
+
+.radio-signal-btn:hover {
+  border-color: rgba(0, 200, 255, 0.9);
+  background: rgba(0, 200, 255, 0.08);
+}

@@ -1,19 +1,28 @@
 import { useRef, useEffect } from 'react';
+import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { solarPlanetPositions } from '../context/SolarSystemMinimap';
+import { gravityBodies } from '../context/GravityRegistry';
+
+const _planetWorldPos = new THREE.Vector3();
 
 interface OrbitingPlanetProps {
   planetName: string;
   orbitRadius: number;
-  radius: number;       // world-space sphere radius
+  radius: number; // world-space sphere radius (in SolarSystem local space)
   color: string;
+  textureUrl?: string;
   emissive?: string;
   orbitalSpeed: number; // rad/s
-  spinSpeed: number;    // rad/s (negative = retrograde)
-  axialTilt: number;    // radians
+  spinSpeed: number; // rad/s (negative = retrograde)
+  axialTilt: number; // radians
   initialAngle: number; // radians
   rings?: boolean;
+  gravityMu?: number; // GM in world-space units (optional)
+  gravitySoiRadius?: number; // sphere of influence radius in world-space units (optional)
+  gravitySurfaceRadius?: number; // physical surface radius in world-space units (optional)
+  gravityOrbitAltitude?: number; // ideal orbit altitude above surface (optional)
 }
 
 export default function OrbitingPlanet({
@@ -21,19 +30,59 @@ export default function OrbitingPlanet({
   orbitRadius,
   radius,
   color,
+  textureUrl,
   emissive = '#000000',
   orbitalSpeed,
   spinSpeed,
   axialTilt,
   initialAngle,
   rings = false,
+  gravityMu,
+  gravitySoiRadius,
+  gravitySurfaceRadius,
+  gravityOrbitAltitude,
 }: OrbitingPlanetProps) {
   const orbitRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
+  const planetCenterRef = useRef<THREE.Group>(null);
+  const prevWorldPosRef = useRef(new THREE.Vector3());
+  const hasPrevWorldPosRef = useRef(false);
+  const texture = useTexture(
+    textureUrl ??
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO9L5bQAAAAASUVORK5CYII='
+  );
 
   useEffect(() => {
     if (orbitRef.current) orbitRef.current.rotation.y = initialAngle;
-  }, [initialAngle]);
+    hasPrevWorldPosRef.current = false;
+
+    if (
+      gravityMu !== undefined &&
+      gravitySoiRadius !== undefined &&
+      gravitySurfaceRadius !== undefined &&
+      gravityOrbitAltitude !== undefined
+    ) {
+      gravityBodies.set(planetName, {
+        position: new THREE.Vector3(),
+        velocity: new THREE.Vector3(),
+        mu: gravityMu,
+        soiRadius: gravitySoiRadius,
+        surfaceRadius: gravitySurfaceRadius,
+        orbitAltitude: gravityOrbitAltitude,
+      });
+    }
+
+    return () => {
+      gravityBodies.delete(planetName);
+    };
+  }, [
+    initialAngle,
+    planetName,
+    gravityMu,
+    gravitySoiRadius,
+    gravitySurfaceRadius,
+    gravityOrbitAltitude,
+  ]);
 
   useFrame((_, delta) => {
     if (orbitRef.current) {
@@ -45,11 +94,27 @@ export default function OrbitingPlanet({
       };
     }
     if (spinRef.current) spinRef.current.rotation.y += spinSpeed * delta;
+
+    // Update gravity body world position each frame
+    if (planetCenterRef.current && gravityBodies.has(planetName)) {
+      planetCenterRef.current.getWorldPosition(_planetWorldPos);
+      const body = gravityBodies.get(planetName)!;
+      if (hasPrevWorldPosRef.current && delta > 0) {
+        body.velocity
+          .subVectors(_planetWorldPos, prevWorldPosRef.current)
+          .multiplyScalar(1 / delta);
+      } else {
+        body.velocity.set(0, 0, 0);
+      }
+      prevWorldPosRef.current.copy(_planetWorldPos);
+      hasPrevWorldPosRef.current = true;
+      body.position.copy(_planetWorldPos);
+    }
   });
 
   return (
     <group ref={orbitRef}>
-      <group position={[orbitRadius, 0, 0]}>
+      <group ref={planetCenterRef} position={[orbitRadius, 0, 0]}>
         {/* Axial tilt applied once; spin group rotates around the tilted axis */}
         <group rotation-x={axialTilt}>
           <group ref={spinRef}>
@@ -59,6 +124,7 @@ export default function OrbitingPlanet({
                 color={color}
                 emissive={emissive}
                 roughness={0.8}
+                map={textureUrl ? texture : null}
                 fog={false}
               />
             </mesh>

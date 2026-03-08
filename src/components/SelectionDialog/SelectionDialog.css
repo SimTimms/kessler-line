@@ -1,0 +1,92 @@
+.sd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 4, 12, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.sd-dialog {
+  background: rgba(0, 8, 18, 0.97);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  border-radius: 6px;
+  padding: 28px 32px;
+  min-width: 320px;
+  max-width: 480px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 40px rgba(0, 200, 255, 0.12);
+  font-family: monospace;
+}
+
+.sd-title {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 200, 255, 0.6);
+  text-align: center;
+}
+
+.sd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.sd-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 16px;
+  background: rgba(0, 200, 255, 0.05);
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  border-radius: 4px;
+  color: #00cfff;
+  font-family: monospace;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.sd-item:hover {
+  background: rgba(0, 200, 255, 0.12);
+  border-color: rgba(0, 200, 255, 0.6);
+}
+
+.sd-item--active {
+  background: rgba(0, 200, 255, 0.18);
+  border-color: rgba(0, 200, 255, 0.9);
+  box-shadow: 0 0 10px rgba(0, 200, 255, 0.2);
+}
+
+.sd-item-sublabel {
+  font-size: 10px;
+  color: rgba(0, 200, 255, 0.45);
+  letter-spacing: 0.08em;
+}
+
+.sd-close {
+  align-self: center;
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(0, 200, 255, 0.4);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.sd-close:hover {
+  color: rgba(0, 200, 255, 0.7);
+  border-color: rgba(0, 200, 255, 0.4);
+}

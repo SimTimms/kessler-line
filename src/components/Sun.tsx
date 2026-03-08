@@ -129,7 +129,7 @@ export default function Sun({ radius }: SunProps) {
       </sprite>
       */}
 
-      <pointLight color="#fff8e0" intensity={200000} distance={20000} decay={1.5} />
+      <pointLight color="#fff8e0" intensity={20000000} distance={200000} decay={1.5} />
     </group>
   );
 }

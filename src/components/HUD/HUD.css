@@ -1,0 +1,10 @@
+.button-panel {
+  position: fixed;
+  left: 16px;
+  bottom: 110px;
+  font-family: monospace;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}

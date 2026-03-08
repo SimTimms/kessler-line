@@ -7,7 +7,7 @@ import OrbitingPlanet from './OrbitingPlanet';
 //   display_radius = SUN_RADIUS × (planet_km / 696340)^0.4
 
 const SUN_RADIUS = 100;
-const ORBIT_SPEED = 500;
+const ORBIT_SPEED = 510;
 const r = (realKm: number) => Math.pow(realKm / 696_340, 0.2) * SUN_RADIUS;
 
 // ─── Orbital radius helper ─────────────────────────────────────────────────────
@@ -28,8 +28,6 @@ const ov = (years: number) => (2 * Math.PI) / (years * 30);
 const sv = (earthDays: number) => 0.04 / earthDays;
 
 // ─── Planet configs ────────────────────────────────────────────────────────────
-// Entries with `dedicated: true` are rendered by their own components
-// (OrbitingEarth, OrbitingNeptune) and are skipped by the OrbitingPlanet map.
 // Orbital order is preserved so consumers can index by position (e.g. PLANETS[7]
 // is Neptune, PLANETS[2] is Earth).
 
@@ -59,7 +57,7 @@ export const PLANETS = [
     emissive: '#1a1000',
   },
   {
-    // 2 — Earth  (dedicated rendering via OrbitingEarth)
+    // 2 — Earth
     name: 'Earth',
     radius: r(6_371), // ≈  92
     orbitRadius: orbit(1.0 * SUN_RADIUS), // ≈ 1409
@@ -138,6 +136,23 @@ export const PLANETS = [
 // world-space planet positions must multiply solarPlanetPositions by this value.
 export const SOLAR_SYSTEM_SCALE = 4;
 
+// ─── Gravity parameters ───────────────────────────────────────────────────────
+// Surface gravity (world-space units/s²) and sphere-of-influence multiplier.
+// mu = SURFACE_GRAVITY × worldRadius²   (gives correct surface acceleration)
+// soiRadius = worldRadius × SOI_MULTIPLIER
+const SURFACE_GRAVITY = 5.0;
+const SOI_MULTIPLIER = 8.0;
+const ORBIT_ALTITUDE_MULTIPLIER = 1.5;
+const gravParams = (localRadius: number) => {
+  const worldRadius = localRadius * SOLAR_SYSTEM_SCALE;
+  return {
+    gravityMu: SURFACE_GRAVITY * worldRadius * worldRadius,
+    gravitySoiRadius: worldRadius * SOI_MULTIPLIER,
+    gravitySurfaceRadius: worldRadius,
+    gravityOrbitAltitude: worldRadius * ORBIT_ALTITUDE_MULTIPLIER,
+  };
+};
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface SolarSystemProps {
@@ -150,23 +165,23 @@ export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSy
     <group position={position} scale={scale}>
       <Sun radius={SUN_RADIUS} />
 
-      {PLANETS.map((p) =>
-        'dedicated' in p ? null : (
-          <OrbitingPlanet
-            key={p.name}
-            planetName={p.name}
-            orbitRadius={p.orbitRadius}
-            radius={p.radius}
-            color={p.color}
-            emissive={p.emissive}
-            orbitalSpeed={p.orbitalSpeed}
-            spinSpeed={p.spinSpeed}
-            axialTilt={p.axialTilt}
-            initialAngle={p.initialAngle}
-            rings={'rings' in p ? p.rings : false}
-          />
-        )
-      )}
+      {PLANETS.map((p) => (
+        <OrbitingPlanet
+          key={p.name}
+          planetName={p.name}
+          orbitRadius={p.orbitRadius}
+          radius={p.radius}
+          color={p.name === 'Earth' ? '#ffffff' : p.color}
+          textureUrl={p.name === 'Earth' ? '/earth.jpg' : undefined}
+          emissive={p.name === 'Earth' ? '#000000' : p.emissive}
+          orbitalSpeed={p.orbitalSpeed}
+          spinSpeed={p.spinSpeed}
+          axialTilt={p.axialTilt}
+          initialAngle={p.initialAngle}
+          rings={'rings' in p ? p.rings : false}
+          {...gravParams(p.radius)}
+        />
+      ))}
     </group>
   );
 }

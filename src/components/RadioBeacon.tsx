@@ -33,7 +33,9 @@ export default function RadioBeacon({ beaconGroupRef, index = 0, audioFile }: Ra
 
   return (
     <group
-      ref={(el) => { if (beaconGroupRef) beaconGroupRef.current = el; }}
+      ref={(el) => {
+        if (beaconGroupRef) beaconGroupRef.current = el;
+      }}
       onClick={(e) => {
         e.stopPropagation();
         selectTarget(`Radio Beacon ${index + 1}`);
@@ -44,7 +46,7 @@ export default function RadioBeacon({ beaconGroupRef, index = 0, audioFile }: Ra
     >
       {/* Outer glow shell — large, very transparent */}
       <mesh ref={outerGlowRef}>
-        <sphereGeometry args={[22, 32, 32]} />
+        <sphereGeometry args={[12, 32, 32]} />
         <meshBasicMaterial
           color="#00ff88"
           transparent

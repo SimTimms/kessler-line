@@ -6,34 +6,25 @@ import PowerSource from './PowerSource';
 import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
 import { selectTarget } from '../context/TargetSelection';
 import DockingBay from './DockingBay';
-import RadioBeacon from './RadioBeacon';
-
 const COLLISION_ID = 'fuel-station';
 
-interface FuelStationProps {
-  url: string;
+interface LandingPadProps {
   scale?: number;
   /** World-space bounding radius for collision detection. Tune to match visual size. */
-  collisionRadius?: number;
-  stationGroupRef?: { current: THREE.Group | null };
+  landingPadGroupRef?: { current: THREE.Group | null };
 }
 
-export default function FuelStation({
-  url,
-  scale = 1,
-  collisionRadius = 10405,
-  stationGroupRef,
-}: FuelStationProps) {
-  const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
+export default function LandingPad({ scale = 1, landingPadGroupRef }: LandingPadProps) {
+  const gltf = useGLTF('./landing-pad.glb') as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
 
   // Fill the external stationGroupRef (if provided) so LaserRay can raycast against it.
   const setGroupRef = useCallback(
     (el: THREE.Group | null) => {
       groupRef.current = el!;
-      if (stationGroupRef) stationGroupRef.current = el;
+      if (landingPadGroupRef) landingPadGroupRef.current = el;
     },
-    [stationGroupRef]
+    [landingPadGroupRef]
   );
 
   // Register as a collidable. The ref is guaranteed set before this effect runs
@@ -55,7 +46,7 @@ export default function FuelStation({
     return () => {
       unregisterCollidable(COLLISION_ID);
     };
-  }, [collisionRadius]);
+  }, [landingPadGroupRef]);
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
@@ -69,19 +60,18 @@ export default function FuelStation({
         rotation={[0, Math.PI, 0]}
         onClick={(e) => {
           e.stopPropagation();
-          selectTarget('Space Station');
+          selectTarget('Landing Pad');
         }}
       >
-        <PowerSource scale={0.1} />
+        <PowerSource scale={1} />
         <primitive object={gltf.scene} scale={scale} />
         <group position={[0, 0, 104]}>
           <DockingBay
-            stationId="fuel-station"
+            stationId="landing-pad"
             dimensions={new THREE.Vector3(40, 1, 10)}
             rotation={[0, 0, 0]}
           />
         </group>
-        <RadioBeacon />
       </group>
     </>
   );

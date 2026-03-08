@@ -2,89 +2,255 @@ import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from './Spaceship';
+import { gravityBodies } from '../context/GravityRegistry';
 
 const MIN_SPEED = 0.05;
+const TRAJ_STEPS = 400;
+const TRAJ_DT = 0.35; // seconds per step — stable symplectic Euler
+const ORBIT_MIN_STEPS = 25; // steps before orbit-closure check starts
+const ORBIT_CLOSE_DIST = 150; // world units to declare orbit closed
+// Trajectory must travel at least this far from start before closure is checked.
+// Prevents approach arcs that curve near the start from being mistaken for orbits.
+const ORBIT_AWAY_DIST = 500;
+const HUD_BLUE = 0x00c8ff;
+const VELOCITY_ORANGE = 0xff8800;
+
+// Module-level scratch — no GC per frame
+const _simPos = new THREE.Vector3();
+const _simVel = new THREE.Vector3();
+const _orbitPos = new THREE.Vector3();
+const _orbitVel = new THREE.Vector3();
+const _orbitDir = new THREE.Vector3();
 
 export default function VelocityIndicator({
   shipPositionRef,
 }: {
   shipPositionRef: { current: THREE.Vector3 };
 }) {
-  const { line, sprite, spriteCtx } = useMemo(() => {
-    // Dashed orange line
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(6); // 2 points × 3 components
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const { line, sprite, spriteCtx, posArr, orbitLine, orbitSprite, orbitSpriteCtx, orbitPosArr } =
+    useMemo(() => {
+      const geo = new THREE.BufferGeometry();
+      const arr = new Float32Array(TRAJ_STEPS * 3);
+      geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
 
-    const mat = new THREE.LineDashedMaterial({
-      color: 0xff8800,
-      dashSize: 0.9,
-      gapSize: 0.6,
-      opacity: 0.85,
-      transparent: true,
-      depthTest: false,
-    });
+      const mat = new THREE.LineDashedMaterial({
+        color: VELOCITY_ORANGE,
+        dashSize: 3,
+        gapSize: 2,
+        opacity: 0.15,
+        transparent: true,
+        depthTest: false,
+      });
 
-    const l = new THREE.Line(geo, mat);
-    l.frustumCulled = false;
+      const l = new THREE.Line(geo, mat);
+      l.frustumCulled = false;
 
-    // Canvas sprite for speed label
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas 2D context unavailable');
+      const orbitGeo = new THREE.BufferGeometry();
+      const orbitArr = new Float32Array(TRAJ_STEPS * 3);
+      orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitArr, 3));
 
-    const texture = new THREE.CanvasTexture(canvas);
-    const spriteMat = new THREE.SpriteMaterial({
-      map: texture,
-      depthTest: false,
-      transparent: true,
-    });
-    const s = new THREE.Sprite(spriteMat);
-    s.frustumCulled = false;
-    s.visible = false;
+      const orbitMat = new THREE.LineDashedMaterial({
+        color: 0x30ff7a,
+        dashSize: 3,
+        gapSize: 2,
+        opacity: 0.22,
+        transparent: true,
+        depthTest: false,
+      });
 
-    return { line: l, sprite: s, spriteCtx: ctx };
-  }, []);
+      const ol = new THREE.Line(orbitGeo, orbitMat);
+      ol.frustumCulled = false;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas 2D context unavailable');
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({
+        map: texture,
+        depthTest: false,
+        transparent: true,
+      });
+      const s = new THREE.Sprite(spriteMat);
+      s.frustumCulled = false;
+      s.visible = false;
+
+      const orbitCanvas = document.createElement('canvas');
+      orbitCanvas.width = 256;
+      orbitCanvas.height = 64;
+      const orbitCtx = orbitCanvas.getContext('2d');
+      if (!orbitCtx) throw new Error('Canvas 2D context unavailable');
+
+      const orbitTexture = new THREE.CanvasTexture(orbitCanvas);
+      const orbitSpriteMat = new THREE.SpriteMaterial({
+        map: orbitTexture,
+        depthTest: false,
+        transparent: true,
+      });
+      const orbitSprite = new THREE.Sprite(orbitSpriteMat);
+      orbitSprite.frustumCulled = false;
+      orbitSprite.visible = false;
+
+      return {
+        line: l,
+        sprite: s,
+        spriteCtx: ctx,
+        posArr: arr,
+        orbitLine: ol,
+        orbitSprite,
+        orbitSpriteCtx: orbitCtx,
+        orbitPosArr: orbitArr,
+      };
+    }, []);
 
   useFrame(() => {
     const speed = shipVelocity.length();
     line.visible = speed > MIN_SPEED;
     sprite.visible = speed > MIN_SPEED;
-    if (!line.visible) return;
 
-    const pos = line.geometry.attributes.position;
-    const arr = pos.array as Float32Array;
     const ship = shipPositionRef.current;
 
-    const invSpeed = 1 / speed;
-    const dx = shipVelocity.x * invSpeed;
-    const dy = shipVelocity.y * invSpeed;
-    const dz = shipVelocity.z * invSpeed;
+    let primaryBody: (typeof gravityBodies extends Map<string, infer T> ? T : never) | null = null;
+    let primaryAccel = 0;
+    for (const [, body] of gravityBodies) {
+      const dx = body.position.x - ship.x;
+      const dz = body.position.z - ship.z;
+      const dist2 = dx * dx + dz * dz;
+      const dist = Math.sqrt(dist2);
+      if (dist > body.surfaceRadius && dist < body.soiRadius) {
+        const accel = body.mu / dist2;
+        if (accel > primaryAccel) {
+          primaryAccel = accel;
+          primaryBody = body;
+        }
+      }
+    }
 
-    arr[0] = ship.x;
-    arr[1] = ship.y;
-    arr[2] = ship.z;
-    const lineLength = Math.min(speed * 4, 300);
-    arr[3] = ship.x + dx * lineLength;
-    arr[4] = ship.y + dy * lineLength;
-    arr[5] = ship.z + dz * lineLength;
+    if (primaryBody) {
+      _simPos.set(ship.x - primaryBody.position.x, 0, ship.z - primaryBody.position.z);
+      _simVel.set(
+        shipVelocity.x - primaryBody.velocity.x,
+        0,
+        shipVelocity.z - primaryBody.velocity.z
+      );
+    } else {
+      _simPos.copy(ship);
+      _simVel.copy(shipVelocity);
+    }
 
+    let orbitClosedAt = -1; // step where trajectory closed into a loop
+    let maxDistFromStart = 0; // furthest the sim has travelled from the ship
+    const startX = _simPos.x;
+    const startZ = _simPos.z;
+
+    for (let i = 0; i < TRAJ_STEPS; i++) {
+      posArr[i * 3] = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
+      posArr[i * 3 + 1] = 0;
+      posArr[i * 3 + 2] = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
+
+      // Gravitational acceleration — skip inside a body's surface to prevent
+      // chaotic oscillation when the trajectory passes through a planet.
+      let ax = 0,
+        az = 0;
+      let hitSurface = false;
+      if (primaryBody) {
+        const dx = -_simPos.x;
+        const dz = -_simPos.z;
+        const dist2 = dx * dx + dz * dz;
+        const dist = Math.sqrt(dist2);
+        if (dist < primaryBody.surfaceRadius) {
+          hitSurface = true;
+        } else {
+          const accel = primaryBody.mu / dist2;
+          ax += (dx / dist) * accel;
+          az += (dz / dist) * accel;
+        }
+      } else {
+        for (const [, body] of gravityBodies) {
+          const dx = body.position.x - _simPos.x;
+          const dz = body.position.z - _simPos.z;
+          const dist2 = dx * dx + dz * dz;
+          const dist = Math.sqrt(dist2);
+          if (dist < body.surfaceRadius) {
+            // Trajectory has hit a surface — stop here rather than oscillating
+            hitSurface = true;
+            break;
+          }
+          if (dist < body.soiRadius) {
+            const accel = body.mu / dist2;
+            ax += (dx / dist) * accel;
+            az += (dz / dist) * accel;
+          }
+        }
+      }
+
+      if (hitSurface) {
+        // Fill remaining points at this position so line ends cleanly at impact
+        const hitX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
+        const hitZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
+        for (let j = i + 1; j < TRAJ_STEPS; j++) {
+          posArr[j * 3] = hitX;
+          posArr[j * 3 + 1] = 0;
+          posArr[j * 3 + 2] = hitZ;
+        }
+        break;
+      }
+
+      // Symplectic Euler: kick then drift (energy-conserving for orbits)
+      _simVel.x += ax * TRAJ_DT;
+      _simVel.z += az * TRAJ_DT;
+      _simPos.x += _simVel.x * TRAJ_DT;
+      _simPos.z += _simVel.z * TRAJ_DT;
+
+      const cdx = _simPos.x - startX;
+      const cdz = _simPos.z - startZ;
+      const distFromStart = Math.sqrt(cdx * cdx + cdz * cdz);
+
+      if (distFromStart > maxDistFromStart) maxDistFromStart = distFromStart;
+
+      // Orbit closure: only valid after the trajectory has first moved well away
+      // from start. This prevents an approach arc that swings near the start
+      // from being misread as a closed orbit.
+      if (
+        i >= ORBIT_MIN_STEPS &&
+        maxDistFromStart > ORBIT_AWAY_DIST &&
+        distFromStart < ORBIT_CLOSE_DIST
+      ) {
+        posArr[i * 3] = ship.x;
+        posArr[i * 3 + 1] = 0;
+        posArr[i * 3 + 2] = ship.z;
+        orbitClosedAt = i;
+        break;
+      }
+    }
+
+    if (orbitClosedAt >= 0) {
+      for (let i = orbitClosedAt + 1; i < TRAJ_STEPS; i++) {
+        const src = i - (orbitClosedAt + 1);
+        posArr[i * 3] = posArr[src * 3];
+        posArr[i * 3 + 1] = posArr[src * 3 + 1];
+        posArr[i * 3 + 2] = posArr[src * 3 + 2];
+      }
+    }
+
+    const pos = line.geometry.attributes.position;
     pos.needsUpdate = true;
     line.computeLineDistances();
 
-    // Position label at 45% along the line, offset slightly above
-    const frac = 0.45;
+    const lineMat = line.material as THREE.LineDashedMaterial;
+    lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
+
+    // Speed label at the midpoint of the active trajectory
+    const activeEnd = orbitClosedAt >= 0 ? orbitClosedAt : TRAJ_STEPS - 1;
+    const mid = Math.floor(activeEnd / 2);
+    const lx = posArr[mid * 3];
+    const lz = posArr[mid * 3 + 2];
     const labelScale = Math.min(Math.max(speed * 0.25, 8), 36);
     sprite.scale.set(labelScale * 3.8, labelScale, 1);
-    sprite.position.set(
-      ship.x + dx * lineLength * frac,
-      ship.y + labelScale * 0,
-      ship.z + dz * lineLength * frac
-    );
+    sprite.position.set(lx, 0, lz);
 
-    // Redraw canvas texture
     spriteCtx.clearRect(0, 0, 256, 64);
     spriteCtx.fillStyle = '#ff8800';
     spriteCtx.font = 'bold 12px monospace';
@@ -92,12 +258,72 @@ export default function VelocityIndicator({
     spriteCtx.textBaseline = 'middle';
     spriteCtx.fillText(`${speed.toFixed(1)} m/s`, 128, 34);
     (sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
+
+    // ── Ideal orbit trajectory (green) ─────────────────────────────────────
+    const showOrbit = Boolean(primaryBody);
+    orbitLine.visible = showOrbit;
+    orbitSprite.visible = showOrbit;
+    if (!showOrbit || !primaryBody) return;
+
+    const rdx = ship.x - primaryBody.position.x;
+    const rdz = ship.z - primaryBody.position.z;
+    const rLen = Math.sqrt(rdx * rdx + rdz * rdz) || 1;
+    const idealOrbitRadius = Math.min(
+      primaryBody.surfaceRadius + primaryBody.orbitAltitude,
+      primaryBody.soiRadius * 0.9
+    );
+    if (idealOrbitRadius <= primaryBody.surfaceRadius) return;
+
+    const vx = rdx / rLen;
+    const vz = rdz / rLen;
+    const vCirc = Math.sqrt(primaryBody.mu / idealOrbitRadius);
+    const tx = -vz;
+    const tz = vx;
+    const relVelX = shipVelocity.x - primaryBody.velocity.x;
+    const relVelZ = shipVelocity.z - primaryBody.velocity.z;
+    const dot = relVelX * tx + relVelZ * tz;
+    const tangentSign = dot >= 0 ? 1 : -1;
+
+    _orbitDir.set(vx, 0, vz).multiplyScalar(idealOrbitRadius);
+    _orbitPos.copy(primaryBody.position).add(_orbitDir);
+    _orbitVel.set(tx * vCirc * tangentSign, 0, tz * vCirc * tangentSign);
+    _orbitVel.x += primaryBody.velocity.x;
+    _orbitVel.z += primaryBody.velocity.z;
+
+    const baseAngle = Math.atan2(vz, vx);
+    const step = (Math.PI * 2) / (TRAJ_STEPS - 1);
+    for (let i = 0; i < TRAJ_STEPS; i++) {
+      const theta = baseAngle + i * step;
+      orbitPosArr[i * 3] = primaryBody.position.x + Math.cos(theta) * idealOrbitRadius;
+      orbitPosArr[i * 3 + 1] = 0;
+      orbitPosArr[i * 3 + 2] = primaryBody.position.z + Math.sin(theta) * idealOrbitRadius;
+    }
+
+    const orbitPos = orbitLine.geometry.attributes.position;
+    orbitPos.needsUpdate = true;
+    orbitLine.computeLineDistances();
+
+    const orbitMid = Math.floor(TRAJ_STEPS / 2);
+    const ox = orbitPosArr[orbitMid * 3];
+    const oz = orbitPosArr[orbitMid * 3 + 2];
+    orbitSprite.scale.set(32, 10, 1);
+    orbitSprite.position.set(ox, 0, oz);
+
+    orbitSpriteCtx.clearRect(0, 0, 256, 64);
+    orbitSpriteCtx.fillStyle = '#30ff7a';
+    orbitSpriteCtx.font = 'bold 12px monospace';
+    orbitSpriteCtx.textAlign = 'center';
+    orbitSpriteCtx.textBaseline = 'middle';
+    orbitSpriteCtx.fillText('CIRCULAR ORBIT', 128, 34);
+    (orbitSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
   });
 
   return (
     <>
       <primitive object={line} />
       <primitive object={sprite} />
+      <primitive object={orbitLine} />
+      <primitive object={orbitSprite} />
     </>
   );
 }

@@ -7,6 +7,13 @@ export interface WorldObjectDef {
   minimapColor: string;
   minimapRadius?: number; // sphere radius in minimap scene units
   minimapScenePos?: [number, number, number]; // override coords for minimap scene (no scale applied)
+  contactable?: boolean;
+  orbit?: {
+    planetName: string;
+    radius: number; // world-space orbital radius
+    speed: number; // rad/s
+    phase?: number; // radians
+  };
 }
 
 export const SPACE_STATION_DEF: WorldObjectDef = {
@@ -20,9 +27,10 @@ export const SPACE_STATION_DEF: WorldObjectDef = {
 export const FUEL_STATION_DEF: WorldObjectDef = {
   id: 'fuel-station',
   label: 'Fuel Station',
-  position: [200, 0, 2060],
+  position: [6084, 0, -6584],
   minimapColor: '#00cfff',
   minimapRadius: 0.5,
+  contactable: true,
 };
 
 export const NEPTUNE_DEF: WorldObjectDef = {
@@ -127,9 +135,62 @@ export const RADIO_BEACON_DEFS: WorldObjectDef[] = [
   { id: 'beacon-7', label: 'Radio Beacon 8', position: [-580, 0, -1050], minimapColor: '#00ff88' },
   { id: 'beacon-8', label: 'Radio Beacon 9', position: [470, 0, -1900], minimapColor: '#00ff88' },
   { id: 'beacon-9', label: 'Radio Beacon 10', position: [-320, 0, -430], minimapColor: '#00ff88' },
+  {
+    id: 'beacon-venus',
+    label: 'Radio Beacon Venus',
+    position: [0, 0, 0],
+    minimapColor: '#00ff88',
+    orbit: { planetName: 'Venus', radius: 420, speed: 0.25, phase: 0.0 },
+  },
+  {
+    id: 'beacon-mercury',
+    label: 'Radio Beacon Mercury',
+    position: [0, 0, 0],
+    minimapColor: '#00ff88',
+    orbit: { planetName: 'Mercury', radius: 320, speed: 0.35, phase: 1.1 },
+  },
 ];
 
 export const BEACON_AUDIO: Record<number, string> = {
   0: '/beacon-001.mp3',
   1: '/radio.mp3',
 };
+
+export interface RadioBroadcastDef {
+  id: string;
+  label: string;
+  position: [number, number, number];
+  audioFile?: string;
+  dialogue: string[];
+  dockable?: boolean;
+  dockingBay?: string;
+}
+
+export const RADIO_BROADCAST_DEFS: RadioBroadcastDef[] = [
+  {
+    id: 'station-alpha',
+    label: 'Station Alpha',
+    position: SPACE_STATION_DEF.position,
+    dockable: true,
+    dockingBay: '03',
+    dialogue: [
+      'STATION ALPHA BROADCASTING ON ALL FREQUENCIES.',
+      'DOCKING BAY 3 CURRENTLY AVAILABLE.',
+      'FUEL RESERVES AT 87%. OXYGEN SUPPLIES NOMINAL.',
+      'WARNING: SOLAR STORM APPROACHING FROM SECTOR 7.',
+      'ALL VESSELS ADVISED TO SEEK SHELTER IMMEDIATELY.',
+    ],
+  },
+  {
+    id: 'fuel-station',
+    label: 'Fuel Station',
+    position: FUEL_STATION_DEF.position,
+    dockable: true,
+    dockingBay: '07',
+    dialogue: [
+      'FUEL STATION BROADCASTING.',
+      'DOCKING AVAILABLE. FUEL RESERVES AT CAPACITY.',
+      'OXYGEN TRANSFER SYSTEMS ONLINE.',
+    ],
+  },
+];

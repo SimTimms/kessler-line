@@ -38,6 +38,15 @@ export function damageHull(amount: number) {
 export const shipVelocity = new THREE.Vector3(); // updated each frame; read by HUD
 export const shipAcceleration = { current: 0 }; // linear acceleration magnitude (units/s²)
 export const shipQuaternion = new THREE.Quaternion(); // updated each frame; read by EjectedCargo
+export const orbitingBodyIdRef = { current: null as string | null }; // current primary gravity body id
+export const orbitStatusRef = {
+  current: {
+    bodyId: null as string | null,
+    isOrbiting: false,
+    periapsis: 0,
+    apoapsis: 0,
+  },
+};
 
 // ── Mobile thrust inputs (set by MobileControls overlay) ─────────────────────
 export const mobileThrustForward = { current: false };

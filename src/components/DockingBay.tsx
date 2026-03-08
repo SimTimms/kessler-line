@@ -1,7 +1,12 @@
 import { useRef, useCallback, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
-import { selectTarget } from '../context/TargetSelection';
+import {
+  selectTarget,
+  selectedTargetName,
+  selectedTargetVelocity,
+} from '../context/TargetSelection';
 
 interface DockingBayProps {
   stationId?: string;
@@ -23,6 +28,10 @@ export default function DockingBay({
   const COLLISION_ID = stationId ? `docking-bay-${stationId}` : `docking-bay-${Math.random()}`;
 
   const groupRef = useRef<THREE.Group>(null!);
+  const velocityRef = useRef(new THREE.Vector3());
+  const prevPosRef = useRef(new THREE.Vector3());
+  const hasPrevRef = useRef(false);
+  const _worldPos = new THREE.Vector3();
 
   // Fill the external stationGroupRef (if provided) so LaserRay can raycast against it.
   const setGroupRef = useCallback(
@@ -47,6 +56,7 @@ export default function DockingBay({
         if (groupRef.current) groupRef.current.getWorldQuaternion(target);
         return target;
       },
+      getWorldVelocity: (target) => target.copy(velocityRef.current),
       shape: {
         type: 'box',
         halfExtents: new THREE.Vector3(dimensions.x * 0.5, dimensions.y * 0.5, dimensions.z * 0.5),
@@ -58,6 +68,25 @@ export default function DockingBay({
     };
   }, [dimensions]);
 
+  useFrame((_, delta) => {
+    if (!groupRef.current || delta <= 0) return;
+    groupRef.current.getWorldPosition(_worldPos);
+    if (hasPrevRef.current) {
+      velocityRef.current
+        .copy(_worldPos)
+        .sub(prevPosRef.current)
+        .multiplyScalar(1 / delta);
+    } else {
+      velocityRef.current.set(0, 0, 0);
+      hasPrevRef.current = true;
+    }
+    prevPosRef.current.copy(_worldPos);
+
+    if (selectedTargetName === COLLISION_ID) {
+      selectedTargetVelocity.copy(velocityRef.current);
+    }
+  });
+
   return (
     <>
       <group
@@ -65,7 +94,7 @@ export default function DockingBay({
         rotation={rotation}
         onClick={(e) => {
           e.stopPropagation();
-          selectTarget(COLLISION_ID);
+          selectTarget(COLLISION_ID, velocityRef.current);
         }}
         scale={scale}
         position={position}

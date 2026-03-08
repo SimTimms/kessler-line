@@ -38,6 +38,49 @@ function Dot({ def, onHover }: { def: WorldObjectDef; onHover: (info: HoverInfo 
   );
 }
 
+function BeaconDot({
+  def,
+  onHover,
+}: {
+  def: WorldObjectDef;
+  onHover: (info: HoverInfo | null) => void;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const [x, , z] = def.minimapScenePos ?? [
+    def.position[0] * MINIMAP_SCALE,
+    0,
+    def.position[2] * MINIMAP_SCALE,
+  ];
+
+  useFrame(({ clock }) => {
+    if (!meshRef.current || !def.orbit) return;
+    const planetPos = solarPlanetPositions[def.orbit.planetName];
+    if (!planetPos) return;
+    const angle = (def.orbit.phase ?? 0) + clock.getElapsedTime() * def.orbit.speed;
+    const orbitX = Math.cos(angle) * def.orbit.radius;
+    const orbitZ = Math.sin(angle) * def.orbit.radius;
+    meshRef.current.position.set(
+      planetPos.x * MINIMAP_SCALE + orbitX * MINIMAP_SCALE,
+      0,
+      planetPos.z * MINIMAP_SCALE + orbitZ * MINIMAP_SCALE
+    );
+  });
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={[x, 0, z]}
+      onPointerEnter={(e) =>
+        onHover({ label: def.label, x: e.nativeEvent.clientX, y: e.nativeEvent.clientY })
+      }
+      onPointerLeave={() => onHover(null)}
+    >
+      <sphereGeometry args={[def.minimapRadius ?? 0.1, 8, 8]} />
+      <meshBasicMaterial color={def.minimapColor} />
+    </mesh>
+  );
+}
+
 function Planet({
   def,
   onHover,
@@ -69,12 +112,12 @@ function Planet({
 
 const SOLAR_PLANET_MINIMAP = [
   { name: 'Mercury', color: '#b5a7a7', dotRadius: 0.11, label: 'Mercury' },
-  { name: 'Venus',   color: '#e8cda0', dotRadius: 0.15, label: 'Venus'   },
-  { name: 'Earth',   color: '#2277ff', dotRadius: 0.15, label: 'Earth'   },
-  { name: 'Mars',    color: '#c1440e', dotRadius: 0.12, label: 'Mars'    },
-  { name: 'Jupiter', color: '#c88b3a', dotRadius: 0.40, label: 'Jupiter' },
-  { name: 'Saturn',  color: '#e4d191', dotRadius: 0.38, label: 'Saturn'  },
-  { name: 'Uranus',  color: '#7de8e8', dotRadius: 0.27, label: 'Uranus'  },
+  { name: 'Venus', color: '#e8cda0', dotRadius: 0.15, label: 'Venus' },
+  { name: 'Earth', color: '#2277ff', dotRadius: 0.15, label: 'Earth' },
+  { name: 'Mars', color: '#c1440e', dotRadius: 0.12, label: 'Mars' },
+  { name: 'Jupiter', color: '#c88b3a', dotRadius: 0.4, label: 'Jupiter' },
+  { name: 'Saturn', color: '#e4d191', dotRadius: 0.38, label: 'Saturn' },
+  { name: 'Uranus', color: '#7de8e8', dotRadius: 0.27, label: 'Uranus' },
   { name: 'Neptune', color: '#aabbff', dotRadius: 0.26, label: 'Neptune' },
 ] as const;
 
@@ -93,11 +136,7 @@ function SolarPlanetDot({
     if (!meshRef.current) return;
     const pos = solarPlanetPositions[entry.name];
     if (pos) {
-      meshRef.current.position.set(
-        pos.x * MINIMAP_SCALE,
-        -1000,
-        pos.z * MINIMAP_SCALE,
-      );
+      meshRef.current.position.set(pos.x * MINIMAP_SCALE, -1000, pos.z * MINIMAP_SCALE);
     }
   });
 
@@ -151,7 +190,7 @@ export default function MiniMapScene({ onHover }: MiniMapSceneProps) {
       ))}
 
       {RADIO_BEACON_DEFS.map((def) => (
-        <Dot key={def.id} def={def} onHover={onHover} />
+        <BeaconDot key={def.id} def={def} onHover={onHover} />
       ))}
       <mesh
         ref={shipDotRef}

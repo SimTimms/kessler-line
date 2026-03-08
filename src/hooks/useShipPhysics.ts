@@ -21,6 +21,8 @@ import {
   shipVelocity,
   shipAcceleration,
   shipQuaternion,
+  orbitingBodyIdRef,
+  orbitStatusRef,
   isRefueling,
   isTransferringO2,
   thrustMultiplier,
@@ -33,8 +35,10 @@ import {
   mobileThrustStrafeRight,
 } from '../context/ShipState';
 import { getCollidables } from '../context/CollisionRegistry';
+import { gravityBodies, type GravityBody } from '../context/GravityRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 import { driveSignatureOnRef } from '../context/DriveSignatureScan';
+import { setEngineHiss } from '../context/SoundManager';
 
 // Module-level scratch vectors — reused every frame to avoid GC pressure
 const _portWorldPos = new THREE.Vector3();
@@ -50,6 +54,12 @@ const _closestPoint = new THREE.Vector3();
 const _localUp = new THREE.Vector3();
 const _capsuleA = new THREE.Vector3();
 const _capsuleB = new THREE.Vector3();
+const _gravDir = new THREE.Vector3();
+const _primaryDeltaV = new THREE.Vector3();
+const _relPos = new THREE.Vector3();
+const _relVel = new THREE.Vector3();
+const _hVec = new THREE.Vector3();
+const _dockVel = new THREE.Vector3();
 
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
@@ -76,6 +86,8 @@ export function useShipPhysics({
   const velocity = useRef(new THREE.Vector3());
   const angularVelocity = useRef(0); // yaw rate in rad/s — no drag, persists like linear velocity
   const dockedTo = useRef<string | null>(null); // collision ID of the docked bay, or null
+  const primaryGravityId = useRef<string | null>(null);
+  const primaryGravityVelocity = useRef(new THREE.Vector3());
 
   const releaseParticleTrigger = useRef(false);
   const thrusterLightRef = useRef<THREE.PointLight>(null!);
@@ -124,10 +136,14 @@ export function useShipPhysics({
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-    if (shipDestroyed.current) return;
+    if (shipDestroyed.current) {
+      setEngineHiss(false);
+      return;
+    }
 
     // ── DOCKED: follow the bay's world position and rotation, skip physics ────
     if (dockedTo.current) {
+      setEngineHiss(false);
       const dockerEntry = getCollidables().find((c) => c.id === dockedTo.current);
       if (dockerEntry) {
         dockerEntry.getWorldPosition(_collidablePos);
@@ -151,24 +167,116 @@ export function useShipPhysics({
     }
 
     // ── Yaw ──────────────────────────────────────────────────────────────────
-    const yawLeft   = thrustLeft.current        || mobileThrustLeft.current;
-    const yawRight  = thrustRight.current       || mobileThrustRight.current;
-    const fwd       = thrustForward.current     || mobileThrustForward.current;
-    const rev       = thrustReverse.current     || mobileThrustReverse.current;
-    const strL      = thrustStrafeLeft.current  || mobileThrustStrafeLeft.current;
-    const strR      = thrustStrafeRight.current || mobileThrustStrafeRight.current;
+    const yawLeft = thrustLeft.current || mobileThrustLeft.current;
+    const yawRight = thrustRight.current || mobileThrustRight.current;
+    const fwd = thrustForward.current || mobileThrustForward.current;
+    const rev = thrustReverse.current || mobileThrustReverse.current;
+    const strL = thrustStrafeLeft.current || mobileThrustStrafeLeft.current;
+    const strR = thrustStrafeRight.current || mobileThrustStrafeRight.current;
 
-    if (yawLeft)  angularVelocity.current -= YAW_THRUST * delta;
+    if (yawLeft) angularVelocity.current -= YAW_THRUST * delta;
     if (yawRight) angularVelocity.current += YAW_THRUST * delta;
     groupRef.current.rotation.y += angularVelocity.current * delta;
 
     _localForward.set(0, 0, -1).applyQuaternion(groupRef.current.quaternion);
-    if (fwd) velocity.current.addScaledVector(_localForward,  THRUST * thrustMultiplier.current * delta);
-    if (rev) velocity.current.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * delta);
+    if (fwd)
+      velocity.current.addScaledVector(_localForward, THRUST * thrustMultiplier.current * delta);
+    if (rev)
+      velocity.current.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * delta);
 
     _localRight.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
     if (strL) velocity.current.addScaledVector(_localRight, -THRUST * delta);
-    if (strR) velocity.current.addScaledVector(_localRight,  THRUST * delta);
+    if (strR) velocity.current.addScaledVector(_localRight, THRUST * delta);
+
+    const mainThrust = fwd || rev;
+    const rcsThrust = strL || strR || yawLeft || yawRight;
+    const anyThrusting = mainThrust || rcsThrust;
+    const cutoff = rcsThrust && !mainThrust ? 900 : 420;
+    const volume = Math.min(0.14, 0.04 + 0.05 * Math.sqrt(thrustMultiplier.current));
+    setEngineHiss(anyThrusting, volume, cutoff);
+
+    // ── Gravity ───────────────────────────────────────────────────────────────
+    // Apply gravitational acceleration from all planets whose SOI we're inside.
+    // Uses current position (before delta integration) for accurate force direction.
+    groupRef.current.getWorldPosition(_shipWorldPos);
+    let primaryBodyId: string | null = null;
+    let primaryBody: GravityBody | null = null;
+    let primaryAccel = 0;
+    for (const [id, body] of gravityBodies) {
+      const dist = _shipWorldPos.distanceTo(body.position);
+      if (dist > body.surfaceRadius && dist < body.soiRadius) {
+        const accel = body.mu / (dist * dist);
+        if (accel > primaryAccel) {
+          primaryAccel = accel;
+          primaryBody = body;
+          primaryBodyId = id;
+        }
+      }
+    }
+
+    orbitingBodyIdRef.current = primaryBodyId;
+    if (primaryBody && primaryBodyId) {
+      _gravDir.subVectors(primaryBody.position, _shipWorldPos).normalize();
+      velocity.current.addScaledVector(_gravDir, primaryAccel * delta);
+    }
+
+    if (primaryBody && primaryBodyId) {
+      _relPos.subVectors(_shipWorldPos, primaryBody.position);
+      _relVel.subVectors(velocity.current, primaryBody.velocity);
+      const r = _relPos.length();
+      const v2 = _relVel.lengthSq();
+      const mu = primaryBody.mu;
+      const energy = 0.5 * v2 - mu / Math.max(1e-6, r);
+
+      let isOrbiting = false;
+      let periapsis = 0;
+      let apoapsis = 0;
+      if (energy < 0) {
+        const a = -mu / (2 * energy);
+        _hVec.copy(_relPos).cross(_relVel);
+        const h2 = _hVec.lengthSq();
+        const e = Math.sqrt(Math.max(0, 1 + (2 * energy * h2) / (mu * mu)));
+        if (e < 1) {
+          periapsis = h2 / (mu * (1 + e));
+          apoapsis = a * (1 + e);
+          if (periapsis > primaryBody.surfaceRadius) isOrbiting = true;
+        }
+      }
+
+      orbitStatusRef.current.bodyId = primaryBodyId;
+      orbitStatusRef.current.isOrbiting = isOrbiting;
+      if (isOrbiting && !anyThrusting && orbitStatusRef.current.bodyId === primaryBodyId) {
+        orbitStatusRef.current.periapsis = orbitStatusRef.current.periapsis || periapsis;
+        orbitStatusRef.current.apoapsis = orbitStatusRef.current.apoapsis || apoapsis;
+      } else {
+        orbitStatusRef.current.periapsis = periapsis;
+        orbitStatusRef.current.apoapsis = apoapsis;
+      }
+    } else {
+      orbitStatusRef.current.bodyId = null;
+      orbitStatusRef.current.isOrbiting = false;
+      orbitStatusRef.current.periapsis = 0;
+      orbitStatusRef.current.apoapsis = 0;
+    }
+
+    if (primaryBody && primaryBodyId) {
+      if (primaryGravityId.current !== primaryBodyId) {
+        if (primaryGravityId.current) {
+          velocity.current.sub(primaryGravityVelocity.current);
+        }
+        primaryGravityId.current = primaryBodyId;
+        primaryGravityVelocity.current.copy(primaryBody.velocity);
+        velocity.current.add(primaryBody.velocity);
+      } else {
+        _primaryDeltaV.subVectors(primaryBody.velocity, primaryGravityVelocity.current);
+        velocity.current.add(_primaryDeltaV);
+        primaryGravityVelocity.current.copy(primaryBody.velocity);
+      }
+    } else if (primaryGravityId.current) {
+      velocity.current.sub(primaryGravityVelocity.current);
+      primaryGravityId.current = null;
+      primaryGravityVelocity.current.set(0, 0, 0);
+    }
 
     groupRef.current.position.addScaledVector(velocity.current, delta);
     shipVelocity.copy(velocity.current);
@@ -178,12 +286,12 @@ export function useShipPhysics({
     shipAcceleration.current = isLinearThrusting ? THRUST * thrustMultiplier.current : 0;
 
     const keysHeld =
-      (fwd      ? 1 : 0) +
-      (rev      ? 1 : 0) +
-      (yawLeft  ? 1 : 0) +
+      (fwd ? 1 : 0) +
+      (rev ? 1 : 0) +
+      (yawLeft ? 1 : 0) +
       (yawRight ? 1 : 0) +
-      (strL     ? 1 : 0) +
-      (strR     ? 1 : 0);
+      (strL ? 1 : 0) +
+      (strR ? 1 : 0);
     if (keysHeld > 0) {
       setPower(Math.max(0, power - keysHeld * delta));
       setFuel(Math.max(0, fuel - keysHeld * delta));
@@ -192,7 +300,6 @@ export function useShipPhysics({
       setPower(Math.max(0, power - 2 * delta));
     }
 
-    const anyThrusting = fwd || rev || strL || strR || yawLeft || yawRight;
     const targetIntensity = anyThrusting ? 400 * thrustMultiplier.current : 0;
     thrusterLightIntensity.current = THREE.MathUtils.lerp(
       thrusterLightIntensity.current,
@@ -335,7 +442,12 @@ export function useShipPhysics({
         const pz = _localShipPos.z - THREE.MathUtils.clamp(_localShipPos.z, -he.z, he.z);
         return Math.sqrt(px * px + py * py + pz * pz) < DOCKING_PORT_RADIUS;
       });
-      if (bayEntry && velocity.current.length() < 4) {
+      if (bayEntry) {
+        const bayVel = bayEntry.getWorldVelocity
+          ? bayEntry.getWorldVelocity(_dockVel)
+          : _dockVel.set(0, 0, 0);
+        const relSpeed = _relVel.subVectors(velocity.current, bayVel).length();
+        if (relSpeed >= 4) return;
         dockedTo.current = bayEntry.id;
         window.dispatchEvent(
           new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })

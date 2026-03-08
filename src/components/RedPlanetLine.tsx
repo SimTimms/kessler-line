@@ -25,8 +25,12 @@ export default function RedPlanetLine({ shipPositionRef }: RedPlanetLineProps) {
       gapSize: 60,
       transparent: true,
       opacity: 0.6,
+      depthTest: false,
+      depthWrite: false,
     });
-    return new THREE.Line(geo, mat);
+    const l = new THREE.Line(geo, mat);
+    l.frustumCulled = false;
+    return l;
   }, []);
 
   const labelGroupRef = useRef<THREE.Group>(null!);

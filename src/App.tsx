@@ -6,6 +6,7 @@ import MiniMap from './components/MiniMap';
 import DockingDialog from './components/DockingDialog';
 import NPCContactDialog, { type NPCHailDetail } from './components/NPCContactDialog';
 import { TimeProvider } from './context/TimeProvider';
+import { playUiClick } from './context/SoundManager';
 import { spotlightOnRef } from './components/LaserRay';
 import { isRefueling, isTransferringO2, thrustMultiplier } from './components/Spaceship';
 import { setCargo, clearCargo } from './context/Inventory';
@@ -15,8 +16,11 @@ import { driveSignatureOnRef } from './context/DriveSignatureScan';
 import DriveSignatureHUD from './components/DriveSignatureHUD';
 import { proximityScanOnRef } from './context/ProximityScan';
 import ProximityHUD from './components/ProximityHUD';
+import { radioOnRef } from './context/RadioState';
+import { RadioHUD } from './components/RadioHUD/RadioHUD';
 import MobileControls from './components/MobileControls';
-import { HUD } from './components/HUD';
+import { HUD } from './components/HUD/HUD';
+import { NavHUD } from './components/NavHUD/NavHUD';
 import { ShipDestroyedOverlay } from './components/ShipDestroyedOverlay';
 import { GForceOverlay } from './GForceOverlay';
 // Full-screen overlay that darkens the canvas to simulate G-force blackout.
@@ -29,6 +33,7 @@ function App() {
   const [magneticOn, setMagneticOn] = useState(false);
   const [driveSignatureOn, setDriveSignatureOn] = useState(false);
   const [proximity, setProximity] = useState(false);
+  const [radioOn, setRadioOn] = useState(false);
   const [docked, setDocked] = useState(false);
   const [dockedStation, setDockedStation] = useState<string | null>(null);
   const [activeMission, setActiveMission] = useState<'kronos4' | 'mars' | 'neptune' | null>(null);
@@ -48,6 +53,15 @@ function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Global button click sound — fires for every <button> in the app
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if ((e.target as Element).closest('button')) playUiClick();
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
   }, []);
 
   useEffect(() => {
@@ -180,7 +194,12 @@ function App() {
         proximity={proximity}
         setProximity={setProximity}
         proximityScanOnRef={proximityScanOnRef}
+        radioOn={radioOn}
+        setRadioOn={setRadioOn}
+        radioOnRef={radioOnRef}
       />
+      <NavHUD />
+      <RadioHUD />
       {/* Listen to Message — appears once the RadioBeacon has been hit */}
       {beaconActivated && (
         <button

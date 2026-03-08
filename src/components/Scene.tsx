@@ -1,16 +1,17 @@
-import { useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame, useThree, createPortal } from '@react-three/fiber';
+import { useRef, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { EffectComposer, DepthOfField } from '@react-three/postprocessing';
-import type { DepthOfFieldEffect } from 'postprocessing';
+import { ShipDepthOfField } from './ShipDepthOfField';
 import { OrbitCamera } from './Camera';
 import Spaceship from './Spaceship';
 import SpaceStation from './SpaceStation';
-import SpaceParticles from './SpaceParticles';
+import { ParticleLayer } from './ParticleLayer';
 import LaserRay from './LaserRay';
 import RadioBeacon from './RadioBeacon';
 import RedPlanetLine from './RedPlanetLine';
 import AsteroidBelt from './AsteroidBelt';
+import EarthAsteroidRing from './EarthAsteroidRing';
+import ShipParticleCloud from './ShipParticleCloud';
 import DockingBay from './DockingBay';
 import FuelStation from './FuelStation';
 import EjectedCargo from './EjectedCargo';
@@ -20,13 +21,16 @@ import SpaceDebris from './SpaceDebris';
 import ProximityHighlight from './ProximityHighlight';
 import { sceneCamera } from '../context/CameraRef';
 import AIShip from './AIShip';
-import SolarSystem, { PLANETS } from './SolarSystem';
+import SolarSystem, { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import SunGravity from './SunGravity';
 import { shipPosRef } from '../context/ShipPos';
+import { solarPlanetPositions } from '../context/SolarSystemMinimap';
 import {
   RADIO_BEACON_DEFS,
   BEACON_AUDIO,
   SPACE_STATION_DEF,
   FUEL_STATION_DEF,
+  type WorldObjectDef,
 } from '../config/worldConfig';
 
 // Captures the R3F camera into a shared module-level ref so DOM overlays
@@ -43,110 +47,108 @@ function CameraCapture() {
   return null;
 }
 
-// Renders the Sun in a background scene BEFORE the main pass so it is always
-// visible regardless of the main camera's far plane. The background camera
-// copies the main camera's orientation and FOV but has its own large far value.
-// After drawing the background, the depth buffer is cleared so the main scene
-// renders in front with correct occlusion.
-//   SUN_WORLD_RADIUS = SUN_RADIUS (600) × SolarSystem scale (10.3)
-const SUN_WORLD_RADIUS = 600 * 10.3;
-const BG_SUN_DIST = 500; // fixed render distance in the background scene
+type OrbitingBeaconDef = WorldObjectDef & {
+  orbit: {
+    planetName: string;
+    radius: number;
+    speed: number;
+    phase?: number;
+  };
+};
 
-function SunBackground() {
-  const { gl, camera } = useThree();
-  const bgScene = useMemo(() => new THREE.Scene(), []);
-  const bgCamera = useMemo(() => new THREE.PerspectiveCamera(60, 1, 1, BG_SUN_DIST * 3), []);
-  const meshRef = useRef<THREE.Mesh>(null!);
-  const toSun = useMemo(() => new THREE.Vector3(), []);
+function OrbitingRadioBeacon({
+  def,
+  beaconGroupRef,
+  index,
+  audioFile,
+}: {
+  def: OrbitingBeaconDef;
+  beaconGroupRef?: { current: THREE.Group | null };
+  index?: number;
+  audioFile?: string;
+}) {
+  const groupRef = useRef<THREE.Group>(null!);
 
-  useFrame(() => {
-    if (!meshRef.current) return;
-    const mainCam = camera as THREE.PerspectiveCamera;
+  useFrame(({ clock }) => {
+    const planetPos = solarPlanetPositions[def.orbit.planetName];
+    if (!planetPos || !groupRef.current) return;
 
-    // Sync bg camera to main camera orientation + FOV
-    bgCamera.quaternion.copy(mainCam.quaternion);
-    bgCamera.fov = mainCam.fov;
-    bgCamera.aspect = mainCam.aspect;
-    bgCamera.updateProjectionMatrix();
-
-    // Place bg Sun in the direction of the real Sun (world origin)
-    toSun.set(0, 0, 0).sub(camera.position).normalize();
-    meshRef.current.position.copy(toSun).multiplyScalar(BG_SUN_DIST);
-
-    // Scale to match the real Sun's angular size at the current distance
-    const dist = camera.position.length();
-    meshRef.current.scale.setScalar(
-      (BG_SUN_DIST * SUN_WORLD_RADIUS) / Math.max(dist, SUN_WORLD_RADIUS)
+    const angle = (def.orbit.phase ?? 0) + clock.getElapsedTime() * def.orbit.speed;
+    const orbitX = Math.cos(angle) * def.orbit.radius;
+    const orbitZ = Math.sin(angle) * def.orbit.radius;
+    groupRef.current.position.set(
+      planetPos.x * SOLAR_SYSTEM_SCALE + orbitX,
+      0,
+      planetPos.z * SOLAR_SYSTEM_SCALE + orbitZ
     );
-
-    // Render bg before the main pass: clear everything, draw the bg Sun, then
-    // clear only depth so the main scene renders in front with correct occlusion
-    gl.autoClear = false;
-    gl.clear();
-    gl.render(bgScene, bgCamera);
-    gl.clearDepth();
-  }, -1);
-
-  // Restore autoClear after the main R3F render
-  useFrame(() => {
-    gl.autoClear = true;
-  }, 1);
-
-  return createPortal(
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshBasicMaterial color="#FFFDF0" toneMapped={false} />
-    </mesh>,
-    bgScene
-  );
-}
-
-// Renders particles in a separate scene AFTER the DoF pass so they are never
-// blurred by the effect. The EffectComposer runs at useFrame priority 1;
-// this overlay runs at priority 2.
-function ParticleLayer({ shipPositionRef }: { shipPositionRef: { current: THREE.Vector3 } }) {
-  const { gl, camera } = useThree();
-  const particleScene = useMemo(() => new THREE.Scene(), []);
-
-  useFrame(() => {
-    const prev = gl.autoClear;
-    gl.autoClear = false;
-    gl.render(particleScene, camera);
-    gl.autoClear = prev;
-  }, 2);
-
-  return createPortal(<SpaceParticles shipPositionRef={shipPositionRef} />, particleScene);
-}
-
-function ShipDepthOfField({ shipPosRef }: { shipPosRef: { current: THREE.Vector3 } }) {
-  const dofRef = useRef<DepthOfFieldEffect>(null!);
-
-  useFrame(() => {
-    if (dofRef.current) {
-      dofRef.current.target = shipPosRef.current;
-    }
   });
 
   return (
-    <EffectComposer>
-      <DepthOfField ref={dofRef} focalLength={402} bokehScale={0.1} height={480} />
-    </EffectComposer>
+    <group ref={groupRef} position={def.position}>
+      <RadioBeacon beaconGroupRef={beaconGroupRef} index={index} audioFile={audioFile} />
+    </group>
+  );
+}
+
+function OrbitingFuelStation({
+  orbitRadius,
+  orbitSpeed,
+  phase = 0,
+  stationGroupRef,
+}: {
+  orbitRadius: number;
+  orbitSpeed: number;
+  phase?: number;
+  stationGroupRef?: { current: THREE.Group | null };
+}) {
+  const groupRef = useRef<THREE.Group>(null!);
+
+  useFrame(({ clock }) => {
+    const planetPos = solarPlanetPositions.Neptune;
+    if (!planetPos || !groupRef.current) return;
+
+    const angle = phase + clock.getElapsedTime() * orbitSpeed;
+    const orbitX = Math.cos(angle) * orbitRadius;
+    const orbitZ = Math.sin(angle) * orbitRadius;
+    groupRef.current.position.set(
+      planetPos.x * SOLAR_SYSTEM_SCALE + orbitX,
+      0,
+      planetPos.z * SOLAR_SYSTEM_SCALE + orbitZ
+    );
+  });
+
+  return (
+    <group ref={groupRef}>
+      <FuelStation
+        url="/fuel-station.glb"
+        scale={1}
+        collisionRadius={25}
+        stationGroupRef={stationGroupRef}
+      />
+    </group>
   );
 }
 
 export default function Scene() {
-  // Neptune starts at orbit angle 1.2 rad within SolarSystem (position=[0,-1000,0], scale=1.3)
-  // orbitRadius=5500 → world XZ ≈ [cos(1.2)*5500*1.3, -sin(1.2)*5500*1.3] ≈ [2591, -6664]
+  // Spawn near Earth for testing orbital mechanics.
+  // Earth world position = orbitRadius × SOLAR_SYSTEM_SCALE at its initialAngle.
+  const earth = PLANETS[2];
+  const earthWorldX = Math.cos(earth.initialAngle) * earth.orbitRadius * SOLAR_SYSTEM_SCALE;
+  const earthWorldZ = -Math.sin(earth.initialAngle) * earth.orbitRadius * SOLAR_SYSTEM_SCALE;
   const NEPTUNE_START: [number, number, number] = [
-    PLANETS[0].orbitRadius,
+    earthWorldX + 600, // 600 units from Earth center — inside SOI (~2944), outside surface (~368)
     0,
-    -PLANETS[0].orbitRadius,
+    earthWorldZ,
   ];
   shipPosRef.current.set(...NEPTUNE_START);
   const spaceshipPos = shipPosRef;
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const stationGroupRef = useRef<THREE.Group | null>(null);
   const beaconGroupRef = useRef<THREE.Group | null>(null);
+  const neptune = PLANETS.find((planet) => planet.name === 'Neptune');
+  const neptuneWorldRadius = (neptune?.radius ?? 0) * SOLAR_SYSTEM_SCALE;
+  const fuelStationOrbitRadius = neptuneWorldRadius * 8.0;
+  const fuelStationOrbitSpeed = -0.005;
 
   return (
     <Canvas
@@ -154,7 +156,6 @@ export default function Scene() {
       camera={{ near: 0.01, far: 1000000 }}
     >
       <CameraCapture />
-      <SunBackground />
       <fogExp2 attach="fog" args={[0x000000, 0.0004]} />
       <OrbitCamera followTarget={spaceshipPos} />
       <Spaceship
@@ -162,6 +163,12 @@ export default function Scene() {
         positionRef={spaceshipPos}
         shipGroupRef={spaceshipGroupRef}
         initialPosition={NEPTUNE_START}
+      />
+      <ShipParticleCloud
+        shipGroupRef={spaceshipGroupRef}
+        count={660}
+        enableInEarthField
+        enableImpactSound
       />
 
       <group position={[1000, 0, 100]}>
@@ -179,24 +186,32 @@ export default function Scene() {
           dimensions={new THREE.Vector3(40, 1, 10)}
           rotation={[0, 0, 0]}
         />
+        <RadioBeacon />
       </group>
-      <group position={FUEL_STATION_DEF.position}>
-        <FuelStation
-          url="/fuel-station.glb"
-          scale={1}
-          collisionRadius={25}
-          stationGroupRef={stationGroupRef}
-        />
-      </group>
-      {RADIO_BEACON_DEFS.map((def, i) => (
-        <group key={def.id} position={def.position}>
-          <RadioBeacon
+      <OrbitingFuelStation
+        orbitRadius={fuelStationOrbitRadius}
+        orbitSpeed={fuelStationOrbitSpeed}
+        stationGroupRef={stationGroupRef}
+      />
+      {RADIO_BEACON_DEFS.map((def, i) =>
+        def.orbit ? (
+          <OrbitingRadioBeacon
+            key={def.id}
+            def={def as OrbitingBeaconDef}
             beaconGroupRef={i === 0 ? beaconGroupRef : undefined}
             index={i}
             audioFile={BEACON_AUDIO[i]}
           />
-        </group>
-      ))}
+        ) : (
+          <group key={def.id} position={def.position}>
+            <RadioBeacon
+              beaconGroupRef={i === 0 ? beaconGroupRef : undefined}
+              index={i}
+              audioFile={BEACON_AUDIO[i]}
+            />
+          </group>
+        )
+      )}
       <ParticleLayer shipPositionRef={spaceshipPos} />
       {/*<CollisionDebug />*/}
       <LaserRay
@@ -205,6 +220,8 @@ export default function Scene() {
         beaconGroupRef={beaconGroupRef}
       />
       <SolarSystem scale={4} />
+      <EarthAsteroidRing />
+      <SunGravity />
       <AsteroidBelt />
       <SpaceDebris />
       <EjectedCargo />

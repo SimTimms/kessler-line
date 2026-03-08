@@ -1,0 +1,153 @@
+.bd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 4, 12, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  pointer-events: auto;
+}
+
+.bd-dialog {
+  background: rgba(0, 8, 18, 0.97);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  border-radius: 6px;
+  padding: 28px 32px;
+  min-width: 340px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 40px rgba(0, 200, 255, 0.12);
+  font-family: monospace;
+}
+
+.bd-title {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 200, 255, 0.9);
+  text-align: center;
+  font-weight: bold;
+}
+
+.bd-dialogue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bd-line {
+  font-size: 12px;
+  color: rgba(0, 200, 255, 0.75);
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+
+.bd-audio-btn {
+  align-self: center;
+  padding: 6px 18px;
+  background: rgba(0, 200, 255, 0.08);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  border-radius: 4px;
+  color: #00cfff;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-audio-btn:hover {
+  background: rgba(0, 200, 255, 0.16);
+  border-color: rgba(0, 200, 255, 0.7);
+}
+
+.bd-close {
+  align-self: center;
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(0, 200, 255, 0.4);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-close:hover {
+  color: rgba(0, 200, 255, 0.7);
+  border-color: rgba(0, 200, 255, 0.4);
+}
+
+.bd-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(0, 200, 255, 0.15);
+  padding-top: 12px;
+}
+
+.bd-options-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 200, 255, 0.5);
+}
+
+.bd-option-btn {
+  align-self: flex-start;
+  padding: 5px 14px;
+  background: rgba(0, 200, 255, 0.06);
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  border-radius: 4px;
+  color: #00cfff;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-option-btn:hover {
+  background: rgba(0, 200, 255, 0.14);
+  border-color: rgba(0, 200, 255, 0.6);
+}
+
+.bd-docking-response {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.bd-docking-approved {
+  color: rgba(0, 255, 136, 0.85);
+}
+
+.bd-docking-denied {
+  color: rgba(255, 80, 80, 0.85);
+}
+
+.bd-nav-btn {
+  margin-top: 4px;
+  align-self: flex-start;
+  padding: 5px 14px;
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  border-radius: 4px;
+  color: #00ff88;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-nav-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 136, 0.16);
+  border-color: rgba(0, 255, 136, 0.7);
+}
+
+.bd-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

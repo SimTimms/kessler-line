@@ -3,7 +3,6 @@ import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-
 // Module-level scratch objects — avoid per-frame allocations.
 const _colorRed = new THREE.Color('#ff0000');
 const _colorBlue = new THREE.Color('#0055ff');
@@ -19,18 +18,16 @@ export default function PowerSource({ scale: _scale = 1 }: PowerSourceProps) {
   const powerLabelRef = useRef<HTMLDivElement>(null!);
   const isPoweredRef = useRef(false);
 
-
-
   // Listen for laser hits dispatched by LaserRay. Check if the hit point landed
   // on the power source sphere; if so, permanently activate it.
   useEffect(() => {
     const onHit = (e: Event) => {
-        if((e as CustomEvent<{ objectName: string }>).detail.objectName !== 'power-source') {
-            return;
-        }
+      if ((e as CustomEvent<{ objectName: string }>).detail.objectName !== 'power-source') {
+        return;
+      }
 
       if (isPoweredRef.current || !powerMeshRef.current) return;
-      const { point } = (e as CustomEvent<{ point: THREE.Vector3, objectName: string }>).detail;
+      const { point } = (e as CustomEvent<{ point: THREE.Vector3; objectName: string }>).detail;
       powerMeshRef.current.getWorldPosition(_sphereWorldPos);
       if (point.distanceTo(_sphereWorldPos) < 705) {
         isPoweredRef.current = true;
@@ -50,11 +47,10 @@ export default function PowerSource({ scale: _scale = 1 }: PowerSourceProps) {
 
   return (
     <>
-      <group  rotation={[0, Math.PI , 0]}>
-
+      <group rotation={[0, Math.PI, 0]}>
         {/* Power source — invisible until the laser hits it, then pulses red/blue permanently. */}
         <mesh ref={powerMeshRef} position={[0, 0, 0]} name="power-source">
-          <sphereGeometry args={[100, 16, 16]}  />
+          <sphereGeometry args={[1, 16, 16]} />
           <meshBasicMaterial
             ref={powerMatRef}
             color="#ff0000"

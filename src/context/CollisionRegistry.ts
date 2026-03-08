@@ -25,6 +25,9 @@ export interface CollidableEntry {
   /** Optional orientation for non-spherical shapes */
   getWorldQuaternion?: (target: THREE.Quaternion) => THREE.Quaternion;
 
+  /** Optional world velocity for moving collidables */
+  getWorldVelocity?: (target: THREE.Vector3) => THREE.Vector3;
+
   /** Shape definition */
   shape: ColliderShape;
 
