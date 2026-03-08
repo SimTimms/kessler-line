@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipPosRef } from '../context/ShipPos';
-import { shipVelocity } from '../context/ShipState';
+import { getShipSpeedMps } from '../context/ShipState';
 import { playAsteroidImpact, setAsteroidHiss } from '../context/SoundManager';
 import { solarPlanetPositions } from '../context/SolarSystemMinimap';
 import { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
@@ -21,6 +21,7 @@ interface ShipParticleCloudProps {
   impactSoundMaxInterval?: number;
   enableSpeedGate?: boolean;
   speedGateMin?: number;
+  speedGateOverridesField?: boolean;
 }
 
 // Seeded pseudo-random (mulberry32)
@@ -49,6 +50,7 @@ export default function ShipParticleCloud({
   impactSoundMaxInterval = 0.12,
   enableSpeedGate = false,
   speedGateMin = 50,
+  speedGateOverridesField = false,
 }: ShipParticleCloudProps) {
   const positionsRef = useRef<Float32Array>(new Float32Array(count * 3));
   const positionAttrRef = useRef<THREE.BufferAttribute | null>(null);
@@ -175,7 +177,9 @@ export default function ShipParticleCloud({
     const baseColors = pulseColorsRef.current;
     const t = clock.getElapsedTime();
 
-    if (enableInEarthField) {
+    const speedGateActive = enableSpeedGate && getShipSpeedMps() >= speedGateMin;
+
+    if (enableInEarthField && !(speedGateOverridesField && speedGateActive)) {
       const earthPos = solarPlanetPositions.Earth;
       if (earthPos) {
         earthWorldPos.set(earthPos.x * SOLAR_SYSTEM_SCALE, 0, earthPos.z * SOLAR_SYSTEM_SCALE);
@@ -240,7 +244,7 @@ export default function ShipParticleCloud({
       }
     }
 
-    if (enableSpeedGate && shipVelocity.length() < speedGateMin) {
+    if (enableSpeedGate && !speedGateActive && !enableInEarthField) {
       for (let i = 0; i < count; i++) {
         const base = i * 3;
         colors[base + 0] = 0;

@@ -36,6 +36,10 @@ export function damageHull(amount: number) {
 
 // ── Shared refs (read by other components every frame) ────────────────────────
 export const shipVelocity = new THREE.Vector3(); // updated each frame; read by HUD
+export const METRES_PER_UNIT = 1;
+export function getShipSpeedMps() {
+  return shipVelocity.length() * METRES_PER_UNIT;
+}
 export const shipAcceleration = { current: 0 }; // linear acceleration magnitude (units/s²)
 export const shipQuaternion = new THREE.Quaternion(); // updated each frame; read by EjectedCargo
 export const orbitingBodyIdRef = { current: null as string | null }; // current primary gravity body id

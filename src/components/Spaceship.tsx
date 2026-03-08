@@ -24,6 +24,7 @@ export {
   shipDestroyed,
   drainPower,
   damageHull,
+  getShipSpeedMps,
 } from '../context/ShipState';
 
 interface SpaceshipProps {

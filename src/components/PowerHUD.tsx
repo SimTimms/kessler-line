@@ -10,13 +10,18 @@ import {
   Crosshair,
   ArrowLeftRight,
 } from 'lucide-react';
-import { power, hullIntegrity, fuel, o2, shipVelocity, shipAcceleration } from './Spaceship';
+import {
+  power,
+  hullIntegrity,
+  fuel,
+  o2,
+  shipAcceleration,
+  getShipSpeedMps,
+  shipVelocity,
+} from './Spaceship';
 import { selectedTargetName, selectedTargetVelocity } from '../context/TargetSelection';
 import { cargo, type CargoItem, reduceCargoItem } from '../context/Inventory';
 import { triggerEject } from '../context/EjectEvent';
-
-// 1 game unit = 1 metre — adjust this constant to rescale if needed
-const METRES_PER_UNIT = 1;
 
 const dialogStyle: React.CSSProperties = {
   position: 'fixed',
@@ -90,9 +95,9 @@ export default function PowerHUD() {
       setDisplayO2(Math.floor(o2));
       setTargetName(selectedTargetName);
       setDisplayGForce(shipAcceleration.current / 9.81);
-      setDisplayVelocity(shipVelocity.length());
+      setDisplayVelocity(getShipSpeedMps());
       // Relative speed = magnitude of (shipVelocity − targetVelocity)
-      setRelSpeed(shipVelocity.distanceTo(selectedTargetVelocity) * METRES_PER_UNIT);
+      setRelSpeed(shipVelocity.distanceTo(selectedTargetVelocity) * 1);
       setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
       rafId = requestAnimationFrame(update);
     };

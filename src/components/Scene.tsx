@@ -169,6 +169,8 @@ export default function Scene() {
         count={660}
         enableInEarthField
         enableImpactSound
+        enableSpeedGate
+        speedGateMin={50}
       />
 
       <group position={[1000, 0, 100]}>
