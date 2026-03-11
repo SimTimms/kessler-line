@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { drainPower } from './Spaceship';
+import { drainPower } from './Ship/Spaceship';
 import { radioBeaconHitRef } from './RadioBeacon';
 
 interface LaserRayProps {

@@ -2,19 +2,32 @@ import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-// Scratch vector — avoids allocating on every frame
+// Scratch vectors — avoid allocating on every frame
 const _offset = new THREE.Vector3();
+const _target = new THREE.Vector3();
+const _attachOffset = new THREE.Vector3(0, 14, -40);
 
 interface OrbitCameraProps {
   followTarget?: { current: THREE.Vector3 };
+  attachTo?: { current: THREE.Object3D | null };
 }
 
-export function OrbitCamera({ followTarget }: OrbitCameraProps) {
-  const { camera, gl } = useThree();
+export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
+  const { camera, gl, scene } = useThree();
 
   const isPointerDown = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
   const spherical = useRef(new THREE.Spherical(50, Math.PI / 4, 0));
+  const didInitSpherical = useRef(false);
+
+  useEffect(() => {
+    const parent = attachTo?.current;
+    if (!parent) return;
+    parent.add(camera);
+    return () => {
+      scene.add(camera);
+    };
+  }, [attachTo, camera, scene]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -59,11 +72,26 @@ export function OrbitCamera({ followTarget }: OrbitCameraProps) {
   }, [camera, gl]);
 
   useFrame(() => {
-    const target = followTarget ? followTarget.current : new THREE.Vector3();
+    if (!didInitSpherical.current) {
+      spherical.current.setFromVector3(_attachOffset);
+      didInitSpherical.current = true;
+    }
+    if (attachTo?.current) {
+      _offset.setFromSpherical(spherical.current);
+      camera.position.copy(_offset);
+      camera.lookAt(attachTo.current.getWorldPosition(_target));
+      return;
+    }
+
     _offset.setFromSpherical(spherical.current);
+    const target = attachTo?.current
+      ? attachTo.current.getWorldPosition(_target)
+      : followTarget
+        ? followTarget.current
+        : _target.set(0, 0, 0);
     camera.position.copy(target).add(_offset);
     camera.lookAt(target);
-  });
+  }, 1);
 
   return null;
 }

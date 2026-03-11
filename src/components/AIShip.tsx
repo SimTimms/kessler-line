@@ -2,22 +2,25 @@ import { useRef, useEffect, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import ThrusterParticles from './ThrusterParticles';
+import ThrusterParticles from './Ship/ThrusterParticles';
 import DockingBay from './DockingBay';
 import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
-import { registerDriveSignature, unregisterDriveSignature } from '../context/DriveSignatureRegistry';
+import {
+  registerDriveSignature,
+  unregisterDriveSignature,
+} from '../context/DriveSignatureRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { shipVelocity } from './Spaceship';
+import { shipVelocity } from './Ship/Spaceship';
 
 const AI_THRUST = 2.2;
 const DOCKING_PORT_LOCAL_Z = 9; // matches player ship nose offset
 const AI_DOCKING_BAY_DIMS = new THREE.Vector3(10, 1, 10); // matches origin docking bay size
-const YAW_P = 3.0;   // proportional gain — how hard it steers toward target
-const YAW_D = 4.5;   // derivative gain — damping to prevent oscillation
-const PROXIMITY_RANGE = 1000;   // units — trigger range
-const CLOSING_SPEED = 35;       // m/s target closing speed during intercept
-const VELOCITY_MATCHED = 5;          // m/s relative — consider "matched"
-const HAIL_COOLDOWN = 45;       // seconds before re-triggering after cooldown
+const YAW_P = 3.0; // proportional gain — how hard it steers toward target
+const YAW_D = 4.5; // derivative gain — damping to prevent oscillation
+const PROXIMITY_RANGE = 1000; // units — trigger range
+const CLOSING_SPEED = 35; // m/s target closing speed during intercept
+const VELOCITY_MATCHED = 5; // m/s relative — consider "matched"
+const HAIL_COOLDOWN = 45; // seconds before re-triggering after cooldown
 
 type AIState = 'idle' | 'hailing' | 'intercepting' | 'matching' | 'cooldown';
 
@@ -99,7 +102,9 @@ export default function AIShip({ id, url, position, scale = 1 }: AIShipProps) {
     const onDocked = (e: Event) => {
       if ((e as CustomEvent).detail?.stationId === stationId) playerIsDocked.current = true;
     };
-    const onUndocked = () => { playerIsDocked.current = false; };
+    const onUndocked = () => {
+      playerIsDocked.current = false;
+    };
     window.addEventListener('ShipDocked', onDocked);
     window.addEventListener('ShipUndocked', onUndocked);
     return () => {
@@ -130,9 +135,7 @@ export default function AIShip({ id, url, position, scale = 1 }: AIShipProps) {
               const type = roll < 0.2 ? 'trade' : 'mission';
               state.current = 'hailing';
               cooldownTimer.current = 0;
-              window.dispatchEvent(
-                new CustomEvent('NPCHail', { detail: { shipId: id, type } })
-              );
+              window.dispatchEvent(new CustomEvent('NPCHail', { detail: { shipId: id, type } }));
             } else {
               // Intercept
               state.current = 'intercepting';
@@ -249,10 +252,7 @@ export default function AIShip({ id, url, position, scale = 1 }: AIShipProps) {
       <group ref={groupRef} position={position}>
         <primitive object={scene} scale={scale} />
         <group position={[0, 0, DOCKING_PORT_LOCAL_Z]}>
-          <DockingBay
-            stationId={`ai-ship-${id}`}
-            dimensions={AI_DOCKING_BAY_DIMS}
-          />
+          <DockingBay stationId={`ai-ship-${id}`} dimensions={AI_DOCKING_BAY_DIMS} />
         </group>
       </group>
       <ThrusterParticles

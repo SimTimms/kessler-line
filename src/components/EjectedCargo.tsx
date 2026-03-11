@@ -3,12 +3,12 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { consumeEject } from '../context/EjectEvent';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { shipVelocity, shipQuaternion } from './Spaceship';
+import { shipVelocity, shipQuaternion } from './Ship/Spaceship';
 
 const MAX_CUBES = 200;
 const CUBE_LIFETIME = 60; // seconds before despawn
-const EJECT_SPEED = 3;    // m/s backward impulse relative to ship
-const SPREAD = 1.5;        // m/s random spread per axis
+const EJECT_SPEED = 3; // m/s backward impulse relative to ship
+const SPREAD = 1.5; // m/s random spread per axis
 
 interface PhysicsCube {
   position: THREE.Vector3;
@@ -55,18 +55,20 @@ export default function EjectedCargo() {
         const pos = new THREE.Vector3(
           _rearBase.x + (Math.random() - 0.5) * 4,
           _rearBase.y + (Math.random() - 0.5) * 4,
-          _rearBase.z + (Math.random() - 0.5) * 4,
+          _rearBase.z + (Math.random() - 0.5) * 4
         );
 
         // Inherit ship velocity, add backward impulse + random spread
         const vel = new THREE.Vector3()
           .copy(shipVelocity)
           .addScaledVector(_forward, -EJECT_SPEED)
-          .add(new THREE.Vector3(
-            (Math.random() - 0.5) * SPREAD * 2,
-            (Math.random() - 0.5) * SPREAD * 2,
-            (Math.random() - 0.5) * SPREAD * 2,
-          ));
+          .add(
+            new THREE.Vector3(
+              (Math.random() - 0.5) * SPREAD * 2,
+              (Math.random() - 0.5) * SPREAD * 2,
+              (Math.random() - 0.5) * SPREAD * 2
+            )
+          );
 
         cubesRef.current.push({
           position: pos,
@@ -74,7 +76,7 @@ export default function EjectedCargo() {
           rotAxis: new THREE.Vector3(
             Math.random() - 0.5,
             Math.random() - 0.5,
-            Math.random() - 0.5,
+            Math.random() - 0.5
           ).normalize(),
           rotSpeed: Math.random() * 3 + 1,
           rotation: Math.random() * Math.PI * 2,
@@ -110,5 +112,7 @@ export default function EjectedCargo() {
     meshRef.current.instanceMatrix.needsUpdate = true;
   });
 
-  return <instancedMesh ref={meshRef} args={[geometry, material, MAX_CUBES]} frustumCulled={false} />;
+  return (
+    <instancedMesh ref={meshRef} args={[geometry, material, MAX_CUBES]} frustumCulled={false} />
+  );
 }

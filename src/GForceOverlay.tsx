@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { shipAcceleration, THRUST } from './components/Spaceship';
+import { shipAcceleration, THRUST } from './components/Ship/Spaceship';
 
 export function GForceOverlay() {
   const overlayRef = useRef<HTMLDivElement>(null);

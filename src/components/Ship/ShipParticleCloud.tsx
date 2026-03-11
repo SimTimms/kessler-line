@@ -1,13 +1,13 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { shipPosRef } from '../context/ShipPos';
-import { getShipSpeedMps } from '../context/ShipState';
-import { playAsteroidImpact, setAsteroidHiss } from '../context/SoundManager';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
-import { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import { shipPosRef } from '../../context/ShipPos';
+import { getShipSpeedMps } from '../../context/ShipState';
+import { playAsteroidImpact, setAsteroidHiss } from '../../context/SoundManager';
+import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
+import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
 
-interface ShipParticleCloudProps {
+export interface ShipParticleCloudProps {
   count?: number;
   minRadius?: number;
   maxRadius?: number;

@@ -18,7 +18,7 @@ import {
   shipAcceleration,
   getShipSpeedMps,
   shipVelocity,
-} from './Spaceship';
+} from './Ship/Spaceship';
 import { selectedTargetName, selectedTargetVelocity } from '../context/TargetSelection';
 import { cargo, type CargoItem, reduceCargoItem } from '../context/Inventory';
 import { triggerEject } from '../context/EjectEvent';

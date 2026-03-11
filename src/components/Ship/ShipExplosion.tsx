@@ -7,8 +7,10 @@ const DURATION = 4.0; // seconds
 
 export default function ShipExplosion({
   shipPositionRef,
+  shipGroupRef,
 }: {
-  shipPositionRef: { current: THREE.Vector3 };
+  shipPositionRef?: { current: THREE.Vector3 };
+  shipGroupRef?: { current: THREE.Group | null };
 }) {
   const activeRef = useRef(false);
   const timeRef = useRef(0);
@@ -26,7 +28,7 @@ export default function ShipExplosion({
       // Uniform random direction on sphere
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      d[i * 3]     = Math.sin(phi) * Math.cos(theta);
+      d[i * 3] = Math.sin(phi) * Math.cos(theta);
       d[i * 3 + 1] = Math.sin(phi) * Math.sin(theta);
       d[i * 3 + 2] = Math.cos(phi);
       // Random speed: fast sparks and slow debris
@@ -35,13 +37,21 @@ export default function ShipExplosion({
       // Color mix: white sparks, yellow, orange, red
       const r = Math.random();
       if (r < 0.2) {
-        colorData[i * 3] = 1; colorData[i * 3 + 1] = 1; colorData[i * 3 + 2] = 1; // white
+        colorData[i * 3] = 1;
+        colorData[i * 3 + 1] = 1;
+        colorData[i * 3 + 2] = 1; // white
       } else if (r < 0.5) {
-        colorData[i * 3] = 1; colorData[i * 3 + 1] = 0.85; colorData[i * 3 + 2] = 0.1; // yellow
+        colorData[i * 3] = 1;
+        colorData[i * 3 + 1] = 0.85;
+        colorData[i * 3 + 2] = 0.1; // yellow
       } else if (r < 0.78) {
-        colorData[i * 3] = 1; colorData[i * 3 + 1] = 0.4; colorData[i * 3 + 2] = 0; // orange
+        colorData[i * 3] = 1;
+        colorData[i * 3 + 1] = 0.4;
+        colorData[i * 3 + 2] = 0; // orange
       } else {
-        colorData[i * 3] = 1; colorData[i * 3 + 1] = 0.08; colorData[i * 3 + 2] = 0; // red
+        colorData[i * 3] = 1;
+        colorData[i * 3 + 1] = 0.08;
+        colorData[i * 3 + 2] = 0; // red
       }
     }
 
@@ -53,13 +63,19 @@ export default function ShipExplosion({
 
   useEffect(() => {
     const onDestroyed = () => {
-      explodeOriginRef.current.copy(shipPositionRef.current);
+      if (shipGroupRef?.current) {
+        shipGroupRef.current.getWorldPosition(explodeOriginRef.current);
+      } else if (shipPositionRef) {
+        explodeOriginRef.current.copy(shipPositionRef.current);
+      } else {
+        explodeOriginRef.current.set(0, 0, 0);
+      }
       timeRef.current = 0;
       activeRef.current = true;
     };
     window.addEventListener('ShipDestroyed', onDestroyed);
     return () => window.removeEventListener('ShipDestroyed', onDestroyed);
-  }, [shipPositionRef]);
+  }, [shipGroupRef, shipPositionRef]);
 
   useFrame((_, delta) => {
     if (!activeRef.current) return;
@@ -81,7 +97,7 @@ export default function ShipExplosion({
     const decay = Math.sqrt(t);
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      pos[i * 3]     = origin.x + dirs[i * 3]     * speeds[i] * decay;
+      pos[i * 3] = origin.x + dirs[i * 3] * speeds[i] * decay;
       pos[i * 3 + 1] = origin.y + dirs[i * 3 + 1] * speeds[i] * decay;
       pos[i * 3 + 2] = origin.z + dirs[i * 3 + 2] * speeds[i] * decay;
     }

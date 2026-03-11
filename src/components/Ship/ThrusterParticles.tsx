@@ -9,21 +9,21 @@ import {
   mobileThrustRight,
   mobileThrustStrafeLeft,
   mobileThrustStrafeRight,
-} from '../context/ShipState';
+} from '../../context/ShipState';
 
 const EMIT_RATE = 900; // particles per second per emitter
-const BASE_LIFETIME = 0.025; // seconds — short, intense burn (jittered ±30%)
-const BASE_SPEED = 200; // world units/second (jittered ±30%)
+const BASE_LIFETIME = 0.1; // seconds — short, intense burn (jittered ±30%)
+const BASE_SPEED = 100; // world units/second (jittered ±30%)
 
 // ── Main engine emitters (two front nozzles — reverse thrust) ────────────
 // Spaced apart on the X axis; tune offsets to match model nozzle positions.
-const MAIN_MAX = 250;
+const MAIN_MAX = 650;
 const MAIN_EMITTERS = {
   reverseA: {
-    localPos: new THREE.Vector3(-3.5, 2.5, -9.5),
+    localPos: new THREE.Vector3(-3.5, 2.5, -10.5),
     localDir: new THREE.Vector3(0, 0, -1),
   },
-  reverseB: { localPos: new THREE.Vector3(3.5, 2.5, -9.5), localDir: new THREE.Vector3(0, 0, -1) },
+  reverseB: { localPos: new THREE.Vector3(3.5, 2.5, -10.5), localDir: new THREE.Vector3(0, 0, -1) },
 } as const;
 type MainKey = keyof typeof MAIN_EMITTERS;
 
@@ -255,7 +255,7 @@ export default function ThrusterParticles({
   return (
     <>
       {/* Main engines — two larger nozzles */}
-      <points frustumCulled={false} position={[0, -2, -3]}>
+      <points frustumCulled={false} position={[0, -2, 0]}>
         <bufferGeometry ref={mainGeoRef}>
           <bufferAttribute attach="attributes-position" args={[mainPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[mainCol, 3]} />

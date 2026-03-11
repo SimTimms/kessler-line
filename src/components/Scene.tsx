@@ -1,9 +1,9 @@
 import { useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { ShipDepthOfField } from './ShipDepthOfField';
+import { ShipDepthOfField } from './Ship/ShipDepthOfField';
 import { OrbitCamera } from './Camera';
-import Spaceship from './Spaceship';
+import Spaceship from './Ship/Spaceship';
 import SpaceStation from './SpaceStation';
 import { ParticleLayer } from './ParticleLayer';
 import LaserRay from './LaserRay';
@@ -11,12 +11,10 @@ import RadioBeacon from './RadioBeacon';
 import RedPlanetLine from './RedPlanetLine';
 import AsteroidBelt from './AsteroidBelt';
 import EarthAsteroidRing from './EarthAsteroidRing';
-import ShipParticleCloud from './ShipParticleCloud';
 import DockingBay from './DockingBay';
 import FuelStation from './FuelStation';
 import EjectedCargo from './EjectedCargo';
 import VelocityIndicator from './VelocityIndicator';
-import ShipExplosion from './ShipExplosion';
 import SpaceDebris from './SpaceDebris';
 import ProximityHighlight from './ProximityHighlight';
 import { sceneCamera } from '../context/CameraRef';
@@ -140,7 +138,11 @@ export default function Scene() {
     0,
     earthWorldZ,
   ];
-  shipPosRef.current.set(...NEPTUNE_START);
+  const didInitShipRef = useRef(false);
+  if (!didInitShipRef.current) {
+    shipPosRef.current.set(...NEPTUNE_START);
+    didInitShipRef.current = true;
+  }
   const spaceshipPos = shipPosRef;
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const stationGroupRef = useRef<THREE.Group | null>(null);
@@ -157,21 +159,6 @@ export default function Scene() {
     >
       <CameraCapture />
       <fogExp2 attach="fog" args={[0x000000, 0.0004]} />
-      <OrbitCamera followTarget={spaceshipPos} />
-      <Spaceship
-        url="/freighter.gltf"
-        positionRef={spaceshipPos}
-        shipGroupRef={spaceshipGroupRef}
-        initialPosition={NEPTUNE_START}
-      />
-      <ShipParticleCloud
-        shipGroupRef={spaceshipGroupRef}
-        count={660}
-        enableInEarthField
-        enableImpactSound
-        enableSpeedGate
-        speedGateMin={50}
-      />
 
       <group position={[1000, 0, 100]}>
         <DockingBay stationId="origin" dimensions={new THREE.Vector3(10, 1, 10)} />
@@ -215,7 +202,6 @@ export default function Scene() {
         )
       )}
       <ParticleLayer shipPositionRef={spaceshipPos} />
-      {/*<CollisionDebug />*/}
       <LaserRay
         shipGroupRef={spaceshipGroupRef}
         stationGroupRef={stationGroupRef}
@@ -231,8 +217,25 @@ export default function Scene() {
       <RedPlanetLine shipPositionRef={spaceshipPos} />
       <VelocityIndicator shipPositionRef={spaceshipPos} />
       <AIShip id="0" url="/spaceship.glb" scale={1} position={[100, 0, -2000]} />
-      <ShipExplosion shipPositionRef={spaceshipPos} />
       <ShipDepthOfField shipPosRef={spaceshipPos} />
+      <OrbitCamera followTarget={spaceshipPos} attachTo={spaceshipGroupRef} />
+      <Spaceship
+        url="/freighter.gltf"
+        positionRef={spaceshipPos}
+        shipGroupRef={spaceshipGroupRef}
+        initialPosition={NEPTUNE_START}
+        enableShipExplosion
+        enableShipParticleCloud
+        shipParticleCloudProps={{
+          count: 660,
+          enableInEarthField: true,
+          enableImpactSound: true,
+          enableSpeedGate: true,
+          speedGateMin: 50,
+        }}
+      />
+
+      {/*<CollisionDebug />*/}
     </Canvas>
   );
 }

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { shipVelocity } from './Spaceship';
+import { shipVelocity } from './Ship/Spaceship';
 import { gravityBodies } from '../context/GravityRegistry';
 
 const MIN_SPEED = 0.05;

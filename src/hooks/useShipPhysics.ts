@@ -3,63 +3,26 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   THRUST,
-  YAW_THRUST,
-  SHIP_RADIUS,
-  RESTITUTION,
-  DAMAGE_MULTIPLIER,
-  SHIP_COLLISION_ID,
-  DOCKING_PORT_RADIUS,
-  DOCKING_PORT_LOCAL_Z,
-  power,
   hullIntegrity,
-  fuel,
-  o2,
-  setPower,
-  setFuel,
-  setO2,
-  damageHull,
   shipVelocity,
   shipAcceleration,
   shipQuaternion,
-  orbitingBodyIdRef,
-  orbitStatusRef,
-  isRefueling,
-  isTransferringO2,
-  thrustMultiplier,
   shipDestroyed,
-  mobileThrustForward,
-  mobileThrustReverse,
-  mobileThrustLeft,
-  mobileThrustRight,
-  mobileThrustStrafeLeft,
-  mobileThrustStrafeRight,
+  thrustMultiplier,
 } from '../context/ShipState';
-import { getCollidables } from '../context/CollisionRegistry';
-import { gravityBodies, type GravityBody } from '../context/GravityRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { driveSignatureOnRef } from '../context/DriveSignatureScan';
-import { setEngineHiss } from '../context/SoundManager';
-
-// Module-level scratch vectors — reused every frame to avoid GC pressure
-const _portWorldPos = new THREE.Vector3();
-const _localForward = new THREE.Vector3();
-const _localRight = new THREE.Vector3();
-const _shipWorldPos = new THREE.Vector3();
-const _collidablePos = new THREE.Vector3();
-const _collisionNormal = new THREE.Vector3();
-const _boxQuat = new THREE.Quaternion();
-const _invBoxQuat = new THREE.Quaternion();
-const _localShipPos = new THREE.Vector3();
-const _closestPoint = new THREE.Vector3();
-const _localUp = new THREE.Vector3();
-const _capsuleA = new THREE.Vector3();
-const _capsuleB = new THREE.Vector3();
-const _gravDir = new THREE.Vector3();
-const _primaryDeltaV = new THREE.Vector3();
-const _relPos = new THREE.Vector3();
-const _relVel = new THREE.Vector3();
-const _hVec = new THREE.Vector3();
-const _dockVel = new THREE.Vector3();
+import {
+  applyDockedState,
+  applyPhysicsStep,
+  applyResourceDrain,
+  checkDockingPort,
+  getCombinedInputs,
+  DELTA_SPIKE_THRESHOLD,
+  PHYSICS_MAX_DELTA,
+  PHYSICS_MAX_STEP,
+  updateEngineAudio,
+  updateThrusterLight,
+} from './shipPhysics';
 
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
@@ -83,7 +46,15 @@ export function useShipPhysics({
   dockingPortRef,
   positionRef,
 }: UseShipPhysicsParams): UseShipPhysicsResult {
+  const DEBUG_DISABLE_GRAVITY = false;
+  const DEBUG_FREEZE_COLLISIONS = false;
+  const DEBUG_LOG_DELTA_SPIKES = false;
+  const DEBUG_SMOOTH_RENDER = true;
+  const RENDER_SMOOTHING = 14;
   const velocity = useRef(new THREE.Vector3());
+  const physicsPosition = useRef(new THREE.Vector3());
+  const renderPosition = useRef(new THREE.Vector3());
+  const didInitPositions = useRef(false);
   const angularVelocity = useRef(0); // yaw rate in rad/s — no drag, persists like linear velocity
   const dockedTo = useRef<string | null>(null); // collision ID of the docked bay, or null
   const primaryGravityId = useRef<string | null>(null);
@@ -135,150 +106,96 @@ export function useShipPhysics({
   }, [groupRef]);
 
   useFrame((_, delta) => {
+    const rawDelta = delta;
+    if (DEBUG_LOG_DELTA_SPIKES && rawDelta > DELTA_SPIKE_THRESHOLD) {
+      // eslint-disable-next-line no-console
+      console.debug(`[physics] delta spike: ${rawDelta.toFixed(4)}s`);
+    }
+
+    // Clamp total physics time and sub-step for stability on low-FPS devices.
+    const cappedDelta = Math.min(delta, PHYSICS_MAX_DELTA);
+    const maxStep = PHYSICS_MAX_STEP;
     if (!groupRef.current) return;
+    if (!didInitPositions.current) {
+      physicsPosition.current.copy(groupRef.current.position);
+      renderPosition.current.copy(groupRef.current.position);
+      didInitPositions.current = true;
+    }
+    // Ensure physics runs on the authoritative position, not a smoothed render pose.
+    groupRef.current.position.copy(physicsPosition.current);
     if (shipDestroyed.current) {
-      setEngineHiss(false);
+      updateEngineAudio({ mainThrust: false, rcsThrust: false });
       return;
     }
 
-    // ── DOCKED: follow the bay's world position and rotation, skip physics ────
-    if (dockedTo.current) {
-      setEngineHiss(false);
-      const dockerEntry = getCollidables().find((c) => c.id === dockedTo.current);
-      if (dockerEntry) {
-        dockerEntry.getWorldPosition(_collidablePos);
-        if (dockerEntry.getWorldQuaternion) {
-          dockerEntry.getWorldQuaternion(_boxQuat);
-          groupRef.current.quaternion.copy(_boxQuat);
-        }
-        _localForward.set(0, 0, DOCKING_PORT_LOCAL_Z).applyQuaternion(_boxQuat);
-        groupRef.current.position.copy(_collidablePos).sub(_localForward);
-      }
-      shipVelocity.set(0, 0, 0);
-      shipAcceleration.current = 0;
-      thrusterLightIntensity.current = 0;
-      if (thrusterLightRef.current) thrusterLightRef.current.intensity = 0;
-      if (isRefueling.current) setFuel(Math.min(100, fuel + 10 * delta));
-      if (isTransferringO2.current) setO2(Math.min(100, o2 + 10 * delta));
-      setO2(Math.max(0, o2 - 1 * delta));
-      if (positionRef) positionRef.current.copy(groupRef.current.position);
-      minimapShipPosition.copy(groupRef.current.position);
+    if (
+      applyDockedState({
+        group: groupRef.current,
+        dockedTo,
+        thrusterLightRef,
+        thrusterLightIntensity,
+        positionRef,
+        rawDelta,
+      })
+    ) {
+      updateEngineAudio({ mainThrust: false, rcsThrust: false });
       return;
     }
 
-    // ── Yaw ──────────────────────────────────────────────────────────────────
-    const yawLeft = thrustLeft.current || mobileThrustLeft.current;
-    const yawRight = thrustRight.current || mobileThrustRight.current;
-    const fwd = thrustForward.current || mobileThrustForward.current;
-    const rev = thrustReverse.current || mobileThrustReverse.current;
-    const strL = thrustStrafeLeft.current || mobileThrustStrafeLeft.current;
-    const strR = thrustStrafeRight.current || mobileThrustStrafeRight.current;
-
-    if (yawLeft) angularVelocity.current -= YAW_THRUST * delta;
-    if (yawRight) angularVelocity.current += YAW_THRUST * delta;
-    groupRef.current.rotation.y += angularVelocity.current * delta;
-
-    _localForward.set(0, 0, -1).applyQuaternion(groupRef.current.quaternion);
-    if (fwd)
-      velocity.current.addScaledVector(_localForward, THRUST * thrustMultiplier.current * delta);
-    if (rev)
-      velocity.current.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * delta);
-
-    _localRight.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
-    if (strL) velocity.current.addScaledVector(_localRight, -THRUST * delta);
-    if (strR) velocity.current.addScaledVector(_localRight, THRUST * delta);
+    const { yawLeft, yawRight, fwd, rev, strL, strR } = getCombinedInputs({
+      thrustForward,
+      thrustReverse,
+      thrustLeft,
+      thrustRight,
+      thrustStrafeLeft,
+      thrustStrafeRight,
+    });
 
     const mainThrust = fwd || rev;
     const rcsThrust = strL || strR || yawLeft || yawRight;
-    const anyThrusting = mainThrust || rcsThrust;
-    const cutoff = rcsThrust && !mainThrust ? 900 : 420;
-    const volume = Math.min(0.14, 0.04 + 0.05 * Math.sqrt(thrustMultiplier.current));
-    setEngineHiss(anyThrusting, volume, cutoff);
+    const anyThrusting = updateEngineAudio({ mainThrust, rcsThrust });
 
-    // ── Gravity ───────────────────────────────────────────────────────────────
-    // Apply gravitational acceleration from all planets whose SOI we're inside.
-    // Uses current position (before delta integration) for accurate force direction.
-    groupRef.current.getWorldPosition(_shipWorldPos);
-    let primaryBodyId: string | null = null;
-    let primaryBody: GravityBody | null = null;
-    let primaryAccel = 0;
-    for (const [id, body] of gravityBodies) {
-      const dist = _shipWorldPos.distanceTo(body.position);
-      if (dist > body.surfaceRadius && dist < body.soiRadius) {
-        const accel = body.mu / (dist * dist);
-        if (accel > primaryAccel) {
-          primaryAccel = accel;
-          primaryBody = body;
-          primaryBodyId = id;
-        }
-      }
+    let remaining = cappedDelta;
+    while (remaining > 0) {
+      const dt = Math.min(remaining, maxStep);
+      remaining -= dt;
+      applyPhysicsStep({
+        group: groupRef.current,
+        velocity: velocity.current,
+        angularVelocity,
+        primaryGravityId,
+        primaryGravityVelocity: primaryGravityVelocity.current,
+        dt,
+        anyThrusting,
+        disableGravity: DEBUG_DISABLE_GRAVITY,
+        freezeCollisions: DEBUG_FREEZE_COLLISIONS,
+        yawLeft,
+        yawRight,
+        fwd,
+        rev,
+        strL,
+        strR,
+      });
+
+      updateThrusterLight({
+        thrusterLightIntensity,
+        thrusterLightRef,
+        anyThrusting,
+        dt,
+      });
     }
 
-    orbitingBodyIdRef.current = primaryBodyId;
-    if (primaryBody && primaryBodyId) {
-      _gravDir.subVectors(primaryBody.position, _shipWorldPos).normalize();
-      velocity.current.addScaledVector(_gravDir, primaryAccel * delta);
+    if (hullIntegrity <= 0) {
+      shipDestroyed.current = true;
+      groupRef.current.visible = false;
+      velocity.current.set(0, 0, 0);
+      angularVelocity.current = 0;
+      window.dispatchEvent(new CustomEvent('ShipDestroyed'));
+      return;
     }
 
-    if (primaryBody && primaryBodyId) {
-      _relPos.subVectors(_shipWorldPos, primaryBody.position);
-      _relVel.subVectors(velocity.current, primaryBody.velocity);
-      const r = _relPos.length();
-      const v2 = _relVel.lengthSq();
-      const mu = primaryBody.mu;
-      const energy = 0.5 * v2 - mu / Math.max(1e-6, r);
+    physicsPosition.current.copy(groupRef.current.position);
 
-      let isOrbiting = false;
-      let periapsis = 0;
-      let apoapsis = 0;
-      if (energy < 0) {
-        const a = -mu / (2 * energy);
-        _hVec.copy(_relPos).cross(_relVel);
-        const h2 = _hVec.lengthSq();
-        const e = Math.sqrt(Math.max(0, 1 + (2 * energy * h2) / (mu * mu)));
-        if (e < 1) {
-          periapsis = h2 / (mu * (1 + e));
-          apoapsis = a * (1 + e);
-          if (periapsis > primaryBody.surfaceRadius) isOrbiting = true;
-        }
-      }
-
-      orbitStatusRef.current.bodyId = primaryBodyId;
-      orbitStatusRef.current.isOrbiting = isOrbiting;
-      if (isOrbiting && !anyThrusting && orbitStatusRef.current.bodyId === primaryBodyId) {
-        orbitStatusRef.current.periapsis = orbitStatusRef.current.periapsis || periapsis;
-        orbitStatusRef.current.apoapsis = orbitStatusRef.current.apoapsis || apoapsis;
-      } else {
-        orbitStatusRef.current.periapsis = periapsis;
-        orbitStatusRef.current.apoapsis = apoapsis;
-      }
-    } else {
-      orbitStatusRef.current.bodyId = null;
-      orbitStatusRef.current.isOrbiting = false;
-      orbitStatusRef.current.periapsis = 0;
-      orbitStatusRef.current.apoapsis = 0;
-    }
-
-    if (primaryBody && primaryBodyId) {
-      if (primaryGravityId.current !== primaryBodyId) {
-        if (primaryGravityId.current) {
-          velocity.current.sub(primaryGravityVelocity.current);
-        }
-        primaryGravityId.current = primaryBodyId;
-        primaryGravityVelocity.current.copy(primaryBody.velocity);
-        velocity.current.add(primaryBody.velocity);
-      } else {
-        _primaryDeltaV.subVectors(primaryBody.velocity, primaryGravityVelocity.current);
-        velocity.current.add(_primaryDeltaV);
-        primaryGravityVelocity.current.copy(primaryBody.velocity);
-      }
-    } else if (primaryGravityId.current) {
-      velocity.current.sub(primaryGravityVelocity.current);
-      primaryGravityId.current = null;
-      primaryGravityVelocity.current.set(0, 0, 0);
-    }
-
-    groupRef.current.position.addScaledVector(velocity.current, delta);
     shipVelocity.copy(velocity.current);
     groupRef.current.getWorldQuaternion(shipQuaternion);
 
@@ -292,189 +209,31 @@ export function useShipPhysics({
       (yawRight ? 1 : 0) +
       (strL ? 1 : 0) +
       (strR ? 1 : 0);
-    if (keysHeld > 0) {
-      setPower(Math.max(0, power - keysHeld * delta));
-      setFuel(Math.max(0, fuel - keysHeld * delta));
-    }
-    if (driveSignatureOnRef.current) {
-      setPower(Math.max(0, power - 2 * delta));
-    }
+    applyResourceDrain({ keysHeld, rawDelta });
 
-    const targetIntensity = anyThrusting ? 400 * thrustMultiplier.current : 0;
-    thrusterLightIntensity.current = THREE.MathUtils.lerp(
-      thrusterLightIntensity.current,
-      targetIntensity,
-      delta * 20
-    );
-    if (thrusterLightRef.current)
-      thrusterLightRef.current.intensity = thrusterLightIntensity.current;
-
-    // ── Collision detection ───────────────────────────────────────────────────
-    groupRef.current.getWorldPosition(_shipWorldPos);
-    for (const collidable of getCollidables()) {
-      if (collidable.id === SHIP_COLLISION_ID) continue;
-      collidable.getWorldPosition(_collidablePos);
-
-      const shape = collidable.shape;
-      let colliding = false;
-      let overlap = 0;
-
-      if (shape.type === 'sphere') {
-        const dist = _shipWorldPos.distanceTo(_collidablePos);
-        const minDist = SHIP_RADIUS + shape.radius;
-        if (dist < minDist && dist > 0.001) {
-          colliding = true;
-          overlap = minDist - dist;
-          _collisionNormal.subVectors(_shipWorldPos, _collidablePos).normalize();
-        }
-      } else if (shape.type === 'box') {
-        if (collidable.getWorldQuaternion) {
-          collidable.getWorldQuaternion(_boxQuat);
-        } else {
-          _boxQuat.identity();
-        }
-        _invBoxQuat.copy(_boxQuat).invert();
-        _localShipPos.subVectors(_shipWorldPos, _collidablePos).applyQuaternion(_invBoxQuat);
-        _closestPoint.set(
-          THREE.MathUtils.clamp(_localShipPos.x, -shape.halfExtents.x, shape.halfExtents.x),
-          THREE.MathUtils.clamp(_localShipPos.y, -shape.halfExtents.y, shape.halfExtents.y),
-          THREE.MathUtils.clamp(_localShipPos.z, -shape.halfExtents.z, shape.halfExtents.z)
-        );
-        const sepX = _localShipPos.x - _closestPoint.x;
-        const sepY = _localShipPos.y - _closestPoint.y;
-        const sepZ = _localShipPos.z - _closestPoint.z;
-        const dist = Math.sqrt(sepX * sepX + sepY * sepY + sepZ * sepZ);
-        if (dist > 0.001 && dist < SHIP_RADIUS) {
-          colliding = true;
-          overlap = SHIP_RADIUS - dist;
-          _collisionNormal.set(sepX / dist, sepY / dist, sepZ / dist).applyQuaternion(_boxQuat);
-        } else if (dist <= 0.001) {
-          const dx = shape.halfExtents.x - Math.abs(_localShipPos.x);
-          const dy = shape.halfExtents.y - Math.abs(_localShipPos.y);
-          const dz = shape.halfExtents.z - Math.abs(_localShipPos.z);
-          colliding = true;
-          if (dx <= dy && dx <= dz) {
-            overlap = dx + SHIP_RADIUS;
-            _collisionNormal.set(Math.sign(_localShipPos.x), 0, 0).applyQuaternion(_boxQuat);
-          } else if (dy <= dz) {
-            overlap = dy + SHIP_RADIUS;
-            _collisionNormal.set(0, Math.sign(_localShipPos.y), 0).applyQuaternion(_boxQuat);
-          } else {
-            overlap = dz + SHIP_RADIUS;
-            _collisionNormal.set(0, 0, Math.sign(_localShipPos.z)).applyQuaternion(_boxQuat);
-          }
-        }
-      } else if (shape.type === 'capsule') {
-        if (collidable.getWorldQuaternion) {
-          collidable.getWorldQuaternion(_boxQuat);
-        } else {
-          _boxQuat.identity();
-        }
-        const halfH = shape.height / 2;
-        _localUp.set(0, 1, 0).applyQuaternion(_boxQuat);
-        _capsuleA.copy(_collidablePos).addScaledVector(_localUp, -halfH);
-        _capsuleB.copy(_collidablePos).addScaledVector(_localUp, halfH);
-        const abX = _capsuleB.x - _capsuleA.x;
-        const abY = _capsuleB.y - _capsuleA.y;
-        const abZ = _capsuleB.z - _capsuleA.z;
-        const abLenSq = abX * abX + abY * abY + abZ * abZ;
-        const t =
-          abLenSq > 0.0001
-            ? THREE.MathUtils.clamp(
-                ((_shipWorldPos.x - _capsuleA.x) * abX +
-                  (_shipWorldPos.y - _capsuleA.y) * abY +
-                  (_shipWorldPos.z - _capsuleA.z) * abZ) /
-                  abLenSq,
-                0,
-                1
-              )
-            : 0;
-        _closestPoint.set(_capsuleA.x + abX * t, _capsuleA.y + abY * t, _capsuleA.z + abZ * t);
-        const minDist = SHIP_RADIUS + shape.radius;
-        const dist = _shipWorldPos.distanceTo(_closestPoint);
-        if (dist < minDist && dist > 0.001) {
-          colliding = true;
-          overlap = minDist - dist;
-          _collisionNormal.subVectors(_shipWorldPos, _closestPoint).normalize();
-        }
-      }
-
-      if (colliding) {
-        const impactSpeed = velocity.current.dot(_collisionNormal);
-        if (impactSpeed < 0) {
-          damageHull(Math.abs(impactSpeed) * DAMAGE_MULTIPLIER);
-        }
-        groupRef.current.position.addScaledVector(_collisionNormal, overlap);
-        if (impactSpeed < 0) {
-          velocity.current.addScaledVector(_collisionNormal, -impactSpeed * (1 + RESTITUTION));
-        }
-      }
-    }
-
-    // ── Destruction ───────────────────────────────────────────────────────────
-    if (hullIntegrity <= 0) {
-      shipDestroyed.current = true;
-      groupRef.current.visible = false;
-      velocity.current.set(0, 0, 0);
-      angularVelocity.current = 0;
-      window.dispatchEvent(new CustomEvent('ShipDestroyed'));
-      return;
-    }
-
-    // ── Docking port check ────────────────────────────────────────────────────
-    if (!dockedTo.current && dockingPortRef.current) {
-      dockingPortRef.current.getWorldPosition(_portWorldPos);
-      const bayEntry = getCollidables().find((c) => {
-        if (c.id === SHIP_COLLISION_ID) return false;
-        if (c.shape.type !== 'box') return false;
-        if (!c.id.startsWith('docking-bay')) return false;
-        c.getWorldPosition(_collidablePos);
-        if (c.getWorldQuaternion) {
-          c.getWorldQuaternion(_boxQuat);
-        } else {
-          _boxQuat.identity();
-        }
-        _invBoxQuat.copy(_boxQuat).invert();
-        _localShipPos.subVectors(_portWorldPos, _collidablePos).applyQuaternion(_invBoxQuat);
-        const he = c.shape.halfExtents;
-        const px = _localShipPos.x - THREE.MathUtils.clamp(_localShipPos.x, -he.x, he.x);
-        const py = _localShipPos.y - THREE.MathUtils.clamp(_localShipPos.y, -he.y, he.y);
-        const pz = _localShipPos.z - THREE.MathUtils.clamp(_localShipPos.z, -he.z, he.z);
-        return Math.sqrt(px * px + py * py + pz * pz) < DOCKING_PORT_RADIUS;
-      });
-      if (bayEntry) {
-        const bayVel = bayEntry.getWorldVelocity
-          ? bayEntry.getWorldVelocity(_dockVel)
-          : _dockVel.set(0, 0, 0);
-        const relSpeed = _relVel.subVectors(velocity.current, bayVel).length();
-        if (relSpeed >= 4) return;
-        dockedTo.current = bayEntry.id;
-        window.dispatchEvent(
-          new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
-        );
-        velocity.current.set(0, 0, 0);
-        angularVelocity.current = 0;
-        bayEntry.getWorldPosition(_collidablePos);
-        if (bayEntry.getWorldQuaternion) {
-          bayEntry.getWorldQuaternion(_boxQuat);
-        } else {
-          _boxQuat.identity();
-        }
-        groupRef.current.quaternion.copy(_boxQuat);
-        _localForward.set(0, 0, DOCKING_PORT_LOCAL_Z).applyQuaternion(_boxQuat);
-        groupRef.current.position.copy(_collidablePos).sub(_localForward);
-      }
-    }
+    checkDockingPort({
+      group: groupRef.current,
+      dockingPort: dockingPortRef.current,
+      dockedTo,
+      velocity: velocity.current,
+    });
 
     // ── Lock to Y=0 plane ─────────────────────────────────────────────────────
     velocity.current.y = 0;
+    physicsPosition.current.y = 0;
     groupRef.current.position.y = 0;
 
-    setO2(Math.max(0, o2 - 1 * delta));
-
-    if (positionRef) positionRef.current.copy(groupRef.current.position);
-    minimapShipPosition.copy(groupRef.current.position);
-  });
+    if (DEBUG_SMOOTH_RENDER) {
+      const t = 1 - Math.exp(-RENDER_SMOOTHING * rawDelta);
+      renderPosition.current.lerp(physicsPosition.current, t);
+      groupRef.current.position.copy(renderPosition.current);
+      if (positionRef) positionRef.current.copy(renderPosition.current);
+      minimapShipPosition.copy(renderPosition.current);
+    } else {
+      if (positionRef) positionRef.current.copy(physicsPosition.current);
+      minimapShipPosition.copy(physicsPosition.current);
+    }
+  }, -1);
 
   return {
     thrustForward,
