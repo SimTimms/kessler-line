@@ -4,6 +4,9 @@ import { railgunImpactDir } from '../../context/ShipState';
 
 const MAX_MARKS = 500;
 const DEFAULT_TEX_SIZE = 1024;
+const ORANGE_SHIFT_MAX = 0.15;
+const SIZE_VARIANCE = 0.7;
+const OPACITY_VARIANCE = 0.3;
 
 interface RailgunDamagePainterProps {
   shipGroupRef: { current: THREE.Group | null };
@@ -96,13 +99,31 @@ function initPainter(material: EmissiveMaterial): PainterInfo {
   return { canvas, ctx, texture, emissiveCanvas, emissiveCtx, emissiveTexture, size };
 }
 
+function rgbaTowardOrange(r: number, g: number, b: number, a: number, t: number): string {
+  const or = 255;
+  const og = 136;
+  const ob = 0;
+  const rr = Math.round(r + (or - r) * t);
+  const gg = Math.round(g + (og - g) * t);
+  const bb = Math.round(b + (ob - b) * t);
+  return `rgba(${rr},${gg},${bb},${a})`;
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
 function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): void {
   const { ctx, texture, emissiveCtx, emissiveTexture, size } = painter;
   const x = uv.x * size;
   const y = (1 - uv.y) * size;
-  const radius = size * 0.0012;
+  const sizeJitter = 1 + (Math.random() * 2 - 1) * SIZE_VARIANCE;
+  const radius = size * 0.0012 * sizeJitter;
   const angle = Math.random() * Math.PI * 2;
-  const stretch = 2.2;
+  const longStreak = Math.random() < 0.25;
+  const stretch = longStreak ? 8 + Math.random() * 6 : 2.2;
+  const colorShift = Math.random() * ORANGE_SHIFT_MAX;
+  const opacityJitter = 1 + (Math.random() * 2 - 1) * OPACITY_VARIANCE;
 
   ctx.save();
   ctx.translate(x, y);
@@ -120,12 +141,24 @@ function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): 
   ctx.arc(0, 0, radius, 0, Math.PI * 2);
   ctx.fill();
 
+  if (longStreak) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = 'rgba(5,2,1,0.8)';
+    ctx.lineWidth = radius * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-radius * 6, 0);
+    ctx.lineTo(radius * 6, 0);
+    ctx.stroke();
+  }
+
   // Molten rim
   const rimRadius = radius * 1.18;
   gradient = ctx.createRadialGradient(0, 0, radius * 0.9, 0, 0, rimRadius);
   gradient.addColorStop(0, 'rgba(255,120,40,0)');
-  gradient.addColorStop(0.55, `rgba(255,90,20,${0.95 + hueShift})`);
-  gradient.addColorStop(0.8, `rgba(255,160,60,${0.6 + hueShift * 0.4})`);
+  const rimA1 = clamp01((0.95 + hueShift) * opacityJitter);
+  const rimA2 = clamp01((0.6 + hueShift * 0.4) * opacityJitter);
+  gradient.addColorStop(0.55, rgbaTowardOrange(255, 90, 20, rimA1, colorShift));
+  gradient.addColorStop(0.8, rgbaTowardOrange(255, 160, 60, rimA2, colorShift));
   gradient.addColorStop(1, 'rgba(255,40,10,0)');
   ctx.globalCompositeOperation = 'lighter';
   ctx.fillStyle = gradient;
@@ -140,14 +173,25 @@ function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): 
   emissiveCtx.scale(stretch, 1);
   gradient = emissiveCtx.createRadialGradient(0, 0, radius * 0.9, 0, 0, rimRadius);
   gradient.addColorStop(0, 'rgba(255,120,40,0)');
-  gradient.addColorStop(0.55, `rgba(255,90,20,${0.85 + hueShift})`);
-  gradient.addColorStop(0.8, `rgba(255,160,60,${0.55 + hueShift * 0.4})`);
-  gradient.addColorStop(1, 'rgba(255,60,20,0)');
+  const emissiveA1 = clamp01((0.85 + hueShift) * opacityJitter);
+  const emissiveA2 = clamp01((0.55 + hueShift * 0.4) * opacityJitter);
+  gradient.addColorStop(0.55, rgbaTowardOrange(255, 90, 20, emissiveA1, colorShift));
+  gradient.addColorStop(0.8, rgbaTowardOrange(255, 160, 60, emissiveA2, colorShift));
+  gradient.addColorStop(1, rgbaTowardOrange(255, 60, 20, 0, colorShift));
   emissiveCtx.globalCompositeOperation = 'lighter';
   emissiveCtx.fillStyle = gradient;
   emissiveCtx.beginPath();
   emissiveCtx.arc(0, 0, rimRadius, 0, Math.PI * 2);
   emissiveCtx.fill();
+
+  if (longStreak) {
+    emissiveCtx.strokeStyle = rgbaTowardOrange(255, 120, 40, 0.6, colorShift);
+    emissiveCtx.lineWidth = radius * 0.35;
+    emissiveCtx.beginPath();
+    emissiveCtx.moveTo(-rimRadius * 5, 0);
+    emissiveCtx.lineTo(rimRadius * 5, 0);
+    emissiveCtx.stroke();
+  }
   emissiveCtx.restore();
 
   ctx.restore();
