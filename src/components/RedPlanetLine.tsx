@@ -24,7 +24,7 @@ export default function RedPlanetLine({ shipPositionRef }: RedPlanetLineProps) {
       dashSize: 80,
       gapSize: 60,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.3,
       depthTest: false,
       depthWrite: false,
     });
@@ -50,7 +50,12 @@ export default function RedPlanetLine({ shipPositionRef }: RedPlanetLineProps) {
 
     const attr = line.geometry.attributes.position as THREE.BufferAttribute;
     const tgt = navTargetPosRef.current;
-    attr.setXYZ(0, shipPositionRef.current.x, shipPositionRef.current.y, shipPositionRef.current.z);
+    attr.setXYZ(
+      0,
+      shipPositionRef.current.x - 20,
+      shipPositionRef.current.y,
+      shipPositionRef.current.z
+    );
     attr.setXYZ(1, tgt.x, tgt.y, tgt.z);
     attr.needsUpdate = true;
     line.computeLineDistances();

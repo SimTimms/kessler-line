@@ -6,6 +6,7 @@ import DockingReleaseParticles from '../DockingReleaseParticles';
 import ShipExplosion from './ShipExplosion';
 import ShipParticleCloud, { type ShipParticleCloudProps } from './ShipParticleCloud';
 import RailgunDamagePainter from './RailgunDamagePainter';
+import RailgunOxygenVents from './RailgunOxygenVents';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { useShipPhysics } from '../../hooks/useShipPhysics';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
@@ -131,6 +132,7 @@ export default function Spaceship({
         <ShipParticleCloud shipGroupRef={groupRef} {...shipParticleCloudProps} />
       )}
       <RailgunDamagePainter shipGroupRef={groupRef} />
+      <RailgunOxygenVents shipGroupRef={groupRef} />
       {enableShipExplosion && (
         <ShipExplosion shipGroupRef={groupRef} shipPositionRef={positionRef} />
       )}

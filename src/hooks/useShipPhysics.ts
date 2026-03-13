@@ -83,7 +83,7 @@ export function useShipPhysics({
 
   useEffect(() => {
     const onRailgunHit = () => {
-      angularVelocity.current += (Math.random() < 0.5 ? -1 : 1) * 3.2;
+      angularVelocity.current += (Math.random() < 0.5 ? -1 : 1) * 0.2;
       shipControlDisabledUntil.current = Math.max(
         shipControlDisabledUntil.current,
         performance.now() + 2500

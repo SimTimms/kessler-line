@@ -14,6 +14,7 @@ const ORBIT_CLOSE_DIST = 150; // world units to declare orbit closed
 const ORBIT_AWAY_DIST = 500;
 const HUD_BLUE = 0x00c8ff;
 const VELOCITY_ORANGE = 0xff8800;
+const VELOCITY_X_OFFSET = -20;
 
 // Module-level scratch — no GC per frame
 const _simPos = new THREE.Vector3();
@@ -37,7 +38,7 @@ export default function VelocityIndicator({
         color: VELOCITY_ORANGE,
         dashSize: 3,
         gapSize: 2,
-        opacity: 0.15,
+        opacity: 0.015,
         transparent: true,
         depthTest: false,
       });
@@ -146,7 +147,8 @@ export default function VelocityIndicator({
     const startZ = _simPos.z;
 
     for (let i = 0; i < TRAJ_STEPS; i++) {
-      posArr[i * 3] = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
+      const baseX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
+      posArr[i * 3] = baseX + VELOCITY_X_OFFSET;
       posArr[i * 3 + 1] = 0;
       posArr[i * 3 + 2] = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
 
@@ -191,7 +193,7 @@ export default function VelocityIndicator({
         const hitX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
         const hitZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
         for (let j = i + 1; j < TRAJ_STEPS; j++) {
-          posArr[j * 3] = hitX;
+          posArr[j * 3] = hitX + VELOCITY_X_OFFSET;
           posArr[j * 3 + 1] = 0;
           posArr[j * 3 + 2] = hitZ;
         }
@@ -218,7 +220,7 @@ export default function VelocityIndicator({
         maxDistFromStart > ORBIT_AWAY_DIST &&
         distFromStart < ORBIT_CLOSE_DIST
       ) {
-        posArr[i * 3] = ship.x;
+        posArr[i * 3] = ship.x + VELOCITY_X_OFFSET;
         posArr[i * 3 + 1] = 0;
         posArr[i * 3 + 2] = ship.z;
         orbitClosedAt = i;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { railgunImpactDir } from '../../context/ShipState';
 
-const MAX_MARKS = 50;
+const MAX_MARKS = 500;
 const DEFAULT_TEX_SIZE = 1024;
 
 interface RailgunDamagePainterProps {
@@ -23,6 +23,11 @@ type PainterInfo = {
   emissiveCtx: CanvasRenderingContext2D;
   emissiveTexture: THREE.CanvasTexture;
   size: number;
+};
+
+type RailgunDamagePoint = {
+  position: THREE.Vector3;
+  normal: THREE.Vector3;
 };
 
 function getMeshMaterial(mesh: THREE.Mesh): EmissiveMaterial | null {
@@ -95,7 +100,7 @@ function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): 
   const { ctx, texture, emissiveCtx, emissiveTexture, size } = painter;
   const x = uv.x * size;
   const y = (1 - uv.y) * size;
-  const radius = size * 0.0024;
+  const radius = size * 0.0012;
   const angle = Math.random() * Math.PI * 2;
   const stretch = 2.2;
 
@@ -107,8 +112,8 @@ function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): 
   // Charred core
   let gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
   gradient.addColorStop(0, 'rgba(0,0,0,1)');
-  gradient.addColorStop(0.92, 'rgba(10,4,2,1)');
-  gradient.addColorStop(1, 'rgba(10,4,2,0.35)');
+  gradient.addColorStop(0.995, 'rgba(5,2,1,1)');
+  gradient.addColorStop(1, 'rgba(5,2,1,0.8)');
   ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = gradient;
   ctx.beginPath();
@@ -116,8 +121,8 @@ function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): 
   ctx.fill();
 
   // Molten rim
-  const rimRadius = radius * 2.2;
-  gradient = ctx.createRadialGradient(0, 0, radius * 0.35, 0, 0, rimRadius);
+  const rimRadius = radius * 1.18;
+  gradient = ctx.createRadialGradient(0, 0, radius * 0.9, 0, 0, rimRadius);
   gradient.addColorStop(0, 'rgba(255,120,40,0)');
   gradient.addColorStop(0.55, `rgba(255,90,20,${0.95 + hueShift})`);
   gradient.addColorStop(0.8, `rgba(255,160,60,${0.6 + hueShift * 0.4})`);
@@ -133,7 +138,7 @@ function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): 
   emissiveCtx.translate(x, y);
   emissiveCtx.rotate(angle);
   emissiveCtx.scale(stretch, 1);
-  gradient = emissiveCtx.createRadialGradient(0, 0, radius * 0.4, 0, 0, rimRadius);
+  gradient = emissiveCtx.createRadialGradient(0, 0, radius * 0.9, 0, 0, rimRadius);
   gradient.addColorStop(0, 'rgba(255,120,40,0)');
   gradient.addColorStop(0.55, `rgba(255,90,20,${0.85 + hueShift})`);
   gradient.addColorStop(0.8, `rgba(255,160,60,${0.55 + hueShift * 0.4})`);
@@ -162,7 +167,8 @@ export default function RailgunDamagePainter({ shipGroupRef }: RailgunDamagePain
   useEffect(() => {
     const onRailgunHit = () => {
       const group = shipGroupRef.current;
-      if (!group || markCountRef.current >= MAX_MARKS) return;
+      if (!group) return;
+      const canPaint = markCountRef.current < MAX_MARKS;
 
       group.updateMatrixWorld(true);
       group.getWorldPosition(shipPos);
@@ -195,20 +201,48 @@ export default function RailgunDamagePainter({ shipGroupRef }: RailgunDamagePain
         hitsReverse[hitsReverse.length - 1],
       ].filter(Boolean) as THREE.Intersection[];
 
-      for (const hit of toPaint) {
-        if (!hit.uv || markCountRef.current >= MAX_MARKS) continue;
-        const mesh = hit.object as THREE.Mesh;
-        const material = getMeshMaterial(mesh);
-        if (!material) continue;
+      const damagePoints: RailgunDamagePoint[] = [];
 
-        let painter = paintersRef.current.get(mesh);
-        if (!painter) {
-          painter = initPainter(material);
-          paintersRef.current.set(mesh, painter);
+      for (const hit of toPaint) {
+        if (!hit.uv) continue;
+        const mesh = hit.object as THREE.Mesh;
+        if (canPaint && markCountRef.current < MAX_MARKS) {
+          const material = getMeshMaterial(mesh);
+          if (material) {
+            let painter = paintersRef.current.get(mesh);
+            if (!painter) {
+              painter = initPainter(material);
+              paintersRef.current.set(mesh, painter);
+            }
+
+            paintGouge(painter, hit.uv, Math.random() * 0.2);
+            markCountRef.current += 1;
+          }
         }
 
-        paintGouge(painter, hit.uv, Math.random() * 0.2);
-        markCountRef.current += 1;
+        if (hit.face) {
+          const worldNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+          damagePoints.push({ position: hit.point.clone(), normal: worldNormal });
+        } else {
+          damagePoints.push({ position: hit.point.clone(), normal: railgunImpactDir.clone() });
+        }
+      }
+
+      if (damagePoints.length) {
+        window.dispatchEvent(
+          new CustomEvent('RailgunDamagePoints', {
+            detail: {
+              points: damagePoints.map((p) => ({
+                x: p.position.x,
+                y: p.position.y,
+                z: p.position.z,
+                nx: p.normal.x,
+                ny: p.normal.y,
+                nz: p.normal.z,
+              })),
+            },
+          })
+        );
       }
     };
 
