@@ -9,12 +9,14 @@ import {
   shipInstructionMessage,
   radioChatterMessage,
 } from '../context/CinematicState';
+import { addMessage } from '../context/MessageStore';
 import { solarPlanetPositions } from '../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
 
 const CINEMATIC_AUTOPILOT_DURATION = 10;
-const NO_FLY_ZONE_DISTANCE = 42000;
+const NO_FLY_ZONE_DISTANCE = 20000;
 const RADIO_CHATTER_INTERVAL = 4.5;
+const FAMILY_MESSAGE_DELAY = 14000; // ms — a beat after autopilot ends
 
 const RADIO_CHATTER_LINES = [
   'BEACON: Cargo manifests synced. Neptune depot ETA stable.',
@@ -29,16 +31,15 @@ interface CinematicControllerProps {
 }
 
 export default function CinematicController({ shipPositionRef }: CinematicControllerProps) {
-  const didInit = useRef(false);
   const chatterIndex = useRef(0);
   const noFlyTriggered = useRef(false);
   const neptuneWorld = useRef(new THREE.Vector3());
 
   useEffect(() => {
-    if (didInit.current) return;
-    didInit.current = true;
     cinematicAutopilotActive.current = true;
     cinematicThrustReverse.current = true;
+    chatterIndex.current = 0;
+    noFlyTriggered.current = false;
 
     radioChatterMessage.current = RADIO_CHATTER_LINES[0];
 
@@ -52,9 +53,21 @@ export default function CinematicController({ shipPositionRef }: CinematicContro
       radioChatterMessage.current = RADIO_CHATTER_LINES[chatterIndex.current];
     }, RADIO_CHATTER_INTERVAL * 1000);
 
+    const familyMessageTimer = window.setTimeout(() => {
+      addMessage({
+        id: 'family-earth-1',
+        from: 'Home — Earth, Sector 9',
+        subject: 'Still here',
+        body: `Power's been stable for three weeks now. The feeds are patchy but we're getting through.\n\nOksana's growing fast. She asks about you.\n\nWe're okay. Come back when you can.\n\n— M`,
+      });
+    }, FAMILY_MESSAGE_DELAY);
+
     return () => {
       window.clearTimeout(autopilotTimer);
       window.clearInterval(chatterTimer);
+      window.clearTimeout(familyMessageTimer);
+      cinematicAutopilotActive.current = false;
+      cinematicThrustReverse.current = false;
     };
   }, []);
 
@@ -71,6 +84,13 @@ export default function CinematicController({ shipPositionRef }: CinematicContro
       neptuneNoFlyZoneMessage.current = 'NEPTUNE NO-FLY ZONE';
       shipInstructionMessage.current = 'AUTOPILOT: RETRO-BURN IMMEDIATELY';
       radioChatterMessage.current = 'NEPTUNE CONTROL: Docking rights revoked. Clear the zone.';
+
+      addMessage({
+        id: 'neptune-control-1',
+        from: 'Neptune Control — Traffic Authority',
+        subject: 'Approach Corridor Closed',
+        body: `Vessel, you have entered a restricted approach corridor.\n\nNo-fly zone is active. All docking rights for the inner ring are suspended pending security review.\n\nReverse thrust immediately and hold at minimum 20,000 units from the planet surface. Failure to comply will be treated as a hostile approach.\n\nNEPTUNE CONTROL OUT.`,
+      });
     }
   });
 

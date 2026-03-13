@@ -5,6 +5,8 @@ import { thrustMultiplier } from './Spaceship';
 import {
   cinematicThrustForward,
   cinematicThrustReverse,
+  MAIN_ENGINE_LOCAL_POS,
+  mainEngineDisabled,
   mobileThrustForward,
   mobileThrustReverse,
   mobileThrustLeft,
@@ -23,10 +25,13 @@ const BASE_SPEED = 100; // world units/second (jittered ±30%)
 const MAIN_MAX = 650;
 const MAIN_EMITTERS = {
   reverseA: {
-    localPos: new THREE.Vector3(-3.5, 2.5, -10.5),
+    localPos: MAIN_ENGINE_LOCAL_POS.reverseA,
     localDir: new THREE.Vector3(0, 0, -1),
   },
-  reverseB: { localPos: new THREE.Vector3(3.5, 2.5, -10.5), localDir: new THREE.Vector3(0, 0, -1) },
+  reverseB: {
+    localPos: MAIN_ENGINE_LOCAL_POS.reverseB,
+    localDir: new THREE.Vector3(0, 0, -1),
+  },
 } as const;
 type MainKey = keyof typeof MAIN_EMITTERS;
 
@@ -116,6 +121,24 @@ export default function ThrusterParticles({
     strafeRight: 0,
   });
 
+  const spriteTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+    const grad = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.4, 'rgba(255,255,255,0.65)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    return texture;
+  }, []);
+
   function spawnInto(
     emitters: typeof MAIN_EMITTERS | typeof RCS_EMITTERS,
     key: MainKey | RcsKey,
@@ -198,12 +221,21 @@ export default function ThrusterParticles({
       positions[i * 3 + 1] = p.py;
       positions[i * 3 + 2] = p.pz;
 
-      // Color: white-hot at birth → light blue → fades to black
+      // Color: white-hot at birth → light blue → purple in the last 20%
       const t = p.age / p.maxAge;
       const brightness = Math.pow(1 - t, 0.7);
-      colors[i * 3] = brightness * Math.max(0, 1 - t * 2.5); // r: fades first
-      colors[i * 3 + 1] = brightness * Math.max(0.45, 1 - t * 0.9); // g: stays high → light blue
-      colors[i * 3 + 2] = brightness; // b: stays longest
+      let r = brightness * Math.max(0, 1 - t * 2.5);
+      let g = brightness * Math.max(0.45, 1 - t * 0.9);
+      let b = brightness;
+      if (t > 0.8) {
+        const u = (t - 0.8) / 0.2;
+        r = THREE.MathUtils.lerp(r, brightness * 0.7, u);
+        g = THREE.MathUtils.lerp(g, brightness * 0.1, u);
+        b = THREE.MathUtils.lerp(b, brightness, u);
+      }
+      colors[i * 3] = r;
+      colors[i * 3 + 1] = g;
+      colors[i * 3 + 2] = b;
     }
 
     if (!geoRef.current) return;
@@ -224,6 +256,7 @@ export default function ThrusterParticles({
 
     if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
+        if (mainEngineDisabled[key].current) continue;
         mainAccum.current[key] += emitRate * delta;
         const count = Math.floor(mainAccum.current[key]);
         mainAccum.current[key] -= count;
@@ -274,6 +307,8 @@ export default function ThrusterParticles({
   });
 
   const sharedMatProps = {
+    map: spriteTexture,
+    alphaMap: spriteTexture,
     vertexColors: true,
     blending: THREE.AdditiveBlending,
     transparent: true,

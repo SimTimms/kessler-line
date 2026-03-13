@@ -26,6 +26,8 @@ import { solarPlanetPositions } from '../context/SolarSystemMinimap';
 import CinematicController from './CinematicController';
 import NeptuneNoFlyRing from './NeptuneNoFlyRing';
 import RailgunWarning from './RailgunWarning';
+import NebulaClouds from './NebulaClouds';
+import StartZoneAsteroidCluster from './StartZoneAsteroidCluster';
 import {
   RADIO_BEACON_DEFS,
   BEACON_AUDIO,
@@ -137,7 +139,7 @@ export default function Scene() {
   const neptuneWorldZ = neptune
     ? -Math.sin(neptune.initialAngle) * neptune.orbitRadius * SOLAR_SYSTEM_SCALE
     : 0;
-  const NEPTUNE_START_DISTANCE = 42100;
+  const NEPTUNE_START_DISTANCE = 20500;
   const NEPTUNE_START: [number, number, number] = [
     neptuneWorldX + NEPTUNE_START_DISTANCE,
     0,
@@ -222,11 +224,15 @@ export default function Scene() {
       <EarthAsteroidRing />
       <SunGravity />
       <AsteroidBelt />
+      <group position={[0, -3000, 0]}>
+        <StartZoneAsteroidCluster center={NEPTUNE_START} />
+        <NebulaClouds center={NEPTUNE_START} />
+      </group>
       <SpaceDebris />
       <EjectedCargo />
       <ProximityHighlight />
       <RedPlanetLine shipPositionRef={spaceshipPos} />
-      <RailgunWarning shipPositionRef={spaceshipPos} />
+      <RailgunWarning shipPositionRef={spaceshipPos} shipGroupRef={spaceshipGroupRef} />
       <VelocityIndicator shipPositionRef={spaceshipPos} />
       <AIShip id="0" url="/untitled.gltf" scale={1} position={[100, 0, -2000]} />
       <ShipDepthOfField shipPosRef={spaceshipPos} />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { railgunImpactDir } from '../../context/ShipState';
 
@@ -7,6 +8,7 @@ const DEFAULT_TEX_SIZE = 1024;
 const ORANGE_SHIFT_MAX = 0.15;
 const SIZE_VARIANCE = 0.7;
 const OPACITY_VARIANCE = 0.3;
+const EMISSIVE_LIFE = 2.6;
 
 interface RailgunDamagePainterProps {
   shipGroupRef: { current: THREE.Group | null };
@@ -26,11 +28,25 @@ type PainterInfo = {
   emissiveCtx: CanvasRenderingContext2D;
   emissiveTexture: THREE.CanvasTexture;
   size: number;
+  emissiveMarks: EmissiveMark[];
 };
 
 type RailgunDamagePoint = {
   position: THREE.Vector3;
   normal: THREE.Vector3;
+};
+
+type EmissiveMark = {
+  uv: THREE.Vector2;
+  radius: number;
+  angle: number;
+  longStreak: boolean;
+  stretch: number;
+  hueShift: number;
+  colorShift: number;
+  opacityJitter: number;
+  createdAt: number;
+  life: number;
 };
 
 function getMeshMaterial(mesh: THREE.Mesh): EmissiveMaterial | null {
@@ -91,12 +107,21 @@ function initPainter(material: EmissiveMaterial): PainterInfo {
   emissiveTexture.colorSpace = THREE.SRGBColorSpace;
 
   material.map = texture;
-  material.emissive = new THREE.Color('#ff5a1a');
+  material.emissive = new THREE.Color('#ffffff');
   material.emissiveIntensity = Math.max(material.emissiveIntensity ?? 0, 1.4);
   material.emissiveMap = emissiveTexture;
   material.needsUpdate = true;
 
-  return { canvas, ctx, texture, emissiveCanvas, emissiveCtx, emissiveTexture, size };
+  return {
+    canvas,
+    ctx,
+    texture,
+    emissiveCanvas,
+    emissiveCtx,
+    emissiveTexture,
+    size,
+    emissiveMarks: [],
+  };
 }
 
 function rgbaTowardOrange(r: number, g: number, b: number, a: number, t: number): string {
@@ -113,8 +138,13 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): void {
-  const { ctx, texture, emissiveCtx, emissiveTexture, size } = painter;
+function paintGouge(
+  painter: PainterInfo,
+  uv: THREE.Vector2,
+  hueShift: number,
+  now: number
+): EmissiveMark {
+  const { ctx, texture, size } = painter;
   const x = uv.x * size;
   const y = (1 - uv.y) * size;
   const sizeJitter = 1 + (Math.random() * 2 - 1) * SIZE_VARIANCE;
@@ -166,47 +196,100 @@ function paintGouge(painter: PainterInfo, uv: THREE.Vector2, hueShift: number): 
   ctx.arc(0, 0, rimRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Emissive rim (no core)
+  ctx.restore();
+  texture.needsUpdate = true;
+
+  return {
+    uv: uv.clone(),
+    radius,
+    angle,
+    longStreak,
+    stretch,
+    hueShift,
+    colorShift,
+    opacityJitter,
+    createdAt: now,
+    life: EMISSIVE_LIFE * (0.7 + Math.random() * 0.6),
+  };
+}
+
+function drawEmissiveMark(painter: PainterInfo, mark: EmissiveMark, progress: number): void {
+  const { emissiveCtx, size } = painter;
+  const x = mark.uv.x * size;
+  const y = (1 - mark.uv.y) * size;
+  const rimRadius = mark.radius * 1.18;
+  const heat = 1 - progress;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (progress < 0.5) {
+    const k = progress * 2;
+    r = 255;
+    g = 136 * k;
+  } else {
+    const k = (progress - 0.5) * 2;
+    r = 255 * (1 - k);
+    g = 136 * (1 - k);
+  }
+
   emissiveCtx.save();
   emissiveCtx.translate(x, y);
-  emissiveCtx.rotate(angle);
-  emissiveCtx.scale(stretch, 1);
-  gradient = emissiveCtx.createRadialGradient(0, 0, radius * 0.9, 0, 0, rimRadius);
-  gradient.addColorStop(0, 'rgba(255,120,40,0)');
-  const emissiveA1 = clamp01((0.85 + hueShift) * opacityJitter);
-  const emissiveA2 = clamp01((0.55 + hueShift * 0.4) * opacityJitter);
-  gradient.addColorStop(0.55, rgbaTowardOrange(255, 90, 20, emissiveA1, colorShift));
-  gradient.addColorStop(0.8, rgbaTowardOrange(255, 160, 60, emissiveA2, colorShift));
-  gradient.addColorStop(1, rgbaTowardOrange(255, 60, 20, 0, colorShift));
+  emissiveCtx.rotate(mark.angle);
+  emissiveCtx.scale(mark.stretch, 1);
+  const gradient = emissiveCtx.createRadialGradient(0, 0, mark.radius * 0.9, 0, 0, rimRadius);
+  gradient.addColorStop(0, `rgba(${r},${g},${b},0)`);
+  const emissiveA1 = clamp01((0.85 + mark.hueShift) * mark.opacityJitter) * heat;
+  const emissiveA2 = clamp01((0.55 + mark.hueShift * 0.4) * mark.opacityJitter) * heat;
+  gradient.addColorStop(0.55, `rgba(${r},${g},${b},${emissiveA1})`);
+  gradient.addColorStop(0.8, `rgba(${r},${g},${b},${emissiveA2})`);
+  gradient.addColorStop(1, `rgba(${r},${g},${b},0)`);
   emissiveCtx.globalCompositeOperation = 'lighter';
   emissiveCtx.fillStyle = gradient;
   emissiveCtx.beginPath();
   emissiveCtx.arc(0, 0, rimRadius, 0, Math.PI * 2);
   emissiveCtx.fill();
 
-  if (longStreak) {
-    emissiveCtx.strokeStyle = rgbaTowardOrange(255, 120, 40, 0.6, colorShift);
-    emissiveCtx.lineWidth = radius * 0.35;
+  if (mark.longStreak) {
+    emissiveCtx.strokeStyle = `rgba(${r},${g},${b},${0.6 * heat})`;
+    emissiveCtx.lineWidth = mark.radius * 0.35;
     emissiveCtx.beginPath();
     emissiveCtx.moveTo(-rimRadius * 5, 0);
     emissiveCtx.lineTo(rimRadius * 5, 0);
     emissiveCtx.stroke();
   }
   emissiveCtx.restore();
-
-  ctx.restore();
-  texture.needsUpdate = true;
-  emissiveTexture.needsUpdate = true;
 }
 
 export default function RailgunDamagePainter({ shipGroupRef }: RailgunDamagePainterProps) {
   const paintersRef = useRef(new WeakMap<THREE.Mesh, PainterInfo>());
+  const paintersListRef = useRef<PainterInfo[]>([]);
   const markCountRef = useRef(0);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const rayOrigin = useMemo(() => new THREE.Vector3(), []);
   const reverseOrigin = useMemo(() => new THREE.Vector3(), []);
   const reverseDir = useMemo(() => new THREE.Vector3(), []);
   const shipPos = useMemo(() => new THREE.Vector3(), []);
+  const timeRef = useRef(0);
+
+  useFrame((_, delta) => {
+    timeRef.current += delta;
+    const now = timeRef.current;
+    for (const painter of paintersListRef.current) {
+      if (!painter.emissiveMarks.length) continue;
+      painter.emissiveCtx.clearRect(0, 0, painter.size, painter.size);
+      let alive = 0;
+      for (const mark of painter.emissiveMarks) {
+        const age = now - mark.createdAt;
+        if (age >= mark.life) continue;
+        const progress = clamp01(age / mark.life);
+        drawEmissiveMark(painter, mark, progress);
+        painter.emissiveMarks[alive] = mark;
+        alive += 1;
+      }
+      painter.emissiveMarks.length = alive;
+      painter.emissiveTexture.needsUpdate = true;
+    }
+  });
 
   useEffect(() => {
     const onRailgunHit = () => {
@@ -257,9 +340,11 @@ export default function RailgunDamagePainter({ shipGroupRef }: RailgunDamagePain
             if (!painter) {
               painter = initPainter(material);
               paintersRef.current.set(mesh, painter);
+              paintersListRef.current.push(painter);
             }
 
-            paintGouge(painter, hit.uv, Math.random() * 0.2);
+            const mark = paintGouge(painter, hit.uv, Math.random() * 0.2, timeRef.current);
+            painter.emissiveMarks.push(mark);
             markCountRef.current += 1;
           }
         }
@@ -291,7 +376,9 @@ export default function RailgunDamagePainter({ shipGroupRef }: RailgunDamagePain
     };
 
     window.addEventListener('RailgunHit', onRailgunHit);
-    return () => window.removeEventListener('RailgunHit', onRailgunHit);
+    return () => {
+      window.removeEventListener('RailgunHit', onRailgunHit);
+    };
   }, [rayOrigin, raycaster, shipGroupRef, shipPos, reverseDir, reverseOrigin]);
 
   return null;

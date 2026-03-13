@@ -3,34 +3,32 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { solarPlanetPositions } from '../context/SolarSystemMinimap';
 import {
-  shipControlDisabledUntil,
-  cinematicThrustForward,
-  cinematicThrustReverse,
+  MAIN_ENGINE_LOCAL_POS,
   railgunImpactDir,
   railgunImpactAt,
+  railgunTargetEngine,
 } from '../context/ShipState';
-import { cinematicAutopilotActive } from '../context/CinematicState';
 import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
 
-const WARNING_DISTANCE = 42000;
-const STRIKE_DISTANCE = 42000;
-const WARNING_COOLDOWN = 3.0;
-const STRIKE_COOLDOWN = 0.5;
+const STRIKE_DISTANCE = 20000;
+const STRIKE_COOLDOWN = 2.0;
 const SHOT_DURATION = 0.28;
 const SHOT_OVERSHOOT = 8000;
-const PASS_OFFSET = 0;
 const SHOT_HEIGHT_VARIANCE = 12000;
+const DEBUG_RAILGUN = true;
+const DEBUG_HIT_SCALE = 10;
 
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 interface RailgunWarningProps {
   shipPositionRef: { current: THREE.Vector3 };
+  shipGroupRef?: { current: THREE.Group | null };
 }
 
-export default function RailgunWarning({ shipPositionRef }: RailgunWarningProps) {
+export default function RailgunWarning({ shipPositionRef, shipGroupRef }: RailgunWarningProps) {
   const beamRef = useRef<THREE.Group>(null!);
-  const lastWarningRef = useRef(0);
-  const lastStrikeRef = useRef(0);
+  const debugRef = useRef<THREE.Group>(null!);
+  const lastStrikeRef = useRef(-STRIKE_COOLDOWN);
   const shotStartRef = useRef(0);
   const shotActiveRef = useRef(false);
   const shotTargetRef = useRef(new THREE.Vector3());
@@ -38,6 +36,7 @@ export default function RailgunWarning({ shipPositionRef }: RailgunWarningProps)
   const shotHeightRef = useRef(0);
 
   const geometry = useMemo(() => new THREE.CylinderGeometry(0.03, 0.03, 1, 12, 1, true), []);
+  const debugHitGeometry = useMemo(() => new THREE.SphereGeometry(1, 16, 12), []);
   const material = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
@@ -62,11 +61,33 @@ export default function RailgunWarning({ shipPositionRef }: RailgunWarningProps)
       }),
     []
   );
+  const debugMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color('#00ffcc'),
+        wireframe: true,
+        transparent: true,
+        opacity: 0.7,
+        depthWrite: false,
+      }),
+    []
+  );
 
   const dir = useRef(new THREE.Vector3());
-  const perp = useRef(new THREE.Vector3());
   const mid = useRef(new THREE.Vector3());
   const quat = useRef(new THREE.Quaternion());
+  const engineTarget = useRef(new THREE.Vector3());
+
+  const getEngineTarget = () => {
+    const group = shipGroupRef?.current;
+    if (!group) return null;
+    const targetKey = Math.random() < 0.5 ? 'reverseA' : 'reverseB';
+    const local = MAIN_ENGINE_LOCAL_POS[targetKey];
+    railgunTargetEngine.current = targetKey;
+    engineTarget.current.copy(local);
+    group.localToWorld(engineTarget.current);
+    return engineTarget.current;
+  };
 
   useFrame(({ clock }) => {
     const planetPos = solarPlanetPositions.Neptune;
@@ -84,32 +105,26 @@ export default function RailgunWarning({ shipPositionRef }: RailgunWarningProps)
 
     if (!shotActiveRef.current) {
       if (distance <= STRIKE_DISTANCE && now - lastStrikeRef.current >= STRIKE_COOLDOWN) {
+        const target = getEngineTarget();
+        if (!target) return;
         lastStrikeRef.current = now;
         shotActiveRef.current = true;
         shotStartRef.current = now;
         shotHeightRef.current = (Math.random() * 2 - 1) * SHOT_HEIGHT_VARIANCE;
-        shotTargetRef.current.copy(shipPos);
-        railgunImpactDir.subVectors(shipPos, shotOriginRef.current).normalize();
+        shotTargetRef.current.copy(target);
+        railgunImpactDir.subVectors(target, shotOriginRef.current).normalize();
         railgunImpactAt.current = performance.now();
-        const nowMs = performance.now();
-        shipControlDisabledUntil.current = nowMs + 2500;
-        cinematicAutopilotActive.current = false;
-        cinematicThrustForward.current = false;
-        cinematicThrustReverse.current = false;
-        window.dispatchEvent(new CustomEvent('RailgunHit'));
-      } else if (distance <= WARNING_DISTANCE && now - lastWarningRef.current >= WARNING_COOLDOWN) {
-        lastWarningRef.current = now;
-        shotActiveRef.current = true;
-        shotStartRef.current = now;
-        dir.current.subVectors(shipPos, shotOriginRef.current).normalize();
-        perp.current.set(-dir.current.z, 0, dir.current.x).normalize();
-        shotHeightRef.current = (Math.random() * 2 - 1) * SHOT_HEIGHT_VARIANCE;
-        shotTargetRef.current.copy(shipPos).addScaledVector(perp.current, PASS_OFFSET);
+        window.dispatchEvent(
+          new CustomEvent('RailgunHit', {
+            detail: { targetEngine: railgunTargetEngine.current },
+          })
+        );
       }
     }
 
     if (!shotActiveRef.current) {
       beamRef.current.visible = false;
+      if (debugRef.current) debugRef.current.visible = false;
       return;
     }
 
@@ -117,6 +132,7 @@ export default function RailgunWarning({ shipPositionRef }: RailgunWarningProps)
     if (t >= 1) {
       shotActiveRef.current = false;
       beamRef.current.visible = false;
+      if (debugRef.current) debugRef.current.visible = false;
       return;
     }
 
@@ -126,6 +142,7 @@ export default function RailgunWarning({ shipPositionRef }: RailgunWarningProps)
     const len = dir.current.length();
     if (len < 1) {
       beamRef.current.visible = false;
+      if (debugRef.current) debugRef.current.visible = false;
       return;
     }
 
@@ -138,15 +155,26 @@ export default function RailgunWarning({ shipPositionRef }: RailgunWarningProps)
     beamRef.current.quaternion.copy(quat.current);
     beamRef.current.scale.set(1, extendedLen, 1);
 
+    if (DEBUG_RAILGUN && debugRef.current) {
+      debugRef.current.visible = true;
+      debugRef.current.position.copy(shotTargetRef.current);
+      debugRef.current.scale.setScalar(0.03 * DEBUG_HIT_SCALE);
+    }
+
     const fade = Math.max(0, 1 - t);
     material.opacity = fade * 0.45;
     coreMaterial.opacity = fade * 0.7;
   });
 
   return (
-    <group ref={beamRef} frustumCulled={false}>
-      <mesh geometry={geometry} material={material} />
-      <mesh geometry={coreGeometry} material={coreMaterial} />
-    </group>
+    <>
+      <group ref={beamRef} frustumCulled={false}>
+        <mesh geometry={geometry} material={material} />
+        <mesh geometry={coreGeometry} material={coreMaterial} />
+      </group>
+      <group ref={debugRef} frustumCulled={false}>
+        <mesh geometry={debugHitGeometry} material={debugMaterial} />
+      </group>
+    </>
   );
 }

@@ -1,0 +1,82 @@
+.md-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.md-dialog {
+  background: rgba(2, 6, 14, 0.97);
+  border: 1px solid rgba(200, 160, 80, 0.4);
+  border-radius: 6px;
+  padding: 28px 36px;
+  font-family: monospace;
+  min-width: 360px;
+  max-width: 500px;
+  box-shadow: 0 0 40px rgba(200, 140, 40, 0.12);
+  pointer-events: auto;
+}
+
+.md-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.md-from {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(200, 160, 80, 0.55);
+  text-transform: uppercase;
+}
+
+.md-date {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(200, 160, 80, 0.35);
+}
+
+.md-subject {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: rgba(240, 200, 110, 0.9);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.md-divider {
+  height: 1px;
+  background: rgba(200, 160, 80, 0.18);
+  margin-bottom: 18px;
+}
+
+.md-body {
+  font-size: 13px;
+  line-height: 1.85;
+  color: #d4c49a;
+  white-space: pre-wrap;
+  margin-bottom: 24px;
+}
+
+.md-close {
+  display: block;
+  margin: 0 auto;
+  padding: 8px 24px;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  background: transparent;
+  color: rgba(200, 160, 80, 0.45);
+  border: 1px solid rgba(200, 160, 80, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.md-close:hover {
+  color: rgba(240, 200, 110, 0.8);
+  border-color: rgba(200, 160, 80, 0.5);
+}

@@ -1,62 +1,48 @@
-.nav-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.nav-bar {
+  z-index: 60;
+  width: 100dvw;
+  width: 100vw;
   position: fixed;
-  top: 0;
-  right: 0;
-  font-family: monospace;
-  font-size: 14px;
-  padding: 6px 14px;
+  box-sizing: border-box;
 }
 
-.nav-coords {
-  color: rgba(0, 200, 255, 0.8);
-  font-size: 12px;
-  font-family: monospace;
+.nav-metrics {
+  flex: 1;
 }
 
-.nav-orbit {
-  color: rgba(0, 200, 255, 0.8);
-  font-size: 11px;
-  font-family: monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
+.nav-coords,
+.nav-orbit,
 .nav-apses {
-  color: rgba(0, 200, 255, 0.7);
-  font-size: 10px;
-  font-family: monospace;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
 }
 
 .nav-target-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  pointer-events: auto;
 }
 
 .nav-target-label {
-  color: rgba(0, 200, 255, 0.8);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  opacity: 0.8;
+  color: rgba(160, 220, 255, 0.8);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  opacity: 0.3;
 }
 
 .nav-target-btn {
-  background: rgba(0, 0, 0, 0.5);
-  color: rgba(0, 200, 255, 0.8);
-  border: 1px solid rgba(0, 200, 255, 0.5);
-  font-family: monospace;
-  font-size: 12px;
-  padding: 3px 8px;
+  background: rgba(6, 18, 28, 0.75);
+  color: rgba(190, 230, 255, 0.95);
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 0.7rem;
+  padding: 6px 10px;
   cursor: pointer;
   outline: none;
-  letter-spacing: 0.06em;
-  text-align: left;
-  border-radius: 3px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  border-radius: 0px;
+  text-transform: uppercase;
+  width: 100px;
 }
 
 .nav-target-btn:hover {

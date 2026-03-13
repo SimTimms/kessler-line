@@ -1,0 +1,137 @@
+.power-hud {
+  position: fixed;
+  top: 86px;
+  left: 16px;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(2px);
+  gap: 4px;
+  z-index: 100;
+  padding: 10px;
+  background: rgba(0, 200, 255, 0.1);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+}
+
+.power-hud-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.power-hud-divider {
+  color: rgba(0, 200, 255, 0.4);
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.power-hud-section {
+  color: #a0e8ff;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.power-hud-cargo-item {
+  color: #00ff88;
+  font-size: 14px;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: underline dotted;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+}
+
+.power-hud-target {
+  color: #00cfff;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.power-hud-hint {
+  opacity: 0.7;
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.power-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 8, 18, 0.95);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  border-radius: 6px;
+  padding: 24px 32px;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  color: #00cfff;
+  min-width: 280px;
+  text-align: center;
+  box-shadow: 0 0 32px rgba(0, 200, 255, 0.15);
+  pointer-events: auto;
+  z-index: 100;
+}
+
+.power-dialog-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(0, 200, 255, 0.5);
+}
+
+.power-dialog-body {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #a0e8ff;
+  line-height: 1.6;
+}
+
+.power-dialog-amount {
+  margin: 0 0 16px;
+  font-size: 22px;
+  color: #ff6666;
+  letter-spacing: 0.06em;
+}
+
+.power-dialog-range {
+  width: 100%;
+  margin-bottom: 20px;
+  accent-color: #ff6666;
+}
+
+.power-dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.power-btn {
+  padding: 8px 20px;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.power-btn-cancel {
+  background: transparent;
+  color: rgba(0, 200, 255, 0.5);
+  border: 1px solid rgba(0, 200, 255, 0.3);
+}
+
+.power-btn-danger {
+  background: rgba(255, 80, 80, 0.12);
+  color: #ff6666;
+  border: 1px solid rgba(255, 80, 80, 0.6);
+  box-shadow: 0 0 8px rgba(255, 80, 80, 0.15);
+}

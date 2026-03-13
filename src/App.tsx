@@ -1,9 +1,16 @@
 import './App.css';
 import { AppShell } from './components/App';
 import { useAppLifecycle, useAppState } from './hooks';
+import { resumeAudioContext } from './context/SoundManager';
+import { useCallback, useState } from 'react';
 function App() {
   useAppLifecycle();
   const { hud, docking, npcHail, setNpcHail, beacon, mission, thrust } = useAppState();
+  const [hasStarted, setHasStarted] = useState(false);
+  const handleStart = useCallback(() => {
+    resumeAudioContext();
+    setHasStarted(true);
+  }, []);
 
   return (
     <AppShell
@@ -36,6 +43,8 @@ function App() {
       activeAudioRef={beacon.activeAudioRef}
       thrustLevel={thrust.thrustLevel}
       setThrustLevel={thrust.setThrustLevel}
+      showStartOverlay={!hasStarted}
+      onStart={handleStart}
     />
   );
 }

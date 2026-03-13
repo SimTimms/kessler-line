@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import PowerHUD from '../PowerHUD';
+import PowerHUD from '../PowerHUD/PowerHUD';
 import MagneticHUD from '../MagneticHUD';
 import DriveSignatureHUD from '../DriveSignatureHUD';
 import ProximityHUD from '../ProximityHUD';
@@ -9,6 +9,8 @@ import { HUD } from '../HUD/HUD';
 import { NavHUD } from '../NavHUD/NavHUD';
 import { RadioHUD } from '../RadioHUD/RadioHUD';
 import CinematicOverlay from '../CinematicOverlay';
+import InboxHUD from '../InboxHUD/InboxHUD';
+import RadioChatterStream from '../RadioChatterStream';
 import { spotlightOnRef } from '../LaserRay';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
@@ -69,6 +71,8 @@ const HudLayer = memo(function HudLayer({
       />
       <NavHUD />
       <RadioHUD />
+      <InboxHUD />
+      <RadioChatterStream />
       <CinematicOverlay />
     </>
   );

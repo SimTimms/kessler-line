@@ -20,6 +20,7 @@ interface StepParams {
   yawRight: boolean;
   fwd: boolean;
   rev: boolean;
+  revScale?: number;
   strL: boolean;
   strR: boolean;
 }
@@ -38,6 +39,7 @@ export function applyPhysicsStep({
   yawRight,
   fwd,
   rev,
+  revScale = 1,
   strL,
   strR,
 }: StepParams) {
@@ -47,7 +49,8 @@ export function applyPhysicsStep({
 
   _localForward.set(0, 0, 1).applyQuaternion(group.quaternion);
   if (fwd) velocity.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * dt);
-  if (rev) velocity.addScaledVector(_localForward, THRUST * thrustMultiplier.current * dt);
+  if (rev)
+    velocity.addScaledVector(_localForward, THRUST * thrustMultiplier.current * revScale * dt);
 
   _localRight.set(1, 0, 0).applyQuaternion(group.quaternion);
   if (strL) velocity.addScaledVector(_localRight, -THRUST * dt);

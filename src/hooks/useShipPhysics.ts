@@ -3,9 +3,13 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   THRUST,
+  damageHull,
   hullIntegrity,
   cinematicThrustForward,
   cinematicThrustReverse,
+  MAIN_ENGINE_HIT_RADIUS,
+  MAIN_ENGINE_LOCAL_POS,
+  mainEngineDisabled,
   mobileThrustForward,
   mobileThrustLeft,
   mobileThrustReverse,
@@ -18,7 +22,9 @@ import {
   shipDestroyed,
   shipControlDisabledUntil,
   thrustMultiplier,
+  railgunTargetEngine,
 } from '../context/ShipState';
+import { playImpactSoundOverlap, playRailgunHit } from '../context/SoundManager';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 import {
   applyDockedState,
@@ -33,6 +39,15 @@ import {
   updateThrusterLight,
 } from './shipPhysics';
 import { cinematicAutopilotActive, neptuneNoFlyZoneActive } from '../context/CinematicState';
+
+const ENGINE_TORQUE_SCALE = 0.15;
+const DEBUG_RAILGUN_ENGINE_HITS = true;
+const DEBUG_ENGINE_DISABLE_CHANGES = true;
+const _engineOffset = new THREE.Vector3();
+const _engineForce = new THREE.Vector3();
+const _engineTorque = new THREE.Vector3();
+const _engineForward = new THREE.Vector3();
+const _spinEuler = new THREE.Vector3();
 
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
@@ -66,6 +81,11 @@ export function useShipPhysics({
   const renderPosition = useRef(new THREE.Vector3());
   const didInitPositions = useRef(false);
   const angularVelocity = useRef(0); // yaw rate in rad/s — no drag, persists like linear velocity
+  const angularVelocity3 = useRef(new THREE.Vector3());
+  const prevEngineDisabled = useRef({ a: false, b: false });
+  const lastRailgunTarget = useRef<'reverseA' | 'reverseB' | null>(null);
+  const destroyedFired = useRef(false);
+  const destroyedSpinSet = useRef(false);
   const dockedTo = useRef<string | null>(null); // collision ID of the docked bay, or null
   const primaryGravityId = useRef<string | null>(null);
   const primaryGravityVelocity = useRef(new THREE.Vector3());
@@ -82,13 +102,6 @@ export function useShipPhysics({
   const thrustStrafeRight = useRef(false); // E: strafe starboard
 
   useEffect(() => {
-    const onRailgunHit = () => {
-      angularVelocity.current += (Math.random() < 0.5 ? -1 : 1) * 0.2;
-      shipControlDisabledUntil.current = Math.max(
-        shipControlDisabledUntil.current,
-        performance.now() + 2500
-      );
-    };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'KeyW') thrustForward.current = true;
       if (e.code === 'KeyS') thrustReverse.current = true;
@@ -116,11 +129,82 @@ export function useShipPhysics({
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    const onRailgunHit = (event: Event) => {
+      const detail = (event as CustomEvent<{ targetEngine?: 'reverseA' | 'reverseB' | null }>)
+        .detail;
+      lastRailgunTarget.current = detail?.targetEngine ?? railgunTargetEngine.current;
+      playImpactSoundOverlap();
+      playRailgunHit();
+      const damage = 20 + Math.random() * 10;
+      damageHull(damage);
+    };
     window.addEventListener('RailgunHit', onRailgunHit);
+    const onDamagePoints = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          points: Array<{ x: number; y: number; z: number; nx: number; ny: number; nz: number }>;
+        }>
+      ).detail;
+      if (!detail?.points?.length || !groupRef.current) return;
+
+      const group = groupRef.current;
+      const localPoint = new THREE.Vector3();
+      let closestA = Infinity;
+      let closestB = Infinity;
+      for (const point of detail.points) {
+        localPoint.set(point.x, point.y, point.z);
+        group.worldToLocal(localPoint);
+
+        const distA = localPoint.distanceTo(MAIN_ENGINE_LOCAL_POS.reverseA);
+        const distB = localPoint.distanceTo(MAIN_ENGINE_LOCAL_POS.reverseB);
+        if (distA < closestA) closestA = distA;
+        if (distB < closestB) closestB = distB;
+      }
+
+      const hitA = closestA <= MAIN_ENGINE_HIT_RADIUS;
+      const hitB = closestB <= MAIN_ENGINE_HIT_RADIUS;
+      const target = lastRailgunTarget.current ?? railgunTargetEngine.current;
+      if (DEBUG_RAILGUN_ENGINE_HITS) {
+        // eslint-disable-next-line no-console
+        console.debug('[railgun] engine hit check', {
+          target,
+          hitA,
+          hitB,
+          closestA: Number.isFinite(closestA) ? closestA.toFixed(2) : 'inf',
+          closestB: Number.isFinite(closestB) ? closestB.toFixed(2) : 'inf',
+          disabledA: mainEngineDisabled.reverseA.current,
+          disabledB: mainEngineDisabled.reverseB.current,
+        });
+      }
+      if (target === 'reverseA' && hitA) {
+        mainEngineDisabled.reverseA.current = true;
+      } else if (target === 'reverseB' && hitB) {
+        mainEngineDisabled.reverseB.current = true;
+      }
+      if (DEBUG_ENGINE_DISABLE_CHANGES) {
+        const nextA = mainEngineDisabled.reverseA.current;
+        const nextB = mainEngineDisabled.reverseB.current;
+        if (prevEngineDisabled.current.a !== nextA || prevEngineDisabled.current.b !== nextB) {
+          // eslint-disable-next-line no-console
+          console.debug('[railgun] engine disabled changed', {
+            from: { a: prevEngineDisabled.current.a, b: prevEngineDisabled.current.b },
+            to: { a: nextA, b: nextB },
+            target,
+            hitA,
+            hitB,
+          });
+          prevEngineDisabled.current = { a: nextA, b: nextB };
+        }
+      }
+      lastRailgunTarget.current = null;
+      railgunTargetEngine.current = null;
+    };
+    window.addEventListener('RailgunDamagePoints', onDamagePoints);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('RailgunHit', onRailgunHit);
+      window.removeEventListener('RailgunDamagePoints', onDamagePoints);
     };
   }, [groupRef]);
 
@@ -144,7 +228,6 @@ export function useShipPhysics({
     groupRef.current.position.copy(physicsPosition.current);
     if (shipDestroyed.current) {
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
-      return;
     }
 
     if (
@@ -169,6 +252,15 @@ export function useShipPhysics({
       thrustStrafeLeft,
       thrustStrafeRight,
     });
+
+    if (shipDestroyed.current) {
+      yawLeft = false;
+      yawRight = false;
+      fwd = false;
+      rev = false;
+      strL = false;
+      strR = false;
+    }
 
     const controlsLocked = performance.now() < shipControlDisabledUntil.current;
     if (controlsLocked) {
@@ -202,9 +294,31 @@ export function useShipPhysics({
       }
     }
 
-    const mainThrust = fwd || rev;
+    const activeMainEngines = shipDestroyed.current
+      ? 0
+      : (mainEngineDisabled.reverseA.current ? 0 : 1) +
+        (mainEngineDisabled.reverseB.current ? 0 : 1);
+    const mainThrust = fwd || (rev && activeMainEngines > 0);
     const rcsThrust = strL || strR || yawLeft || yawRight;
     const anyThrusting = updateEngineAudio({ mainThrust, rcsThrust });
+    if (shipDestroyed.current && thrusterLightRef.current) {
+      thrusterLightIntensity.current = 0;
+      thrusterLightRef.current.intensity = 0;
+    }
+
+    if (rev && activeMainEngines === 1) {
+      const engineLocal = mainEngineDisabled.reverseA.current
+        ? MAIN_ENGINE_LOCAL_POS.reverseB
+        : MAIN_ENGINE_LOCAL_POS.reverseA;
+      _engineOffset.copy(engineLocal).applyQuaternion(groupRef.current.quaternion);
+      _engineForward.set(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
+      const perEngineForce = THRUST * thrustMultiplier.current * 0.5;
+      _engineForce.copy(_engineForward).multiplyScalar(perEngineForce);
+      _engineTorque.crossVectors(_engineOffset, _engineForce);
+      angularVelocity.current += _engineTorque.y * ENGINE_TORQUE_SCALE * cappedDelta;
+    }
+
+    const revScale = activeMainEngines / 2;
 
     let remaining = cappedDelta;
     while (remaining > 0) {
@@ -224,6 +338,7 @@ export function useShipPhysics({
         yawRight,
         fwd,
         rev,
+        revScale,
         strL,
         strR,
       });
@@ -236,13 +351,36 @@ export function useShipPhysics({
       });
     }
 
-    if (hullIntegrity <= 0) {
+    if (shipDestroyed.current) {
+      _spinEuler.copy(angularVelocity3.current).multiplyScalar(cappedDelta);
+      groupRef.current.rotation.x += _spinEuler.x;
+      groupRef.current.rotation.z += _spinEuler.z;
+    }
+
+    if (hullIntegrity <= 0 && !destroyedFired.current) {
+      destroyedFired.current = true;
       shipDestroyed.current = true;
-      groupRef.current.visible = false;
-      velocity.current.set(0, 0, 0);
-      angularVelocity.current = 0;
+      cinematicAutopilotActive.current = false;
+      cinematicThrustForward.current = false;
+      cinematicThrustReverse.current = false;
+      thrustForward.current = false;
+      thrustReverse.current = false;
+      thrustLeft.current = false;
+      thrustRight.current = false;
+      thrustStrafeLeft.current = false;
+      thrustStrafeRight.current = false;
+      mainEngineDisabled.reverseA.current = true;
+      mainEngineDisabled.reverseB.current = true;
+      if (!destroyedSpinSet.current) {
+        destroyedSpinSet.current = true;
+        angularVelocity.current += (Math.random() < 0.5 ? -1 : 1) * 0.9;
+        angularVelocity3.current.set(
+          (Math.random() * 2 - 1) * 0.6,
+          0,
+          (Math.random() * 2 - 1) * 0.6
+        );
+      }
       window.dispatchEvent(new CustomEvent('ShipDestroyed'));
-      return;
     }
 
     physicsPosition.current.copy(groupRef.current.position);

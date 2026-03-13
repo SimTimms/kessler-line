@@ -2,11 +2,13 @@ import { useRef, useCallback } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import ThrusterParticles from './ThrusterParticles';
+import ThrusterHitboxDebug from './ThrusterHitboxDebug';
 import DockingReleaseParticles from '../DockingReleaseParticles';
 import ShipExplosion from './ShipExplosion';
 import ShipParticleCloud, { type ShipParticleCloudProps } from './ShipParticleCloud';
 import RailgunDamagePainter from './RailgunDamagePainter';
 import RailgunOxygenVents from './RailgunOxygenVents';
+import ShipBreakApart from './ShipBreakApart';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { useShipPhysics } from '../../hooks/useShipPhysics';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
@@ -42,6 +44,8 @@ interface SpaceshipProps {
   enableShipParticleCloud?: boolean;
   shipParticleCloudProps?: Partial<ShipParticleCloudProps>;
 }
+
+const DEBUG_THRUSTER_HITBOXES = false;
 
 export default function Spaceship({
   url,
@@ -93,6 +97,9 @@ export default function Spaceship({
     <>
       <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
         <primitive object={gltf.scene} scale={scale} rotation={[0, Math.PI / 2, 0]} />
+        <group position={[0, -2, 0]}>
+          <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
+        </group>
         {/* Thruster point light — rear of ship, activates when any thruster fires */}
         <pointLight
           ref={thrusterLightRef}
@@ -135,6 +142,9 @@ export default function Spaceship({
       <RailgunOxygenVents shipGroupRef={groupRef} />
       {enableShipExplosion && (
         <ShipExplosion shipGroupRef={groupRef} shipPositionRef={positionRef} />
+      )}
+      {enableShipExplosion && (
+        <ShipBreakApart shipGroupRef={groupRef} shipPositionRef={positionRef} />
       )}
     </>
   );

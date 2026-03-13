@@ -15,9 +15,9 @@ export const NavHUD = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Coords display — mutated directly to avoid re-renders
-  const coordsRef = useRef<HTMLDivElement>(null!);
-  const orbitRef = useRef<HTMLDivElement>(null!);
-  const apsesRef = useRef<HTMLDivElement>(null!);
+  const coordsRef = useRef<HTMLSpanElement>(null!);
+  const orbitRef = useRef<HTMLSpanElement>(null!);
+  const apsesRef = useRef<HTMLSpanElement>(null!);
   useEffect(() => {
     let raf: number;
     const tick = () => {
@@ -71,12 +71,25 @@ export const NavHUD = () => {
 
   return (
     <>
-      <div className="nav-wrapper">
-        <div ref={coordsRef} className="nav-coords" />
-        <div ref={orbitRef} className="nav-orbit" />
-        <div ref={apsesRef} className="nav-apses" />
+      <div className="hud-bar nav-bar">
+        <div className="hud-metrics nav-metrics">
+          <div className="hud-metric">
+            <div className="hud-label">Position</div>
+            <span ref={coordsRef} className="hud-value nav-coords" />
+          </div>
+          <div className="hud-divider" />
+          <div className="hud-metric">
+            <div className="hud-label">Orbit</div>
+            <span ref={orbitRef} className="hud-value nav-orbit" />
+          </div>
+          <div className="hud-divider" />
+          <div className="hud-metric">
+            <div className="hud-label">Apsis</div>
+            <span ref={apsesRef} className="hud-value nav-apses" />
+          </div>
+        </div>
         <div className="nav-target-group">
-          <div className="nav-target-label">NAV TARGET</div>
+          <div className="nav-target-label">Nav Target</div>
           <button className="nav-target-btn" onClick={() => setDialogOpen(true)}>
             {displayLabel}
           </button>

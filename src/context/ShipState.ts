@@ -75,3 +75,17 @@ export const shipImpactPulseUntil = { current: 0 }; // performance.now() ms
 export const shipControlDisabledUntil = { current: 0 }; // performance.now() ms
 export const railgunImpactDir = new THREE.Vector3();
 export const railgunImpactAt = { current: 0 }; // performance.now() ms
+export const railgunTargetEngine = {
+  current: null as 'reverseA' | 'reverseB' | null,
+};
+
+// ── Main engine damage state ───────────────────────────────────────────────
+export const MAIN_ENGINE_HIT_RADIUS = 2.5;
+export const MAIN_ENGINE_LOCAL_POS = {
+  reverseA: new THREE.Vector3(-3.5, 2.5, -10.5),
+  reverseB: new THREE.Vector3(3.5, 2.5, -10.5),
+} as const;
+export const mainEngineDisabled = {
+  reverseA: { current: false },
+  reverseB: { current: false },
+};

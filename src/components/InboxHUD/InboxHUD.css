@@ -1,0 +1,76 @@
+.inbox-hud-btn {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  border-radius: 0px;
+  color: var(--hud-text-muted);
+  font-family: var(--hud-font);
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 40;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.inbox-hud-btn:hover {
+  border-color: var(--hud-border-strong);
+  color: var(--hud-text);
+}
+
+.inbox-hud-btn--unread {
+  color: var(--hud-text);
+  box-shadow: 0 0 12px var(--hud-glow);
+  animation: inbox-pulse 2s ease-in-out infinite;
+}
+
+.inbox-hud-icon {
+  font-size: 13px;
+}
+
+.inbox-hud-badge {
+  background: var(--hud-text);
+  color: #000;
+  font-size: 9px;
+  font-weight: bold;
+  font-family: var(--hud-font);
+  border-radius: 8px;
+  padding: 1px 5px;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.inbox-hud-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hud-text);
+  box-shadow: 0 0 8px var(--hud-glow-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inbox-hud-dot::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--hud-dot-core);
+}
+
+@keyframes inbox-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(0, 200, 255, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(0, 200, 255, 0.4);
+  }
+}
