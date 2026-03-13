@@ -2,8 +2,8 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const COUNT = 6000;
-const HALF = 150; // half-extent of the wrapping cube (300 units across)
+const COUNT = 1200;
+const HALF = 1500; // half-extent of the wrapping cube (3000 units across)
 
 function makeParticleTexture(): THREE.Texture {
   const size = 64;
@@ -28,14 +28,15 @@ export default function SpaceParticles({ shipPositionRef }: SpaceParticlesProps)
   const geoRef = useRef<THREE.BufferGeometry>(null!);
 
   const { positions, texture } = useMemo(() => {
+    const { x: sx, y: sy, z: sz } = shipPositionRef.current;
     const positions = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
-      positions[i * 3 + 0] = (Math.random() - 0.5) * HALF * 2;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * HALF * 2;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * HALF * 2;
+      positions[i * 3 + 0] = sx + (Math.random() - 0.5) * HALF * 2;
+      positions[i * 3 + 1] = sy + (Math.random() - 0.5) * HALF * 2;
+      positions[i * 3 + 2] = sz + (Math.random() - 0.5) * HALF * 2;
     }
     return { positions, texture: makeParticleTexture() };
-  }, []);
+  }, [shipPositionRef]);
 
   useFrame(() => {
     if (!geoRef.current) return;

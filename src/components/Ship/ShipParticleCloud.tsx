@@ -2,7 +2,11 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipPosRef } from '../../context/ShipPos';
-import { getShipSpeedMps } from '../../context/ShipState';
+import {
+  getShipSpeedMps,
+  SHIP_IMPACT_PULSE_MS,
+  shipImpactPulseUntil,
+} from '../../context/ShipState';
 import { playAsteroidImpact, setAsteroidHiss } from '../../context/SoundManager';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
@@ -53,6 +57,7 @@ export default function ShipParticleCloud({
   speedGateOverridesField = false,
 }: ShipParticleCloudProps) {
   const positionsRef = useRef<Float32Array>(new Float32Array(count * 3));
+  const materialRef = useRef<THREE.PointsMaterial | null>(null);
   const positionAttrRef = useRef<THREE.BufferAttribute | null>(null);
   const colorsRef = useRef<Float32Array>(new Float32Array(count * 3));
   const colorAttrRef = useRef<THREE.BufferAttribute | null>(null);
@@ -177,9 +182,15 @@ export default function ShipParticleCloud({
     const baseColors = pulseColorsRef.current;
     const t = clock.getElapsedTime();
 
+    const nowMs = performance.now();
+    const impactRemaining = shipImpactPulseUntil.current - nowMs;
+    const impactActive = impactRemaining > 0;
+    const impactAlpha = impactActive ? Math.min(1, impactRemaining / SHIP_IMPACT_PULSE_MS) : 0;
+    const impactBoost = 1 + impactAlpha * 2.2;
+
     const speedGateActive = enableSpeedGate && getShipSpeedMps() >= speedGateMin;
 
-    if (enableInEarthField && !(speedGateOverridesField && speedGateActive)) {
+    if (!impactActive && enableInEarthField && !(speedGateOverridesField && speedGateActive)) {
       const earthPos = solarPlanetPositions.Earth;
       if (earthPos) {
         earthWorldPos.set(earthPos.x * SOLAR_SYSTEM_SCALE, 0, earthPos.z * SOLAR_SYSTEM_SCALE);
@@ -244,7 +255,7 @@ export default function ShipParticleCloud({
       }
     }
 
-    if (enableSpeedGate && !speedGateActive && !enableInEarthField) {
+    if (!impactActive && enableSpeedGate && !speedGateActive && !enableInEarthField) {
       for (let i = 0; i < count; i++) {
         const base = i * 3;
         colors[base + 0] = 0;
@@ -259,9 +270,14 @@ export default function ShipParticleCloud({
       const base = i * 3;
       const pulse = Math.max(0, Math.sin(t * rates[i] + phases[i]));
       const intensity = pulse * pulse;
-      colors[base + 0] = baseColors[base + 0] * intensity;
-      colors[base + 1] = baseColors[base + 1] * intensity;
-      colors[base + 2] = baseColors[base + 2] * intensity;
+      colors[base + 0] = baseColors[base + 0] * intensity * impactBoost;
+      colors[base + 1] = baseColors[base + 1] * intensity * impactBoost;
+      colors[base + 2] = baseColors[base + 2] * intensity * impactBoost;
+    }
+
+    if (materialRef.current) {
+      materialRef.current.size = size * (impactActive ? 1.35 : 1);
+      materialRef.current.opacity = opacity * (impactActive ? 1 : 0.85);
     }
 
     if (positionAttrRef.current) positionAttrRef.current.needsUpdate = true;
@@ -287,6 +303,7 @@ export default function ShipParticleCloud({
         />
       </bufferGeometry>
       <pointsMaterial
+        ref={materialRef}
         color={color}
         size={size}
         sizeAttenuation

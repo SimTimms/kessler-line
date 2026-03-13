@@ -109,7 +109,7 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
     // Laser origin: ship world position offset 3 units along the ship's forward direction.
     // Forward is computed the same way Spaceship.tsx computes thrust direction.
     ship.getWorldPosition(_worldPos);
-    _forward.set(0, 0, -1).applyQuaternion(ship.quaternion);
+    _forward.set(0, 0, 1).applyQuaternion(ship.quaternion);
     _origin.copy(_worldPos).addScaledVector(_forward, 3);
 
     // Target: project camera ray through mouse cursor 1000 units into world space.

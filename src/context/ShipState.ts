@@ -60,7 +60,18 @@ export const mobileThrustRight = { current: false };
 export const mobileThrustStrafeLeft = { current: false };
 export const mobileThrustStrafeRight = { current: false };
 
+// ── Cinematic thrust overrides ───────────────────────────────────────────────
+export const cinematicThrustForward = { current: false };
+export const cinematicThrustReverse = { current: false };
+
 export const isRefueling = { current: false }; // set by Refuel button while docked
 export const isTransferringO2 = { current: false }; // set by Transfer O2 button while docked
 export const thrustMultiplier = { current: 1 }; // set by thrust slider in App.tsx; range 0.5–50
 export const shipDestroyed = { current: false }; // set true when hull reaches 0
+
+// ── Damage / control effects ───────────────────────────────────────────────
+export const SHIP_IMPACT_PULSE_MS = 1200;
+export const shipImpactPulseUntil = { current: 0 }; // performance.now() ms
+export const shipControlDisabledUntil = { current: 0 }; // performance.now() ms
+export const railgunImpactDir = new THREE.Vector3();
+export const railgunImpactAt = { current: 0 }; // performance.now() ms

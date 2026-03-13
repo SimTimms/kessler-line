@@ -8,6 +8,7 @@ import MiniMap from '../MiniMap';
 import { HUD } from '../HUD/HUD';
 import { NavHUD } from '../NavHUD/NavHUD';
 import { RadioHUD } from '../RadioHUD/RadioHUD';
+import CinematicOverlay from '../CinematicOverlay';
 import { spotlightOnRef } from '../LaserRay';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
@@ -68,6 +69,7 @@ const HudLayer = memo(function HudLayer({
       />
       <NavHUD />
       <RadioHUD />
+      <CinematicOverlay />
     </>
   );
 });

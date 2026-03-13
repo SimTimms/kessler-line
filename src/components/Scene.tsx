@@ -23,11 +23,13 @@ import SolarSystem, { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
 import SunGravity from './SunGravity';
 import { shipPosRef } from '../context/ShipPos';
 import { solarPlanetPositions } from '../context/SolarSystemMinimap';
+import CinematicController from './CinematicController';
+import NeptuneNoFlyRing from './NeptuneNoFlyRing';
+import RailgunWarning from './RailgunWarning';
 import {
   RADIO_BEACON_DEFS,
   BEACON_AUDIO,
   SPACE_STATION_DEF,
-  FUEL_STATION_DEF,
   type WorldObjectDef,
 } from '../config/worldConfig';
 
@@ -128,16 +130,25 @@ function OrbitingFuelStation({
 }
 
 export default function Scene() {
-  // Spawn near Earth for testing orbital mechanics.
-  // Earth world position = orbitRadius × SOLAR_SYSTEM_SCALE at its initialAngle.
-  const earth = PLANETS[2];
-  const earthWorldX = Math.cos(earth.initialAngle) * earth.orbitRadius * SOLAR_SYSTEM_SCALE;
-  const earthWorldZ = -Math.sin(earth.initialAngle) * earth.orbitRadius * SOLAR_SYSTEM_SCALE;
+  const neptune = PLANETS.find((planet) => planet.name === 'Neptune');
+  const neptuneWorldX = neptune
+    ? Math.cos(neptune.initialAngle) * neptune.orbitRadius * SOLAR_SYSTEM_SCALE
+    : 0;
+  const neptuneWorldZ = neptune
+    ? -Math.sin(neptune.initialAngle) * neptune.orbitRadius * SOLAR_SYSTEM_SCALE
+    : 0;
+  const NEPTUNE_START_DISTANCE = 42100;
   const NEPTUNE_START: [number, number, number] = [
-    earthWorldX + 600, // 600 units from Earth center — inside SOI (~2944), outside surface (~368)
+    neptuneWorldX + NEPTUNE_START_DISTANCE,
     0,
-    earthWorldZ,
+    neptuneWorldZ,
   ];
+  const startDirection = new THREE.Vector3(
+    neptuneWorldX - NEPTUNE_START[0],
+    0,
+    neptuneWorldZ - NEPTUNE_START[2]
+  ).normalize();
+  const startYaw = Math.atan2(startDirection.x, startDirection.z);
   const didInitShipRef = useRef(false);
   if (!didInitShipRef.current) {
     shipPosRef.current.set(...NEPTUNE_START);
@@ -147,7 +158,6 @@ export default function Scene() {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const stationGroupRef = useRef<THREE.Group | null>(null);
   const beaconGroupRef = useRef<THREE.Group | null>(null);
-  const neptune = PLANETS.find((planet) => planet.name === 'Neptune');
   const neptuneWorldRadius = (neptune?.radius ?? 0) * SOLAR_SYSTEM_SCALE;
   const fuelStationOrbitRadius = neptuneWorldRadius * 8.0;
   const fuelStationOrbitSpeed = -0.005;
@@ -208,6 +218,7 @@ export default function Scene() {
         beaconGroupRef={beaconGroupRef}
       />
       <SolarSystem scale={4} />
+      <NeptuneNoFlyRing />
       <EarthAsteroidRing />
       <SunGravity />
       <AsteroidBelt />
@@ -215,15 +226,18 @@ export default function Scene() {
       <EjectedCargo />
       <ProximityHighlight />
       <RedPlanetLine shipPositionRef={spaceshipPos} />
+      <RailgunWarning shipPositionRef={spaceshipPos} />
       <VelocityIndicator shipPositionRef={spaceshipPos} />
-      <AIShip id="0" url="/spaceship.glb" scale={1} position={[100, 0, -2000]} />
+      <AIShip id="0" url="/untitled.gltf" scale={1} position={[100, 0, -2000]} />
       <ShipDepthOfField shipPosRef={spaceshipPos} />
       <OrbitCamera followTarget={spaceshipPos} attachTo={spaceshipGroupRef} />
+      <CinematicController shipPositionRef={spaceshipPos} />
       <Spaceship
-        url="/freighter.gltf"
+        url="/untitled.gltf"
         positionRef={spaceshipPos}
         shipGroupRef={spaceshipGroupRef}
         initialPosition={NEPTUNE_START}
+        initialRotation={[0, startYaw, 0]}
         enableShipExplosion
         enableShipParticleCloud
         shipParticleCloudProps={{

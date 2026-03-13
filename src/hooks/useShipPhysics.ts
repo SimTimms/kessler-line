@@ -4,10 +4,19 @@ import * as THREE from 'three';
 import {
   THRUST,
   hullIntegrity,
+  cinematicThrustForward,
+  cinematicThrustReverse,
+  mobileThrustForward,
+  mobileThrustLeft,
+  mobileThrustReverse,
+  mobileThrustRight,
+  mobileThrustStrafeLeft,
+  mobileThrustStrafeRight,
   shipVelocity,
   shipAcceleration,
   shipQuaternion,
   shipDestroyed,
+  shipControlDisabledUntil,
   thrustMultiplier,
 } from '../context/ShipState';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
@@ -23,6 +32,7 @@ import {
   updateEngineAudio,
   updateThrusterLight,
 } from './shipPhysics';
+import { cinematicAutopilotActive, neptuneNoFlyZoneActive } from '../context/CinematicState';
 
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
@@ -72,6 +82,13 @@ export function useShipPhysics({
   const thrustStrafeRight = useRef(false); // E: strafe starboard
 
   useEffect(() => {
+    const onRailgunHit = () => {
+      angularVelocity.current += (Math.random() < 0.5 ? -1 : 1) * 3.2;
+      shipControlDisabledUntil.current = Math.max(
+        shipControlDisabledUntil.current,
+        performance.now() + 2500
+      );
+    };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'KeyW') thrustForward.current = true;
       if (e.code === 'KeyS') thrustReverse.current = true;
@@ -83,7 +100,7 @@ export function useShipPhysics({
         dockedTo.current = null;
         window.dispatchEvent(new CustomEvent('ShipUndocked'));
         if (groupRef.current) {
-          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(groupRef.current.quaternion);
+          const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
           velocity.current.copy(forward.multiplyScalar(4)); // 4 m/s release velocity
         }
         releaseParticleTrigger.current = true;
@@ -99,9 +116,11 @@ export function useShipPhysics({
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('RailgunHit', onRailgunHit);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('RailgunHit', onRailgunHit);
     };
   }, [groupRef]);
 
@@ -142,7 +161,7 @@ export function useShipPhysics({
       return;
     }
 
-    const { yawLeft, yawRight, fwd, rev, strL, strR } = getCombinedInputs({
+    let { yawLeft, yawRight, fwd, rev, strL, strR } = getCombinedInputs({
       thrustForward,
       thrustReverse,
       thrustLeft,
@@ -150,6 +169,38 @@ export function useShipPhysics({
       thrustStrafeLeft,
       thrustStrafeRight,
     });
+
+    const controlsLocked = performance.now() < shipControlDisabledUntil.current;
+    if (controlsLocked) {
+      yawLeft = false;
+      yawRight = false;
+      fwd = false;
+      rev = false;
+      strL = false;
+      strR = false;
+    }
+
+    if (cinematicAutopilotActive.current) {
+      const manualInput =
+        thrustForward.current ||
+        thrustReverse.current ||
+        thrustLeft.current ||
+        thrustRight.current ||
+        thrustStrafeLeft.current ||
+        thrustStrafeRight.current ||
+        mobileThrustForward.current ||
+        mobileThrustReverse.current ||
+        mobileThrustLeft.current ||
+        mobileThrustRight.current ||
+        mobileThrustStrafeLeft.current ||
+        mobileThrustStrafeRight.current;
+
+      if (manualInput) {
+        cinematicAutopilotActive.current = false;
+        cinematicThrustForward.current = false;
+        cinematicThrustReverse.current = false;
+      }
+    }
 
     const mainThrust = fwd || rev;
     const rcsThrust = strL || strR || yawLeft || yawRight;
@@ -211,12 +262,14 @@ export function useShipPhysics({
       (strR ? 1 : 0);
     applyResourceDrain({ keysHeld, rawDelta });
 
-    checkDockingPort({
-      group: groupRef.current,
-      dockingPort: dockingPortRef.current,
-      dockedTo,
-      velocity: velocity.current,
-    });
+    if (!neptuneNoFlyZoneActive.current) {
+      checkDockingPort({
+        group: groupRef.current,
+        dockingPort: dockingPortRef.current,
+        dockedTo,
+        velocity: velocity.current,
+      });
+    }
 
     // ── Lock to Y=0 plane ─────────────────────────────────────────────────────
     velocity.current.y = 0;

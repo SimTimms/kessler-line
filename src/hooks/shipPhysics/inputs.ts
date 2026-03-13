@@ -1,5 +1,7 @@
 import type { MutableRefObject } from 'react';
 import {
+  cinematicThrustForward,
+  cinematicThrustReverse,
   mobileThrustForward,
   mobileThrustLeft,
   mobileThrustReverse,
@@ -20,8 +22,10 @@ export interface ThrustInputRefs {
 export function getCombinedInputs(refs: ThrustInputRefs) {
   const yawLeft = refs.thrustLeft.current || mobileThrustLeft.current;
   const yawRight = refs.thrustRight.current || mobileThrustRight.current;
-  const fwd = refs.thrustForward.current || mobileThrustForward.current;
-  const rev = refs.thrustReverse.current || mobileThrustReverse.current;
+  const fwd =
+    refs.thrustForward.current || mobileThrustForward.current || cinematicThrustForward.current;
+  const rev =
+    refs.thrustReverse.current || mobileThrustReverse.current || cinematicThrustReverse.current;
   const strL = refs.thrustStrafeLeft.current || mobileThrustStrafeLeft.current;
   const strR = refs.thrustStrafeRight.current || mobileThrustStrafeRight.current;
 

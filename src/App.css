@@ -1,11 +1,11 @@
 #root {
   height: 100vh;
-    width: 100vw;
-    position: fixed;
-    left: 0;
-    top: 0;
-    margin-left: 0;
-    padding: 0;
+  width: 100vw;
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin-left: 0;
+  padding: 0;
 }
 
 .logo {
@@ -42,4 +42,57 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.cinematic-overlay {
+  position: fixed;
+  left: 24px;
+  top: 24px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+  pointer-events: none;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cinematic-chatter {
+  padding: 10px 14px;
+  background: rgba(6, 16, 24, 0.82);
+  border: 1px solid rgba(120, 190, 255, 0.3);
+  color: #b8dcff;
+  box-shadow: 0 0 14px rgba(80, 140, 255, 0.25);
+  font-size: 0.7rem;
+}
+
+.cinematic-alert {
+  padding: 10px 14px;
+  background: rgba(30, 6, 10, 0.9);
+  border: 1px solid rgba(255, 70, 90, 0.6);
+  color: #ff7a8a;
+  font-size: 0.8rem;
+}
+
+.cinematic-instruction {
+  padding: 10px 14px;
+  background: rgba(8, 6, 24, 0.86);
+  border: 1px solid rgba(255, 200, 90, 0.6);
+  color: #ffd27a;
+  font-size: 0.78rem;
+}
+
+.no-fly-label {
+  padding: 6px 10px;
+  background: rgba(20, 6, 8, 0.75);
+  border: 1px solid rgba(255, 70, 90, 0.6);
+  color: #ff7a8a;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }

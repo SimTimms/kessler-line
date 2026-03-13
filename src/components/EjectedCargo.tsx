@@ -45,7 +45,7 @@ export default function EjectedCargo() {
 
     if (spawnCount > 0) {
       // Ship's world-space forward direction
-      _forward.set(0, 0, -1).applyQuaternion(shipQuaternion);
+      _forward.set(0, 0, 1).applyQuaternion(shipQuaternion);
       // Spawn point: 12 units behind the ship
       _rearBase.copy(minimapShipPosition).addScaledVector(_forward, -12);
 

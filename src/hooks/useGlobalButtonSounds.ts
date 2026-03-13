@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
-import { playUiClick } from '../context/SoundManager';
+import { playUiClick, resumeAudioContext } from '../context/SoundManager';
 
 export function useGlobalButtonSounds() {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
+      resumeAudioContext();
       if ((e.target as Element).closest('button')) playUiClick();
     };
     document.addEventListener('click', onClick);

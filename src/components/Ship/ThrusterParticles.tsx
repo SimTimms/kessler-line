@@ -3,12 +3,15 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { thrustMultiplier } from './Spaceship';
 import {
+  cinematicThrustForward,
+  cinematicThrustReverse,
   mobileThrustForward,
   mobileThrustReverse,
   mobileThrustLeft,
   mobileThrustRight,
   mobileThrustStrafeLeft,
   mobileThrustStrafeRight,
+  shipVelocity,
 } from '../../context/ShipState';
 
 const EMIT_RATE = 900; // particles per second per emitter
@@ -119,7 +122,9 @@ export default function ThrusterParticles({
     pool: Particle[],
     maxCount: number,
     slotRef: { current: number },
-    multiplier: number
+    multiplier: number,
+    speedScale: number,
+    inheritVelocity?: THREE.Vector3
   ) {
     const ship = shipGroupRef.current;
     const { localPos, localDir } = (
@@ -134,7 +139,7 @@ export default function ThrusterParticles({
     _worldDir.z += (Math.random() - 0.5) * 0.07;
     _worldDir.normalize();
 
-    const speed = BASE_SPEED * multiplier * (0.7 + Math.random() * 0.6);
+    const speed = BASE_SPEED * multiplier * speedScale * (0.7 + Math.random() * 0.6);
     const lifetime = BASE_LIFETIME * Math.sqrt(multiplier) * (0.7 + Math.random() * 0.6);
 
     const idx = slotRef.current;
@@ -147,9 +152,18 @@ export default function ThrusterParticles({
     p.px = _worldPos.x;
     p.py = _worldPos.y;
     p.pz = _worldPos.z;
-    p.vx = _worldDir.x * speed;
-    p.vy = _worldDir.y * speed;
-    p.vz = _worldDir.z * speed;
+    const baseVx = _worldDir.x * speed;
+    const baseVy = _worldDir.y * speed;
+    const baseVz = _worldDir.z * speed;
+    if (inheritVelocity) {
+      p.vx = baseVx + inheritVelocity.x;
+      p.vy = baseVy + inheritVelocity.y;
+      p.vz = baseVz + inheritVelocity.z;
+    } else {
+      p.vx = baseVx;
+      p.vy = baseVy;
+      p.vz = baseVz;
+    }
   }
 
   function tickPool(
@@ -199,26 +213,32 @@ export default function ThrusterParticles({
 
   useFrame((_, delta) => {
     const m = thrustMultiplier.current;
-    const emitRate = EMIT_RATE * Math.sqrt(m);
+    const speed = shipVelocity.length();
+    const speedScale = THREE.MathUtils.clamp(1 / (1 + speed / 120), 0.35, 1);
+    const emitBoost = THREE.MathUtils.clamp(1 + speed / 200, 1, 3);
+    const emitRate = EMIT_RATE * Math.sqrt(m) * emitBoost;
 
     // Main engines — both nozzles fire together on reverse thrust
-    if (thrustReverse.current || mobileThrustReverse.current) {
+    const reverseActive =
+      thrustReverse.current || mobileThrustReverse.current || cinematicThrustReverse.current;
+
+    if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
         mainAccum.current[key] += emitRate * delta;
         const count = Math.floor(mainAccum.current[key]);
         mainAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
-          spawnInto(MAIN_EMITTERS, key, mainPool.current, MAIN_MAX, mainSlot, m);
+          spawnInto(MAIN_EMITTERS, key, mainPool.current, MAIN_MAX, mainSlot, m, speedScale);
       }
     } else {
       mainAccum.current.reverseA = mainAccum.current.reverseB = 0;
     }
 
     // RCS thrusters — combine keyboard + mobile inputs
-    const combined = (a: { current: boolean }, b: { current: boolean }) =>
-      ({ current: a.current || b.current }) as { current: boolean };
+    const combined = (a: { current: boolean }, b: { current: boolean }, c?: { current: boolean }) =>
+      ({ current: a.current || b.current || c?.current }) as { current: boolean };
     const rcsInputs: [RcsKey, { current: boolean }][] = [
-      ['forward', combined(thrustForward, mobileThrustForward)],
+      ['forward', combined(thrustForward, mobileThrustForward, cinematicThrustForward)],
       ['left', combined(thrustLeft, mobileThrustLeft)],
       ['right', combined(thrustRight, mobileThrustRight)],
       ['strafeLeft', combined(thrustStrafeLeft, mobileThrustStrafeLeft)],
@@ -230,7 +250,16 @@ export default function ThrusterParticles({
         const count = Math.floor(rcsAccum.current[key]);
         rcsAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
-          spawnInto(RCS_EMITTERS, key, rcsPool.current, RCS_MAX, rcsSlot, m);
+          spawnInto(
+            RCS_EMITTERS,
+            key,
+            rcsPool.current,
+            RCS_MAX,
+            rcsSlot,
+            m,
+            speedScale,
+            shipVelocity
+          );
       } else {
         rcsAccum.current[key] = 0;
       }

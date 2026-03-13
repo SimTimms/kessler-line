@@ -5,6 +5,7 @@ import ThrusterParticles from './ThrusterParticles';
 import DockingReleaseParticles from '../DockingReleaseParticles';
 import ShipExplosion from './ShipExplosion';
 import ShipParticleCloud, { type ShipParticleCloudProps } from './ShipParticleCloud';
+import RailgunDamagePainter from './RailgunDamagePainter';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { useShipPhysics } from '../../hooks/useShipPhysics';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
@@ -35,6 +36,7 @@ interface SpaceshipProps {
   positionRef?: { current: THREE.Vector3 };
   shipGroupRef?: { current: THREE.Group | null };
   initialPosition?: [number, number, number];
+  initialRotation?: [number, number, number];
   enableShipExplosion?: boolean;
   enableShipParticleCloud?: boolean;
   shipParticleCloudProps?: Partial<ShipParticleCloudProps>;
@@ -46,6 +48,7 @@ export default function Spaceship({
   positionRef,
   shipGroupRef,
   initialPosition,
+  initialRotation,
   enableShipExplosion = false,
   enableShipParticleCloud = false,
   shipParticleCloudProps,
@@ -87,7 +90,7 @@ export default function Spaceship({
 
   return (
     <>
-      <group ref={setGroupRef} rotation={[0, 0, 0]} position={initialPosition}>
+      <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
         <primitive object={gltf.scene} scale={scale} rotation={[0, Math.PI / 2, 0]} />
         {/* Thruster point light — rear of ship, activates when any thruster fires */}
         <pointLight
@@ -127,6 +130,7 @@ export default function Spaceship({
       {enableShipParticleCloud && (
         <ShipParticleCloud shipGroupRef={groupRef} {...shipParticleCloudProps} />
       )}
+      <RailgunDamagePainter shipGroupRef={groupRef} />
       {enableShipExplosion && (
         <ShipExplosion shipGroupRef={groupRef} shipPositionRef={positionRef} />
       )}

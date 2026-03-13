@@ -14,6 +14,17 @@ function getCtx(): AudioContext {
   return ctx;
 }
 
+export function resumeAudioContext(): void {
+  try {
+    const ac = getCtx();
+    if (ac.state === 'suspended') {
+      void ac.resume();
+    }
+  } catch {
+    /* non-critical */
+  }
+}
+
 /** Continuous low-pass hiss bed for asteroid field ambience. */
 export function setAsteroidHiss(enabled: boolean, volume = 0.08): void {
   try {

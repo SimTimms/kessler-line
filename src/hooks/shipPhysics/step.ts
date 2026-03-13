@@ -45,9 +45,9 @@ export function applyPhysicsStep({
   if (yawRight) angularVelocity.current += YAW_THRUST * dt;
   group.rotation.y += angularVelocity.current * dt;
 
-  _localForward.set(0, 0, -1).applyQuaternion(group.quaternion);
-  if (fwd) velocity.addScaledVector(_localForward, THRUST * thrustMultiplier.current * dt);
-  if (rev) velocity.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * dt);
+  _localForward.set(0, 0, 1).applyQuaternion(group.quaternion);
+  if (fwd) velocity.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * dt);
+  if (rev) velocity.addScaledVector(_localForward, THRUST * thrustMultiplier.current * dt);
 
   _localRight.set(1, 0, 0).applyQuaternion(group.quaternion);
   if (strL) velocity.addScaledVector(_localRight, -THRUST * dt);
