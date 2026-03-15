@@ -72,6 +72,69 @@ const APP_STYLES = `
     box-shadow: 0 0 6px rgba(68,255,204,0.7);
   }
 
+  .debug-cascade-panel {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 9999;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    padding: 8px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: all;
+  }
+  .debug-cascade-label {
+    font-family: monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+  }
+  .debug-cascade-track {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .debug-cascade-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 160px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.2);
+    outline: none;
+    cursor: pointer;
+  }
+  .debug-cascade-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,200,80,0.9);
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .debug-cascade-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,200,80,0.9);
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .debug-cascade-ticks {
+    display: flex;
+    justify-content: space-between;
+    width: 160px;
+    font-family: monospace;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+  }
+
   @media (pointer: coarse) {
     .hud-btn  { width: 68px !important; padding: 4px 6px !important; font-size: 10px !important; }
     .hud-row  { font-size: 10px !important; padding: 3px 6px !important; gap: 5px !important; }

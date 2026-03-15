@@ -24,7 +24,7 @@ import {
   thrustMultiplier,
   railgunTargetEngine,
 } from '../context/ShipState';
-import { playImpactSoundOverlap, playRailgunHit } from '../context/SoundManager';
+import { playImpactSoundOverlap, playRailgunHit } from '../sound/SoundManager';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 import {
   applyDockedState,

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { playUiClick, resumeAudioContext } from '../context/SoundManager';
+import { playUiClick, resumeAudioContext } from '../sound/SoundManager';
 
 export function useGlobalButtonSounds() {
   useEffect(() => {

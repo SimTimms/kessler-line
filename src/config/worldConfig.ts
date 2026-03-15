@@ -16,6 +16,15 @@ export interface WorldObjectDef {
   };
 }
 
+export const ASTEROID_DOCK_DEF: WorldObjectDef = {
+  id: 'asteroid-dock',
+  label: 'Asteroid Dock',
+  position: [-8000, 0, 6000],
+  minimapColor: '#ff9900',
+  minimapRadius: 0.5,
+  contactable: true,
+};
+
 export const SPACE_STATION_DEF: WorldObjectDef = {
   id: 'space-station',
   label: 'Space Station',
@@ -167,6 +176,18 @@ export interface RadioBroadcastDef {
 }
 
 export const RADIO_BROADCAST_DEFS: RadioBroadcastDef[] = [
+  {
+    id: 'asteroid-dock',
+    label: 'Asteroid Dock',
+    position: ASTEROID_DOCK_DEF.position,
+    dockable: true,
+    dockingBay: '01',
+    dialogue: [
+      'ASTEROID DOCK BROADCASTING.',
+      'DOCKING BAY 1 AVAILABLE.',
+      'ALL INCOMING VESSELS REPORT TO DISPATCH ON ARRIVAL.',
+    ],
+  },
   {
     id: 'station-alpha',
     label: 'Station Alpha',

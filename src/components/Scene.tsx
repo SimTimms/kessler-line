@@ -1,6 +1,9 @@
 import { useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { loadSlot, AUTOSAVE_SLOT } from '../context/SaveStore';
+import { apply, savedQuaternionToEuler } from '../context/SaveManager';
+import { useSaveSystem } from '../hooks/useSaveSystem';
 import { ShipDepthOfField } from './Ship/ShipDepthOfField';
 import { OrbitCamera } from './Camera';
 import Spaceship from './Ship/Spaceship';
@@ -32,6 +35,7 @@ import {
   RADIO_BEACON_DEFS,
   BEACON_AUDIO,
   SPACE_STATION_DEF,
+  ASTEROID_DOCK_DEF,
   type WorldObjectDef,
 } from '../config/worldConfig';
 
@@ -46,6 +50,13 @@ function CameraCapture() {
       sceneCamera.current = null;
     };
   }, [camera]);
+  return null;
+}
+
+// Runs the save system (auto-save + keyboard shortcuts) inside the Canvas
+// so that useSaveSystem can call useFrame.
+function SaveSystemBridge() {
+  useSaveSystem();
   return null;
 }
 
@@ -151,11 +162,31 @@ export default function Scene() {
     neptuneWorldZ - NEPTUNE_START[2]
   ).normalize();
   const startYaw = Math.atan2(startDirection.x, startDirection.z);
+
+  // On first render, attempt to restore from autosave; fall back to default start.
   const didInitShipRef = useRef(false);
+  const savedInitRef = useRef<{
+    position: [number, number, number];
+    rotation: [number, number, number];
+  } | null>(null);
   if (!didInitShipRef.current) {
-    shipPosRef.current.set(...NEPTUNE_START);
+    const savedData = loadSlot(AUTOSAVE_SLOT);
+    if (savedData) {
+      apply(savedData); // patches shipPosRef + all other global refs
+      savedInitRef.current = {
+        position: savedData.position,
+        rotation: savedQuaternionToEuler(savedData.quaternion),
+      };
+    } else {
+      shipPosRef.current.set(...NEPTUNE_START);
+    }
     didInitShipRef.current = true;
   }
+
+  const shipInitPos = savedInitRef.current?.position ?? NEPTUNE_START;
+  const shipInitRot =
+    savedInitRef.current?.rotation ?? ([0, startYaw, 0] as [number, number, number]);
+
   const spaceshipPos = shipPosRef;
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const stationGroupRef = useRef<THREE.Group | null>(null);
@@ -170,11 +201,18 @@ export default function Scene() {
       camera={{ near: 0.01, far: 1000000 }}
     >
       <CameraCapture />
+      <SaveSystemBridge />
       <fogExp2 attach="fog" args={[0x000000, 0.0004]} />
 
       <group position={[1000, 0, 100]}>
         <DockingBay stationId="origin" dimensions={new THREE.Vector3(10, 1, 10)} />
       </group>
+      {/* Asteroid Dock — placeholder cube until GLB model is ready */}
+      <mesh position={ASTEROID_DOCK_DEF.position}>
+        <boxGeometry args={[80, 80, 80]} />
+        <meshStandardMaterial color="#ff9900" emissive="#331800" />
+      </mesh>
+
       <group position={SPACE_STATION_DEF.position}>
         <SpaceStation
           url="/space_station.glb"
@@ -224,9 +262,9 @@ export default function Scene() {
       <EarthAsteroidRing />
       <SunGravity />
       <AsteroidBelt />
-      <group position={[0, -3000, 0]}>
-        <StartZoneAsteroidCluster center={NEPTUNE_START} />
-        <NebulaClouds center={NEPTUNE_START} />
+      <group position={[0, 0, 0]}>
+        <StartZoneAsteroidCluster center={[76000, -3000, -129376]} />
+        <NebulaClouds center={[76000, -3000, -129376]} />
       </group>
       <SpaceDebris />
       <EjectedCargo />
@@ -242,8 +280,8 @@ export default function Scene() {
         url="/untitled.gltf"
         positionRef={spaceshipPos}
         shipGroupRef={spaceshipGroupRef}
-        initialPosition={NEPTUNE_START}
-        initialRotation={[0, startYaw, 0]}
+        initialPosition={shipInitPos}
+        initialRotation={shipInitRot}
         enableShipExplosion
         enableShipParticleCloud
         shipParticleCloudProps={{

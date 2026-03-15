@@ -15,6 +15,8 @@ const IMPACT_POOL_MAX = 8;
 let impactAnalysisAudio: HTMLAudioElement | null = null;
 let impactAnalysisSource: MediaElementAudioSourceNode | null = null;
 let impactAnalysisAnalyser: AnalyserNode | null = null;
+let radioChatterAudio: HTMLAudioElement | null = null;
+let radioChatterClipTimer: ReturnType<typeof setTimeout> | null = null;
 
 export type RailgunHitParams = {
   volume: number;
@@ -631,6 +633,51 @@ export function playRailgunHitWithAnalyser(
     if (ac.state === 'suspended') ac.resume();
     analyser.connect(ac.destination);
     buildRailgunHit(ac, analyser, params);
+  } catch {
+    /* non-critical */
+  }
+}
+
+function getRadioChatterAudio(): HTMLAudioElement {
+  if (!radioChatterAudio) {
+    radioChatterAudio = new Audio('/radio-chatter.mp3');
+    radioChatterAudio.preload = 'auto';
+  }
+  return radioChatterAudio;
+}
+
+/** Play a random 3–5 second excerpt of radio-chatter.mp3. */
+export function playRadioChatterClip(volume = 0.8): void {
+  try {
+    resumeAudioContext();
+    const audio = getRadioChatterAudio();
+
+    if (radioChatterClipTimer !== null) {
+      clearTimeout(radioChatterClipTimer);
+      radioChatterClipTimer = null;
+    }
+    audio.pause();
+
+    const clipMs = 3000 + Math.random() * 2000; // 3–5 s
+
+    function startClip() {
+      const total = audio.duration || 60;
+      const maxStart = Math.max(0, total - clipMs / 1000);
+      audio.currentTime = Math.random() * maxStart;
+      audio.volume = Math.min(1, Math.max(0, volume));
+      const p = audio.play();
+      if (p) void p.catch(() => undefined);
+      radioChatterClipTimer = setTimeout(() => {
+        audio.pause();
+        radioChatterClipTimer = null;
+      }, clipMs);
+    }
+
+    if (audio.readyState >= 1 && audio.duration > 0) {
+      startClip();
+    } else {
+      audio.addEventListener('loadedmetadata', startClip, { once: true });
+    }
   } catch {
     /* non-critical */
   }

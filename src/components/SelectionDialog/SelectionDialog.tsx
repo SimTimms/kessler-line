@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { playDialogOpen, playDialogSelect } from '../../context/SoundManager';
+import { playDialogOpen, playDialogSelect } from '../../sound/SoundManager';
 import './SelectionDialog.css';
 
 export interface SelectionItem {

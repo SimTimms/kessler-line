@@ -14,7 +14,7 @@ const ORBIT_CLOSE_DIST = 150; // world units to declare orbit closed
 const ORBIT_AWAY_DIST = 500;
 const HUD_BLUE = 0x00c8ff;
 const VELOCITY_ORANGE = 0xff8800;
-const VELOCITY_X_OFFSET = -20;
+const VELOCITY_X_OFFSET = 0;
 
 // Module-level scratch — no GC per frame
 const _simPos = new THREE.Vector3();

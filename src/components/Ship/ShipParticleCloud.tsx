@@ -7,7 +7,7 @@ import {
   SHIP_IMPACT_PULSE_MS,
   shipImpactPulseUntil,
 } from '../../context/ShipState';
-import { playAsteroidImpact, setAsteroidHiss } from '../../context/SoundManager';
+import { playAsteroidImpact, setAsteroidHiss } from '../../sound/SoundManager';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
 

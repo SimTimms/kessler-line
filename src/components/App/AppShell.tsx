@@ -9,6 +9,8 @@ import DialogLayer from './DialogLayer';
 import AudioLayer from './AudioLayer';
 import ControlLayer from './ControlLayer';
 import StartOverlay from './StartOverlay';
+import BackgroundHum from './BackgroundHum';
+import DebugCascadePanel from './DebugCascadePanel';
 import type { NPCHailDetail } from '../NPCContactDialog';
 import type { MissionId } from '../../hooks/useMissionState';
 
@@ -119,7 +121,8 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
         activeAudioRef={activeAudioRef}
       />
       <ControlLayer thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
-      {showStartOverlay ? <StartOverlay onStart={onStart} /> : null}
+      {showStartOverlay ? <StartOverlay onStart={onStart} /> : <BackgroundHum />}
+      <DebugCascadePanel />
       <AppStyles />
     </AppContainer>
   );

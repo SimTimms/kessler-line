@@ -1,5 +1,5 @@
 import { thrustMultiplier } from '../../context/ShipState';
-import { setEngineHiss } from '../../context/SoundManager';
+import { setEngineHiss } from '../../sound/SoundManager';
 
 interface EngineAudioParams {
   mainThrust: boolean;

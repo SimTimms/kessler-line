@@ -25,6 +25,9 @@ export function setFuel(v: number) {
 export function setO2(v: number) {
   o2 = v;
 }
+export function setHullIntegrity(v: number) {
+  hullIntegrity = v;
+}
 
 export function drainPower(amount: number) {
   power = Math.max(0, power - amount);

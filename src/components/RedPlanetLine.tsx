@@ -52,7 +52,7 @@ export default function RedPlanetLine({ shipPositionRef }: RedPlanetLineProps) {
     const tgt = navTargetPosRef.current;
     attr.setXYZ(
       0,
-      shipPositionRef.current.x - 20,
+      shipPositionRef.current.x,
       shipPositionRef.current.y,
       shipPositionRef.current.z
     );

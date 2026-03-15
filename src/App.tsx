@@ -1,7 +1,7 @@
 import './App.css';
 import { AppShell } from './components/App';
 import { useAppLifecycle, useAppState } from './hooks';
-import { resumeAudioContext } from './context/SoundManager';
+import { resumeAudioContext } from './sound/SoundManager';
 import { useCallback, useState } from 'react';
 function App() {
   useAppLifecycle();

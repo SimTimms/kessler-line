@@ -93,7 +93,11 @@ export default function InboxHUD() {
       )}
 
       {activeMessage && (
-        <MessageDialog message={activeMessage} onClose={() => setActiveMessage(null)} />
+        <MessageDialog
+          message={activeMessage}
+          onClose={() => setActiveMessage(null)}
+          onMinimize={() => setActiveMessage(null)}
+        />
       )}
     </>
   );

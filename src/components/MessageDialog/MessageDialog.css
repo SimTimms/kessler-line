@@ -9,14 +9,14 @@
 }
 
 .md-dialog {
-  background: rgba(2, 6, 14, 0.97);
-  border: 1px solid rgba(200, 160, 80, 0.4);
+  background: var(--hud-bg-dialog);
+  border: 1px solid var(--hud-border);
   border-radius: 6px;
   padding: 28px 36px;
-  font-family: monospace;
+  font-family: var(--hud-font-mono);
   min-width: 360px;
   max-width: 500px;
-  box-shadow: 0 0 40px rgba(200, 140, 40, 0.12);
+  box-shadow: 0 0 40px var(--hud-glow);
   pointer-events: auto;
 }
 
@@ -30,34 +30,34 @@
 .md-from {
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: rgba(200, 160, 80, 0.55);
+  color: var(--hud-text-muted);
   text-transform: uppercase;
 }
 
 .md-date {
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: rgba(200, 160, 80, 0.35);
+  color: var(--hud-text-dim);
 }
 
 .md-subject {
   font-size: 14px;
   letter-spacing: 0.08em;
-  color: rgba(240, 200, 110, 0.9);
+  color: var(--hud-text);
   margin-bottom: 14px;
   text-transform: uppercase;
 }
 
 .md-divider {
   height: 1px;
-  background: rgba(200, 160, 80, 0.18);
+  background: var(--hud-divider);
   margin-bottom: 18px;
 }
 
 .md-body {
   font-size: 13px;
   line-height: 1.85;
-  color: #d4c49a;
+  color: var(--hud-text-muted);
   white-space: pre-wrap;
   margin-bottom: 24px;
 }
@@ -66,17 +66,34 @@
   display: block;
   margin: 0 auto;
   padding: 8px 24px;
-  font-family: monospace;
+  font-family: var(--hud-font-mono);
   font-size: 12px;
   letter-spacing: 0.1em;
   background: transparent;
-  color: rgba(200, 160, 80, 0.45);
-  border: 1px solid rgba(200, 160, 80, 0.25);
+  color: var(--hud-text-dim);
+  border: 1px solid var(--hud-border);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .md-close:hover {
-  color: rgba(240, 200, 110, 0.8);
-  border-color: rgba(200, 160, 80, 0.5);
+  color: var(--hud-text);
+  border-color: var(--hud-border-strong);
+}
+
+.md-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: #ff9900;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: inherit;
+}
+
+.md-link:hover {
+  color: #ffbb44;
 }

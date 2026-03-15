@@ -12,8 +12,13 @@ export function useHudToggles() {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') setShowMinimap((v) => !v);
     };
+    const onOpen = () => setShowMinimap(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('open-minimap', onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('open-minimap', onOpen);
+    };
   }, []);
 
   return {
