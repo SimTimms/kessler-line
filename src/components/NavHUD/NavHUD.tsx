@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { SOLAR_SYSTEM_PLANETS } from '../../config/worldConfig';
+import { NAV_TARGET_DEFS } from '../../config/worldConfig';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import { shipPosRef } from '../../context/ShipPos';
 import { orbitStatusRef } from '../../context/ShipState';
 import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
 import './NavHUD.css';
 
-const NAV_TARGETS = SOLAR_SYSTEM_PLANETS;
-const ORBIT_LABELS = new Map(SOLAR_SYSTEM_PLANETS.map((p) => [p.id, p.label]));
+const NAV_TARGETS = NAV_TARGET_DEFS;
+const ORBIT_LABELS = new Map(NAV_TARGET_DEFS.map((p) => [p.id, p.label]));
 
 export const NavHUD = () => {
   const [targetId, setTargetId] = useState(navTargetIdRef.current);

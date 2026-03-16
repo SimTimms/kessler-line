@@ -11,7 +11,7 @@ import {
   RED_PLANET_DEF,
 } from '../config/worldConfig';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
+import { solarPlanetPositions, fuelStationWorldPos } from '../context/SolarSystemMinimap';
 import { waypointPromptDef } from '../context/WaypointPrompt';
 import { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
 import { shipVelocity, shipQuaternion } from '../context/ShipState';
@@ -129,6 +129,31 @@ function BeaconDot({
     >
       <sphereGeometry args={[def.minimapRadius ?? 0.1, 8, 8]} />
       <meshBasicMaterial color={def.minimapColor} />
+    </mesh>
+  );
+}
+
+// ─── Orbiting fuel station dot ────────────────────────────────────────────────
+function FuelStationDot({ onHover }: { onHover: (info: HoverInfo | null) => void }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    if (!meshRef.current) return;
+    meshRef.current.position.set(
+      fuelStationWorldPos.x * MINIMAP_SCALE,
+      0,
+      fuelStationWorldPos.z * MINIMAP_SCALE,
+    );
+  });
+  return (
+    <mesh
+      ref={meshRef}
+      onPointerEnter={(e) =>
+        onHover({ label: 'Sirix Station', x: e.nativeEvent.clientX, y: e.nativeEvent.clientY })
+      }
+      onPointerLeave={() => onHover(null)}
+    >
+      <sphereGeometry args={[0.5, 8, 8]} />
+      <meshBasicMaterial color="#00cfff" />
     </mesh>
   );
 }
@@ -441,6 +466,7 @@ export default function MiniMapScene({ onHover }: MiniMapSceneProps) {
       ))}
 
       {/* Static game-world objects */}
+      <FuelStationDot onHover={onHover} />
       <Dot def={SPACE_STATION_DEF} onHover={onHover} />
       <Dot
         def={ASTEROID_DOCK_DEF}

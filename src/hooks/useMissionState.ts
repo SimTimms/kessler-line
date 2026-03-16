@@ -15,7 +15,7 @@ export function useMissionState() {
       setCargo([{ name: 'Data Cores', quantity: 15 }]);
       setActiveMission('neptune');
     } else if (mission === 'kronos4') {
-      setCargo([{ name: 'Emergency Data Recorder', quantity: 1 }]);
+      setCargo([{ name: 'Sealed Unit (ref. MX-7734)', quantity: 1 }]);
       setActiveMission('kronos4');
     }
   };

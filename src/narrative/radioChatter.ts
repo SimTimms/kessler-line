@@ -4,6 +4,8 @@ export const RADIO_CHATTER_LINES = [
   'NEPTUNE TRAFFIC: Docking queues are heavy. Hold short of the outer ring.',
   'BEACON: Depot confirms refuel window in 20 minutes. Stand by.',
   'FREIGHTER-12: Requesting clearance for cargo drop. Awaiting response.',
+  'BEACON: Sirix Station — automated check-in missed. Status unknown.',
+  'UNKNOWN: Picking up fragmented relay from inner-system direction. Relay quality poor.',
 ];
 
 export const RADIO_CHATTER_CASCADE_LINES = [

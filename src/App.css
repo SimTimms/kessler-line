@@ -115,6 +115,22 @@
   font-size: 0.78rem;
 }
 
+@keyframes kessler-asteroid {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(100vw + 320px)); }
+}
+
+@keyframes kessler-letter-fade {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+
+.kessler-letter {
+  display: inline-block;
+  animation: kessler-letter-fade 1.2s forwards;
+}
+
 .start-overlay {
   position: fixed;
   inset: 0;
@@ -122,25 +138,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 20% 20%, rgba(20, 35, 60, 0.6), rgba(5, 8, 14, 0.92));
+  background: rgba(3, 5, 10, 0.82);
   font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
   color: #e8f2ff;
 }
 
 .start-panel {
-  padding: 28px 34px;
-  border: 1px solid rgba(120, 180, 255, 0.4);
-  background: rgba(8, 12, 20, 0.86);
-  box-shadow: 0 0 24px rgba(40, 90, 160, 0.35);
   text-align: center;
-  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 
 .start-title {
-  font-size: 1.4rem;
-  letter-spacing: 0.08em;
+  display: flex;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  color: #d0e8ff;
+  text-shadow: 0 0 40px rgba(80, 160, 255, 0.4), 0 0 80px rgba(40, 100, 200, 0.2);
+  margin-bottom: 48px;
+  line-height: 1;
 }
 
 .start-subtitle {
@@ -150,32 +170,43 @@
 }
 
 .start-button {
-  padding: 10px 20px;
-  font-size: 0.9rem;
+  display: block;
+  padding: 8px 0;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: rgba(30, 80, 140, 0.9);
-  border: 1px solid rgba(150, 200, 255, 0.6);
-  color: #eaf3ff;
-  box-shadow: 0 0 14px rgba(80, 160, 255, 0.4);
+  letter-spacing: 0.14em;
+  background: transparent;
+  border: none;
+  color: rgba(200, 225, 255, 0.7);
+  cursor: pointer;
+  transition: color 0.15s;
 }
 
 .start-button:hover {
-  background: rgba(40, 110, 180, 0.95);
+  color: rgba(200, 225, 255, 1);
 }
 
 .restart-button {
-  margin-top: 10px;
-  background: rgba(20, 20, 30, 0.7);
-  border-color: rgba(120, 140, 180, 0.4);
-  color: rgba(180, 200, 230, 0.8);
-  box-shadow: none;
+  margin-top: 4px;
+  color: rgba(160, 180, 210, 0.4);
 }
 
 .restart-button:hover {
-  background: rgba(60, 30, 30, 0.85);
-  border-color: rgba(200, 100, 100, 0.5);
-  color: #ffd0d0;
+  color: rgba(220, 120, 120, 0.8);
+}
+
+/* ── Start screen asteroid pass ──────────────────────────────────────────────── */
+.start-asteroids {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.start-asteroid {
+  position: absolute;
+  background: #000;
+  animation: kessler-asteroid linear forwards;
+  left: -300px;
 }
 
 .hud-bar {

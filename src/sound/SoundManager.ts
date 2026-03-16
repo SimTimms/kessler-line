@@ -2,6 +2,7 @@
  * SoundManager — synthesized UI sounds via Web Audio API.
  * AudioContext is created lazily on first call (requires prior user gesture).
  */
+import soundsConfig from './sounds.json';
 
 let ctx: AudioContext | null = null;
 let hissSource: AudioBufferSourceNode | null = null;
@@ -640,14 +641,14 @@ export function playRailgunHitWithAnalyser(
 
 function getRadioChatterAudio(): HTMLAudioElement {
   if (!radioChatterAudio) {
-    radioChatterAudio = new Audio('/radio-chatter.mp3');
+    radioChatterAudio = new Audio(soundsConfig.radioChatter.file);
     radioChatterAudio.preload = 'auto';
   }
   return radioChatterAudio;
 }
 
 /** Play a random 3–5 second excerpt of radio-chatter.mp3. */
-export function playRadioChatterClip(volume = 0.8): void {
+export function playRadioChatterClip(volume = soundsConfig.radioChatter.volume): void {
   try {
     resumeAudioContext();
     const audio = getRadioChatterAudio();

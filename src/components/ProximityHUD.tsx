@@ -13,7 +13,7 @@ function getLabelFromId(id: string): string {
   if (id.startsWith('asteroid-')) return 'ASTEROID';
   if (id.startsWith('ai-ship')) return 'VESSEL';
   if (id === 'space-station') return 'STATION';
-  if (id === 'fuel-station') return 'FUEL DEPOT';
+  if (id === 'fuel-station') return 'SIRIX STATION';
   if (id.startsWith('docking-bay-')) return 'DOCK PORT';
   return 'OBJECT';
 }

@@ -25,7 +25,8 @@ import AIShip from './AIShip';
 import SolarSystem, { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
 import SunGravity from './SunGravity';
 import { shipPosRef } from '../context/ShipPos';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
+import { solarPlanetPositions, fuelStationWorldPos } from '../context/SolarSystemMinimap';
+import { navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
 import CinematicController from './CinematicController';
 import NeptuneNoFlyRing from './NeptuneNoFlyRing';
 import RailgunWarning from './RailgunWarning';
@@ -128,6 +129,13 @@ function OrbitingFuelStation({
       0,
       planetPos.z * SOLAR_SYSTEM_SCALE + orbitZ
     );
+
+    fuelStationWorldPos.x = groupRef.current.position.x;
+    fuelStationWorldPos.z = groupRef.current.position.z;
+
+    if (navTargetIdRef.current === 'fuel-station') {
+      navTargetPosRef.current.copy(groupRef.current.position);
+    }
   });
 
   return (

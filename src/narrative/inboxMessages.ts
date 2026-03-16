@@ -5,6 +5,15 @@ import type { InboxMessage } from '../context/MessageStore';
 
 export type MessageTemplate = Omit<InboxMessage, 'read' | 'timestamp'>;
 
+// ── Dispatch / Outer Lanes Ltd. ───────────────────────────────────────────────
+
+export const MSG_DISPATCH_INTRO: MessageTemplate = {
+  id: 'dispatch-intro-1',
+  from: 'Outer Lanes Ltd. — Routing',
+  subject: 'Job #OL-4471',
+  body: `Delivery to Sirix Station, Neptune vicinity.\n\nParcel: 1x sealed unit, ref. MX-7734. Handle with care.\n\nDrop and go. Signature not required.\n\n— Mara Voss\nRouting Coordinator, Outer Lanes Ltd.`,
+};
+
 // ── Family ────────────────────────────────────────────────────────────────────
 
 export const MSG_FAMILY_EARTH: MessageTemplate = {

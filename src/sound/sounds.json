@@ -12,7 +12,7 @@
   "radio": {
     "file": "/radio.mp3",
     "loop": false,
-    "volume": 1.0
+    "volume": 0.24
   },
   "beaconSignal": {
     "file": "/beacon-001.mp3",

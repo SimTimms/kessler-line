@@ -35,7 +35,7 @@ export const SPACE_STATION_DEF: WorldObjectDef = {
 
 export const FUEL_STATION_DEF: WorldObjectDef = {
   id: 'fuel-station',
-  label: 'Fuel Station',
+  label: 'Sirix Station',
   position: [6084, 0, -6584],
   minimapColor: '#00cfff',
   minimapRadius: 0.5,
@@ -133,6 +133,13 @@ export const SOLAR_SYSTEM_PLANETS: WorldObjectDef[] = [
   NEPTUNE_DEF,
 ];
 
+export const NAV_TARGET_DEFS: WorldObjectDef[] = [
+  ...SOLAR_SYSTEM_PLANETS,
+  ASTEROID_DOCK_DEF,
+  SPACE_STATION_DEF,
+  FUEL_STATION_DEF,
+];
+
 export const RADIO_BEACON_DEFS: WorldObjectDef[] = [
   { id: 'beacon-0', label: 'Radio Beacon 1', position: [80, 0, -1760], minimapColor: '#00ff88' },
   { id: 'beacon-1', label: 'Radio Beacon 2', position: [-220, 0, -850], minimapColor: '#00ff88' },
@@ -204,12 +211,12 @@ export const RADIO_BROADCAST_DEFS: RadioBroadcastDef[] = [
   },
   {
     id: 'fuel-station',
-    label: 'Fuel Station',
+    label: 'Sirix Station',
     position: FUEL_STATION_DEF.position,
     dockable: true,
     dockingBay: '07',
     dialogue: [
-      'FUEL STATION BROADCASTING.',
+      'SIRIX STATION BROADCASTING.',
       'DOCKING AVAILABLE. FUEL RESERVES AT CAPACITY.',
       'OXYGEN TRANSFER SYSTEMS ONLINE.',
     ],

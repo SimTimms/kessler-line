@@ -16,6 +16,7 @@ import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
 import {
   RADIO_CHATTER_LINES,
   RADIO_CHATTER_CASCADE_LINES,
+  MSG_DISPATCH_INTRO,
   MSG_FAMILY_EARTH,
   MSG_NEPTUNE_CONTROL,
   MSG_EMPLOYER_RECALL,
@@ -47,12 +48,17 @@ export default function CinematicController({ shipPositionRef }: CinematicContro
       cinematicAutopilotActive.current = false;
     }, CINEMATIC_AUTOPILOT_DURATION * 1000);
 
+    const dispatchIntroTimer = window.setTimeout(() => {
+      addMessage(MSG_DISPATCH_INTRO);
+    }, 3000);
+
     const familyMessageTimer = window.setTimeout(() => {
       addMessage(MSG_FAMILY_EARTH);
     }, FAMILY_MESSAGE_DELAY);
 
     return () => {
       window.clearTimeout(autopilotTimer);
+      window.clearTimeout(dispatchIntroTimer);
       window.clearTimeout(familyMessageTimer);
       if (employerRecallTimer.current) window.clearTimeout(employerRecallTimer.current);
       cinematicAutopilotActive.current = false;
