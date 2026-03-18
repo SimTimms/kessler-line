@@ -16,6 +16,8 @@ export const autopilotThrustForward = { current: false };
 export const autopilotThrustReverse = { current: false };
 export const autopilotYawLeft = { current: false };
 export const autopilotYawRight = { current: false };
+export const autopilotRadialOut = { current: false };
+export const autopilotRadialIn = { current: false };
 
 export function enableAutopilot() {
   autopilotActive.current = true;
@@ -29,4 +31,6 @@ export function disableAutopilot() {
   autopilotThrustReverse.current = false;
   autopilotYawLeft.current = false;
   autopilotYawRight.current = false;
+  autopilotRadialOut.current = false;
+  autopilotRadialIn.current = false;
 }

@@ -2,7 +2,6 @@
 
 // Arrival thresholds
 export const STATION_ARRIVAL_RADIUS = 300;
-export const PLANET_ARRIVAL_RADIUS  = 1500; // target hold-distance from planet center
 
 // Speed thresholds
 export const RETROBURN_DONE_SPEED        = 5;   // m/s — below this, station velocity is "killed"

@@ -4,7 +4,7 @@ import { computeYaw } from './computeYaw';
 import { ORBIT_INSERTION_PERIAPSIS } from './constants';
 
 const _radialBody = new THREE.Vector3();
-const _deltaV     = new THREE.Vector3();
+const _deltaV = new THREE.Vector3();
 
 /**
  * Handles the 'circularize' phase: orbital insertion burn.
@@ -16,11 +16,8 @@ const _deltaV     = new THREE.Vector3();
  *   v_insert  = √(μ × (2/r − 1/a))       — speed at apoapsis of insertion ellipse
  *   deltaV    = tangential(v_insert) − current_velocity
  *
- * NOTE: Does NOT check isOrbiting/apsides to exit early. The orbit calculator
- * often reports a bound trajectory the moment the ship arrives with inward velocity,
- * before the insertion burn has started. We always complete the burn first.
- *
- * Transitions to 'stabilize-orbit' when |deltaV| < 1 m/s (burn complete).
+ * Exits early to 'stabilize-orbit' if the orbit calculator already reports a valid
+ * bound orbit (isOrbiting true, both apsides > 0). Otherwise burns until |deltaV| < 1 m/s.
  * The ship then coasts unpowered to periapsis; stabilize-orbit waits there
  * to perform the apoapsis-raising burn.
  *
@@ -28,12 +25,25 @@ const _deltaV     = new THREE.Vector3();
  */
 export function Circularize(ctx: AutopilotCtx): AutopilotPhase | null {
   const {
-    gravBody, shipPos, velFlat, noseDir,
-    thrustReverse, yawLeft, yawRight,
-    angVel, status,
+    gravBody,
+    shipPos,
+    velFlat,
+    noseDir,
+    thrustReverse,
+    yawLeft,
+    yawRight,
+    angVel,
+    status,
+    orbitStatus,
   } = ctx;
 
   if (!gravBody) return 'done';
+
+  // If orbit is already established (both apsides computed and above surface), stop burning.
+  if (orbitStatus.isOrbiting && orbitStatus.periapsis > 0 && orbitStatus.apoapsis > 0) {
+    status.current = 'ORBIT ESTABLISHED';
+    return 'stabilize-orbit';
+  }
 
   const bp = gravBody.position;
   _radialBody.set(shipPos.x - bp.x, 0, shipPos.z - bp.z);
@@ -44,14 +54,14 @@ export function Circularize(ctx: AutopilotCtx): AutopilotPhase | null {
   // For small planets the ideal orbit radius may be well below ORBIT_INSERTION_PERIAPSIS,
   // so clamp r_p to the planet's own ideal orbit altitude to keep periapsis < apoapsis.
   const r_p = Math.min(ORBIT_INSERTION_PERIAPSIS, gravBody.surfaceRadius + gravBody.orbitAltitude);
-  const a   = (r + r_p) / 2;
+  const a = (r + r_p) / 2;
   const v_insert = Math.sqrt(gravBody.mu * Math.max(0, 2 / r - 1 / a));
 
   // Tangential direction (perpendicular to radial, matching current orbit sense)
-  const angMomY   = (shipPos.x - bp.x) * velFlat.z - (shipPos.z - bp.z) * velFlat.x;
+  const angMomY = (shipPos.x - bp.x) * velFlat.z - (shipPos.z - bp.z) * velFlat.x;
   const orbitSign = angMomY >= 0 ? 1.0 : -1.0;
-  const tangX     = -orbitSign * _radialBody.z;
-  const tangZ     =  orbitSign * _radialBody.x;
+  const tangX = -orbitSign * _radialBody.z;
+  const tangZ = orbitSign * _radialBody.x;
 
   // deltaV: difference between target insertion velocity and current velocity
   _deltaV.set(tangX * v_insert - velFlat.x, 0, tangZ * v_insert - velFlat.z);
@@ -64,11 +74,11 @@ export function Circularize(ctx: AutopilotCtx): AutopilotPhase | null {
   status.current = `INSERTION BURN  ΔV ${Math.round(dvMag)} m/s`;
 
   _deltaV.normalize();
-  const crossYDv      = noseDir.x * _deltaV.z - noseDir.z * _deltaV.x;
-  const dotDv         = noseDir.dot(_deltaV);
+  const crossYDv = noseDir.x * _deltaV.z - noseDir.z * _deltaV.x;
+  const dotDv = noseDir.dot(_deltaV);
   const signedErrorDv = Math.atan2(crossYDv, dotDv);
   const { yawLeft: yl, yawRight: yr } = computeYaw(signedErrorDv, angVel);
-  yawLeft.current  = yl;
+  yawLeft.current = yl;
   yawRight.current = yr;
 
   if (Math.abs(signedErrorDv) < 0.3) thrustReverse.current = true;

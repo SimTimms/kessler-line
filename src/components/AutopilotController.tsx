@@ -8,6 +8,8 @@ import {
   autopilotThrustReverse,
   autopilotYawLeft,
   autopilotYawRight,
+  autopilotRadialOut,
+  autopilotRadialIn,
   disableAutopilot,
 } from '../context/AutopilotState';
 import { navTargetPosRef, navTargetIdRef } from '../context/NavTarget';
@@ -21,34 +23,33 @@ import {
 } from '../context/ShipState';
 import { gravityBodies } from '../context/GravityRegistry';
 
-import { clearThrusts }    from '../autopilot/clearThrusts';
-import { computeYaw }      from '../autopilot/computeYaw';
+import { clearThrusts } from '../autopilot/clearThrusts';
+import { computeYaw } from '../autopilot/computeYaw';
 import { autopilotThrust } from '../autopilot/autopilotThrust';
-import { Approach }        from '../autopilot/Approach';
-import { OrbitInsertion }  from '../autopilot/OrbitInsertion';
-import { Circularize }     from '../autopilot/Circularize';
-import { StabilizeOrbit }  from '../autopilot/StabilizeOrbit';
+import { Approach } from '../autopilot/Approach';
+import { OrbitInsertion } from '../autopilot/OrbitInsertion';
+import { Circularize } from '../autopilot/Circularize';
+import { StabilizeOrbit } from '../autopilot/StabilizeOrbit';
+import { apLogReset, apLogPhaseChange, apLogStatus, apLogThrust } from '../autopilot/log';
 import {
   ALIGN_ANGLE_THRESHOLD,
   ALIGN_ANG_VEL_THRESHOLD,
-  PLANET_ARRIVAL_RADIUS,
   PLANET_RETRO_ARRIVAL_SPEED,
   STATION_ARRIVAL_RADIUS,
 } from '../autopilot/constants';
 import type { AutopilotCtx } from '../autopilot/types';
 
 // Saved player thrust level — restored when autopilot disengages
-const _savedThrust        = { current: 1 };
+const _savedThrust = { current: 1 };
 const _autopilotWasActive = { current: false };
 
 // Scratch vectors — reused every frame to avoid allocations
-const _noseDir  = new THREE.Vector3();
+const _noseDir = new THREE.Vector3();
 const _toTarget = new THREE.Vector3();
-const _velFlat  = new THREE.Vector3();
+const _velFlat = new THREE.Vector3();
 
 export default function AutopilotController() {
   useFrame(() => {
-
     // ── Guard: autopilot inactive ─────────────────────────────────────────────
     if (!autopilotActive.current) {
       if (_autopilotWasActive.current) {
@@ -58,20 +59,35 @@ export default function AutopilotController() {
         );
         _autopilotWasActive.current = false;
       }
-      clearThrusts(autopilotThrustForward, autopilotThrustReverse, autopilotYawLeft, autopilotYawRight);
+      clearThrusts(
+        autopilotThrustForward,
+        autopilotThrustReverse,
+        autopilotYawLeft,
+        autopilotYawRight,
+        autopilotRadialOut,
+        autopilotRadialIn,
+      );
       return;
     }
 
-    // Save player thrust on first active frame
+    // Save player thrust and reset logger on first active frame
     if (!_autopilotWasActive.current) {
       _savedThrust.current = thrustMultiplier.current;
       _autopilotWasActive.current = true;
+      apLogReset();
     }
 
-    clearThrusts(autopilotThrustForward, autopilotThrustReverse, autopilotYawLeft, autopilotYawRight);
+    clearThrusts(
+      autopilotThrustForward,
+      autopilotThrustReverse,
+      autopilotYawLeft,
+      autopilotYawRight,
+      autopilotRadialOut,
+      autopilotRadialIn,
+    );
 
     // ── Per-frame shared state ────────────────────────────────────────────────
-    const shipPos   = shipPosRef.current;
+    const shipPos = shipPosRef.current;
 
     // Keep nav target locked to the live planet/body position — planets orbit
     const targetId = navTargetIdRef.current;
@@ -84,13 +100,16 @@ export default function AutopilotController() {
 
     _toTarget.set(targetPos.x - shipPos.x, 0, targetPos.z - shipPos.z);
     const dist = _toTarget.length();
-    if (dist < 0.1) { autopilotPhase.current = 'done'; return; }
+    if (dist < 0.1) {
+      autopilotPhase.current = 'done';
+      return;
+    }
     _toTarget.normalize();
 
-    // For small planets (e.g. Mars SOI ≈ 1103 < 1500), clamp arrival to just inside
-    // the SOI so circularize fires while Mars gravity is actually acting on the ship.
+    // Arrival radius = ideal orbit altitude (the green ring), clamped to SOI.
+    // Matches VelocityIndicator's idealOrbitRadius formula exactly.
     const arrivalRadius = gravBody
-      ? Math.min(PLANET_ARRIVAL_RADIUS, gravBody.soiRadius * 0.85)
+      ? Math.min(gravBody.surfaceRadius + gravBody.orbitAltitude, gravBody.soiRadius * 0.9)
       : STATION_ARRIVAL_RADIUS;
 
     // Target speed at the end of retroburn — scaled to the planet's circular orbital
@@ -101,14 +120,17 @@ export default function AutopilotController() {
       : 0;
 
     _velFlat.set(shipVelocity.x, 0, shipVelocity.z);
-    const vToward       = _velFlat.dot(_toTarget); // + = closing on target
-    const speed         = _velFlat.length();
+    const vToward = _velFlat.dot(_toTarget); // + = closing on target
+    const speed = _velFlat.length();
     const distToArrival = dist - arrivalRadius;
 
     // Scale thrust multiplier for this phase and distance
     const nextThrust = autopilotThrust(
-      dist, autopilotPhase.current, speed, distToArrival,
-      retroTargetSpeed,
+      dist,
+      autopilotPhase.current,
+      speed,
+      distToArrival,
+      retroTargetSpeed
     );
     if (nextThrust !== thrustMultiplier.current) {
       thrustMultiplier.current = nextThrust;
@@ -119,19 +141,19 @@ export default function AutopilotController() {
     _noseDir.set(0, 0, 1).applyQuaternion(shipQuaternion).setY(0).normalize();
 
     // Signed angle from nose to target: crossY > 0 → target is CW → yawLeft
-    const crossY              = _noseDir.x * _toTarget.z - _noseDir.z * _toTarget.x;
+    const crossY = _noseDir.x * _toTarget.z - _noseDir.z * _toTarget.x;
     const signedErrorToTarget = Math.atan2(crossY, _noseDir.dot(_toTarget));
-    const angVel              = shipAngularVelocity.current;
-    const aligned             =
+    const angVel = shipAngularVelocity.current;
+    const aligned =
       Math.abs(signedErrorToTarget) < ALIGN_ANGLE_THRESHOLD &&
-      Math.abs(angVel)              < ALIGN_ANG_VEL_THRESHOLD;
+      Math.abs(angVel) < ALIGN_ANG_VEL_THRESHOLD;
 
     // Context object shared by all phase helpers this frame
     const ctx: AutopilotCtx = {
       shipPos,
-      noseDir:      _noseDir,
-      toTarget:     _toTarget,
-      velFlat:      _velFlat,
+      noseDir: _noseDir,
+      toTarget: _toTarget,
+      velFlat: _velFlat,
       dist,
       distToArrival,
       vToward,
@@ -141,71 +163,96 @@ export default function AutopilotController() {
       gravBody,
       arrivalRadius,
       retroTargetSpeed,
-      orbitStatus:   orbitStatusRef.current,
+      orbitStatus: orbitStatusRef.current,
       thrustForward: autopilotThrustForward,
       thrustReverse: autopilotThrustReverse,
-      yawLeft:       autopilotYawLeft,
-      yawRight:      autopilotYawRight,
-      status:        autopilotStatus,
+      yawLeft: autopilotYawLeft,
+      yawRight: autopilotYawRight,
+      radialOut: autopilotRadialOut,
+      radialIn: autopilotRadialIn,
+      status: autopilotStatus,
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Phase cascade — read top-to-bottom to see precedence.
-    // Each block is a complete handler for that phase; it returns after acting.
+    // Phase cascade — one branch runs per frame; logging fires after.
+    // Read top-to-bottom to trace the full autopilot sequence.
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ── idle: nothing to do ───────────────────────────────────────────────────
-    if (autopilotPhase.current === 'idle') return;
+    const prevPhase = autopilotPhase.current;
 
-    // ── done: disengage autopilot ─────────────────────────────────────────────
-    if (autopilotPhase.current === 'done') {
+    // ── Global emergency: periapsis below orbit target while falling toward planet ──
+    // Fires regardless of phase — radial-out works at any orbital position.
+    // Continues until periapsis reaches arrivalRadius (the ideal orbit altitude),
+    // not just the surface, so the orbit is properly raised before handing off.
+    const _emergencyOs = orbitStatusRef.current;
+    const _periapsisEmergency =
+      _emergencyOs.surfaceRadius > 0 &&
+      _emergencyOs.periapsis > 0 &&
+      _emergencyOs.periapsis < arrivalRadius &&
+      _emergencyOs.radialVelocity < 0 &&
+      dist <= arrivalRadius; // only emergency-correct once inside the orbital layer
+    if (_periapsisEmergency) {
+      autopilotStatus.current = `RADIAL BURN  (Pe ${Math.round(_emergencyOs.periapsis)} / ${Math.round(arrivalRadius)} u)`;
+      autopilotRadialOut.current = true;
+      apLogStatus(autopilotStatus.current);
+      return;
+    }
+
+    // ── idle: nothing to do ───────────────────────────────────────────────────
+    if (autopilotPhase.current === 'idle') {
+      // no-op
+
+    // ── done: orbit established — disengage ───────────────────────────────────
+    } else if (autopilotPhase.current === 'done') {
       autopilotStatus.current = 'ORBIT ESTABLISHED';
       disableAutopilot();
       window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-      return;
-    }
 
     // ── align: rotate nose toward target ─────────────────────────────────────
-    if (autopilotPhase.current === 'align') {
+    } else if (autopilotPhase.current === 'align') {
       autopilotStatus.current = 'ALIGNING';
       const { yawLeft, yawRight } = computeYaw(signedErrorToTarget, angVel);
-      autopilotYawLeft.current  = yawLeft;
+      autopilotYawLeft.current = yawLeft;
       autopilotYawRight.current = yawRight;
       if (aligned) autopilotPhase.current = distToArrival > 0 ? 'burn' : 'done';
-      return;
-    }
 
-    // ── burn: approach target ─────────────────────────────────────────────────
-    if (autopilotPhase.current === 'burn') {
+    // ── burn: approach target at full thrust ──────────────────────────────────
+    } else if (autopilotPhase.current === 'burn') {
       autopilotStatus.current = 'APPROACH BURN';
       const next = Approach(ctx);
       if (next) autopilotPhase.current = next;
-      return;
-    }
 
-    // ── retroburn: flip to retrograde and kill velocity ───────────────────────
-    if (autopilotPhase.current === 'retroburn') {
-      // status is set by OrbitInsertion — it has speed/distance context
+    // ── retroburn: flip to retrograde, kill velocity ──────────────────────────
+    } else if (autopilotPhase.current === 'retroburn') {
+      // status is set by OrbitInsertion (has speed/distance context)
       const next = OrbitInsertion(ctx);
       if (next) autopilotPhase.current = next;
-      return;
-    }
 
-    // ── circularize: insertion burn to set periapsis ──────────────────────────
-    if (autopilotPhase.current === 'circularize') {
-      // status is set by Circularize — it knows if burning or done
+    // ── circularize: insertion burn to establish initial orbit ────────────────
+    } else if (autopilotPhase.current === 'circularize') {
+      // status is set by Circularize
       const next = Circularize(ctx);
       if (next) autopilotPhase.current = next;
-      return;
-    }
 
-    // ── stabilize-orbit: Hohmann burns to reach target orbit ─────────────────
-    if (autopilotPhase.current === 'stabilize-orbit') {
-      // status is set by StabilizeOrbit — it knows coasting vs burning
+    // ── stabilize-orbit: Hohmann burns to reach target circular orbit ─────────
+    } else if (autopilotPhase.current === 'stabilize-orbit') {
+      // status is set by StabilizeOrbit (coasting vs burning)
       const next = StabilizeOrbit(ctx);
       if (next) autopilotPhase.current = next;
-      return;
     }
+
+    // ── Log any changes that happened this frame ──────────────────────────────
+    if (autopilotPhase.current !== prevPhase) {
+      apLogPhaseChange(prevPhase, autopilotPhase.current);
+    }
+    apLogStatus(autopilotStatus.current);
+    apLogThrust(
+      autopilotThrustForward.current,
+      autopilotThrustReverse.current,
+      autopilotYawLeft.current,
+      autopilotYawRight.current,
+      speed,
+    );
   });
 
   return null;

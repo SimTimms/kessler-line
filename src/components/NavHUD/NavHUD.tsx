@@ -25,7 +25,9 @@ export const NavHUD = () => {
   // Coords display — mutated directly to avoid re-renders
   const coordsRef = useRef<HTMLSpanElement>(null!);
   const orbitRef = useRef<HTMLSpanElement>(null!);
+  const altRef = useRef<HTMLSpanElement>(null!);
   const apsesRef = useRef<HTMLSpanElement>(null!);
+  const approachRef = useRef<HTMLSpanElement>(null!);
   const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
 
   useEffect(() => {
@@ -40,12 +42,53 @@ export const NavHUD = () => {
         const label = bodyId ? (ORBIT_LABELS.get(bodyId) ?? bodyId) : '—';
         orbitRef.current.textContent = isOrbiting ? `ORBITING: ${label}` : `SOI: ${label}`;
       }
+      if (altRef.current) {
+        const { bodyId, surfaceRadius } = orbitStatusRef.current;
+        if (bodyId) {
+          const body = gravityBodies.get(bodyId);
+          if (body) {
+            const dx = shipPosRef.current.x - body.position.x;
+            const dy = shipPosRef.current.y - body.position.y;
+            const dz = shipPosRef.current.z - body.position.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            const alt = Math.max(0, dist - surfaceRadius);
+            altRef.current.textContent = `${Math.round(alt)}`;
+          }
+        } else {
+          altRef.current.textContent = '—';
+        }
+      }
       if (apsesRef.current) {
-        const { bodyId, periapsis, apoapsis } = orbitStatusRef.current;
+        const { bodyId, periapsis, apoapsis, surfaceRadius } = orbitStatusRef.current;
         if (bodyId && periapsis > 0) {
-          apsesRef.current.textContent = `PERI: ${Math.round(periapsis)}  APO: ${apoapsis > 0 ? Math.round(apoapsis) : '—'}`;
+          const periAlt = Math.max(0, periapsis - surfaceRadius);
+          const apoAlt = apoapsis > 0 ? Math.max(0, apoapsis - surfaceRadius) : -1;
+          const idealAlt = gravityBodies.get(bodyId)?.orbitAltitude;
+          const ideal = idealAlt != null ? ` [${Math.round(idealAlt)}]` : '';
+          apsesRef.current.textContent = `PERI: ${Math.round(periAlt)}${ideal}  APO: ${apoAlt >= 0 ? Math.round(apoAlt) : '—'}${ideal}`;
         } else {
           apsesRef.current.textContent = 'PERI: —  APO: —';
+        }
+      }
+      if (approachRef.current) {
+        const { bodyId, periapsis, apoapsis, surfaceRadius, radialVelocity } = orbitStatusRef.current;
+        if (bodyId && periapsis > 0) {
+          const body = gravityBodies.get(bodyId);
+          if (body) {
+            const dx = shipPosRef.current.x - body.position.x;
+            const dy = shipPosRef.current.y - body.position.y;
+            const dz = shipPosRef.current.z - body.position.z;
+            const currentAlt = Math.max(0, Math.sqrt(dx * dx + dy * dy + dz * dz) - surfaceRadius);
+            if (radialVelocity >= 0 && apoapsis > 0) {
+              const apoAlt = Math.max(0, apoapsis - surfaceRadius);
+              approachRef.current.textContent = `APO +${Math.round(apoAlt - currentAlt)}`;
+            } else {
+              const periAlt = Math.max(0, periapsis - surfaceRadius);
+              approachRef.current.textContent = `PERI -${Math.round(currentAlt - periAlt)}`;
+            }
+          }
+        } else {
+          approachRef.current.textContent = '—';
         }
       }
       if (autopilotBtnRef.current) {
@@ -120,8 +163,18 @@ export const NavHUD = () => {
           </div>
           <div className="hud-divider" />
           <div className="hud-metric">
+            <div className="hud-label">Altitude</div>
+            <span ref={altRef} className="hud-value nav-alt" />
+          </div>
+          <div className="hud-divider" />
+          <div className="hud-metric">
             <div className="hud-label">Apsis</div>
             <span ref={apsesRef} className="hud-value nav-apses" />
+          </div>
+          <div className="hud-divider" />
+          <div className="hud-metric">
+            <div className="hud-label">Approach</div>
+            <span ref={approachRef} className="hud-value nav-approach" />
           </div>
         </div>
         <div className="nav-target-group">

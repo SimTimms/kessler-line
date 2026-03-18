@@ -142,7 +142,7 @@ export const SOLAR_SYSTEM_SCALE = 4;
 // soiRadius = worldRadius × SOI_MULTIPLIER
 const SURFACE_GRAVITY = 5.0;
 const SOI_MULTIPLIER = 8.0;
-const ORBIT_ALTITUDE_MULTIPLIER = 1.5;
+const ORBIT_ALTITUDE_MULTIPLIER = 4;
 const gravParams = (localRadius: number) => {
   const worldRadius = localRadius * SOLAR_SYSTEM_SCALE;
   return {

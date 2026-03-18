@@ -33,6 +33,7 @@ import NeptuneNoFlyRing from './NeptuneNoFlyRing';
 import RailgunWarning from './RailgunWarning';
 import NebulaClouds from './NebulaClouds';
 import StartZoneAsteroidCluster from './StartZoneAsteroidCluster';
+import GhostFleet from './GhostFleet';
 import {
   RADIO_BEACON_DEFS,
   BEACON_AUDIO,
@@ -153,7 +154,7 @@ function OrbitingFuelStation({
 
 // ── DEV: force-spawn near a planet for testing (overrides autosave) ───────
 const DEV_JUPITER_TEST = false;
-const DEV_MARS_TEST    = true;
+const DEV_MARS_TEST = true;
 // ──────────────────────────────────────────────────────────────────────────
 
 export default function Scene() {
@@ -178,29 +179,35 @@ export default function Scene() {
   const jupiterWorldZ = jupiter
     ? -Math.sin(jupiter.initialAngle) * jupiter.orbitRadius * SOLAR_SYSTEM_SCALE
     : 0;
-  const JUPITER_TEST_START: [number, number, number] = [
-    jupiterWorldX + 5000,
-    0,
-    jupiterWorldZ,
-  ];
+  const JUPITER_TEST_START: [number, number, number] = [jupiterWorldX + 5000, 0, jupiterWorldZ];
 
   const mars = PLANETS.find((planet) => planet.name === 'Mars');
-  const marsWorldX = mars
-    ? Math.cos(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
-    : 0;
+  const marsWorldX = mars ? Math.cos(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE : 0;
   const marsWorldZ = mars
     ? -Math.sin(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
     : 0;
-  const MARS_TEST_START: [number, number, number] = [marsWorldX + 7000, 0, marsWorldZ];
+  const MARS_TEST_START: [number, number, number] = [marsWorldX + 3200, 0, marsWorldZ];
 
-  const DEFAULT_START = DEV_MARS_TEST ? MARS_TEST_START : DEV_JUPITER_TEST ? JUPITER_TEST_START : NEPTUNE_START;
-  const defaultBodyX = DEV_MARS_TEST ? marsWorldX : DEV_JUPITER_TEST ? jupiterWorldX : neptuneWorldX;
-  const defaultBodyZ = DEV_MARS_TEST ? marsWorldZ : DEV_JUPITER_TEST ? jupiterWorldZ : neptuneWorldZ;
+  const DEFAULT_START = DEV_MARS_TEST
+    ? MARS_TEST_START
+    : DEV_JUPITER_TEST
+      ? JUPITER_TEST_START
+      : NEPTUNE_START;
+  const defaultBodyX = DEV_MARS_TEST
+    ? marsWorldX
+    : DEV_JUPITER_TEST
+      ? jupiterWorldX
+      : neptuneWorldX;
+  const defaultBodyZ = DEV_MARS_TEST
+    ? marsWorldZ
+    : DEV_JUPITER_TEST
+      ? jupiterWorldZ
+      : neptuneWorldZ;
 
   const startDirection = new THREE.Vector3(
     defaultBodyX - DEFAULT_START[0],
     0,
-    defaultBodyZ - DEFAULT_START[2],
+    defaultBodyZ - DEFAULT_START[2]
   ).normalize();
   const startYaw = Math.atan2(startDirection.x, startDirection.z);
 
@@ -211,7 +218,7 @@ export default function Scene() {
     rotation: [number, number, number];
   } | null>(null);
   if (!didInitShipRef.current) {
-    const savedData = (DEV_JUPITER_TEST || DEV_MARS_TEST) ? null : loadSlot(AUTOSAVE_SLOT);
+    const savedData = DEV_JUPITER_TEST || DEV_MARS_TEST ? null : loadSlot(AUTOSAVE_SLOT);
     if (savedData) {
       apply(savedData); // patches shipPosRef + all other global refs
       savedInitRef.current = {
@@ -321,6 +328,7 @@ export default function Scene() {
       <RailgunWarning shipPositionRef={spaceshipPos} shipGroupRef={spaceshipGroupRef} />
       <VelocityIndicator shipPositionRef={spaceshipPos} />
       <AIShip id="0" url="/untitled.gltf" scale={1} position={[100, 0, -2000]} />
+      <GhostFleet />
       <ShipDepthOfField shipPosRef={spaceshipPos} />
       <OrbitCamera followTarget={spaceshipPos} attachTo={spaceshipGroupRef} />
       <CinematicController shipPositionRef={spaceshipPos} />

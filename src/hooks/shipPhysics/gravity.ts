@@ -34,6 +34,7 @@ export function applyGravityStep({
     orbitStatusRef.current.isOrbiting = false;
     orbitStatusRef.current.periapsis = 0;
     orbitStatusRef.current.apoapsis = 0;
+    orbitStatusRef.current.surfaceRadius = 0;
     if (primaryGravityId.current) {
       velocity.sub(primaryGravityVelocity);
       primaryGravityId.current = null;
@@ -68,6 +69,7 @@ export function applyGravityStep({
     _relPos.subVectors(_shipWorldPos, primaryBody.position);
     _relVel.subVectors(velocity, primaryBody.velocity);
     const r = _relPos.length();
+    const radialVelocity = _relVel.dot(_relPos) / Math.max(r, 1e-6);
     const v2 = _relVel.lengthSq();
     const mu = primaryBody.mu;
     const energy = 0.5 * v2 - mu / Math.max(1e-6, r);
@@ -89,6 +91,8 @@ export function applyGravityStep({
 
     orbitStatusRef.current.bodyId = primaryBodyId;
     orbitStatusRef.current.isOrbiting = isOrbiting;
+    orbitStatusRef.current.surfaceRadius = primaryBody.surfaceRadius;
+    orbitStatusRef.current.radialVelocity = radialVelocity;
     if (isOrbiting && !anyThrusting && orbitStatusRef.current.bodyId === primaryBodyId) {
       orbitStatusRef.current.periapsis = orbitStatusRef.current.periapsis || periapsis;
       orbitStatusRef.current.apoapsis = orbitStatusRef.current.apoapsis || apoapsis;
@@ -101,6 +105,8 @@ export function applyGravityStep({
     orbitStatusRef.current.isOrbiting = false;
     orbitStatusRef.current.periapsis = 0;
     orbitStatusRef.current.apoapsis = 0;
+    orbitStatusRef.current.surfaceRadius = 0;
+    orbitStatusRef.current.radialVelocity = 0;
   }
 
   if (primaryBody && primaryBodyId) {

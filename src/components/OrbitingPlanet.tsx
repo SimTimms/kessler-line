@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -51,6 +51,32 @@ export default function OrbitingPlanet({
     textureUrl ??
       'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO9L5bQAAAAASUVORK5CYII='
   );
+
+  const soiRing = useMemo(() => {
+    if (gravitySoiRadius === undefined || gravitySurfaceRadius === undefined) return null;
+    const soiLocalRadius = (gravitySoiRadius / gravitySurfaceRadius) * radius;
+    const segments = 128;
+    const arr = new Float32Array((segments + 1) * 3);
+    for (let i = 0; i <= segments; i++) {
+      const theta = (i / segments) * Math.PI * 2;
+      arr[i * 3]     = Math.cos(theta) * soiLocalRadius;
+      arr[i * 3 + 1] = 0;
+      arr[i * 3 + 2] = Math.sin(theta) * soiLocalRadius;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+    const mat = new THREE.LineDashedMaterial({
+      color: 0x4499ff,
+      dashSize: soiLocalRadius * 0.04,
+      gapSize:  soiLocalRadius * 0.04,
+      opacity: 0.35,
+      transparent: true,
+      depthWrite: false,
+    });
+    const line = new THREE.Line(geo, mat);
+    line.computeLineDistances();
+    return line;
+  }, [gravitySoiRadius, gravitySurfaceRadius, radius]);
 
   useEffect(() => {
     if (orbitRef.current) orbitRef.current.rotation.y = initialAngle;
@@ -143,6 +169,9 @@ export default function OrbitingPlanet({
             )}
           </group>
         </group>
+
+        {/* Sphere of influence boundary — blue dashed ring in the XZ plane */}
+        {soiRing && <primitive object={soiRing} />}
       </group>
     </group>
   );

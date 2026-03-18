@@ -405,11 +405,13 @@ export default function VelocityIndicator({
     orbitSpriteCtx.font = 'bold 12px monospace';
     orbitSpriteCtx.textAlign = 'center';
     orbitSpriteCtx.textBaseline = 'middle';
-    // Display periapsis and apoapsis if available
-    const { periapsis, apoapsis } = orbitStatusRef.current;
+    // Display periapsis and apoapsis altitude if available
+    const { periapsis, apoapsis, surfaceRadius } = orbitStatusRef.current;
     if (periapsis > 0 && apoapsis > 0) {
+      const periAlt = Math.max(0, periapsis - surfaceRadius);
+      const apoAlt = Math.max(0, apoapsis - surfaceRadius);
       orbitSpriteCtx.fillText(
-        `PERI: ${Math.round(periapsis)}  APO: ${Math.round(apoapsis)}`,
+        `PERI: ${Math.round(periAlt)}  APO: ${Math.round(apoAlt)}`,
         128,
         20
       );

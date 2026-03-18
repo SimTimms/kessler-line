@@ -1,9 +1,12 @@
 import type { AutopilotCtx, AutopilotPhase } from './types';
 import { computeYaw } from './computeYaw';
-import { THRUST, MAX_THRUST_MULTIPLIER } from '../context/ShipState';
+import { THRUST, MAX_THRUST_MULTIPLIER, YAW_THRUST } from '../context/ShipState';
 
 // Max deceleration available (used for brake-distance calculation)
 const A_MAX = THRUST * MAX_THRUST_MULTIPLIER;
+
+// Time to flip 180° with a bang-bang yaw controller from rest: T = 2 * sqrt(π / α)
+const T_FLIP_180 = 2 * Math.sqrt(Math.PI / YAW_THRUST);
 
 /**
  * Handles the 'burn' phase: approach the target.
@@ -21,11 +24,17 @@ const A_MAX = THRUST * MAX_THRUST_MULTIPLIER;
  */
 export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
   const {
-    noseDir, toTarget, velFlat,
-    dist, distToArrival, speed,
-    gravBody, retroTargetSpeed,
+    noseDir,
+    toTarget,
+    velFlat,
+    dist,
+    distToArrival,
+    speed,
+    gravBody,
+    retroTargetSpeed,
     thrustReverse,
-    yawLeft, yawRight,
+    yawLeft,
+    yawRight,
     angVel,
   } = ctx;
 
@@ -33,16 +42,22 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
   if (gravBody) {
     // Yaw straight toward planet center (no orbital tangent blending)
     const crossY = noseDir.x * toTarget.z - noseDir.z * toTarget.x;
-    const { yawLeft: yl, yawRight: yr } = computeYaw(Math.atan2(crossY, noseDir.dot(toTarget)), angVel);
-    yawLeft.current  = yl;
+    const { yawLeft: yl, yawRight: yr } = computeYaw(
+      Math.atan2(crossY, noseDir.dot(toTarget)),
+      angVel
+    );
+    yawLeft.current = yl;
     yawRight.current = yr;
 
     // Brake-distance trigger: start retroburn when we can no longer decelerate
     // to retroTargetSpeed before reaching the arrival radius.
     //   d_brake = (v² - v_target²) / (2 * a_max)
-    const brakeDist = speed > retroTargetSpeed
-      ? (speed * speed - retroTargetSpeed * retroTargetSpeed) / (2 * A_MAX)
-      : 0;
+    // Add the distance coasted during the 180° flip before deceleration begins.
+    let brakeDist =
+      speed > retroTargetSpeed
+        ? (speed * speed - retroTargetSpeed * retroTargetSpeed) / (2 * A_MAX)
+        : 0;
+    brakeDist += speed * T_FLIP_180;
 
     if (distToArrival <= brakeDist) return 'retroburn';
 
@@ -54,8 +69,11 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
 
   // ── Station approach: aim at target, approach, retroburn at arrival ───────
   const crossYAim = noseDir.x * toTarget.z - noseDir.z * toTarget.x;
-  const { yawLeft: yl, yawRight: yr } = computeYaw(Math.atan2(crossYAim, noseDir.dot(toTarget)), angVel);
-  yawLeft.current  = yl;
+  const { yawLeft: yl, yawRight: yr } = computeYaw(
+    Math.atan2(crossYAim, noseDir.dot(toTarget)),
+    angVel
+  );
+  yawLeft.current = yl;
   yawRight.current = yr;
 
   if (distToArrival <= 0) return 'retroburn';

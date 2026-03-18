@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { AutopilotCtx, AutopilotPhase } from './types';
 import { computeYaw } from './computeYaw';
-import { RETROBURN_DONE_SPEED, MAX_RETROBURN_ANGLE } from './constants';
+import { RETROBURN_DONE_SPEED, MAX_RETROBURN_ANGLE, PLANET_RETRO_ARRIVAL_SPEED } from './constants';
 
 const _retroDir = new THREE.Vector3();
 
@@ -31,6 +31,13 @@ export function OrbitInsertion(ctx: AutopilotCtx): AutopilotPhase | null {
   const doneSpeed = gravBody ? retroTargetSpeed : RETROBURN_DONE_SPEED;
 
   // ── Done braking — decide next phase ───────────────────────────────────────
+  // Also circularize immediately if already inside the orbital layer at manageable speed —
+  // retroTargetSpeed can be very low for small planets (mu * 0.2 formula), causing
+  // endless retroburn even when the ship is slow enough to start the tangential burn.
+  if (gravBody && dist <= arrivalRadius && speed <= PLANET_RETRO_ARRIVAL_SPEED) {
+    return 'circularize';
+  }
+
   if (speed <= doneSpeed) {
     if (gravBody) {
       // At target speed: hand off to circularize if inside arrival radius,

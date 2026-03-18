@@ -8,6 +8,7 @@ export type OrbitStatus = {
   isOrbiting: boolean;
   periapsis: number;
   apoapsis: number;
+  radialVelocity?: number; // + = moving away from body (toward apoapsis); − = toward body (toward periapsis)
 };
 
 /**
@@ -38,6 +39,8 @@ export type AutopilotCtx = {
   thrustReverse: { current: boolean };
   yawLeft:       { current: boolean };
   yawRight:      { current: boolean };
+  radialOut:     { current: boolean };
+  radialIn:      { current: boolean };
 
   // Status string written each frame by the active phase helper — shown in NavHUD
   status: { current: string };

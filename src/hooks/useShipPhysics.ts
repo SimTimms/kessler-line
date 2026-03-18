@@ -64,6 +64,8 @@ export interface UseShipPhysicsResult {
   thrustRight: React.MutableRefObject<boolean>;
   thrustStrafeLeft: React.MutableRefObject<boolean>;
   thrustStrafeRight: React.MutableRefObject<boolean>;
+  thrustRadialOut: React.MutableRefObject<boolean>;
+  thrustRadialIn: React.MutableRefObject<boolean>;
   releaseParticleTrigger: React.MutableRefObject<boolean>;
   thrusterLightRef: React.RefObject<THREE.PointLight>;
 }
@@ -102,6 +104,8 @@ export function useShipPhysics({
   const thrustRight = useRef(false); // D: yaw right
   const thrustStrafeLeft = useRef(false); // Q: strafe port
   const thrustStrafeRight = useRef(false); // E: strafe starboard
+  const thrustRadialOut = useRef(false); // R: radial out (away from planet)
+  const thrustRadialIn = useRef(false); // F: radial in (toward planet)
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -111,6 +115,8 @@ export function useShipPhysics({
       if (e.code === 'KeyD') thrustRight.current = true;
       if (e.code === 'KeyE') thrustStrafeLeft.current = true;
       if (e.code === 'KeyQ') thrustStrafeRight.current = true;
+      if (e.code === 'KeyR') thrustRadialOut.current = true;
+      if (e.code === 'KeyF') thrustRadialIn.current = true;
       if (e.code === 'Space' && dockedTo.current) {
         dockedTo.current = null;
         window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -128,6 +134,8 @@ export function useShipPhysics({
       if (e.code === 'KeyD') thrustRight.current = false;
       if (e.code === 'KeyE') thrustStrafeLeft.current = false;
       if (e.code === 'KeyQ') thrustStrafeRight.current = false;
+      if (e.code === 'KeyR') thrustRadialOut.current = false;
+      if (e.code === 'KeyF') thrustRadialIn.current = false;
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -246,13 +254,15 @@ export function useShipPhysics({
       return;
     }
 
-    let { yawLeft, yawRight, fwd, rev, strL, strR } = getCombinedInputs({
+    let { yawLeft, yawRight, fwd, rev, strL, strR, radOut, radIn } = getCombinedInputs({
       thrustForward,
       thrustReverse,
       thrustLeft,
       thrustRight,
       thrustStrafeLeft,
       thrustStrafeRight,
+      thrustRadialOut,
+      thrustRadialIn,
     });
 
     if (shipDestroyed.current) {
@@ -262,6 +272,8 @@ export function useShipPhysics({
       rev = false;
       strL = false;
       strR = false;
+      radOut = false;
+      radIn = false;
     }
 
     const controlsLocked = performance.now() < shipControlDisabledUntil.current;
@@ -272,6 +284,8 @@ export function useShipPhysics({
       rev = false;
       strL = false;
       strR = false;
+      radOut = false;
+      radIn = false;
     }
 
     const manualInput =
@@ -286,7 +300,9 @@ export function useShipPhysics({
       mobileThrustLeft.current ||
       mobileThrustRight.current ||
       mobileThrustStrafeLeft.current ||
-      mobileThrustStrafeRight.current;
+      mobileThrustStrafeRight.current ||
+      thrustRadialOut.current ||
+      thrustRadialIn.current;
 
     if (cinematicAutopilotActive.current) {
       if (manualInput) {
@@ -348,6 +364,8 @@ export function useShipPhysics({
         revScale,
         strL,
         strR,
+        radOut,
+        radIn,
       });
 
       updateThrusterLight({
@@ -378,6 +396,8 @@ export function useShipPhysics({
       thrustRight.current = false;
       thrustStrafeLeft.current = false;
       thrustStrafeRight.current = false;
+      thrustRadialOut.current = false;
+      thrustRadialIn.current = false;
       mainEngineDisabled.reverseA.current = true;
       mainEngineDisabled.reverseB.current = true;
       if (!destroyedSpinSet.current) {
@@ -442,6 +462,8 @@ export function useShipPhysics({
     thrustRight,
     thrustStrafeLeft,
     thrustStrafeRight,
+    thrustRadialOut,
+    thrustRadialIn,
     releaseParticleTrigger,
     thrusterLightRef,
   };

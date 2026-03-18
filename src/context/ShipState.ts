@@ -52,6 +52,8 @@ export const orbitStatusRef = {
     isOrbiting: false,
     periapsis: 0,
     apoapsis: 0,
+    surfaceRadius: 0,
+    radialVelocity: 0, // positive = moving away from body (toward apoapsis), negative = toward body (toward periapsis)
   },
 };
 
@@ -62,6 +64,8 @@ export const mobileThrustLeft = { current: false };
 export const mobileThrustRight = { current: false };
 export const mobileThrustStrafeLeft = { current: false };
 export const mobileThrustStrafeRight = { current: false };
+export const mobileThrustRadialOut = { current: false };
+export const mobileThrustRadialIn = { current: false };
 
 // ── Cinematic thrust overrides ───────────────────────────────────────────────
 export const cinematicThrustForward = { current: false };
