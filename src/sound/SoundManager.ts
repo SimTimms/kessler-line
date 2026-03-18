@@ -9,6 +9,8 @@ let hissSource: AudioBufferSourceNode | null = null;
 let hissGainNode: GainNode | null = null;
 let engineSource: AudioBufferSourceNode | null = null;
 let engineGainNode: GainNode | null = null;
+let hullStressSource: AudioBufferSourceNode | null = null;
+let hullStressGainNode: GainNode | null = null;
 let railgunLoopId: ReturnType<typeof window.setInterval> | null = null;
 let impactAudio: HTMLAudioElement | null = null;
 let impactPool: HTMLAudioElement[] = [];
@@ -679,6 +681,115 @@ export function playRadioChatterClip(volume = soundsConfig.radioChatter.volume):
     } else {
       audio.addEventListener('loadedmetadata', startClip, { once: true });
     }
+  } catch {
+    /* non-critical */
+  }
+}
+
+/** Continuous metallic buzz/vibration loop — plays while hull is under max-thrust stress. */
+export function setHullStressSound(enabled: boolean, volume = 0.07): void {
+  try {
+    const ac = getCtx();
+    if (ac.state === 'suspended') ac.resume();
+
+    if (!enabled) {
+      if (hullStressGainNode) {
+        hullStressGainNode.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.4);
+      }
+      if (hullStressSource) {
+        hullStressSource.stop(ac.currentTime + 0.45);
+        hullStressSource = null;
+      }
+      return;
+    }
+
+    if (hullStressSource) return;
+
+    const bufferLength = ac.sampleRate * 2;
+    const buffer = ac.createBuffer(1, bufferLength, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.4;
+    }
+
+    const source = ac.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    // Highpass cuts the low rumble, bandpass focuses on metallic buzz range
+    const hp = ac.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(380, ac.currentTime);
+
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(860, ac.currentTime);
+    bp.Q.setValueAtTime(2.8, ac.currentTime);
+
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(volume, ac.currentTime);
+
+    source.connect(hp);
+    hp.connect(bp);
+    bp.connect(gain);
+    gain.connect(ac.destination);
+
+    source.start();
+    hullStressSource = source;
+    hullStressGainNode = gain;
+  } catch {
+    /* non-critical */
+  }
+}
+
+/** Brief metallic creak/groan — occasional hull stress event. */
+export function playHullCreak(): void {
+  try {
+    const ac = getCtx();
+    if (ac.state === 'suspended') ac.resume();
+    const now = ac.currentTime;
+
+    const duration = 0.18 + Math.random() * 0.18;
+    const freqStart = 70 + Math.random() * 120;
+    const freqPeak = freqStart * (1.3 + Math.random() * 0.7);
+
+    // Groaning oscillator: sweeps up then back down
+    const osc = ac.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freqStart, now);
+    osc.frequency.exponentialRampToValueAtTime(freqPeak, now + duration * 0.5);
+    osc.frequency.exponentialRampToValueAtTime(freqStart * 0.75, now + duration);
+    const oscGain = ac.createGain();
+    oscGain.gain.setValueAtTime(0.09, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    // Short crackling noise burst layered on top
+    const noiseLen = Math.floor(ac.sampleRate * duration);
+    const noiseBuffer = ac.createBuffer(1, noiseLen, ac.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseLen; i++) {
+      noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen);
+    }
+    const noise = ac.createBufferSource();
+    noise.buffer = noiseBuffer;
+    const noiseBP = ac.createBiquadFilter();
+    noiseBP.type = 'bandpass';
+    noiseBP.frequency.setValueAtTime(500 + Math.random() * 500, now);
+    noiseBP.Q.setValueAtTime(4.5, now);
+    const noiseGain = ac.createGain();
+    noiseGain.gain.setValueAtTime(0.055, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    osc.connect(oscGain);
+    oscGain.connect(ac.destination);
+    noise.connect(noiseBP);
+    noiseBP.connect(noiseGain);
+    noiseGain.connect(ac.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
+    noise.start(now);
+    noise.stop(now + duration);
   } catch {
     /* non-critical */
   }

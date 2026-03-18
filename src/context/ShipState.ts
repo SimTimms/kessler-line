@@ -69,7 +69,8 @@ export const cinematicThrustReverse = { current: false };
 
 export const isRefueling = { current: false }; // set by Refuel button while docked
 export const isTransferringO2 = { current: false }; // set by Transfer O2 button while docked
-export const thrustMultiplier = { current: 1 }; // set by thrust slider in App.tsx; range 0.5–50
+export const MAX_THRUST_MULTIPLIER = 3; // global cap for both player slider and autopilot
+export const thrustMultiplier = { current: 1 }; // range 0.5–MAX_THRUST_MULTIPLIER
 export const shipDestroyed = { current: false }; // set true when hull reaches 0
 
 // ── Damage / control effects ───────────────────────────────────────────────
@@ -92,3 +93,6 @@ export const mainEngineDisabled = {
   reverseA: { current: false },
   reverseB: { current: false },
 };
+
+// Yaw rate in rad/s — written by useShipPhysics each frame, read by AutopilotController
+export const shipAngularVelocity = { current: 0 };

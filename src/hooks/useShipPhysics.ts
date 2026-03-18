@@ -18,12 +18,14 @@ import {
   mobileThrustStrafeRight,
   shipVelocity,
   shipAcceleration,
+  shipAngularVelocity,
   shipQuaternion,
   shipDestroyed,
   shipControlDisabledUntil,
   thrustMultiplier,
   railgunTargetEngine,
 } from '../context/ShipState';
+import { autopilotActive, disableAutopilot } from '../context/AutopilotState';
 import { playImpactSoundOverlap, playRailgunHit } from '../sound/SoundManager';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 import {
@@ -272,26 +274,31 @@ export function useShipPhysics({
       strR = false;
     }
 
-    if (cinematicAutopilotActive.current) {
-      const manualInput =
-        thrustForward.current ||
-        thrustReverse.current ||
-        thrustLeft.current ||
-        thrustRight.current ||
-        thrustStrafeLeft.current ||
-        thrustStrafeRight.current ||
-        mobileThrustForward.current ||
-        mobileThrustReverse.current ||
-        mobileThrustLeft.current ||
-        mobileThrustRight.current ||
-        mobileThrustStrafeLeft.current ||
-        mobileThrustStrafeRight.current;
+    const manualInput =
+      thrustForward.current ||
+      thrustReverse.current ||
+      thrustLeft.current ||
+      thrustRight.current ||
+      thrustStrafeLeft.current ||
+      thrustStrafeRight.current ||
+      mobileThrustForward.current ||
+      mobileThrustReverse.current ||
+      mobileThrustLeft.current ||
+      mobileThrustRight.current ||
+      mobileThrustStrafeLeft.current ||
+      mobileThrustStrafeRight.current;
 
+    if (cinematicAutopilotActive.current) {
       if (manualInput) {
         cinematicAutopilotActive.current = false;
         cinematicThrustForward.current = false;
         cinematicThrustReverse.current = false;
       }
+    }
+
+    if (autopilotActive.current && manualInput) {
+      disableAutopilot();
+      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
     }
 
     const activeMainEngines = shipDestroyed.current
@@ -350,6 +357,8 @@ export function useShipPhysics({
         dt,
       });
     }
+
+    shipAngularVelocity.current = angularVelocity.current;
 
     if (shipDestroyed.current) {
       _spinEuler.copy(angularVelocity3.current).multiplyScalar(cappedDelta);

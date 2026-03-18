@@ -3,10 +3,11 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from './Ship/Spaceship';
 import { gravityBodies } from '../context/GravityRegistry';
+import { orbitStatusRef } from '../context/ShipState';
 
 const MIN_SPEED = 0.05;
 const TRAJ_STEPS = 400;
-const TRAJ_DT = 0.35; // seconds per step — stable symplectic Euler
+const TRAJ_DT = 0.9; // seconds per step — stable symplectic Euler (covers ~360 s, enough for gas giant orbits ~300-350 s)
 const ORBIT_MIN_STEPS = 25; // steps before orbit-closure check starts
 const ORBIT_CLOSE_DIST = 150; // world units to declare orbit closed
 // Trajectory must travel at least this far from start before closure is checked.
@@ -316,6 +317,15 @@ export default function VelocityIndicator({
     orbitSpriteCtx.font = 'bold 12px monospace';
     orbitSpriteCtx.textAlign = 'center';
     orbitSpriteCtx.textBaseline = 'middle';
+    // Display periapsis and apoapsis if available
+    const { periapsis, apoapsis } = orbitStatusRef.current;
+    if (periapsis > 0 && apoapsis > 0) {
+      orbitSpriteCtx.fillText(
+        `PERI: ${Math.round(periapsis)}  APO: ${Math.round(apoapsis)}`,
+        128,
+        20
+      );
+    }
     orbitSpriteCtx.fillText('CIRCULAR ORBIT', 128, 34);
     (orbitSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
   });

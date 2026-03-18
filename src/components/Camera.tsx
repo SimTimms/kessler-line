@@ -1,6 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { thrustMultiplier, shipAcceleration } from '../context/ShipState';
+import { hudShakeOffset } from '../context/HudShake';
 
 // Scratch vectors — avoid allocating on every frame
 const _offset = new THREE.Vector3();
@@ -19,6 +21,7 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
   const lastPointer = useRef({ x: 0, y: 0 });
   const spherical = useRef(new THREE.Spherical(50, Math.PI / 4, 0));
   const didInitSpherical = useRef(false);
+  const shakeTime = useRef(0);
 
   useEffect(() => {
     const parent = attachTo?.current;
@@ -71,25 +74,46 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     };
   }, [camera, gl]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!didInitSpherical.current) {
       spherical.current.setFromVector3(_attachOffset);
       didInitSpherical.current = true;
     }
+
+    const excessMultiplier = Math.max(0, thrustMultiplier.current - 1);
+    const isThrusting = shipAcceleration.current > 0 && excessMultiplier > 0;
+    let shakeX = 0;
+    let shakeY = 0;
+    if (isThrusting) {
+      shakeTime.current += delta * (8 + excessMultiplier * 0.3);
+      const amp = Math.min(excessMultiplier * 0.05, 1.0);
+      const t = shakeTime.current;
+      shakeX = (Math.sin(t * 23.7) + Math.sin(t * 11.3) * 0.5) * amp;
+      shakeY = (Math.sin(t * 17.9) + Math.sin(t * 8.1) * 0.5) * amp;
+      hudShakeOffset.x = shakeX * 4;
+      hudShakeOffset.y = shakeY * 4;
+    } else {
+      shakeTime.current = 0;
+      hudShakeOffset.x = 0;
+      hudShakeOffset.y = 0;
+    }
+
     if (attachTo?.current) {
       _offset.setFromSpherical(spherical.current);
       camera.position.copy(_offset);
+      camera.position.x += shakeX;
+      camera.position.y += shakeY;
       camera.lookAt(attachTo.current.getWorldPosition(_target));
       return;
     }
 
     _offset.setFromSpherical(spherical.current);
-    const target = attachTo?.current
-      ? attachTo.current.getWorldPosition(_target)
-      : followTarget
-        ? followTarget.current
-        : _target.set(0, 0, 0);
+    const target = followTarget
+      ? followTarget.current
+      : _target.set(0, 0, 0);
     camera.position.copy(target).add(_offset);
+    camera.position.x += shakeX;
+    camera.position.y += shakeY;
     camera.lookAt(target);
   }, 1);
 

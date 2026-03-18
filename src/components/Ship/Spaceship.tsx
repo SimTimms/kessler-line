@@ -8,6 +8,7 @@ import ShipExplosion from './ShipExplosion';
 import ShipParticleCloud, { type ShipParticleCloudProps } from './ShipParticleCloud';
 import RailgunDamagePainter from './RailgunDamagePainter';
 import RailgunOxygenVents from './RailgunOxygenVents';
+import HullStressEffect from './HullStressEffect';
 import ShipBreakApart from './ShipBreakApart';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { useShipPhysics } from '../../hooks/useShipPhysics';
@@ -140,6 +141,7 @@ export default function Spaceship({
       )}
       <RailgunDamagePainter shipGroupRef={groupRef} />
       <RailgunOxygenVents shipGroupRef={groupRef} />
+      <HullStressEffect shipGroupRef={groupRef} />
       {enableShipExplosion && (
         <ShipExplosion shipGroupRef={groupRef} shipPositionRef={positionRef} />
       )}

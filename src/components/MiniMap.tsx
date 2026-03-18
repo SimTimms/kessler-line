@@ -47,8 +47,16 @@ export default function MiniMap() {
 
   function confirmWaypoint() {
     if (!waypointPrompt) return;
-    navTargetPosRef.current.set(...waypointPrompt.position);
     navTargetIdRef.current = waypointPrompt.id;
+    // If planet, use live center from gravityBodies
+    const gravBody =
+      gravityBodies.get(waypointPrompt.id.charAt(0).toUpperCase() + waypointPrompt.id.slice(1)) ||
+      gravityBodies.get(waypointPrompt.id);
+    if (gravBody) {
+      navTargetPosRef.current.copy(gravBody.position);
+    } else {
+      navTargetPosRef.current.set(...waypointPrompt.position);
+    }
     setWaypointPrompt(null);
   }
 

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { thrustMultiplier } from '../Ship/Spaceship';
+import { thrustMultiplier, MAX_THRUST_MULTIPLIER } from '../../context/ShipState';
 
 interface ThrustPanelProps {
   thrustLevel: number;
@@ -44,7 +44,7 @@ const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: T
       <input
         type="range"
         min={0.5}
-        max={3}
+        max={MAX_THRUST_MULTIPLIER}
         step={0.5}
         value={thrustLevel}
         className={isDanger ? 'thrust-slider danger' : 'thrust-slider'}
@@ -65,7 +65,7 @@ const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: T
         }}
       >
         <span>0.5×</span>
-        <span>3×</span>
+        <span>{MAX_THRUST_MULTIPLIER}×</span>
       </div>
     </div>
   );

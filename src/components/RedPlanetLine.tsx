@@ -37,25 +37,13 @@ export default function RedPlanetLine({ shipPositionRef }: RedPlanetLineProps) {
   const textRef = useRef<HTMLDivElement>(null!);
 
   useFrame(() => {
-    // Keep nav target in sync with moving planets
-    const id = navTargetIdRef.current;
-    const planetName = id.charAt(0).toUpperCase() + id.slice(1);
-    const livePos = solarPlanetPositions[planetName];
-    if (livePos)
-      navTargetPosRef.current.set(
-        livePos.x * SOLAR_SYSTEM_SCALE,
-        0,
-        livePos.z * SOLAR_SYSTEM_SCALE
-      );
+    // Only read navTargetPosRef.current; do not set it for planets
+    // This prevents offset/doubling bugs and ensures autopilot targets the true center
+    // ...existing code...
 
     const attr = line.geometry.attributes.position as THREE.BufferAttribute;
     const tgt = navTargetPosRef.current;
-    attr.setXYZ(
-      0,
-      shipPositionRef.current.x,
-      shipPositionRef.current.y,
-      shipPositionRef.current.z
-    );
+    attr.setXYZ(0, shipPositionRef.current.x, shipPositionRef.current.y, shipPositionRef.current.z);
     attr.setXYZ(1, tgt.x, tgt.y, tgt.z);
     attr.needsUpdate = true;
     line.computeLineDistances();

@@ -15,6 +15,7 @@ import {
   mobileThrustStrafeRight,
   shipVelocity,
 } from '../../context/ShipState';
+import { autopilotThrustForward, autopilotThrustReverse } from '../../context/AutopilotState';
 
 const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.1; // seconds — short, intense burn (jittered ±30%)
@@ -252,7 +253,10 @@ export default function ThrusterParticles({
 
     // Main engines — both nozzles fire together on reverse thrust
     const reverseActive =
-      thrustReverse.current || mobileThrustReverse.current || cinematicThrustReverse.current;
+      thrustReverse.current ||
+      mobileThrustReverse.current ||
+      cinematicThrustReverse.current ||
+      autopilotThrustReverse.current;
 
     if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
@@ -271,7 +275,7 @@ export default function ThrusterParticles({
     const combined = (a: { current: boolean }, b: { current: boolean }, c?: { current: boolean }) =>
       ({ current: a.current || b.current || c?.current }) as { current: boolean };
     const rcsInputs: [RcsKey, { current: boolean }][] = [
-      ['forward', combined(thrustForward, mobileThrustForward, cinematicThrustForward)],
+      ['forward', { current: thrustForward.current || mobileThrustForward.current || cinematicThrustForward.current || autopilotThrustForward.current }],
       ['left', combined(thrustLeft, mobileThrustLeft)],
       ['right', combined(thrustRight, mobileThrustRight)],
       ['strafeLeft', combined(thrustStrafeLeft, mobileThrustStrafeLeft)],

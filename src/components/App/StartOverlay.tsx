@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
 
 interface StartOverlayProps {
@@ -25,17 +25,33 @@ const ASTEROID_DATA = Array.from({ length: 500 }, (_, i) => {
     borderRadius:     `${a}% ${100 - a}% ${b}% ${100 - b}% / ${c}% ${d}% ${100 - d}% ${100 - c}%`,
     top:              `${(pseudo(s + 6) * 96).toFixed(1)}%`,
     animationDuration:`${(2.5 + pseudo(s + 7) * 9).toFixed(2)}s`,
-    animationDelay:   `${(1   + Math.pow(pseudo(s + 8), 0.3) * 19).toFixed(2)}s`,
+    animationDelay:   `${(Math.pow(pseudo(s + 8), 0.4) * 5).toFixed(2)}s`,
   };
 });
 
+// Letters start fading at 6s; overlay fade starts at 6s over 3s → done at 9s.
+const FADE_START_MS = 6000;
+const AUTO_DISMISS_MS = 9500;
+
 const StartOverlay = memo(function StartOverlay({ onStart }: StartOverlayProps) {
+  const [fading, setFading] = useState(false);
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const fadeTimer = window.setTimeout(() => setFading(true), FADE_START_MS);
+    dismissTimer.current = window.setTimeout(onStart, AUTO_DISMISS_MS);
+    return () => {
+      window.clearTimeout(fadeTimer);
+      if (dismissTimer.current) window.clearTimeout(dismissTimer.current);
+    };
+  }, [onStart]);
+
   return (
-    <div className="start-overlay">
+    <div className={`start-overlay${fading ? ' fading' : ''}`}>
       <div className="start-panel">
         <div className="start-title">
           {'Kessler'.split('').map((letter, i) => (
-            <span key={i} className="kessler-letter" style={{ animationDelay: `${11 + i * 0.35}s` }}>
+            <span key={i} className="kessler-letter" style={{ animationDelay: `${6 + i * 0.35}s` }}>
               {letter}
             </span>
           ))}

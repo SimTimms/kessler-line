@@ -1,9 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { NAV_TARGET_DEFS } from '../../config/worldConfig';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
+import { gravityBodies } from '../../context/GravityRegistry';
 import { shipPosRef } from '../../context/ShipPos';
 import { orbitStatusRef } from '../../context/ShipState';
 import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
+import {
+  autopilotActive,
+  autopilotPhase,
+  autopilotStatus,
+  enableAutopilot,
+  disableAutopilot,
+} from '../../context/AutopilotState';
 import './NavHUD.css';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
@@ -18,6 +26,8 @@ export const NavHUD = () => {
   const coordsRef = useRef<HTMLSpanElement>(null!);
   const orbitRef = useRef<HTMLSpanElement>(null!);
   const apsesRef = useRef<HTMLSpanElement>(null!);
+  const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
+
   useEffect(() => {
     let raf: number;
     const tick = () => {
@@ -31,14 +41,19 @@ export const NavHUD = () => {
         orbitRef.current.textContent = isOrbiting ? `ORBITING: ${label}` : `SOI: ${label}`;
       }
       if (apsesRef.current) {
-        const { bodyId, isOrbiting, periapsis, apoapsis } = orbitStatusRef.current;
-        if (bodyId && isOrbiting) {
-          apsesRef.current.textContent = `PERI: ${Math.round(periapsis)}  APO: ${Math.round(
-            apoapsis
-          )}`;
+        const { bodyId, periapsis, apoapsis } = orbitStatusRef.current;
+        if (bodyId && periapsis > 0) {
+          apsesRef.current.textContent = `PERI: ${Math.round(periapsis)}  APO: ${apoapsis > 0 ? Math.round(apoapsis) : '—'}`;
         } else {
           apsesRef.current.textContent = 'PERI: —  APO: —';
         }
+      }
+      if (autopilotBtnRef.current) {
+        const active = autopilotActive.current;
+        autopilotBtnRef.current.textContent = active
+          ? autopilotStatus.current
+          : 'AUTOPILOT';
+        autopilotBtnRef.current.className = `nav-target-btn autopilot-btn${active ? ' autopilot-active' : ''}`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -66,7 +81,28 @@ export const NavHUD = () => {
     setTargetId(id);
     setTargetLabel('');
     navTargetIdRef.current = id;
-    navTargetPosRef.current.set(...def.position);
+    // If planet, use live center from gravityBodies
+    const gravBody =
+      gravityBodies.get(id.charAt(0).toUpperCase() + id.slice(1)) || gravityBodies.get(id);
+    if (gravBody) {
+      navTargetPosRef.current.copy(gravBody.position);
+    } else {
+      navTargetPosRef.current.set(...def.position);
+    }
+    // Re-align to new target if autopilot is already active
+    if (autopilotActive.current) {
+      autopilotPhase.current = 'align';
+    }
+  };
+
+  const handleAutopilot = () => {
+    if (autopilotActive.current) {
+      disableAutopilot();
+      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+    } else {
+      enableAutopilot();
+      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: true } }));
+    }
   };
 
   return (
@@ -92,6 +128,16 @@ export const NavHUD = () => {
           <div className="nav-target-label">Nav Target</div>
           <button className="nav-target-btn" onClick={() => setDialogOpen(true)}>
             {displayLabel}
+          </button>
+        </div>
+        <div className="nav-target-group">
+          <div className="nav-target-label">Autopilot</div>
+          <button
+            ref={autopilotBtnRef}
+            className="nav-target-btn autopilot-btn"
+            onClick={handleAutopilot}
+          >
+            AUTOPILOT
           </button>
         </div>
       </div>

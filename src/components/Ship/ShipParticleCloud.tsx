@@ -25,6 +25,7 @@ export interface ShipParticleCloudProps {
   impactSoundMaxInterval?: number;
   enableSpeedGate?: boolean;
   speedGateMin?: number;
+  speedGateMax?: number;
   speedGateOverridesField?: boolean;
 }
 
@@ -54,6 +55,7 @@ export default function ShipParticleCloud({
   impactSoundMaxInterval = 0.12,
   enableSpeedGate = false,
   speedGateMin = 50,
+  speedGateMax = 300,
   speedGateOverridesField = false,
 }: ShipParticleCloudProps) {
   const positionsRef = useRef<Float32Array>(new Float32Array(count * 3));
@@ -156,18 +158,27 @@ export default function ShipParticleCloud({
     const offsets = localOffsetsRef.current;
 
     for (let i = 0; i < count; i++) {
-      const mesh = meshes[Math.floor(rng() * meshes.length)];
-      const geometry = mesh.geometry as THREE.BufferGeometry;
-      const positions = geometry.attributes.position as THREE.BufferAttribute;
-      const index = Math.floor(rng() * positions.count);
-      temp.fromBufferAttribute(positions, index);
-      worldPos.copy(temp).applyMatrix4(mesh.matrixWorld);
-      localPos.copy(worldPos);
-      group.worldToLocal(localPos);
+      // Sample 3 candidates and keep the one most forward (most negative local Z = bow)
+      let bestX = 0, bestY = 0, bestZ = Infinity;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const mesh = meshes[Math.floor(rng() * meshes.length)];
+        const geometry = mesh.geometry as THREE.BufferGeometry;
+        const positions = geometry.attributes.position as THREE.BufferAttribute;
+        const index = Math.floor(rng() * positions.count);
+        temp.fromBufferAttribute(positions, index);
+        worldPos.copy(temp).applyMatrix4(mesh.matrixWorld);
+        localPos.copy(worldPos);
+        group.worldToLocal(localPos);
+        if (localPos.z < bestZ) {
+          bestZ = localPos.z;
+          bestX = localPos.x;
+          bestY = localPos.y;
+        }
+      }
       const base = i * 3;
-      offsets[base + 0] = localPos.x;
-      offsets[base + 1] = localPos.y;
-      offsets[base + 2] = localPos.z;
+      offsets[base + 0] = bestX;
+      offsets[base + 1] = bestY;
+      offsets[base + 2] = bestZ;
     }
 
     return true;
@@ -188,7 +199,13 @@ export default function ShipParticleCloud({
     const impactAlpha = impactActive ? Math.min(1, impactRemaining / SHIP_IMPACT_PULSE_MS) : 0;
     const impactBoost = 1 + impactAlpha * 2.2;
 
-    const speedGateActive = enableSpeedGate && getShipSpeedMps() >= speedGateMin;
+    const currentSpeed = getShipSpeedMps();
+    const speedGateActive = enableSpeedGate && currentSpeed >= speedGateMin;
+    const speedT = enableSpeedGate
+      ? Math.min(1, Math.max(0, (currentSpeed - speedGateMin) / (speedGateMax - speedGateMin)))
+      : 0;
+    const speedFloor = speedT * 0.45;
+    const speedBoost = 1 + speedT * 1.5;
 
     if (!impactActive && enableInEarthField && !(speedGateOverridesField && speedGateActive)) {
       const earthPos = solarPlanetPositions.Earth;
@@ -268,11 +285,12 @@ export default function ShipParticleCloud({
 
     for (let i = 0; i < count; i++) {
       const base = i * 3;
-      const pulse = Math.max(0, Math.sin(t * rates[i] + phases[i]));
-      const intensity = pulse * pulse;
-      colors[base + 0] = baseColors[base + 0] * intensity * impactBoost;
-      colors[base + 1] = baseColors[base + 1] * intensity * impactBoost;
-      colors[base + 2] = baseColors[base + 2] * intensity * impactBoost;
+      const effectiveRate = rates[i] * (1 + speedT * 3);
+      const pulse = Math.max(0, Math.sin(t * effectiveRate + phases[i]));
+      const intensity = Math.max(speedFloor, pulse * pulse) * impactBoost * speedBoost;
+      colors[base + 0] = baseColors[base + 0] * intensity;
+      colors[base + 1] = baseColors[base + 1] * intensity;
+      colors[base + 2] = baseColors[base + 2] * intensity;
     }
 
     if (materialRef.current) {

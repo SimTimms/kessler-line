@@ -28,6 +28,7 @@ import { shipPosRef } from '../context/ShipPos';
 import { solarPlanetPositions, fuelStationWorldPos } from '../context/SolarSystemMinimap';
 import { navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
 import CinematicController from './CinematicController';
+import AutopilotController from './AutopilotController';
 import NeptuneNoFlyRing from './NeptuneNoFlyRing';
 import RailgunWarning from './RailgunWarning';
 import NebulaClouds from './NebulaClouds';
@@ -150,6 +151,10 @@ function OrbitingFuelStation({
   );
 }
 
+// ── DEV: force-spawn near Jupiter for autopilot orbit testing ─────────────
+const DEV_JUPITER_TEST = true;
+// ──────────────────────────────────────────────────────────────────────────
+
 export default function Scene() {
   const neptune = PLANETS.find((planet) => planet.name === 'Neptune');
   const neptuneWorldX = neptune
@@ -164,10 +169,28 @@ export default function Scene() {
     0,
     neptuneWorldZ,
   ];
-  const startDirection = new THREE.Vector3(
-    neptuneWorldX - NEPTUNE_START[0],
+
+  const jupiter = PLANETS.find((planet) => planet.name === 'Jupiter');
+  const jupiterWorldX = jupiter
+    ? Math.cos(jupiter.initialAngle) * jupiter.orbitRadius * SOLAR_SYSTEM_SCALE
+    : 0;
+  const jupiterWorldZ = jupiter
+    ? -Math.sin(jupiter.initialAngle) * jupiter.orbitRadius * SOLAR_SYSTEM_SCALE
+    : 0;
+  const JUPITER_TEST_START: [number, number, number] = [
+    jupiterWorldX + 5000,
     0,
-    neptuneWorldZ - NEPTUNE_START[2]
+    jupiterWorldZ,
+  ];
+
+  const DEFAULT_START = DEV_JUPITER_TEST ? JUPITER_TEST_START : NEPTUNE_START;
+  const defaultBodyX = DEV_JUPITER_TEST ? jupiterWorldX : neptuneWorldX;
+  const defaultBodyZ = DEV_JUPITER_TEST ? jupiterWorldZ : neptuneWorldZ;
+
+  const startDirection = new THREE.Vector3(
+    defaultBodyX - DEFAULT_START[0],
+    0,
+    defaultBodyZ - DEFAULT_START[2],
   ).normalize();
   const startYaw = Math.atan2(startDirection.x, startDirection.z);
 
@@ -178,7 +201,7 @@ export default function Scene() {
     rotation: [number, number, number];
   } | null>(null);
   if (!didInitShipRef.current) {
-    const savedData = loadSlot(AUTOSAVE_SLOT);
+    const savedData = DEV_JUPITER_TEST ? null : loadSlot(AUTOSAVE_SLOT);
     if (savedData) {
       apply(savedData); // patches shipPosRef + all other global refs
       savedInitRef.current = {
@@ -186,12 +209,16 @@ export default function Scene() {
         rotation: savedQuaternionToEuler(savedData.quaternion),
       };
     } else {
-      shipPosRef.current.set(...NEPTUNE_START);
+      if (DEV_JUPITER_TEST) {
+        navTargetIdRef.current = 'jupiter';
+        navTargetPosRef.current.set(jupiterWorldX, 0, jupiterWorldZ);
+      }
+      shipPosRef.current.set(...DEFAULT_START);
     }
     didInitShipRef.current = true;
   }
 
-  const shipInitPos = savedInitRef.current?.position ?? NEPTUNE_START;
+  const shipInitPos = savedInitRef.current?.position ?? DEFAULT_START;
   const shipInitRot =
     savedInitRef.current?.rotation ?? ([0, startYaw, 0] as [number, number, number]);
 
@@ -284,6 +311,7 @@ export default function Scene() {
       <ShipDepthOfField shipPosRef={spaceshipPos} />
       <OrbitCamera followTarget={spaceshipPos} attachTo={spaceshipGroupRef} />
       <CinematicController shipPositionRef={spaceshipPos} />
+      <AutopilotController />
       <Spaceship
         url="/untitled.gltf"
         positionRef={spaceshipPos}
@@ -297,7 +325,9 @@ export default function Scene() {
           enableInEarthField: true,
           enableImpactSound: true,
           enableSpeedGate: true,
-          speedGateMin: 50,
+          speedGateMin: 100,
+          speedGateMax: 800,
+          speedGateOverridesField: true,
         }}
       />
 

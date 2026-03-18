@@ -47,12 +47,22 @@ export function BroadcastDialog({ broadcast, onClose }: BroadcastDialogProps) {
   };
 
   const handleSetNav = () => {
-    const [x, y, z] = broadcast.position;
-    navTargetPosRef.current.set(x, y, z);
     navTargetIdRef.current = broadcast.id;
+    // If planet, use live center from gravityBodies
+    const gravBody =
+      gravityBodies.get(broadcast.id.charAt(0).toUpperCase() + broadcast.id.slice(1)) ||
+      gravityBodies.get(broadcast.id);
+    let pos;
+    if (gravBody) {
+      navTargetPosRef.current.copy(gravBody.position);
+      pos = gravBody.position.clone();
+    } else {
+      navTargetPosRef.current.set(...broadcast.position);
+      pos = new THREE.Vector3(...broadcast.position);
+    }
     window.dispatchEvent(
       new CustomEvent('NavTargetSet', {
-        detail: { id: broadcast.id, label: broadcast.label, position: new THREE.Vector3(x, y, z) },
+        detail: { id: broadcast.id, label: broadcast.label, position: pos },
       })
     );
     setNavSet(true);
@@ -65,7 +75,9 @@ export function BroadcastDialog({ broadcast, onClose }: BroadcastDialogProps) {
 
         <div className="bd-dialogue">
           {broadcast.dialogue.map((line, i) => (
-            <div key={i} className="bd-line">{line}</div>
+            <div key={i} className="bd-line">
+              {line}
+            </div>
           ))}
         </div>
 
@@ -87,24 +99,20 @@ export function BroadcastDialog({ broadcast, onClose }: BroadcastDialogProps) {
               <div className="bd-docking-response bd-docking-approved">
                 <div>DOCKING REQUEST: APPROVED</div>
                 <div>ASSIGNED BAY: {broadcast.dockingBay}</div>
-                <button
-                  className="bd-nav-btn"
-                  onClick={handleSetNav}
-                  disabled={navSet}
-                >
+                <button className="bd-nav-btn" onClick={handleSetNav} disabled={navSet}>
                   {navSet ? 'NAV COURSE SET' : 'SET NAV COURSE'}
                 </button>
               </div>
             )}
             {dockingStatus === 'denied' && (
-              <div className="bd-docking-response bd-docking-denied">
-                DOCKING REQUEST: DENIED
-              </div>
+              <div className="bd-docking-response bd-docking-denied">DOCKING REQUEST: DENIED</div>
             )}
           </div>
         )}
 
-        <button className="bd-close" onClick={handleClose}>✕ CLOSE</button>
+        <button className="bd-close" onClick={handleClose}>
+          ✕ CLOSE
+        </button>
       </div>
     </div>
   );

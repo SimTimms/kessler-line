@@ -1,5 +1,6 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { hudShakeOffset } from '../../context/HudShake';
 import PowerHUD from '../PowerHUD/PowerHUD';
 import MagneticHUD from '../MagneticHUD';
 import DriveSignatureHUD from '../DriveSignatureHUD';
@@ -44,6 +45,21 @@ const HudLayer = memo(function HudLayer({
   setRadioOn,
   showMinimap,
 }: HudLayerProps) {
+  useEffect(() => {
+    let raf: number;
+    const tick = () => {
+      const { x, y } = hudShakeOffset;
+      document.body.style.transform =
+        x === 0 && y === 0 ? '' : `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.body.style.transform = '';
+    };
+  }, []);
+
   return (
     <>
       <PowerHUD />

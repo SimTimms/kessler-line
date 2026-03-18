@@ -8,7 +8,7 @@ const DEFAULT_TEX_SIZE = 1024;
 const ORANGE_SHIFT_MAX = 0.15;
 const SIZE_VARIANCE = 0.7;
 const OPACITY_VARIANCE = 0.3;
-const EMISSIVE_LIFE = 2.6;
+const EMISSIVE_LIFE = 10.6;
 
 interface RailgunDamagePainterProps {
   shipGroupRef: { current: THREE.Group | null };

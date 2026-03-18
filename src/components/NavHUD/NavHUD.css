@@ -49,3 +49,15 @@
   border-color: rgba(0, 200, 255, 0.9);
   background: rgba(0, 200, 255, 0.08);
 }
+
+.autopilot-active {
+  color: rgba(80, 255, 160, 0.95);
+  border-color: rgba(80, 255, 160, 0.6);
+  background: rgba(0, 80, 40, 0.5);
+  animation: autopilot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes autopilot-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(80, 255, 160, 0.2); }
+  50%       { box-shadow: 0 0 10px rgba(80, 255, 160, 0.5); }
+}
