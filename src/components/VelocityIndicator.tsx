@@ -24,12 +24,43 @@ const _orbitPos = new THREE.Vector3();
 const _orbitVel = new THREE.Vector3();
 const _orbitDir = new THREE.Vector3();
 
+function makeApsisSprite(color: string) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 80;
+  const ctx = canvas.getContext('2d')!;
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.frustumCulled = false;
+  sprite.visible = false;
+  return { sprite, ctx, color };
+}
+
+function drawApsisLabel(ctx: CanvasRenderingContext2D, color: string, label: string, alt: number) {
+  ctx.clearRect(0, 0, 256, 80);
+  ctx.fillStyle = color;
+  // Diamond
+  ctx.beginPath();
+  ctx.moveTo(128, 4);
+  ctx.lineTo(142, 18);
+  ctx.lineTo(128, 32);
+  ctx.lineTo(114, 18);
+  ctx.closePath();
+  ctx.fill();
+  // Label and altitude
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${label}  ${alt}`, 128, 60);
+}
+
 export default function VelocityIndicator({
   shipPositionRef,
 }: {
   shipPositionRef: { current: THREE.Vector3 };
 }) {
-  const { line, sprite, spriteCtx, posArr, orbitLine, orbitSprite, orbitSpriteCtx, orbitPosArr } =
+  const { line, sprite, spriteCtx, posArr, orbitLine, orbitSprite, orbitSpriteCtx, orbitPosArr, periMarker, apoMarker } =
     useMemo(() => {
       const geo = new THREE.BufferGeometry();
       const arr = new Float32Array(TRAJ_STEPS * 3);
@@ -95,6 +126,9 @@ export default function VelocityIndicator({
       orbitSprite.frustumCulled = false;
       orbitSprite.visible = false;
 
+      const peri = makeApsisSprite('#00e5ff');
+      const apo = makeApsisSprite('#00e5ff');
+
       return {
         line: l,
         sprite: s,
@@ -104,6 +138,8 @@ export default function VelocityIndicator({
         orbitSprite,
         orbitSpriteCtx: orbitCtx,
         orbitPosArr: orbitArr,
+        periMarker: peri,
+        apoMarker: apo,
       };
     }, []);
 
@@ -115,8 +151,9 @@ export default function VelocityIndicator({
     const ship = shipPositionRef.current;
 
     let primaryBody: (typeof gravityBodies extends Map<string, infer T> ? T : never) | null = null;
+    let primaryBodyId: string | null = null;
     let primaryAccel = 0;
-    for (const [, body] of gravityBodies) {
+    for (const [id, body] of gravityBodies) {
       const dx = body.position.x - ship.x;
       const dz = body.position.z - ship.z;
       const dist2 = dx * dx + dz * dz;
@@ -126,9 +163,11 @@ export default function VelocityIndicator({
         if (accel > primaryAccel) {
           primaryAccel = accel;
           primaryBody = body;
+          primaryBodyId = id;
         }
       }
     }
+    const primaryIsPlanet = primaryBodyId !== null && primaryBodyId !== 'Sun';
 
     if (primaryBody) {
       _simPos.set(ship.x - primaryBody.position.x, 0, ship.z - primaryBody.position.z);
@@ -147,11 +186,24 @@ export default function VelocityIndicator({
     const startX = _simPos.x;
     const startZ = _simPos.z;
 
+    // Apsis tracking
+    let periStep = -1, apoStep = -1;
+    let periDist = Infinity, apoDist = -Infinity;
+
     for (let i = 0; i < TRAJ_STEPS; i++) {
       const baseX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
       posArr[i * 3] = baseX + VELOCITY_X_OFFSET;
       posArr[i * 3 + 1] = 0;
       posArr[i * 3 + 2] = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
+
+      // Track min/max distance from primary for apsis markers
+      if (primaryBody) {
+        const pdx = posArr[i * 3] - primaryBody.position.x;
+        const pdz = posArr[i * 3 + 2] - primaryBody.position.z;
+        const pd = Math.sqrt(pdx * pdx + pdz * pdz);
+        if (pd < periDist) { periDist = pd; periStep = i; }
+        if (pd > apoDist) { apoDist = pd; apoStep = i; }
+      }
 
       // Gravitational acceleration — skip inside a body's surface to prevent
       // chaotic oscillation when the trajectory passes through a planet.
@@ -262,6 +314,42 @@ export default function VelocityIndicator({
     spriteCtx.fillText(`${speed.toFixed(1)} m/s`, 128, 34);
     (sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
 
+    // ── Apsis markers ────────────────────────────────────────────────────────
+    // Scale markers proportionally to orbital distance so they're always legible.
+    // Canvas is 256×80 → aspect 3.2, so width = height * 3.2.
+    const orbitDist = primaryBody
+      ? Math.sqrt((ship.x - primaryBody.position.x) ** 2 + (ship.z - primaryBody.position.z) ** 2)
+      : 0;
+    const mH = Math.max(orbitDist * 0.06, 60);
+    const mW = mH * 3.2;
+
+    if (primaryIsPlanet && primaryBody && periStep >= 0) {
+      const px = posArr[periStep * 3];
+      const pz = posArr[periStep * 3 + 2];
+      const alt = Math.round(Math.max(0, periDist - primaryBody.surfaceRadius));
+      periMarker.sprite.visible = true;
+      periMarker.sprite.position.set(px, 0, pz);
+      periMarker.sprite.scale.set(mW, mH, 1);
+      drawApsisLabel(periMarker.ctx, periMarker.color, 'Pe', alt);
+      (periMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
+    } else {
+      periMarker.sprite.visible = false;
+    }
+
+    // Apoapsis only meaningful for a closed orbit
+    if (primaryIsPlanet && primaryBody && apoStep >= 0 && orbitClosedAt >= 0) {
+      const ax = posArr[apoStep * 3];
+      const az = posArr[apoStep * 3 + 2];
+      const alt = Math.round(Math.max(0, apoDist - primaryBody.surfaceRadius));
+      apoMarker.sprite.visible = true;
+      apoMarker.sprite.position.set(ax, 0, az);
+      apoMarker.sprite.scale.set(mW, mH, 1);
+      drawApsisLabel(apoMarker.ctx, apoMarker.color, 'Ap', alt);
+      (apoMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
+    } else {
+      apoMarker.sprite.visible = false;
+    }
+
     // ── Ideal orbit trajectory (green) ─────────────────────────────────────
     const showOrbit = Boolean(primaryBody);
     orbitLine.visible = showOrbit;
@@ -336,6 +424,8 @@ export default function VelocityIndicator({
       <primitive object={sprite} />
       <primitive object={orbitLine} />
       <primitive object={orbitSprite} />
+      <primitive object={periMarker.sprite} />
+      <primitive object={apoMarker.sprite} />
     </>
   );
 }

@@ -25,5 +25,3 @@ export const THRUST_PRECISION = 1; // retroburn / circularize / final approach
 // Orbit insertion: target periapsis for the initial insertion ellipse
 export const ORBIT_INSERTION_PERIAPSIS = 1000;
 
-// Target orbital radius for stabilize-orbit phase
-export const ORBIT_TARGET = 2500;

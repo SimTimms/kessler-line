@@ -263,6 +263,7 @@ export default function AIShip({ id, url, position, scale = 1 }: AIShipProps) {
         thrustRight={thrustRight}
         thrustStrafeLeft={thrustStrafeLeft}
         thrustStrafeRight={thrustStrafeRight}
+        shipVelocityRef={aiVel}
       />
     </>
   );

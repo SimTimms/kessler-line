@@ -11,13 +11,12 @@ const _burnDir    = new THREE.Vector3();
  * This matches the green orbit ring shown in-game.
  *
  * Sequence (ship coasts between burns — no thrust unless at an apsis):
- *   1. At periapsis → burn prograde to raise apoapsis to orbitTarget
- *   2. At new apoapsis (orbitTarget) → burn prograde to raise periapsis to orbitTarget
- *   3. Done when both apsides are within 50 units of orbitTarget
+ *   1. At periapsis → burn to set apoapsis = orbitTarget
+ *   2. At apoapsis  → burn to set periapsis = orbitTarget
+ *   3. Done when both apsides are within 15% of orbitTarget
  *
- * delta-V direction is pure prograde (raise) or retrograde (lower) — a unit
- * vector along the tangential direction. The magnitude is left to the thrust
- * controller; we just point and fire until the orbit reaches target.
+ * Each burn computes the exact delta-V needed and stops when |dv| < 1 m/s,
+ * preventing overshoot regardless of burn duration.
  *
  * Returns the next AutopilotPhase to transition to, or null to stay in 'stabilize-orbit'.
  */
@@ -32,13 +31,18 @@ export function StabilizeOrbit(ctx: AutopilotCtx): AutopilotPhase | null {
   if (!gravBody) return 'done';
 
   // Orbit target = the green ring radius (ideal orbit altitude for this planet)
-  const orbitTarget   = gravBody.surfaceRadius + gravBody.orbitAltitude;
-  const apsisTolerance = 50; // units — detection window for "am I at periapsis/apoapsis?"
+  const orbitTarget    = gravBody.surfaceRadius + gravBody.orbitAltitude;
+  const mu             = gravBody.mu;
+  const apsisTolerance = 50; // units — detection window for apsis crossing
 
   const { periapsis, apoapsis } = orbitStatus;
-  // Orbit established when periapsis and apoapsis are within 10% of the target radius —
-  // i.e. a nearly-circular orbit at roughly the right altitude.
-  if (periapsis > 0 && apoapsis > 0 && (apoapsis - periapsis) < 0.10 * orbitTarget) {
+
+  // Done when both apsides are within 15% of orbitTarget (nearly circular at target altitude)
+  if (
+    periapsis > 0 && apoapsis > 0 &&
+    Math.abs(periapsis - orbitTarget) / orbitTarget < 0.15 &&
+    Math.abs(apoapsis  - orbitTarget) / orbitTarget < 0.15
+  ) {
     return 'done';
   }
 
@@ -53,21 +57,30 @@ export function StabilizeOrbit(ctx: AutopilotCtx): AutopilotPhase | null {
   const tangX     = -orbitSign * _radialBody.z;
   const tangZ     =  orbitSign * _radialBody.x;
 
-  // Only burn when within apsisTolerance of periapsis or apoapsis
-  let prograde: boolean | null = null;
+  // Compute exact delta-V needed at the current apsis.
+  // At periapsis: target apoapsis = orbitTarget  →  a = (r + orbitTarget) / 2
+  // At apoapsis:  target periapsis = orbitTarget  →  a = (orbitTarget + r) / 2
+  // In both cases: v_target = sqrt(mu * (2/r − 1/a))
+  // dv > 0 → prograde burn;  dv < 0 → retrograde burn
+  let dv: number | null = null;
   let burnLabel = '';
-  if (Math.abs(r - periapsis) < apsisTolerance) {
-    // At periapsis: burn prograde to raise apoapsis, retrograde to lower it
-    prograde  = apoapsis < orbitTarget;
-    burnLabel = prograde ? 'RAISING APOAPSIS' : 'LOWERING APOAPSIS';
-  } else if (Math.abs(r - apoapsis) < apsisTolerance) {
-    // At apoapsis: burn prograde to raise periapsis, retrograde to lower it
-    prograde  = periapsis < orbitTarget;
-    burnLabel = prograde ? 'RAISING PERIAPSIS' : 'LOWERING PERIAPSIS';
+
+  if (periapsis > 0 && Math.abs(r - periapsis) < apsisTolerance && orbitTarget > r) {
+    // At periapsis — set apoapsis to orbitTarget
+    const a_new    = (r + orbitTarget) / 2;
+    const v_target = Math.sqrt(mu * Math.max(0, 2 / r - 1 / a_new));
+    dv = v_target - velFlat.length();
+    burnLabel = dv >= 0 ? 'RAISING APOAPSIS' : 'LOWERING APOAPSIS';
+  } else if (apoapsis > 0 && Math.abs(r - apoapsis) < apsisTolerance && orbitTarget < r) {
+    // At apoapsis — set periapsis to orbitTarget
+    const a_new    = (orbitTarget + r) / 2;
+    const v_target = Math.sqrt(mu * Math.max(0, 2 / r - 1 / a_new));
+    dv = v_target - velFlat.length();
+    burnLabel = dv >= 0 ? 'RAISING PERIAPSIS' : 'LOWERING PERIAPSIS';
   }
 
-  if (prograde === null) {
-    // Coasting — damp any residual rotation with minor thruster bursts
+  // Coast when not at an apsis, or when burn is complete (|dv| < 1 m/s)
+  if (dv === null || Math.abs(dv) < 1) {
     const { yawLeft: yl, yawRight: yr } = computeYaw(0, angVel);
     yawLeft.current  = yl;
     yawRight.current = yr;
@@ -79,8 +92,8 @@ export function StabilizeOrbit(ctx: AutopilotCtx): AutopilotPhase | null {
 
   status.current = burnLabel;
 
-  // Pure prograde or retrograde burn direction (unit tangential vector)
-  const sign = prograde ? 1 : -1;
+  // Burn in prograde (dv > 0) or retrograde (dv < 0) direction
+  const sign = dv > 0 ? 1 : -1;
   _burnDir.set(tangX * sign, 0, tangZ * sign);
 
   const crossYBurn    = noseDir.x * _burnDir.z - noseDir.z * _burnDir.x;

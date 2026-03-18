@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { AutopilotCtx, AutopilotPhase } from './types';
 import { computeYaw } from './computeYaw';
-import { RETROBURN_DONE_SPEED, MAX_RETROBURN_ANGLE, PLANET_RETRO_ARRIVAL_SPEED } from './constants';
+import { RETROBURN_DONE_SPEED, MAX_RETROBURN_ANGLE } from './constants';
 
 const _retroDir = new THREE.Vector3();
 
@@ -22,13 +22,13 @@ const _retroDir = new THREE.Vector3();
 export function OrbitInsertion(ctx: AutopilotCtx): AutopilotPhase | null {
   const {
     gravBody, dist, speed, noseDir, velFlat, toTarget,
-    vToward, distToArrival, arrivalRadius,
+    vToward, distToArrival, arrivalRadius, retroTargetSpeed,
     thrustReverse, yawLeft, yawRight,
     angVel, status,
   } = ctx;
 
-  // Determine target speed for this retroburn: 20 m/s for planets, ~0 for stations
-  const doneSpeed = gravBody ? PLANET_RETRO_ARRIVAL_SPEED : RETROBURN_DONE_SPEED;
+  // Determine target speed: planet-relative value from ctx, or near-zero for stations
+  const doneSpeed = gravBody ? retroTargetSpeed : RETROBURN_DONE_SPEED;
 
   // ── Done braking — decide next phase ───────────────────────────────────────
   if (speed <= doneSpeed) {

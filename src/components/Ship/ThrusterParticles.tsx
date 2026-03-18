@@ -20,6 +20,7 @@ import { autopilotThrustForward, autopilotThrustReverse } from '../../context/Au
 const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.1; // seconds — short, intense burn (jittered ±30%)
 const BASE_SPEED = 100; // world units/second (jittered ±30%)
+const TAPER_STRENGTH = 12; // how aggressively particles converge toward axis as they age
 
 // ── Main engine emitters (two front nozzles — reverse thrust) ────────────
 // Spaced apart on the X axis; tune offsets to match model nozzle positions.
@@ -61,6 +62,8 @@ type Particle = {
   vx: number;
   vy: number;
   vz: number;
+  ox: number; oy: number; oz: number; // spawn origin (world space)
+  dx: number; dy: number; dz: number; // emit axis direction (world space, pre-jitter)
 };
 
 function makePool(count: number): Particle[] {
@@ -68,12 +71,10 @@ function makePool(count: number): Particle[] {
     active: false,
     age: 0,
     maxAge: 0,
-    px: 0,
-    py: 0,
-    pz: 0,
-    vx: 0,
-    vy: 0,
-    vz: 0,
+    px: 0, py: 0, pz: 0,
+    vx: 0, vy: 0, vz: 0,
+    ox: 0, oy: 0, oz: 0,
+    dx: 0, dy: 0, dz: 1,
   }));
 }
 
@@ -85,6 +86,8 @@ interface ThrusterParticlesProps {
   thrustRight: { current: boolean };
   thrustStrafeLeft: { current: boolean };
   thrustStrafeRight: { current: boolean };
+  /** Override velocity for non-player ships (e.g. AI ships). Defaults to player shipVelocity. */
+  shipVelocityRef?: { current: THREE.Vector3 };
 }
 
 export default function ThrusterParticles({
@@ -95,6 +98,7 @@ export default function ThrusterParticles({
   thrustRight,
   thrustStrafeLeft,
   thrustStrafeRight,
+  shipVelocityRef,
 }: ThrusterParticlesProps) {
   // ── Material refs (for per-frame size updates) ───────────────────────────
   const mainMatRef = useRef<THREE.PointsMaterial>(null!);
@@ -158,6 +162,9 @@ export default function ThrusterParticles({
     _worldPos.copy(localPos).applyMatrix4(ship.matrixWorld);
     _worldDir.copy(localDir).transformDirection(ship.matrixWorld);
 
+    // Save pre-jitter axis direction for taper convergence
+    const axDx = _worldDir.x, axDy = _worldDir.y, axDz = _worldDir.z;
+
     _worldDir.x += (Math.random() - 0.5) * 0.07;
     _worldDir.y += (Math.random() - 0.5) * 0.07;
     _worldDir.z += (Math.random() - 0.5) * 0.07;
@@ -176,6 +183,8 @@ export default function ThrusterParticles({
     p.px = _worldPos.x;
     p.py = _worldPos.y;
     p.pz = _worldPos.z;
+    p.ox = _worldPos.x; p.oy = _worldPos.y; p.oz = _worldPos.z;
+    p.dx = axDx; p.dy = axDy; p.dz = axDz;
     const baseVx = _worldDir.x * speed;
     const baseVy = _worldDir.y * speed;
     const baseVz = _worldDir.z * speed;
@@ -218,18 +227,31 @@ export default function ThrusterParticles({
       p.px += p.vx * delta;
       p.py += p.vy * delta;
       p.pz += p.vz * delta;
+
+      // Converge toward emit axis as particle ages — radial pull proportional to age
+      const taper = p.age / p.maxAge;
+      const relX = p.px - p.ox, relY = p.py - p.oy, relZ = p.pz - p.oz;
+      const axDot = relX * p.dx + relY * p.dy + relZ * p.dz;
+      const radX = relX - p.dx * axDot;
+      const radY = relY - p.dy * axDot;
+      const radZ = relZ - p.dz * axDot;
+      const pull = TAPER_STRENGTH * taper * delta;
+      p.px -= radX * pull;
+      p.py -= radY * pull;
+      p.pz -= radZ * pull;
+
       positions[i * 3] = p.px;
       positions[i * 3 + 1] = p.py;
       positions[i * 3 + 2] = p.pz;
 
-      // Color: white-hot at birth → light blue → purple in the last 20%
-      const t = p.age / p.maxAge;
+      // Color: white-hot at birth → light blue → purple in the last 35%
+      const t = taper;
       const brightness = Math.pow(1 - t, 0.7);
       let r = brightness * Math.max(0, 1 - t * 2.5);
       let g = brightness * Math.max(0.45, 1 - t * 0.9);
       let b = brightness;
-      if (t > 0.8) {
-        const u = (t - 0.8) / 0.2;
+      if (t > 0.65) {
+        const u = (t - 0.65) / 0.35;
         r = THREE.MathUtils.lerp(r, brightness * 0.7, u);
         g = THREE.MathUtils.lerp(g, brightness * 0.1, u);
         b = THREE.MathUtils.lerp(b, brightness, u);
@@ -246,7 +268,8 @@ export default function ThrusterParticles({
 
   useFrame((_, delta) => {
     const m = thrustMultiplier.current;
-    const speed = shipVelocity.length();
+    const vel = shipVelocityRef ? shipVelocityRef.current : shipVelocity;
+    const speed = vel.length();
     const speedScale = THREE.MathUtils.clamp(1 / (1 + speed / 120), 0.35, 1);
     const emitBoost = THREE.MathUtils.clamp(1 + speed / 200, 1, 3);
     const emitRate = EMIT_RATE * Math.sqrt(m) * emitBoost;
@@ -265,7 +288,7 @@ export default function ThrusterParticles({
         const count = Math.floor(mainAccum.current[key]);
         mainAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
-          spawnInto(MAIN_EMITTERS, key, mainPool.current, MAIN_MAX, mainSlot, m, speedScale);
+          spawnInto(MAIN_EMITTERS, key, mainPool.current, MAIN_MAX, mainSlot, m, speedScale, vel);
       }
     } else {
       mainAccum.current.reverseA = mainAccum.current.reverseB = 0;
@@ -295,7 +318,7 @@ export default function ThrusterParticles({
             rcsSlot,
             m,
             speedScale,
-            shipVelocity
+            vel
           );
       } else {
         rcsAccum.current[key] = 0;

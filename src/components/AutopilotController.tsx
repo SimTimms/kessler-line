@@ -87,7 +87,18 @@ export default function AutopilotController() {
     if (dist < 0.1) { autopilotPhase.current = 'done'; return; }
     _toTarget.normalize();
 
-    const arrivalRadius = gravBody ? PLANET_ARRIVAL_RADIUS : STATION_ARRIVAL_RADIUS;
+    // For small planets (e.g. Mars SOI ≈ 1103 < 1500), clamp arrival to just inside
+    // the SOI so circularize fires while Mars gravity is actually acting on the ship.
+    const arrivalRadius = gravBody
+      ? Math.min(PLANET_ARRIVAL_RADIUS, gravBody.soiRadius * 0.85)
+      : STATION_ARRIVAL_RADIUS;
+
+    // Target speed at the end of retroburn — scaled to the planet's circular orbital
+    // velocity at the arrival radius so circularize can burn mostly tangentially.
+    // Cap at PLANET_RETRO_ARRIVAL_SPEED for large planets; falls to ~0 for small ones.
+    const retroTargetSpeed = gravBody
+      ? Math.min(PLANET_RETRO_ARRIVAL_SPEED, Math.sqrt(gravBody.mu / arrivalRadius) * 0.2)
+      : 0;
 
     _velFlat.set(shipVelocity.x, 0, shipVelocity.z);
     const vToward       = _velFlat.dot(_toTarget); // + = closing on target
@@ -97,7 +108,7 @@ export default function AutopilotController() {
     // Scale thrust multiplier for this phase and distance
     const nextThrust = autopilotThrust(
       dist, autopilotPhase.current, speed, distToArrival,
-      gravBody ? PLANET_RETRO_ARRIVAL_SPEED : 0,
+      retroTargetSpeed,
     );
     if (nextThrust !== thrustMultiplier.current) {
       thrustMultiplier.current = nextThrust;
@@ -129,6 +140,7 @@ export default function AutopilotController() {
       aligned,
       gravBody,
       arrivalRadius,
+      retroTargetSpeed,
       orbitStatus:   orbitStatusRef.current,
       thrustForward: autopilotThrustForward,
       thrustReverse: autopilotThrustReverse,

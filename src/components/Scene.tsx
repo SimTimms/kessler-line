@@ -151,8 +151,9 @@ function OrbitingFuelStation({
   );
 }
 
-// ── DEV: force-spawn near Jupiter for autopilot orbit testing ─────────────
-const DEV_JUPITER_TEST = true;
+// ── DEV: force-spawn near a planet for testing (overrides autosave) ───────
+const DEV_JUPITER_TEST = false;
+const DEV_MARS_TEST    = true;
 // ──────────────────────────────────────────────────────────────────────────
 
 export default function Scene() {
@@ -183,9 +184,18 @@ export default function Scene() {
     jupiterWorldZ,
   ];
 
-  const DEFAULT_START = DEV_JUPITER_TEST ? JUPITER_TEST_START : NEPTUNE_START;
-  const defaultBodyX = DEV_JUPITER_TEST ? jupiterWorldX : neptuneWorldX;
-  const defaultBodyZ = DEV_JUPITER_TEST ? jupiterWorldZ : neptuneWorldZ;
+  const mars = PLANETS.find((planet) => planet.name === 'Mars');
+  const marsWorldX = mars
+    ? Math.cos(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
+    : 0;
+  const marsWorldZ = mars
+    ? -Math.sin(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
+    : 0;
+  const MARS_TEST_START: [number, number, number] = [marsWorldX + 7000, 0, marsWorldZ];
+
+  const DEFAULT_START = DEV_MARS_TEST ? MARS_TEST_START : DEV_JUPITER_TEST ? JUPITER_TEST_START : NEPTUNE_START;
+  const defaultBodyX = DEV_MARS_TEST ? marsWorldX : DEV_JUPITER_TEST ? jupiterWorldX : neptuneWorldX;
+  const defaultBodyZ = DEV_MARS_TEST ? marsWorldZ : DEV_JUPITER_TEST ? jupiterWorldZ : neptuneWorldZ;
 
   const startDirection = new THREE.Vector3(
     defaultBodyX - DEFAULT_START[0],
@@ -201,7 +211,7 @@ export default function Scene() {
     rotation: [number, number, number];
   } | null>(null);
   if (!didInitShipRef.current) {
-    const savedData = DEV_JUPITER_TEST ? null : loadSlot(AUTOSAVE_SLOT);
+    const savedData = (DEV_JUPITER_TEST || DEV_MARS_TEST) ? null : loadSlot(AUTOSAVE_SLOT);
     if (savedData) {
       apply(savedData); // patches shipPosRef + all other global refs
       savedInitRef.current = {
@@ -212,6 +222,9 @@ export default function Scene() {
       if (DEV_JUPITER_TEST) {
         navTargetIdRef.current = 'jupiter';
         navTargetPosRef.current.set(jupiterWorldX, 0, jupiterWorldZ);
+      } else if (DEV_MARS_TEST) {
+        navTargetIdRef.current = 'Mars';
+        navTargetPosRef.current.set(marsWorldX, 0, marsWorldZ);
       }
       shipPosRef.current.set(...DEFAULT_START);
     }

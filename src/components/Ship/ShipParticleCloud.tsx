@@ -6,6 +6,7 @@ import {
   getShipSpeedMps,
   SHIP_IMPACT_PULSE_MS,
   shipImpactPulseUntil,
+  shipVelocity,
 } from '../../context/ShipState';
 import { playAsteroidImpact, setAsteroidHiss } from '../../sound/SoundManager';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
@@ -42,7 +43,7 @@ function mulberry32(seed: number): () => number {
 }
 
 export default function ShipParticleCloud({
-  count = 220,
+  count = 44,
   minRadius = 15,
   maxRadius = 50,
   color = '#ffffff',
@@ -63,60 +64,44 @@ export default function ShipParticleCloud({
   const positionAttrRef = useRef<THREE.BufferAttribute | null>(null);
   const colorsRef = useRef<Float32Array>(new Float32Array(count * 3));
   const colorAttrRef = useRef<THREE.BufferAttribute | null>(null);
+
+  // Hull surface positions in ship-local space (sampled once from mesh geometry)
   const localOffsetsRef = useRef<Float32Array>(new Float32Array(count * 3));
   const hasSurfaceSampleRef = useRef(false);
-  const pulsePhasesRef = useRef<Float32Array>(new Float32Array(count));
-  const pulseRatesRef = useRef<Float32Array>(new Float32Array(count));
-  const pulseColorsRef = useRef<Float32Array>(new Float32Array(count * 3));
+
+  // Per-particle lifetime system
+  const spawnWorldPosRef = useRef<Float32Array>(new Float32Array(count * 3));
+  const particleVelRef = useRef<Float32Array>(new Float32Array(count * 3));
+  const particleAgeRef = useRef<Float32Array>(new Float32Array(count));
+  const particleLifetimeRef = useRef<Float32Array>(new Float32Array(count));
+  const spawnRngRef = useRef(mulberry32(94127));
+  const soundRngRef = useRef(mulberry32(73091));
   const nextImpactRef = useRef(0);
-  const rngRef = useRef(mulberry32(73091));
 
-  const fallbackOffsets = useMemo(() => {
-    const rng = mulberry32(51731);
-    const offsets = new Float32Array(count * 3);
-    const span = maxRadius - minRadius;
-
-    for (let i = 0; i < count; i++) {
-      const theta = rng() * Math.PI * 2;
-      const phi = Math.acos(2 * rng() - 1);
-      const radius = minRadius + rng() * span;
-      const sinPhi = Math.sin(phi);
-      const base = i * 3;
-      offsets[base + 0] = Math.cos(theta) * sinPhi * radius;
-      offsets[base + 1] = Math.cos(phi) * radius;
-      offsets[base + 2] = Math.sin(theta) * sinPhi * radius;
-    }
-
-    return offsets;
-  }, [count, minRadius, maxRadius]);
+  // Per-particle base colors
+  const pulseColorsRef = useRef<Float32Array>(new Float32Array(count * 3));
 
   useMemo(() => {
     const rng = mulberry32(60017);
-    const phases = pulsePhasesRef.current;
-    const rates = pulseRatesRef.current;
     const colors = pulseColorsRef.current;
+    const lifetimes = particleLifetimeRef.current;
+    const ages = particleAgeRef.current;
 
     for (let i = 0; i < count; i++) {
-      phases[i] = rng() * Math.PI * 2;
-      rates[i] = 6 + rng() * 10;
-
       const pick = rng();
       const base = i * 3;
       if (pick < 0.34) {
-        colors[base + 0] = 1.0;
-        colors[base + 1] = 0.35;
-        colors[base + 2] = 0.25;
+        colors[base] = 1.0; colors[base + 1] = 0.35; colors[base + 2] = 0.25;
       } else if (pick < 0.67) {
-        colors[base + 0] = 1.0;
-        colors[base + 1] = 1.0;
-        colors[base + 2] = 1.0;
+        colors[base] = 1.0; colors[base + 1] = 1.0; colors[base + 2] = 1.0;
       } else {
-        colors[base + 0] = 1.0;
-        colors[base + 1] = 0.85;
-        colors[base + 2] = 0.2;
+        colors[base] = 1.0; colors[base + 1] = 0.85; colors[base + 2] = 0.2;
       }
+      // Staggered initial ages so they don't all respawn on frame 1
+      const lt = 0.05 + rng() * 0.25;
+      lifetimes[i] = lt;
+      ages[i] = rng() * lt; // start at random point in lifetime
     }
-
     return true;
   }, [count]);
 
@@ -124,8 +109,11 @@ export default function ShipParticleCloud({
   const worldPos = useMemo(() => new THREE.Vector3(), []);
   const localPos = useMemo(() => new THREE.Vector3(), []);
   const earthWorldPos = useMemo(() => new THREE.Vector3(), []);
+  const _invMatrix = useMemo(() => new THREE.Matrix4(), []);
+  const _localVelDir = useMemo(() => new THREE.Vector3(), []);
   const earth = useMemo(() => PLANETS.find((planet) => planet.name === 'Earth'), []);
   const fieldOuter = (earth?.radius ?? 92) * SOLAR_SYSTEM_SCALE * 5.2;
+
   const flashTexture = useMemo(() => {
     const sizePx = 64;
     const canvas = document.createElement('canvas');
@@ -141,6 +129,9 @@ export default function ShipParticleCloud({
     ctx.fillRect(0, 0, sizePx, sizePx);
     return new THREE.CanvasTexture(canvas);
   }, []);
+
+  // Unused props kept for API compatibility
+  void minRadius; void maxRadius;
 
   const sampleShipSurface = () => {
     const group = shipGroupRef?.current;
@@ -158,38 +149,27 @@ export default function ShipParticleCloud({
     const offsets = localOffsetsRef.current;
 
     for (let i = 0; i < count; i++) {
-      // Sample 3 candidates and keep the one most forward (most negative local Z = bow)
-      let bestX = 0, bestY = 0, bestZ = Infinity;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const mesh = meshes[Math.floor(rng() * meshes.length)];
-        const geometry = mesh.geometry as THREE.BufferGeometry;
-        const positions = geometry.attributes.position as THREE.BufferAttribute;
-        const index = Math.floor(rng() * positions.count);
-        temp.fromBufferAttribute(positions, index);
-        worldPos.copy(temp).applyMatrix4(mesh.matrixWorld);
-        localPos.copy(worldPos);
-        group.worldToLocal(localPos);
-        if (localPos.z < bestZ) {
-          bestZ = localPos.z;
-          bestX = localPos.x;
-          bestY = localPos.y;
-        }
-      }
+      const mesh = meshes[Math.floor(rng() * meshes.length)];
+      const geometry = mesh.geometry as THREE.BufferGeometry;
+      const positions = geometry.attributes.position as THREE.BufferAttribute;
+      const index = Math.floor(rng() * positions.count);
+      temp.fromBufferAttribute(positions, index);
+      worldPos.copy(temp).applyMatrix4(mesh.matrixWorld);
+      localPos.copy(worldPos);
+      group.worldToLocal(localPos);
       const base = i * 3;
-      offsets[base + 0] = bestX;
-      offsets[base + 1] = bestY;
-      offsets[base + 2] = bestZ;
+      offsets[base] = localPos.x;
+      offsets[base + 1] = localPos.y;
+      offsets[base + 2] = localPos.z;
     }
 
     return true;
   };
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const shipPos = shipPosRef.current;
     const positions = positionsRef.current;
     const colors = colorsRef.current;
-    const phases = pulsePhasesRef.current;
-    const rates = pulseRatesRef.current;
     const baseColors = pulseColorsRef.current;
     const t = clock.getElapsedTime();
 
@@ -204,7 +184,6 @@ export default function ShipParticleCloud({
     const speedT = enableSpeedGate
       ? Math.min(1, Math.max(0, (currentSpeed - speedGateMin) / (speedGateMax - speedGateMin)))
       : 0;
-    const speedFloor = speedT * 0.45;
     const speedBoost = 1 + speedT * 1.5;
 
     if (!impactActive && enableInEarthField && !(speedGateOverridesField && speedGateActive)) {
@@ -216,9 +195,7 @@ export default function ShipParticleCloud({
           if (enableImpactSound) setAsteroidHiss(false);
           for (let i = 0; i < count; i++) {
             const base = i * 3;
-            colors[base + 0] = 0;
-            colors[base + 1] = 0;
-            colors[base + 2] = 0;
+            colors[base] = 0; colors[base + 1] = 0; colors[base + 2] = 0;
           }
           if (colorAttrRef.current) colorAttrRef.current.needsUpdate = true;
           return;
@@ -228,67 +205,104 @@ export default function ShipParticleCloud({
     }
 
     if (enableImpactSound) {
-      const now = t;
-      if (now >= nextImpactRef.current) {
+      if (t >= nextImpactRef.current) {
         playAsteroidImpact();
-        const rng = rngRef.current;
-        const interval =
-          impactSoundMinInterval + rng() * (impactSoundMaxInterval - impactSoundMinInterval);
-        nextImpactRef.current = now + interval;
+        const srng = soundRngRef.current;
+        const interval = impactSoundMinInterval + srng() * (impactSoundMaxInterval - impactSoundMinInterval);
+        nextImpactRef.current = t + interval;
       }
     }
 
-    let usedSurface = false;
-
-    if (shipGroupRef?.current) {
-      if (!hasSurfaceSampleRef.current) {
-        hasSurfaceSampleRef.current = sampleShipSurface();
-      }
-
-      if (hasSurfaceSampleRef.current) {
-        const group = shipGroupRef.current;
-        if (group) {
-          group.updateMatrixWorld();
-          const offsets = localOffsetsRef.current;
-          for (let i = 0; i < count; i++) {
-            const base = i * 3;
-            temp.set(offsets[base + 0], offsets[base + 1], offsets[base + 2]);
-            temp.applyMatrix4(group.matrixWorld);
-            positions[base + 0] = temp.x;
-            positions[base + 1] = temp.y;
-            positions[base + 2] = temp.z;
-          }
-          usedSurface = true;
-        }
-      }
-    }
-
-    if (!usedSurface) {
-      for (let i = 0; i < count; i++) {
-        const base = i * 3;
-        positions[base + 0] = shipPos.x + fallbackOffsets[base + 0];
-        positions[base + 1] = shipPos.y + fallbackOffsets[base + 1];
-        positions[base + 2] = shipPos.z + fallbackOffsets[base + 2];
-      }
+    if (shipGroupRef?.current && !hasSurfaceSampleRef.current) {
+      hasSurfaceSampleRef.current = sampleShipSurface();
     }
 
     if (!impactActive && enableSpeedGate && !speedGateActive && !enableInEarthField) {
       for (let i = 0; i < count; i++) {
         const base = i * 3;
-        colors[base + 0] = 0;
-        colors[base + 1] = 0;
-        colors[base + 2] = 0;
+        colors[base] = 0; colors[base + 1] = 0; colors[base + 2] = 0;
       }
       if (colorAttrRef.current) colorAttrRef.current.needsUpdate = true;
       return;
     }
 
+    // Velocity direction in ship-local space for directional culling
+    let velDirValid = false;
+    if (!impactActive && shipGroupRef?.current && shipVelocity.lengthSq() > 0.01) {
+      _invMatrix.copy(shipGroupRef.current.matrixWorld).invert();
+      _localVelDir.copy(shipVelocity).transformDirection(_invMatrix);
+      velDirValid = true;
+    }
+
+    const spawnPos = spawnWorldPosRef.current;
+    const vels = particleVelRef.current;
+    const ages = particleAgeRef.current;
+    const lifetimes = particleLifetimeRef.current;
+    const localOffsets = localOffsetsRef.current;
+    const rng = spawnRngRef.current;
+    const group = shipGroupRef?.current ?? null;
+
     for (let i = 0; i < count; i++) {
       const base = i * 3;
-      const effectiveRate = rates[i] * (1 + speedT * 3);
-      const pulse = Math.max(0, Math.sin(t * effectiveRate + phases[i]));
-      const intensity = Math.max(speedFloor, pulse * pulse) * impactBoost * speedBoost;
-      colors[base + 0] = baseColors[base + 0] * intensity;
+
+      ages[i] += delta;
+
+      // Respawn particle when its lifetime expires
+      if (ages[i] >= lifetimes[i]) {
+        lifetimes[i] = 0.05 + rng() * 0.25;
+        ages[i] = 0;
+
+        // World-space spawn position from local hull offset at current ship transform
+        if (group && hasSurfaceSampleRef.current) {
+          temp.set(localOffsets[base], localOffsets[base + 1], localOffsets[base + 2]);
+          temp.applyMatrix4(group.matrixWorld);
+          spawnPos[base] = temp.x;
+          spawnPos[base + 1] = temp.y;
+          spawnPos[base + 2] = temp.z;
+        } else {
+          spawnPos[base] = shipPos.x + (rng() - 0.5) * 10;
+          spawnPos[base + 1] = shipPos.y + (rng() - 0.5) * 10;
+          spawnPos[base + 2] = shipPos.z + (rng() - 0.5) * 10;
+        }
+
+        // Velocity: spray outward from hull surface in world space
+        // Particles do NOT inherit ship velocity — they stay in world space as the ship moves past
+        const ox = localOffsets[base];
+        const oy = localOffsets[base + 1];
+        const oz = localOffsets[base + 2];
+        const len = Math.sqrt(ox * ox + oy * oy + oz * oz) || 1;
+        const spraySpeed = 8 + rng() * 20; // units/s outward from hull
+        vels[base] = (ox / len) * spraySpeed + (rng() - 0.5) * 20;
+        vels[base + 1] = (oy / len) * spraySpeed + (rng() - 0.5) * 20;
+        vels[base + 2] = (oz / len) * spraySpeed + (rng() - 0.5) * 20;
+      }
+
+      // World-space position: fixed spawn + velocity drift
+      const age = ages[i];
+      positions[base] = spawnPos[base] + vels[base] * age;
+      positions[base + 1] = spawnPos[base + 1] + vels[base + 1] * age;
+      positions[base + 2] = spawnPos[base + 2] + vels[base + 2] * age;
+
+      // Fade: bright at spawn, dark at end of lifetime
+      const lifeT = age / lifetimes[i];
+      const fade = Math.max(0, 1 - lifeT * lifeT);
+
+      // Directional culling: only particles on the impact-facing side are active
+      let dirFactor = 1;
+      if (!impactActive && velDirValid) {
+        const ox = localOffsets[base];
+        const oy = localOffsets[base + 1];
+        const oz = localOffsets[base + 2];
+        const len = Math.sqrt(ox * ox + oy * oy + oz * oz);
+        if (len > 0.001) {
+          const dot = (ox * _localVelDir.x + oy * _localVelDir.y + oz * _localVelDir.z) / len;
+          const d = Math.max(0, dot);
+          dirFactor = d * d;
+        }
+      }
+
+      const intensity = fade * impactBoost * speedBoost * dirFactor;
+      colors[base] = baseColors[base] * intensity;
       colors[base + 1] = baseColors[base + 1] * intensity;
       colors[base + 2] = baseColors[base + 2] * intensity;
     }

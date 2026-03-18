@@ -30,6 +30,7 @@ export type AutopilotCtx = {
 
   gravBody: GravityBody | undefined;
   arrivalRadius: number;
+  retroTargetSpeed: number;        // target speed at arrivalRadius — relative to planet's orbital velocity
   orbitStatus: OrbitStatus;
 
   // Thrust output refs — helpers write to these; cleared each frame before phase logic

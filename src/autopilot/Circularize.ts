@@ -40,8 +40,10 @@ export function Circularize(ctx: AutopilotCtx): AutopilotPhase | null {
   const r = _radialBody.length();
   _radialBody.normalize();
 
-  // Treat current radius as apoapsis — compute insertion ellipse speed
-  const r_p = ORBIT_INSERTION_PERIAPSIS;
+  // Treat current radius as apoapsis — compute insertion ellipse speed.
+  // For small planets the ideal orbit radius may be well below ORBIT_INSERTION_PERIAPSIS,
+  // so clamp r_p to the planet's own ideal orbit altitude to keep periapsis < apoapsis.
+  const r_p = Math.min(ORBIT_INSERTION_PERIAPSIS, gravBody.surfaceRadius + gravBody.orbitAltitude);
   const a   = (r + r_p) / 2;
   const v_insert = Math.sqrt(gravBody.mu * Math.max(0, 2 / r - 1 / a));
 

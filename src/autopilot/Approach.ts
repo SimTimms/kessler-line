@@ -1,7 +1,6 @@
 import type { AutopilotCtx, AutopilotPhase } from './types';
 import { computeYaw } from './computeYaw';
 import { THRUST, MAX_THRUST_MULTIPLIER } from '../context/ShipState';
-import { PLANET_RETRO_ARRIVAL_SPEED } from './constants';
 
 // Max deceleration available (used for brake-distance calculation)
 const A_MAX = THRUST * MAX_THRUST_MULTIPLIER;
@@ -24,7 +23,7 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
   const {
     noseDir, toTarget, velFlat,
     dist, distToArrival, speed,
-    gravBody,
+    gravBody, retroTargetSpeed,
     thrustReverse,
     yawLeft, yawRight,
     angVel,
@@ -39,10 +38,10 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
     yawRight.current = yr;
 
     // Brake-distance trigger: start retroburn when we can no longer decelerate
-    // to PLANET_RETRO_ARRIVAL_SPEED before reaching the arrival radius.
+    // to retroTargetSpeed before reaching the arrival radius.
     //   d_brake = (v² - v_target²) / (2 * a_max)
-    const brakeDist = speed > PLANET_RETRO_ARRIVAL_SPEED
-      ? (speed * speed - PLANET_RETRO_ARRIVAL_SPEED * PLANET_RETRO_ARRIVAL_SPEED) / (2 * A_MAX)
+    const brakeDist = speed > retroTargetSpeed
+      ? (speed * speed - retroTargetSpeed * retroTargetSpeed) / (2 * A_MAX)
       : 0;
 
     if (distToArrival <= brakeDist) return 'retroburn';
