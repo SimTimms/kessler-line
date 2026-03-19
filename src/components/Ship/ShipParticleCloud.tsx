@@ -47,8 +47,8 @@ export default function ShipParticleCloud({
   minRadius = 15,
   maxRadius = 50,
   color = '#ffffff',
-  size = 0.5,
-  opacity = 0.9,
+  size = 0.15,
+  opacity = 0.3,
   shipGroupRef,
   enableInEarthField = false,
   enableImpactSound = false,
@@ -91,11 +91,17 @@ export default function ShipParticleCloud({
       const pick = rng();
       const base = i * 3;
       if (pick < 0.34) {
-        colors[base] = 1.0; colors[base + 1] = 0.35; colors[base + 2] = 0.25;
+        colors[base] = 1.0;
+        colors[base + 1] = 0.35;
+        colors[base + 2] = 0.25;
       } else if (pick < 0.67) {
-        colors[base] = 1.0; colors[base + 1] = 1.0; colors[base + 2] = 1.0;
+        colors[base] = 1.0;
+        colors[base + 1] = 1.0;
+        colors[base + 2] = 1.0;
       } else {
-        colors[base] = 1.0; colors[base + 1] = 0.85; colors[base + 2] = 0.2;
+        colors[base] = 1.0;
+        colors[base + 1] = 0.85;
+        colors[base + 2] = 0.2;
       }
       // Staggered initial ages so they don't all respawn on frame 1
       const lt = 0.05 + rng() * 0.25;
@@ -131,7 +137,8 @@ export default function ShipParticleCloud({
   }, []);
 
   // Unused props kept for API compatibility
-  void minRadius; void maxRadius;
+  void minRadius;
+  void maxRadius;
 
   const sampleShipSurface = () => {
     const group = shipGroupRef?.current;
@@ -195,7 +202,9 @@ export default function ShipParticleCloud({
           if (enableImpactSound) setAsteroidHiss(false);
           for (let i = 0; i < count; i++) {
             const base = i * 3;
-            colors[base] = 0; colors[base + 1] = 0; colors[base + 2] = 0;
+            colors[base] = 0;
+            colors[base + 1] = 0;
+            colors[base + 2] = 0;
           }
           if (colorAttrRef.current) colorAttrRef.current.needsUpdate = true;
           return;
@@ -208,7 +217,8 @@ export default function ShipParticleCloud({
       if (t >= nextImpactRef.current) {
         playAsteroidImpact();
         const srng = soundRngRef.current;
-        const interval = impactSoundMinInterval + srng() * (impactSoundMaxInterval - impactSoundMinInterval);
+        const interval =
+          impactSoundMinInterval + srng() * (impactSoundMaxInterval - impactSoundMinInterval);
         nextImpactRef.current = t + interval;
       }
     }
@@ -220,7 +230,9 @@ export default function ShipParticleCloud({
     if (!impactActive && enableSpeedGate && !speedGateActive && !enableInEarthField) {
       for (let i = 0; i < count; i++) {
         const base = i * 3;
-        colors[base] = 0; colors[base + 1] = 0; colors[base + 2] = 0;
+        colors[base] = 0;
+        colors[base + 1] = 0;
+        colors[base + 2] = 0;
       }
       if (colorAttrRef.current) colorAttrRef.current.needsUpdate = true;
       return;
@@ -249,16 +261,16 @@ export default function ShipParticleCloud({
 
       // Respawn particle when its lifetime expires
       if (ages[i] >= lifetimes[i]) {
-        lifetimes[i] = 0.05 + rng() * 0.25;
+        lifetimes[i] = 0.0025 + rng() * 0.025;
         ages[i] = 0;
 
         // World-space spawn position from local hull offset at current ship transform
         if (group && hasSurfaceSampleRef.current) {
           temp.set(localOffsets[base], localOffsets[base + 1], localOffsets[base + 2]);
           temp.applyMatrix4(group.matrixWorld);
-          spawnPos[base] = temp.x;
-          spawnPos[base + 1] = temp.y;
-          spawnPos[base + 2] = temp.z;
+          spawnPos[base] = -Math.random() * 3 + temp.x + Math.random() * 3;
+          spawnPos[base + 1] = -Math.random() * 1 + temp.y + Math.random() * 1;
+          spawnPos[base + 2] = -Math.random() * 3 + temp.z + Math.random() * 3;
         } else {
           spawnPos[base] = shipPos.x + (rng() - 0.5) * 10;
           spawnPos[base + 1] = shipPos.y + (rng() - 0.5) * 10;

@@ -24,7 +24,7 @@ const TAPER_STRENGTH = 12; // how aggressively particles converge toward axis as
 
 // ── Main engine emitters (two front nozzles — reverse thrust) ────────────
 // Spaced apart on the X axis; tune offsets to match model nozzle positions.
-const MAIN_MAX = 650;
+const MAIN_MAX = 2200;
 const MAIN_EMITTERS = {
   reverseA: {
     localPos: MAIN_ENGINE_LOCAL_POS.reverseA,
