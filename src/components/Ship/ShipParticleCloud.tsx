@@ -55,8 +55,8 @@ export default function ShipParticleCloud({
   impactSoundMinInterval = 0.05,
   impactSoundMaxInterval = 0.12,
   enableSpeedGate = false,
-  speedGateMin = 50,
-  speedGateMax = 300,
+  speedGateMin = 200,
+  speedGateMax = 600,
   speedGateOverridesField = false,
 }: ShipParticleCloudProps) {
   const positionsRef = useRef<Float32Array>(new Float32Array(count * 3));

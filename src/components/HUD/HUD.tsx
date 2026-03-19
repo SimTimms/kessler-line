@@ -204,7 +204,7 @@ export const HUD = ({
         musicActiveRef.current = on;
         setMusicOn(on);
         if (on) {
-          audio4Ref.current?.play();
+          audio1Ref.current?.play();
         } else {
           audio1Ref.current?.pause();
           audio2Ref.current?.pause();

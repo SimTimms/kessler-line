@@ -171,14 +171,19 @@ export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSy
           planetName={p.name}
           orbitRadius={p.orbitRadius}
           radius={p.radius}
-          color={p.name === 'Earth' ? '#ffffff' : p.color}
-          textureUrl={p.name === 'Earth' ? '/earth.jpg' : undefined}
+          color={p.name === 'Earth' ? '#ffffff' : p.name === 'Mars' ? '#ffffff' : p.color}
+          textureUrl={
+            p.name === 'Earth' ? '/earth.jpg' :
+            p.name === 'Mars'  ? '/mars.jpg'  :
+            undefined
+          }
           emissive={p.name === 'Earth' ? '#000000' : p.emissive}
           orbitalSpeed={p.orbitalSpeed}
           spinSpeed={p.spinSpeed}
           axialTilt={p.axialTilt}
           initialAngle={p.initialAngle}
           rings={'rings' in p ? p.rings : false}
+          showColonies={p.name === 'Mars'}
           {...gravParams(p.radius)}
         />
       ))}

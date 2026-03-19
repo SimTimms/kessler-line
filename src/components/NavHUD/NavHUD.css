@@ -4,6 +4,7 @@
   width: 100vw;
   position: fixed;
   box-sizing: border-box;
+  backdrop-filter: blur(4px);
 }
 
 .nav-metrics {
@@ -59,6 +60,11 @@
 }
 
 @keyframes autopilot-pulse {
-  0%, 100% { box-shadow: 0 0 4px rgba(80, 255, 160, 0.2); }
-  50%       { box-shadow: 0 0 10px rgba(80, 255, 160, 0.5); }
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(80, 255, 160, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(80, 255, 160, 0.5);
+  }
 }

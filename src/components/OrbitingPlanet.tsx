@@ -5,6 +5,60 @@ import * as THREE from 'three';
 import { solarPlanetPositions } from '../context/SolarSystemMinimap';
 import { gravityBodies } from '../context/GravityRegistry';
 
+// Colony light locations: [longitude (-180..180), latitude (-90..90), cluster radius px, brightness 0..1]
+type ColonyPoint = [number, number, number, number];
+const MARS_COLONIES: ColonyPoint[] = [
+  [-134,  18, 10, 1.0],  // Olympus Mons plateau
+  [  70, -42,  8, 0.85], // Hellas Basin (deepest, highest pressure)
+  [ -46,  14,  7, 0.80], // Valles Marineris eastern end
+  [  87,  13,  9, 0.90], // Isidis Planitia (landing-friendly basin)
+  [-164,  25,  6, 0.70], // Amazonis Planitia
+  [ 110, -28,  5, 0.65], // Argyre Basin rim
+  [ -20,  56,  6, 0.72], // Vastitas Borealis (northern ice deposits)
+  [ 160,  40,  7, 0.78], // Utopia Planitia (Viking 2 site)
+  [  30,  20,  5, 0.60], // Arabia Terra
+];
+
+// Deterministic per-colony dot offsets so useMemo produces the same texture every render
+const DOT_OFFSETS: [number, number][] = [
+  [-0.8, -0.6], [0.4, -0.9], [0.9, 0.3], [-0.3, 0.8], [0.6, 0.7],
+  [-0.7, 0.2],  [0.1, -0.5], [-0.5, -0.4], [0.8, -0.3], [-0.2, 0.9],
+];
+
+function buildColonyTexture(): THREE.CanvasTexture {
+  const W = 1024, H = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, W, H);
+
+  for (const [lon, lat, r, brightness] of MARS_COLONIES) {
+    const x = ((lon + 180) / 360) * W;
+    const y = ((90 - lat) / 180) * H;
+
+    // Soft glow halo
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 5);
+    glow.addColorStop(0,   `rgba(255, 200, 100, ${brightness * 0.9})`);
+    glow.addColorStop(0.4, `rgba(255, 160,  60, ${brightness * 0.4})`);
+    glow.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - r * 5, y - r * 5, r * 10, r * 10);
+
+    // Bright point-lights within each settlement
+    ctx.fillStyle = `rgba(255, 240, 180, ${brightness})`;
+    for (const [ox, oy] of DOT_OFFSETS) {
+      ctx.beginPath();
+      ctx.arc(x + ox * r, y + oy * r, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
 const _planetWorldPos = new THREE.Vector3();
 
 interface OrbitingPlanetProps {
@@ -19,6 +73,7 @@ interface OrbitingPlanetProps {
   axialTilt: number; // radians
   initialAngle: number; // radians
   rings?: boolean;
+  showColonies?: boolean; // render procedural colony-lights emissive map
   gravityMu?: number; // GM in world-space units (optional)
   gravitySoiRadius?: number; // sphere of influence radius in world-space units (optional)
   gravitySurfaceRadius?: number; // physical surface radius in world-space units (optional)
@@ -37,6 +92,7 @@ export default function OrbitingPlanet({
   axialTilt,
   initialAngle,
   rings = false,
+  showColonies = false,
   gravityMu,
   gravitySoiRadius,
   gravitySurfaceRadius,
@@ -77,6 +133,8 @@ export default function OrbitingPlanet({
     line.computeLineDistances();
     return line;
   }, [gravitySoiRadius, gravitySurfaceRadius, radius]);
+
+  const coloniesTexture = useMemo(() => (showColonies ? buildColonyTexture() : null), [showColonies]);
 
   useEffect(() => {
     if (orbitRef.current) orbitRef.current.rotation.y = initialAngle;
@@ -148,7 +206,9 @@ export default function OrbitingPlanet({
               <sphereGeometry args={[radius, 64, 64]} />
               <meshStandardMaterial
                 color={color}
-                emissive={emissive}
+                emissive={showColonies ? '#ffb050' : emissive}
+                emissiveMap={coloniesTexture}
+                emissiveIntensity={showColonies ? 2.5 : 1.0}
                 roughness={0.8}
                 map={textureUrl ? texture : null}
                 fog={false}

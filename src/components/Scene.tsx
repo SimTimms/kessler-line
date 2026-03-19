@@ -34,6 +34,7 @@ import RailgunWarning from './RailgunWarning';
 import NebulaClouds from './NebulaClouds';
 import StartZoneAsteroidCluster from './StartZoneAsteroidCluster';
 import GhostFleet from './GhostFleet';
+import MarsSystem from './MarsSystem';
 import {
   RADIO_BEACON_DEFS,
   BEACON_AUDIO,
@@ -313,6 +314,7 @@ export default function Scene() {
         beaconGroupRef={beaconGroupRef}
       />
       <SolarSystem scale={4} />
+      <MarsSystem />
       <NeptuneNoFlyRing />
       <EarthAsteroidRing />
       <SunGravity />
