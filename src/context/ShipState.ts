@@ -54,6 +54,18 @@ export const orbitStatusRef = {
     apoapsis: 0,
     surfaceRadius: 0,
     radialVelocity: 0, // positive = moving away from body (toward apoapsis), negative = toward body (toward periapsis)
+    hyperbolicPeriapsis: 0, // predicted periapsis on hyperbolic approach (energy ≥ 0); 0 when not applicable
+  },
+};
+
+// ── Trajectory-simulated apsides (written by VelocityIndicator each frame) ────
+// Values are radial distances (not altitudes) from the primary body center.
+// apoapsis is 0 when the trajectory is open (hyperbolic).
+export const trajectoryApsisRef = {
+  current: {
+    periapsis: 0,     // min radial distance along simulated trajectory; 0 if none
+    apoapsis: 0,      // max radial distance along closed trajectory; 0 if open
+    surfaceRadius: 0, // surface radius of the primary body at time of calculation
   },
 };
 
@@ -90,8 +102,8 @@ export const railgunTargetEngine = {
 // ── Main engine damage state ───────────────────────────────────────────────
 export const MAIN_ENGINE_HIT_RADIUS = 2.5;
 export const MAIN_ENGINE_LOCAL_POS = {
-  reverseA: new THREE.Vector3(-3.5, 2.5, -10.5),
-  reverseB: new THREE.Vector3(3.5, 2.5, -10.5),
+  reverseA: new THREE.Vector3(-3.5, 2.5, -11.5),
+  reverseB: new THREE.Vector3(3.5, 2.5, -11.5),
 } as const;
 export const mainEngineDisabled = {
   reverseA: { current: false },

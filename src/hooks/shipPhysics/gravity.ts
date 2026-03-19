@@ -35,6 +35,7 @@ export function applyGravityStep({
     orbitStatusRef.current.periapsis = 0;
     orbitStatusRef.current.apoapsis = 0;
     orbitStatusRef.current.surfaceRadius = 0;
+    orbitStatusRef.current.hyperbolicPeriapsis = 0;
     if (primaryGravityId.current) {
       velocity.sub(primaryGravityVelocity);
       primaryGravityId.current = null;
@@ -77,22 +78,31 @@ export function applyGravityStep({
     let isOrbiting = false;
     let periapsis = 0;
     let apoapsis = 0;
+    let hyperbolicPeriapsis = 0;
+
+    // Angular momentum is valid for all conic types
+    _hVec.copy(_relPos).cross(_relVel);
+    const h2 = _hVec.lengthSq();
+
     if (energy < 0) {
       const a = -mu / (2 * energy);
-      _hVec.copy(_relPos).cross(_relVel);
-      const h2 = _hVec.lengthSq();
       const e = Math.sqrt(Math.max(0, 1 + (2 * energy * h2) / (mu * mu)));
       if (e < 1) {
         periapsis = h2 / (mu * (1 + e));
         apoapsis = a * (1 + e);
         if (periapsis > primaryBody.surfaceRadius) isOrbiting = true;
       }
+    } else {
+      // Hyperbolic trajectory — compute periapsis (formula valid for e > 1)
+      const e = Math.sqrt(Math.max(0, 1 + (2 * energy * h2) / (mu * mu)));
+      if (e > 0) hyperbolicPeriapsis = h2 / (mu * (1 + e));
     }
 
     orbitStatusRef.current.bodyId = primaryBodyId;
     orbitStatusRef.current.isOrbiting = isOrbiting;
     orbitStatusRef.current.surfaceRadius = primaryBody.surfaceRadius;
     orbitStatusRef.current.radialVelocity = radialVelocity;
+    orbitStatusRef.current.hyperbolicPeriapsis = hyperbolicPeriapsis;
     if (isOrbiting && !anyThrusting && orbitStatusRef.current.bodyId === primaryBodyId) {
       orbitStatusRef.current.periapsis = orbitStatusRef.current.periapsis || periapsis;
       orbitStatusRef.current.apoapsis = orbitStatusRef.current.apoapsis || apoapsis;
@@ -107,6 +117,7 @@ export function applyGravityStep({
     orbitStatusRef.current.apoapsis = 0;
     orbitStatusRef.current.surfaceRadius = 0;
     orbitStatusRef.current.radialVelocity = 0;
+    orbitStatusRef.current.hyperbolicPeriapsis = 0;
   }
 
   if (primaryBody && primaryBodyId) {

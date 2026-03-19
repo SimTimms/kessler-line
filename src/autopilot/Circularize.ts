@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { AutopilotCtx, AutopilotPhase } from './types';
 import { computeYaw } from './computeYaw';
 import { ORBIT_INSERTION_PERIAPSIS } from './constants';
+import { trajectoryApsisRef } from '../context/ShipState';
 
 const _radialBody = new THREE.Vector3();
 const _deltaV = new THREE.Vector3();
@@ -63,15 +64,25 @@ export function Circularize(ctx: AutopilotCtx): AutopilotPhase | null {
   const tangX = -orbitSign * _radialBody.z;
   const tangZ = orbitSign * _radialBody.x;
 
+  // Orbital display info — uses trajectory-simulated apsides (same values as the Pe/Ap markers
+  // on the trajectory line), which work even on hyperbolic approaches before orbit is established.
+  const currentAlt = Math.round(r - gravBody.surfaceRadius);
+  const targetAlt = Math.round(gravBody.orbitAltitude);
+  const traj = trajectoryApsisRef.current;
+  const sr = traj.surfaceRadius > 0 ? traj.surfaceRadius : gravBody.surfaceRadius;
+  const peAlt = traj.periapsis > 0 ? Math.round(traj.periapsis - sr) : '—';
+  const apAlt = traj.apoapsis > 0 ? Math.round(traj.apoapsis - sr) : '—';
+  const orbitInfo = `  ALT: ${currentAlt}  Pe: ${peAlt} [${targetAlt}]  Ap: ${apAlt} [${targetAlt}]`;
+
   // deltaV: difference between target insertion velocity and current velocity
   _deltaV.set(tangX * v_insert - velFlat.x, 0, tangZ * v_insert - velFlat.z);
   const dvMag = _deltaV.length();
   if (dvMag < 1) {
-    status.current = 'COASTING TO PERIAPSIS';
+    status.current = `COASTING TO PERIAPSIS${orbitInfo}`;
     return 'stabilize-orbit'; // insertion burn complete — coast to periapsis
   }
 
-  status.current = `INSERTION BURN  ΔV ${Math.round(dvMag)} m/s`;
+  status.current = `INSERTION BURN  ΔV ${Math.round(dvMag)} m/s${orbitInfo}`;
 
   _deltaV.normalize();
   const crossYDv = noseDir.x * _deltaV.z - noseDir.z * _deltaV.x;

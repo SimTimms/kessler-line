@@ -27,9 +27,12 @@ import { clearThrusts } from '../autopilot/clearThrusts';
 import { computeYaw } from '../autopilot/computeYaw';
 import { autopilotThrust } from '../autopilot/autopilotThrust';
 import { Approach } from '../autopilot/Approach';
+import { CoastToPeriapsis } from '../autopilot/CoastToPeriapsis';
 import { OrbitInsertion } from '../autopilot/OrbitInsertion';
 import { Circularize } from '../autopilot/Circularize';
 import { StabilizeOrbit } from '../autopilot/StabilizeOrbit';
+import { HyperbolicApproach, resetHyperbolicApproach } from '../autopilot/HyperbolicApproach';
+import { HyperbolicCapture } from '../autopilot/HyperbolicCapture';
 import { apLogReset, apLogPhaseChange, apLogStatus, apLogThrust } from '../autopilot/log';
 import {
   ALIGN_ANGLE_THRESHOLD,
@@ -75,6 +78,7 @@ export default function AutopilotController() {
       _savedThrust.current = thrustMultiplier.current;
       _autopilotWasActive.current = true;
       apLogReset();
+      resetHyperbolicApproach();
     }
 
     clearThrusts(
@@ -198,48 +202,70 @@ export default function AutopilotController() {
       return;
     }
 
-    // ── idle: nothing to do ───────────────────────────────────────────────────
-    if (autopilotPhase.current === 'idle') {
-      // no-op
-
-    // ── done: orbit established — disengage ───────────────────────────────────
-    } else if (autopilotPhase.current === 'done') {
-      autopilotStatus.current = 'ORBIT ESTABLISHED';
-      disableAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-
-    // ── align: rotate nose toward target ─────────────────────────────────────
-    } else if (autopilotPhase.current === 'align') {
-      autopilotStatus.current = 'ALIGNING';
-      const { yawLeft, yawRight } = computeYaw(signedErrorToTarget, angVel);
-      autopilotYawLeft.current = yawLeft;
-      autopilotYawRight.current = yawRight;
-      if (aligned) autopilotPhase.current = distToArrival > 0 ? 'burn' : 'done';
-
-    // ── burn: approach target at full thrust ──────────────────────────────────
-    } else if (autopilotPhase.current === 'burn') {
-      autopilotStatus.current = 'APPROACH BURN';
-      const next = Approach(ctx);
+    // ── hyperbolic-approach: steer to periapsis = ideal orbit radius ──────────
+    if (autopilotPhase.current === 'hyperbolic-approach') {
+      // status set by HyperbolicApproach
+      const next = HyperbolicApproach(ctx);
       if (next) autopilotPhase.current = next;
 
-    // ── retroburn: flip to retrograde, kill velocity ──────────────────────────
-    } else if (autopilotPhase.current === 'retroburn') {
-      // status is set by OrbitInsertion (has speed/distance context)
-      const next = OrbitInsertion(ctx);
+    // ── coast-to-periapsis: no thrust; pre-orient retrograde ─────────────────
+    } else if (autopilotPhase.current === 'coast-to-periapsis') {
+      const next = CoastToPeriapsis(ctx);
       if (next) autopilotPhase.current = next;
 
-    // ── circularize: insertion burn to establish initial orbit ────────────────
-    } else if (autopilotPhase.current === 'circularize') {
-      // status is set by Circularize
-      const next = Circularize(ctx);
-      if (next) autopilotPhase.current = next;
-
-    // ── stabilize-orbit: Hohmann burns to reach target circular orbit ─────────
-    } else if (autopilotPhase.current === 'stabilize-orbit') {
-      // status is set by StabilizeOrbit (coasting vs burning)
-      const next = StabilizeOrbit(ctx);
+    // ── hyperbolic-capture ───────────────────────────────────────────────────
+    } else if (autopilotPhase.current === 'hyperbolic-capture') {
+      const next = HyperbolicCapture(ctx);
       if (next) autopilotPhase.current = next;
     }
+
+    // ── idle: nothing to do ───────────────────────────────────────────────────
+    // if (autopilotPhase.current === 'idle') {
+    //   // no-op
+
+    // // ── done: orbit established — disengage ──────────────────────────────────
+    // } else if (autopilotPhase.current === 'done') {
+    //   autopilotStatus.current = 'ORBIT ESTABLISHED';
+    //   disableAutopilot();
+    //   window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+
+    // // ── align: rotate nose toward target ────────────────────────────────────
+    // } else if (autopilotPhase.current === 'align') {
+    //   autopilotStatus.current = 'ALIGNING';
+    //   const { yawLeft, yawRight } = computeYaw(signedErrorToTarget, angVel);
+    //   autopilotYawLeft.current = yawLeft;
+    //   autopilotYawRight.current = yawRight;
+    //   if (aligned) {
+    //     if (distToArrival <= 0) {
+    //       autopilotPhase.current = 'done';
+    //     } else if (gravBody) {
+    //       autopilotPhase.current = 'hyperbolic-approach';
+    //     } else {
+    //       autopilotPhase.current = 'burn';
+    //     }
+    //   }
+
+    // // ── burn: straight-line approach (stations only) ─────────────────────────
+    // } else if (autopilotPhase.current === 'burn') {
+    //   autopilotStatus.current = 'APPROACH BURN';
+    //   const next = Approach(ctx);
+    //   if (next) autopilotPhase.current = next;
+
+    // // ── retroburn ────────────────────────────────────────────────────────────
+    // } else if (autopilotPhase.current === 'retroburn') {
+    //   const next = OrbitInsertion(ctx);
+    //   if (next) autopilotPhase.current = next;
+
+    // // ── circularize ──────────────────────────────────────────────────────────
+    // } else if (autopilotPhase.current === 'circularize') {
+    //   const next = Circularize(ctx);
+    //   if (next) autopilotPhase.current = next;
+
+    // // ── stabilize-orbit ──────────────────────────────────────────────────────
+    // } else if (autopilotPhase.current === 'stabilize-orbit') {
+    //   const next = StabilizeOrbit(ctx);
+    //   if (next) autopilotPhase.current = next;
+    // }
 
     // ── Log any changes that happened this frame ──────────────────────────────
     if (autopilotPhase.current !== prevPhase) {

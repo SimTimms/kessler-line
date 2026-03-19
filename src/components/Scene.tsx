@@ -186,7 +186,7 @@ export default function Scene() {
   const marsWorldZ = mars
     ? -Math.sin(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
     : 0;
-  const MARS_TEST_START: [number, number, number] = [marsWorldX + 3200, 0, marsWorldZ];
+  const MARS_TEST_START: [number, number, number] = [marsWorldX + 7200, 0, marsWorldZ];
 
   const DEFAULT_START = DEV_MARS_TEST
     ? MARS_TEST_START

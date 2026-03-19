@@ -62,8 +62,12 @@ type Particle = {
   vx: number;
   vy: number;
   vz: number;
-  ox: number; oy: number; oz: number; // spawn origin (world space)
-  dx: number; dy: number; dz: number; // emit axis direction (world space, pre-jitter)
+  ox: number;
+  oy: number;
+  oz: number; // spawn origin (world space)
+  dx: number;
+  dy: number;
+  dz: number; // emit axis direction (world space, pre-jitter)
 };
 
 function makePool(count: number): Particle[] {
@@ -71,10 +75,18 @@ function makePool(count: number): Particle[] {
     active: false,
     age: 0,
     maxAge: 0,
-    px: 0, py: 0, pz: 0,
-    vx: 0, vy: 0, vz: 0,
-    ox: 0, oy: 0, oz: 0,
-    dx: 0, dy: 0, dz: 1,
+    px: 0,
+    py: 0,
+    pz: 0,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    ox: 0,
+    oy: 0,
+    oz: 0,
+    dx: 0,
+    dy: 0,
+    dz: 1,
   }));
 }
 
@@ -163,7 +175,9 @@ export default function ThrusterParticles({
     _worldDir.copy(localDir).transformDirection(ship.matrixWorld);
 
     // Save pre-jitter axis direction for taper convergence
-    const axDx = _worldDir.x, axDy = _worldDir.y, axDz = _worldDir.z;
+    const axDx = _worldDir.x,
+      axDy = _worldDir.y,
+      axDz = _worldDir.z;
 
     _worldDir.x += (Math.random() - 0.5) * 0.07;
     _worldDir.y += (Math.random() - 0.5) * 0.07;
@@ -183,8 +197,12 @@ export default function ThrusterParticles({
     p.px = _worldPos.x;
     p.py = _worldPos.y;
     p.pz = _worldPos.z;
-    p.ox = _worldPos.x; p.oy = _worldPos.y; p.oz = _worldPos.z;
-    p.dx = axDx; p.dy = axDy; p.dz = axDz;
+    p.ox = _worldPos.x;
+    p.oy = _worldPos.y;
+    p.oz = _worldPos.z;
+    p.dx = axDx;
+    p.dy = axDy;
+    p.dz = axDz;
     const baseVx = _worldDir.x * speed;
     const baseVy = _worldDir.y * speed;
     const baseVz = _worldDir.z * speed;
@@ -230,7 +248,9 @@ export default function ThrusterParticles({
 
       // Converge toward emit axis as particle ages — radial pull proportional to age
       const taper = p.age / p.maxAge;
-      const relX = p.px - p.ox, relY = p.py - p.oy, relZ = p.pz - p.oz;
+      const relX = p.px - p.ox,
+        relY = p.py - p.oy,
+        relZ = p.pz - p.oz;
       const axDot = relX * p.dx + relY * p.dy + relZ * p.dz;
       const radX = relX - p.dx * axDot;
       const radY = relY - p.dy * axDot;
@@ -298,7 +318,16 @@ export default function ThrusterParticles({
     const combined = (a: { current: boolean }, b: { current: boolean }, c?: { current: boolean }) =>
       ({ current: a.current || b.current || c?.current }) as { current: boolean };
     const rcsInputs: [RcsKey, { current: boolean }][] = [
-      ['forward', { current: thrustForward.current || mobileThrustForward.current || cinematicThrustForward.current || autopilotThrustForward.current }],
+      [
+        'forward',
+        {
+          current:
+            thrustForward.current ||
+            mobileThrustForward.current ||
+            cinematicThrustForward.current ||
+            autopilotThrustForward.current,
+        },
+      ],
       ['left', combined(thrustLeft, mobileThrustLeft)],
       ['right', combined(thrustRight, mobileThrustRight)],
       ['strafeLeft', combined(thrustStrafeLeft, mobileThrustStrafeLeft)],
@@ -310,16 +339,7 @@ export default function ThrusterParticles({
         const count = Math.floor(rcsAccum.current[key]);
         rcsAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
-          spawnInto(
-            RCS_EMITTERS,
-            key,
-            rcsPool.current,
-            RCS_MAX,
-            rcsSlot,
-            m,
-            speedScale,
-            vel
-          );
+          spawnInto(RCS_EMITTERS, key, rcsPool.current, RCS_MAX, rcsSlot, m, speedScale, vel);
       } else {
         rcsAccum.current[key] = 0;
       }

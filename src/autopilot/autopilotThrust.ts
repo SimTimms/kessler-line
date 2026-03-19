@@ -36,7 +36,8 @@ export function autopilotThrust(
     return Math.max(THRUST_PRECISION, Math.min(aNeeded / THRUST, MAX_THRUST_MULTIPLIER));
   }
 
-  if (phase === 'circularize') return THRUST_PRECISION;
+  if (phase === 'circularize')        return THRUST_PRECISION;
+  if (phase === 'hyperbolic-capture') return MAX_THRUST_MULTIPLIER;
 
   let raw: number;
   if      (dist > THRUST_DIST_FAR)  raw = THRUST_FAR;

@@ -30,10 +30,10 @@ export const HudButton = ({
       style={{
         background: isActive ? 'rgba(0,200,255,0.0)' : 'rgba(60,60,60,0)',
         color: isActive ? '#00cfff' : '#888',
-        borderRadius: 0,
         cursor: 'pointer',
         userSelect: 'none',
         outline: 'none !important',
+        padding: 1,
       }}
     >
       <Icon size={18} strokeWidth={1.5} />

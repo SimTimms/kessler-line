@@ -2,6 +2,9 @@ export type AutopilotPhase =
   | 'idle'
   | 'align'
   | 'burn'
+  | 'hyperbolic-approach'
+  | 'coast-to-periapsis'
+  | 'hyperbolic-capture'
   | 'retroburn'
   | 'circularize'
   | 'stabilize-orbit'
@@ -21,7 +24,7 @@ export const autopilotRadialIn = { current: false };
 
 export function enableAutopilot() {
   autopilotActive.current = true;
-  autopilotPhase.current = 'align';
+  autopilotPhase.current = 'hyperbolic-approach'; // DEBUG: skip align
 }
 
 export function disableAutopilot() {

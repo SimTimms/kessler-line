@@ -36,10 +36,23 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
     yawLeft,
     yawRight,
     angVel,
+    orbitStatus,
   } = ctx;
 
   // ── Gravity-body approach: straight at planet center, max thrust ─────────
   if (gravBody) {
+    // SOI entry: stop burning and coast to periapsis for a proper hyperbolic insertion.
+    // Only applies when still falling inward (radialVelocity < 0) at approach speed.
+    if (
+      dist <= gravBody.soiRadius &&
+      (orbitStatus.radialVelocity ?? 0) < 0 &&
+      speed > retroTargetSpeed
+    ) {
+      console.log('coasting');
+
+      return 'coast-to-periapsis';
+    }
+
     // Yaw straight toward planet center (no orbital tangent blending)
     const crossY = noseDir.x * toTarget.z - noseDir.z * toTarget.x;
     const { yawLeft: yl, yawRight: yr } = computeYaw(

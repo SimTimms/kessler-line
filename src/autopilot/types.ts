@@ -8,7 +8,8 @@ export type OrbitStatus = {
   isOrbiting: boolean;
   periapsis: number;
   apoapsis: number;
-  radialVelocity?: number; // + = moving away from body (toward apoapsis); − = toward body (toward periapsis)
+  radialVelocity?: number;       // + = moving away from body (toward apoapsis); − = toward body (toward periapsis)
+  hyperbolicPeriapsis?: number;  // predicted periapsis on hyperbolic approach (energy ≥ 0); 0 when not applicable
 };
 
 /**

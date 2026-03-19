@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from './Ship/Spaceship';
 import { gravityBodies } from '../context/GravityRegistry';
-import { orbitStatusRef } from '../context/ShipState';
+import { orbitStatusRef, trajectoryApsisRef } from '../context/ShipState';
 
 const MIN_SPEED = 0.05;
 const TRAJ_STEPS = 400;
@@ -293,6 +293,13 @@ export default function VelocityIndicator({
     const pos = line.geometry.attributes.position;
     pos.needsUpdate = true;
     line.computeLineDistances();
+
+    // Publish trajectory-simulated apsides so other systems (e.g. autopilot status) can read them
+    trajectoryApsisRef.current.periapsis =
+      primaryBody && periStep >= 0 && periDist < Infinity ? periDist : 0;
+    trajectoryApsisRef.current.apoapsis =
+      primaryBody && apoStep >= 0 && orbitClosedAt >= 0 ? apoDist : 0;
+    trajectoryApsisRef.current.surfaceRadius = primaryBody?.surfaceRadius ?? 0;
 
     const lineMat = line.material as THREE.LineDashedMaterial;
     lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
