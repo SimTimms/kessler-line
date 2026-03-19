@@ -1,41 +1,90 @@
+/* ── Base button — defaults to REACH (cyan) ──────────────────────────────────── */
 .inbox-hud-btn {
+  --btn-text:        rgba(0, 200, 200, 0.55);
+  --btn-text-full:   #00c8c8;
+  --btn-border:      rgba(0, 200, 200, 0.3);
+  --btn-border-on:   rgba(0, 200, 200, 0.7);
+  --btn-glow:        rgba(0, 200, 200, 0.15);
+  --btn-glow-strong: rgba(0, 200, 200, 0.4);
+  --btn-badge-bg:    #00c8c8;
+
   position: fixed;
   top: 80px;
   right: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
+  gap: 7px;
+  padding: 6px 11px;
   background: var(--hud-bg);
-  border: 1px solid var(--hud-border);
+  border: 1px solid var(--btn-border);
   border-radius: 0px;
-  color: var(--hud-text-muted);
+  color: var(--btn-text);
   font-family: var(--hud-font);
   font-size: 14px;
   cursor: pointer;
   z-index: 40;
-  transition:
-    border-color 0.2s,
-    color 0.2s;
+  transition: border-color 0.2s, color 0.2s;
 }
 
 .inbox-hud-btn:hover {
-  border-color: var(--hud-border-strong);
-  color: var(--hud-text);
+  border-color: var(--btn-border-on);
+  color: var(--btn-text-full);
 }
 
 .inbox-hud-btn--unread {
-  color: var(--hud-text);
-  box-shadow: 0 0 12px var(--hud-glow);
+  color: var(--btn-text-full);
+  box-shadow: 0 0 12px var(--btn-glow);
   animation: inbox-pulse 2s ease-in-out infinite;
 }
 
-.inbox-hud-icon {
-  font-size: 13px;
+/* ── Platform overrides ───────────────────────────────────────────────────────── */
+
+.inbox-hud-btn[data-platform='HERALD'] {
+  --btn-text:        rgba(204, 136, 34, 0.58);
+  --btn-text-full:   #cc8822;
+  --btn-border:      rgba(204, 136, 34, 0.32);
+  --btn-border-on:   rgba(204, 136, 34, 0.72);
+  --btn-glow:        rgba(204, 136, 34, 0.18);
+  --btn-glow-strong: rgba(204, 136, 34, 0.45);
+  --btn-badge-bg:    #cc8822;
+}
+
+.inbox-hud-btn[data-platform='OPENLINE'] {
+  --btn-text:        rgba(255, 85, 0, 0.58);
+  --btn-text-full:   #ff5500;
+  --btn-border:      rgba(255, 85, 0, 0.32);
+  --btn-border-on:   rgba(255, 85, 0, 0.72);
+  --btn-glow:        rgba(255, 85, 0, 0.18);
+  --btn-glow-strong: rgba(255, 85, 0, 0.45);
+  --btn-badge-bg:    #ff5500;
+}
+
+.inbox-hud-btn[data-platform='MERIDIAN'] {
+  --btn-text:        rgba(51, 187, 102, 0.58);
+  --btn-text-full:   #33bb66;
+  --btn-border:      rgba(51, 187, 102, 0.32);
+  --btn-border-on:   rgba(51, 187, 102, 0.72);
+  --btn-glow:        rgba(51, 187, 102, 0.18);
+  --btn-glow-strong: rgba(51, 187, 102, 0.45);
+  --btn-badge-bg:    #33bb66;
+}
+
+/* ── Button internals ─────────────────────────────────────────────────────────── */
+
+.inbox-hud-platform-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.inbox-hud-platform-name {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  font-family: var(--hud-font-mono);
+  opacity: 0.85;
 }
 
 .inbox-hud-badge {
-  background: var(--hud-text);
+  background: var(--btn-badge-bg);
   color: #000;
   font-size: 9px;
   font-weight: bold;
@@ -47,30 +96,27 @@
 }
 
 .inbox-hud-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--hud-text);
-  box-shadow: 0 0 8px var(--hud-glow-strong);
+  background: var(--btn-text-full);
+  box-shadow: 0 0 8px var(--btn-glow-strong);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .inbox-hud-dot::after {
   content: '';
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
-  background: var(--hud-dot-core);
+  background: rgba(0, 0, 0, 0.6);
 }
 
+/* ── Pulse animation ──────────────────────────────────────────────────────────── */
 @keyframes inbox-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 8px rgba(0, 200, 255, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 18px rgba(0, 200, 255, 0.4);
-  }
+  0%, 100% { box-shadow: 0 0 8px var(--btn-glow); }
+  50%       { box-shadow: 0 0 18px var(--btn-glow-strong); }
 }

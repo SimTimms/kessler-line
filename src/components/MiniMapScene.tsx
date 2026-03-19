@@ -1,5 +1,6 @@
 import { useRef, useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import {
   MINIMAP_SCALE,
@@ -35,7 +36,62 @@ const SOLAR_PLANET_MINIMAP = PLANETS.map((p) => ({
   dotRadius: Math.max(p.radius * SOLAR_SYSTEM_SCALE * MINIMAP_SCALE * 10, 1.2),
   label: p.name,
   hasSaturnRings: p.name === 'Saturn',
+  factionControl: p.factionControl,
 }));
+
+// ─── Faction territory zones ──────────────────────────────────────────────────
+// Annular filled rings showing rough faction control per the narrative:
+//   TC  — inner system (Sun → Mars orbit)
+//   Contested — asteroid belt region (Mars → Jupiter)
+//   PL  — outer system (Jupiter → beyond Neptune)
+function FactionZones() {
+  const { marsR, jupiterR, neptuneR } = useMemo(() => {
+    const s = SOLAR_SYSTEM_SCALE * MINIMAP_SCALE;
+    return {
+      marsR: (PLANETS.find((p) => p.name === 'Mars')?.orbitRadius ?? 0) * s,
+      jupiterR: (PLANETS.find((p) => p.name === 'Jupiter')?.orbitRadius ?? 0) * s,
+      neptuneR: (PLANETS.find((p) => p.name === 'Neptune')?.orbitRadius ?? 0) * s,
+    };
+  }, []);
+
+  return (
+    <>
+      {/* TC — inner system */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1002, 0]}>
+        <ringGeometry args={[0, marsR, 128]} />
+        <meshBasicMaterial
+          color="#cc4400"
+          opacity={0.06}
+          transparent
+          side={THREE.DoubleSide}
+          depthTest={false}
+        />
+      </mesh>
+      {/* Contested — asteroid belt region */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1002, 0]}>
+        <ringGeometry args={[marsR, jupiterR, 128]} />
+        <meshBasicMaterial
+          color="#888888"
+          opacity={0.025}
+          transparent
+          side={THREE.DoubleSide}
+          depthTest={false}
+        />
+      </mesh>
+      {/* PL — outer system */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1002, 0]}>
+        <ringGeometry args={[jupiterR, neptuneR * 1.2, 128]} />
+        <meshBasicMaterial
+          color="#0055cc"
+          opacity={0.06}
+          transparent
+          side={THREE.DoubleSide}
+          depthTest={false}
+        />
+      </mesh>
+    </>
+  );
+}
 
 // ─── Orbit ring ────────────────────────────────────────────────────────────────
 function OrbitRing({ radius, color }: { radius: number; color: string }) {
@@ -52,7 +108,7 @@ function OrbitRing({ radius, color }: { radius: number; color: string }) {
     geo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
     return new THREE.LineLoop(
       geo,
-      new THREE.LineBasicMaterial({ color, opacity: 0.09, transparent: true }),
+      new THREE.LineBasicMaterial({ color, opacity: 0.09, transparent: true })
     );
   }, [radius, color]);
 
@@ -114,7 +170,7 @@ function BeaconDot({
     meshRef.current.position.set(
       planetPos.x * SOLAR_SYSTEM_SCALE * MINIMAP_SCALE + orbitX * MINIMAP_SCALE,
       0,
-      planetPos.z * SOLAR_SYSTEM_SCALE * MINIMAP_SCALE + orbitZ * MINIMAP_SCALE,
+      planetPos.z * SOLAR_SYSTEM_SCALE * MINIMAP_SCALE + orbitZ * MINIMAP_SCALE
     );
   });
 
@@ -141,7 +197,7 @@ function FuelStationDot({ onHover }: { onHover: (info: HoverInfo | null) => void
     meshRef.current.position.set(
       fuelStationWorldPos.x * MINIMAP_SCALE,
       0,
-      fuelStationWorldPos.z * MINIMAP_SCALE,
+      fuelStationWorldPos.z * MINIMAP_SCALE
     );
   });
   return (
@@ -262,7 +318,7 @@ function SolarPlanetDot({
       groupRef.current.position.set(
         pos.x * SOLAR_SYSTEM_SCALE * MINIMAP_SCALE,
         -1000,
-        pos.z * SOLAR_SYSTEM_SCALE * MINIMAP_SCALE,
+        pos.z * SOLAR_SYSTEM_SCALE * MINIMAP_SCALE
       );
     }
     if (isNeptune && matRef.current && warningRing) {
@@ -296,6 +352,22 @@ function SolarPlanetDot({
           <meshBasicMaterial color="#e4d191" opacity={0.35} transparent side={THREE.DoubleSide} />
         </mesh>
       )}
+      {entry.factionControl && (
+        <group>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <ringGeometry
+              args={[entry.dotRadius * 1.8, entry.factionControl.influenceRadius * 1]}
+            />
+            <meshBasicMaterial
+              color={entry.factionControl.color}
+              opacity={0.05}
+              transparent
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        </group>
+      )}
+
       {warningRing && <primitive object={warningRing} />}
       {railgunRing && <primitive object={railgunRing} />}
     </group>
@@ -311,7 +383,7 @@ function NavTargetMarker() {
     meshRef.current.position.set(
       navTargetPosRef.current.x * MINIMAP_SCALE,
       0.02,
-      navTargetPosRef.current.z * MINIMAP_SCALE,
+      navTargetPosRef.current.z * MINIMAP_SCALE
     );
     meshRef.current.rotation.y = clock.getElapsedTime() * 1.2;
   });
@@ -334,9 +406,15 @@ function ShipIndicator({ onHover }: { onHover: (info: HoverInfo | null) => void 
   const arrowGeo = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const verts = new Float32Array([
-      0, 0, 0.5,       // tip
-      -0.22, 0, -0.28, // left rear
-      0.22, 0, -0.28,  // right rear
+      0,
+      0,
+      0.5, // tip
+      -0.22,
+      0,
+      -0.28, // left rear
+      0.22,
+      0,
+      -0.28, // right rear
     ]);
     geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
     geo.setIndex([0, 1, 2]);
@@ -357,7 +435,7 @@ function ShipIndicator({ onHover }: { onHover: (info: HoverInfo | null) => void 
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
     return new THREE.Line(
       geo,
-      new THREE.LineBasicMaterial({ color: '#ff9900', opacity: 0.5, transparent: true }),
+      new THREE.LineBasicMaterial({ color: '#ff9900', opacity: 0.5, transparent: true })
     );
   }, []);
 
@@ -383,7 +461,7 @@ function ShipIndicator({ onHover }: { onHover: (info: HoverInfo | null) => void 
         1,
         (shipVelocity.x / spd) * displayLen,
         0,
-        (shipVelocity.z / spd) * displayLen,
+        (shipVelocity.z / spd) * displayLen
       );
     } else {
       velAttr.setXYZ(1, 0, 0, 0);
@@ -398,7 +476,7 @@ function ShipIndicator({ onHover }: { onHover: (info: HoverInfo | null) => void 
       1,
       navTargetPosRef.current.x * MINIMAP_SCALE - sx,
       0,
-      navTargetPosRef.current.z * MINIMAP_SCALE - sz,
+      navTargetPosRef.current.z * MINIMAP_SCALE - sz
     );
     navAttr.needsUpdate = true;
   });
@@ -424,21 +502,13 @@ function ShipIndicator({ onHover }: { onHover: (info: HoverInfo | null) => void 
   );
 }
 
-// ─── Camera follow ─────────────────────────────────────────────────────────────
-function CameraFollow() {
-  const { camera } = useThree();
-  useFrame(() => {
-    camera.position.x = minimapShipPosition.x * MINIMAP_SCALE;
-    camera.position.z = minimapShipPosition.z * MINIMAP_SCALE;
-  });
-  return null;
-}
-
 // ─── Scene root ────────────────────────────────────────────────────────────────
 export default function MiniMapScene({ onHover }: MiniMapSceneProps) {
   return (
     <>
-      <CameraFollow />
+      {/* Faction territory zones — rendered first so they sit below everything */}
+      <FactionZones />
+
       {/* Faint orbit rings for all 8 planets */}
       {PLANETS.map((p) => (
         <OrbitRing

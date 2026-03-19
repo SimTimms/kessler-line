@@ -124,13 +124,23 @@ export const NavHUD = () => {
     setTargetId(id);
     setTargetLabel('');
     navTargetIdRef.current = id;
-    // If planet, use live center from gravityBodies
-    const gravBody =
-      gravityBodies.get(id.charAt(0).toUpperCase() + id.slice(1)) || gravityBodies.get(id);
-    if (gravBody) {
-      navTargetPosRef.current.copy(gravBody.position);
+    if (def.orbit) {
+      // Moon/satellite — navigate to the live position of the parent planet
+      const parentBody = gravityBodies.get(def.orbit.planetName);
+      if (parentBody) {
+        navTargetPosRef.current.copy(parentBody.position);
+      } else {
+        navTargetPosRef.current.set(...def.position);
+      }
     } else {
-      navTargetPosRef.current.set(...def.position);
+      // If planet, use live center from gravityBodies
+      const gravBody =
+        gravityBodies.get(id.charAt(0).toUpperCase() + id.slice(1)) || gravityBodies.get(id);
+      if (gravBody) {
+        navTargetPosRef.current.copy(gravBody.position);
+      } else {
+        navTargetPosRef.current.set(...def.position);
+      }
     }
     // Re-align to new target if autopilot is already active
     if (autopilotActive.current) {

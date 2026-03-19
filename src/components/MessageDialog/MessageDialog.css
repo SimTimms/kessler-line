@@ -20,6 +20,99 @@
   pointer-events: auto;
 }
 
+/* ── Platform themes ──────────────────────────────────────────────────────── */
+/* REACH (default) — clean cyan, utilitarian */
+.md-dialog[data-platform='REACH'] {
+  --platform-color: #00c8c8;
+  --hud-border: rgba(0, 200, 200, 0.35);
+  --hud-border-strong: rgba(0, 200, 200, 0.7);
+  --hud-glow: rgba(0, 200, 200, 0.15);
+  --hud-text: #00c8c8;
+  --hud-text-muted: rgba(0, 200, 200, 0.55);
+  --hud-text-dim: rgba(0, 200, 200, 0.35);
+  --hud-divider: rgba(0, 200, 200, 0.2);
+}
+
+/* HERALD — amber-gold, authoritative, Concordat-aligned */
+.md-dialog[data-platform='HERALD'] {
+  --platform-color: #cc8822;
+  --hud-border: rgba(204, 136, 34, 0.45);
+  --hud-border-strong: rgba(204, 136, 34, 0.75);
+  --hud-glow: rgba(204, 136, 34, 0.2);
+  --hud-text: #cc8822;
+  --hud-text-muted: rgba(204, 136, 34, 0.6);
+  --hud-text-dim: rgba(204, 136, 34, 0.38);
+  --hud-divider: rgba(204, 136, 34, 0.22);
+}
+
+/* OPENLINE — aggressive orange, decentralised cooperative */
+.md-dialog[data-platform='OPENLINE'] {
+  --platform-color: #ff5500;
+  --hud-border: rgba(255, 85, 0, 0.4);
+  --hud-border-strong: rgba(255, 85, 0, 0.7);
+  --hud-glow: rgba(255, 85, 0, 0.18);
+  --hud-text: #ff5500;
+  --hud-text-muted: rgba(255, 85, 0, 0.6);
+  --hud-text-dim: rgba(255, 85, 0, 0.38);
+  --hud-divider: rgba(255, 85, 0, 0.2);
+}
+
+/* MERIDIAN — navigational green, AresNav integration */
+.md-dialog[data-platform='MERIDIAN'] {
+  --platform-color: #33bb66;
+  --hud-border: rgba(51, 187, 102, 0.4);
+  --hud-border-strong: rgba(51, 187, 102, 0.7);
+  --hud-glow: rgba(51, 187, 102, 0.18);
+  --hud-text: #33bb66;
+  --hud-text-muted: rgba(51, 187, 102, 0.58);
+  --hud-text-dim: rgba(51, 187, 102, 0.36);
+  --hud-divider: rgba(51, 187, 102, 0.2);
+}
+
+/* BROADCAST — muted purple-grey, degraded relay fallback, uncanny */
+.md-dialog[data-platform='BROADCAST'] {
+  --platform-color: #9988bb;
+  --hud-border: rgba(153, 136, 187, 0.38);
+  --hud-border-strong: rgba(153, 136, 187, 0.65);
+  --hud-glow: rgba(153, 136, 187, 0.14);
+  --hud-text: #9988bb;
+  --hud-text-muted: rgba(153, 136, 187, 0.55);
+  --hud-text-dim: rgba(153, 136, 187, 0.34);
+  --hud-divider: rgba(153, 136, 187, 0.2);
+}
+
+/* ── Platform header block ────────────────────────────────────────────────── */
+.md-platform-header {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--platform-color);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hud-divider);
+  line-height: 1.6;
+}
+
+.md-platform-label {
+  font-weight: bold;
+}
+
+.md-platform-sep {
+  opacity: 0.5;
+}
+
+.md-platform-status {
+  opacity: 0.85;
+}
+
+.md-platform-subline {
+  margin-top: 2px;
+  opacity: 0.6;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+}
+
+/* ── Message metadata ─────────────────────────────────────────────────────── */
 .md-meta {
   display: flex;
   justify-content: space-between;

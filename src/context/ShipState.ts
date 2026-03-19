@@ -5,7 +5,7 @@ export const THRUST = 2.2; // units per second²
 export const YAW_THRUST = 1.0; // radians per second²
 export const SHIP_RADIUS = 3; // bounding sphere radius (world units)
 export const RESTITUTION = 0.4; // bounciness: 0 = dead stop, 1 = elastic
-export const DAMAGE_MULTIPLIER = 1.2; // hull damage = impactSpeed × multiplier
+export const DAMAGE_MULTIPLIER = 0.2; // hull damage = impactSpeed × multiplier
 export const SHIP_COLLISION_ID = 'spaceship';
 export const DOCKING_PORT_RADIUS = 2; // port detection sphere radius (world units)
 export const DOCKING_PORT_LOCAL_Z = 11; // local +Z from ship center to nose port
@@ -63,8 +63,8 @@ export const orbitStatusRef = {
 // apoapsis is 0 when the trajectory is open (hyperbolic).
 export const trajectoryApsisRef = {
   current: {
-    periapsis: 0,     // min radial distance along simulated trajectory; 0 if none
-    apoapsis: 0,      // max radial distance along closed trajectory; 0 if open
+    periapsis: 0, // min radial distance along simulated trajectory; 0 if none
+    apoapsis: 0, // max radial distance along closed trajectory; 0 if open
     surfaceRadius: 0, // surface radius of the primary body at time of calculation
   },
 };

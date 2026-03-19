@@ -1,3 +1,5 @@
+export type MessagePlatform = 'REACH' | 'HERALD' | 'OPENLINE' | 'MERIDIAN' | 'BROADCAST';
+
 export interface InboxMessage {
   id: string;
   from: string;
@@ -5,6 +7,7 @@ export interface InboxMessage {
   body: string;
   read: boolean;
   timestamp: number;
+  platform?: MessagePlatform;
 }
 
 const _messages: InboxMessage[] = [];

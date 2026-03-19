@@ -28,6 +28,7 @@ import SunGravity from './SunGravity';
 import { shipPosRef } from '../context/ShipPos';
 import { solarPlanetPositions, fuelStationWorldPos } from '../context/SolarSystemMinimap';
 import { navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
+import { Selection, Select } from '@react-three/postprocessing';
 import CinematicController from './CinematicController';
 import AutopilotController from './AutopilotController';
 import NeptuneNoFlyRing from './NeptuneNoFlyRing';
@@ -188,7 +189,7 @@ export default function Scene() {
   const marsWorldZ = mars
     ? -Math.sin(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
     : 0;
-  const MARS_TEST_START: [number, number, number] = [marsWorldX + 14200, 0, marsWorldZ];
+  const MARS_TEST_START: [number, number, number] = [marsWorldX + 1004200, 0, marsWorldZ];
 
   const DEFAULT_START = DEV_MARS_TEST
     ? MARS_TEST_START
@@ -255,7 +256,12 @@ export default function Scene() {
   return (
     <Canvas
       style={{ width: '100vw', height: '100vh', background: '#000000', touchAction: 'none' }}
-      camera={{ near: 0.01, far: 1000000 }}
+      camera={{ near: 0.01, far: 100_000_000 }}
+      gl={{
+        logarithmicDepthBuffer: true,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 0.9,
+      }}
     >
       <CameraCapture />
       <SaveSystemBridge />

@@ -85,6 +85,8 @@ function buildColonyTexture(): THREE.CanvasTexture {
 }
 
 const _planetWorldPos = new THREE.Vector3();
+const _camPos = new THREE.Vector3();
+const VISIBILITY_DIST = 15_000_000; // world-space units; ~15M covers cross-system visibility
 
 interface OrbitingPlanetProps {
   planetName: string;
@@ -126,6 +128,7 @@ export default function OrbitingPlanet({
   const orbitRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
   const planetCenterRef = useRef<THREE.Group>(null);
+  const meshVisRef = useRef<THREE.Group>(null);
   const prevWorldPosRef = useRef(new THREE.Vector3());
   const hasPrevWorldPosRef = useRef(false);
   const texture = useTexture(
@@ -193,7 +196,7 @@ export default function OrbitingPlanet({
     gravityOrbitAltitude,
   ]);
 
-  useFrame((_, delta) => {
+  useFrame(({ camera }, delta) => {
     if (orbitRef.current) {
       orbitRef.current.rotation.y += orbitalSpeed * delta;
       const θ = orbitRef.current.rotation.y;
@@ -219,44 +222,56 @@ export default function OrbitingPlanet({
       hasPrevWorldPosRef.current = true;
       body.position.copy(_planetWorldPos);
     }
+
+    // Distance-based visibility — orbits still tick; only the mesh is hidden.
+    // Reuse _planetWorldPos if gravity already populated it, otherwise fetch it here.
+    if (meshVisRef.current && planetCenterRef.current) {
+      if (!gravityBodies.has(planetName)) {
+        planetCenterRef.current.getWorldPosition(_planetWorldPos);
+      }
+      camera.getWorldPosition(_camPos);
+      meshVisRef.current.visible = _camPos.distanceTo(_planetWorldPos) < VISIBILITY_DIST;
+    }
   });
 
   return (
     <group ref={orbitRef}>
       <group ref={planetCenterRef} position={[orbitRadius, 0, 0]}>
-        {/* Axial tilt applied once; spin group rotates around the tilted axis */}
-        <group rotation-x={axialTilt}>
-          <group ref={spinRef}>
-            <mesh>
-              <sphereGeometry args={[radius, 64, 64]} />
-              <meshStandardMaterial
-                color={color}
-                emissive={showColonies ? '#ffb050' : emissive}
-                emissiveMap={coloniesTexture}
-                emissiveIntensity={showColonies ? 2.5 : 1.0}
-                roughness={0.8}
-                map={textureUrl ? texture : null}
-                fog={false}
-              />
-            </mesh>
-
-            {rings && (
-              <mesh rotation-x={Math.PI / 2}>
-                <ringGeometry args={[radius * 1.4, radius * 2.3, 64]} />
+        <group ref={meshVisRef}>
+          {/* Axial tilt applied once; spin group rotates around the tilted axis */}
+          <group rotation-x={axialTilt}>
+            <group ref={spinRef}>
+              <mesh>
+                <sphereGeometry args={[radius, 64, 64]} />
                 <meshStandardMaterial
-                  color="#c2a878"
-                  side={THREE.DoubleSide}
-                  transparent
-                  opacity={0.75}
+                  color={color}
+                  emissive={showColonies ? '#ffb050' : emissive}
+                  emissiveMap={coloniesTexture}
+                  emissiveIntensity={showColonies ? 2.5 : 1.0}
+                  roughness={0.8}
+                  map={textureUrl ? texture : null}
                   fog={false}
                 />
               </mesh>
-            )}
-          </group>
-        </group>
 
-        {/* Sphere of influence boundary — blue dashed ring in the XZ plane */}
-        {soiRing && <primitive object={soiRing} />}
+              {rings && (
+                <mesh rotation-x={Math.PI / 2}>
+                  <ringGeometry args={[radius * 1.4, radius * 2.3, 64]} />
+                  <meshStandardMaterial
+                    color="#c2a878"
+                    side={THREE.DoubleSide}
+                    transparent
+                    opacity={0.75}
+                    fog={false}
+                  />
+                </mesh>
+              )}
+            </group>
+          </group>
+
+          {/* Sphere of influence boundary — blue dashed ring in the XZ plane */}
+          {soiRing && <primitive object={soiRing} />}
+        </group>
       </group>
     </group>
   );

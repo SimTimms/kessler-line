@@ -1,6 +1,6 @@
 import Sun from './Sun';
 import OrbitingPlanet from './OrbitingPlanet';
-import { SOLAR_SYSTEM_SCALE as _SCALE, SUN_RADIUS_BASE } from '../config/solarConfig';
+import { SOLAR_SYSTEM_SCALE as _SCALE, SUN_RADIUS_BASE, SUN_SCALE_MULTIPLIER } from '../config/solarConfig';
 
 // Re-export so existing consumers (NeptuneNoFlyRing, MiniMapScene, etc.) keep working
 export { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
@@ -83,6 +83,11 @@ export const PLANETS = [
     initialAngle: 4.2,
     color: '#c1440e',
     emissive: '#110200',
+    factionControl: {
+      name: 'No Controlling Faction',
+      influenceRadius: 130,
+      color: '#fc037f',
+    },
   },
   {
     // 4 — Jupiter
@@ -167,7 +172,7 @@ interface SolarSystemProps {
 export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSystemProps) {
   return (
     <group position={position} scale={scale}>
-      <Sun radius={SUN_RADIUS} />
+      <Sun radius={SUN_RADIUS * SUN_SCALE_MULTIPLIER} />
 
       {PLANETS.map((p) => (
         <OrbitingPlanet
@@ -177,9 +182,7 @@ export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSy
           radius={p.radius}
           color={p.name === 'Earth' ? '#ffffff' : p.name === 'Mars' ? '#ffffff' : p.color}
           textureUrl={
-            p.name === 'Earth' ? '/earth.jpg' :
-            p.name === 'Mars'  ? '/mars.jpg'  :
-            undefined
+            p.name === 'Earth' ? '/earth.jpg' : p.name === 'Mars' ? '/mars.jpg' : undefined
           }
           emissive={p.name === 'Earth' ? '#000000' : p.emissive}
           orbitalSpeed={p.orbitalSpeed}

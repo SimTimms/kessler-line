@@ -5,7 +5,10 @@ import { SOLAR_SYSTEM_SCALE } from './solarConfig';
 // gives the scale-1 base, then multiplying by SOLAR_SYSTEM_SCALE gives any target scale.
 const S = SOLAR_SYSTEM_SCALE / 4;
 
-export const MINIMAP_SCALE = 1 / 600; // handled separately — do not scale here
+// Scale world coords → minimap scene units. Derived from solar system scale so the
+// full solar system (Neptune orbit) always maps to ~4 600 minimap units regardless
+// of what SOLAR_SYSTEM_SCALE is set to. 1.2 factor keeps Neptune inside the default frustum.
+export const MINIMAP_SCALE = 1 / (SOLAR_SYSTEM_SCALE * 10.2);
 
 export interface WorldObjectDef {
   id: string;
@@ -105,6 +108,24 @@ export const MARS_DEF: WorldObjectDef = {
   minimapRadius: 0.5,
 };
 
+export const PHOBOS_DEF: WorldObjectDef = {
+  id: 'phobos',
+  label: 'Phobos',
+  position: [0, 0, 0],
+  minimapColor: '#b87333',
+  minimapRadius: 0.3,
+  orbit: { planetName: 'Mars', radius: 250 * S, speed: 0.4, phase: 0.5 },
+};
+
+export const DEIMOS_DEF: WorldObjectDef = {
+  id: 'deimos',
+  label: 'Deimos',
+  position: [0, 0, 0],
+  minimapColor: '#9e8f7c',
+  minimapRadius: 0.3,
+  orbit: { planetName: 'Mars', radius: 600 * S, speed: 0.12, phase: 2.1 },
+};
+
 export const JUPITER_DEF: WorldObjectDef = {
   id: 'jupiter',
   label: 'Jupiter',
@@ -134,6 +155,8 @@ export const SOLAR_SYSTEM_PLANETS: WorldObjectDef[] = [
   VENUS_DEF,
   EARTH_DEF,
   MARS_DEF,
+  PHOBOS_DEF,
+  DEIMOS_DEF,
   JUPITER_DEF,
   SATURN_DEF,
   URANUS_DEF,
@@ -148,16 +171,66 @@ export const NAV_TARGET_DEFS: WorldObjectDef[] = [
 ];
 
 export const RADIO_BEACON_DEFS: WorldObjectDef[] = [
-  { id: 'beacon-0', label: 'Radio Beacon 1', position: [80 * S, 0, -1760 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-1', label: 'Radio Beacon 2', position: [-220 * S, 0, -850 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-2', label: 'Radio Beacon 3', position: [360 * S, 0, -1200 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-3', label: 'Radio Beacon 4', position: [-440 * S, 0, -1520 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-4', label: 'Radio Beacon 5', position: [620 * S, 0, -620 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-5', label: 'Radio Beacon 6', position: [-110 * S, 0, -310 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-6', label: 'Radio Beacon 7', position: [190 * S, 0, -2180 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-7', label: 'Radio Beacon 8', position: [-580 * S, 0, -1050 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-8', label: 'Radio Beacon 9', position: [470 * S, 0, -1900 * S], minimapColor: '#00ff88' },
-  { id: 'beacon-9', label: 'Radio Beacon 10', position: [-320 * S, 0, -430 * S], minimapColor: '#00ff88' },
+  {
+    id: 'beacon-0',
+    label: 'Radio Beacon 1',
+    position: [80 * S, 0, -1760 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-1',
+    label: 'Radio Beacon 2',
+    position: [-220 * S, 0, -850 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-2',
+    label: 'Radio Beacon 3',
+    position: [360 * S, 0, -1200 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-3',
+    label: 'Radio Beacon 4',
+    position: [-440 * S, 0, -1520 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-4',
+    label: 'Radio Beacon 5',
+    position: [620 * S, 0, -620 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-5',
+    label: 'Radio Beacon 6',
+    position: [-110 * S, 0, -310 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-6',
+    label: 'Radio Beacon 7',
+    position: [190 * S, 0, -2180 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-7',
+    label: 'Radio Beacon 8',
+    position: [-580 * S, 0, -1050 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-8',
+    label: 'Radio Beacon 9',
+    position: [470 * S, 0, -1900 * S],
+    minimapColor: '#00ff88',
+  },
+  {
+    id: 'beacon-9',
+    label: 'Radio Beacon 10',
+    position: [-320 * S, 0, -430 * S],
+    minimapColor: '#00ff88',
+  },
   {
     id: 'beacon-venus',
     label: 'Radio Beacon Venus',

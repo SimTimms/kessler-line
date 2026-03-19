@@ -1,0 +1,292 @@
+{
+  "platforms": [
+    {
+      "id": "reach",
+      "displayName": "REACH",
+      "tagline": "Wherever the signal goes.",
+      "company": {
+        "legalName": "Reach Communications Ltd.",
+        "incorporatedDate": "2174-03-11",
+        "incorporatedJurisdiction": "Vesta Station, Asteroid Belt",
+        "registrationId": "BELT-CORP-2174-0039",
+        "parentCompany": null,
+        "factionAffiliation": "Independent"
+      },
+      "software": {
+        "version": "4.2.1",
+        "buildId": "RC-BUILD-4210-0891",
+        "releaseDate": "2189-11-04",
+        "platform": "SOLNET BEACON P2/P3",
+        "licenseType": "Independent Commercial",
+        "licenseHolder": "SHIP REGISTRY — REGISTERED DEVICE",
+        "credentialRequired": false
+      },
+      "brand": {
+        "colorPrimary": "#00C8C8",
+        "colorSecondary": "#007A7A",
+        "colorBackground": "#001A1A",
+        "colorText": "#E0FAFA",
+        "colorMuted": "#557A7A",
+        "logo": {
+          "viewBox": "0 0 24 24",
+          "path": "M 3 17 Q 12 3 21 17",
+          "strokeWidth": 2,
+          "fill": "none",
+          "description": "Single arc — reach without claiming arrival"
+        }
+      },
+      "hud": {
+        "prefix": "REACH",
+        "statusBar": "REACH v4.2.1  ·  BEACON RELAY  ·  OUTER LANES EDITION",
+        "footerCredit": "© 2174 REACH COMMUNICATIONS LTD.  ·  VESTA, ASTEROID BELT",
+        "complianceTag": "SOLNET REGISTERED  ·  CERT #BELT-0039-RC421",
+        "bootSequence": [
+          "REACH COMMUNICATIONS v4.2.1",
+          "SOLNET BEACON LINK: INITIALISING...",
+          "RELAY NODE HANDSHAKE: OK",
+          "CONTACT REGISTRY: LOADED",
+          "OFFLINE QUEUE: CHECKING...",
+          "READY."
+        ],
+        "degradedMessage": null,
+        "statusPostCascade": "OPERATIONAL",
+        "statusNote": "BROADCAST FALLBACK ACTIVE — P3 UNADDRESSED TRAFFIC MAY APPEAR IN INBOX"
+      },
+      "features": {
+        "encryptedByDefault": false,
+        "meshNetworking": false,
+        "trunkAccess": false,
+        "readReceipts": "relay-accept-only",
+        "offlineQueue": true,
+        "contacts": true,
+        "messageHistory": true,
+        "interop": ["herald", "openline", "meridian"]
+      },
+      "messageHeader": {
+        "normal": "REACH · P2 RELAY · DELIVERED",
+        "broadcastFallback": "REACH · P3 ECONOMY · BROADCAST FALLBACK",
+        "fields": ["FROM", "RELAY", "TRANSIT", "ACCOUNT", "DESTINATION"]
+      }
+    },
+
+    {
+      "id": "herald",
+      "displayName": "HERALD",
+      "tagline": "Authorised. Encrypted. Delivered.",
+      "company": {
+        "legalName": "Herald Communications Group — a Terran Concordat Infrastructure Division",
+        "incorporatedDate": "2148-07-22",
+        "incorporatedJurisdiction": "Geneva Orbital Hub, Earth-Luna System",
+        "registrationId": "TC-INFRA-DIV-HCG-007",
+        "parentCompany": "Terran Concordat Infrastructure Authority",
+        "factionAffiliation": "Terran Concordat"
+      },
+      "software": {
+        "version": "7.0.3",
+        "buildId": "HLD-ENT-7031-OUTER",
+        "releaseDate": "2188-06-15",
+        "platform": "SOLNET TRUNK P0/P1 (BEACON FALLBACK)",
+        "licenseType": "Terran Concordat Enterprise License — Annual Credential Subscription",
+        "licenseHolder": "SHIP REGISTRY — CONCORDAT SUBSCRIBER",
+        "credentialRequired": true
+      },
+      "brand": {
+        "colorPrimary": "#CC8822",
+        "colorSecondary": "#7A5010",
+        "colorBackground": "#1A1200",
+        "colorText": "#FAF0CC",
+        "colorMuted": "#7A6A40",
+        "logo": {
+          "viewBox": "0 0 24 24",
+          "path": "M 12 20 L 12 13 M 8 17 Q 12 9 16 17 M 5 20 Q 12 3 19 20",
+          "strokeWidth": 2,
+          "fill": "none",
+          "description": "Broadcast stem with two nested arcs — the herald's horn from the side"
+        }
+      },
+      "hud": {
+        "prefix": "HERALD",
+        "statusBar": "HERALD ENTERPRISE v7.0.3  ·  TC INFRASTRUCTURE DIVISION  ·  OUTER BUILD",
+        "footerCredit": "© 2148 HERALD COMMUNICATIONS GROUP  ·  TERRAN CONCORDAT INFRASTRUCTURE AUTHORITY",
+        "complianceTag": "TC LICENSED TERMINAL  ·  CREDENTIAL REQUIRED  ·  REF #TC-HCG-007",
+        "bootSequence": [
+          "HERALD ENTERPRISE COMMUNICATIONS v7.0.3",
+          "TERRAN CONCORDAT INFRASTRUCTURE DIVISION",
+          "CREDENTIAL VERIFICATION: CHECKING...",
+          "TRUNK ACCESS: CHECKING...",
+          "ENCRYPTION MODULE: LOADED",
+          "READY."
+        ],
+        "degradedMessage": "TRUNK ACCESS — SUSPENDED  ·  INNER SYSTEM RELAY UNAVAILABLE  ·  OPERATING IN BEACON FALLBACK MODE  ·  P0 ROUTING OFFLINE  ·  SENDER VERIFICATION UNAVAILABLE",
+        "statusPostCascade": "DEGRADED",
+        "statusNote": "CREDENTIAL AUTHORITY UNREACHABLE — SENDER VERIFICATION SUSPENDED INDEFINITELY"
+      },
+      "features": {
+        "encryptedByDefault": true,
+        "meshNetworking": false,
+        "trunkAccess": false,
+        "readReceipts": "full-verified",
+        "offlineQueue": false,
+        "contacts": true,
+        "messageHistory": true,
+        "interop": ["reach", "meridian"]
+      },
+      "messageHeader": {
+        "normal": "HERALD · P0 PRIORITY · TRUNK ACCESS SUSPENDED",
+        "broadcastFallback": null,
+        "fields": ["FROM", "CREDENTIAL", "STATUS", "ENCRYPTION"]
+      }
+    },
+
+    {
+      "id": "openline",
+      "displayName": "OPENLINE",
+      "tagline": "The network is yours.",
+      "company": {
+        "legalName": "OpenLine Cooperative — Outer System Communications Project",
+        "incorporatedDate": "2182-01-01",
+        "incorporatedJurisdiction": "Outer System Cooperative Registry — No Fixed Jurisdiction",
+        "registrationId": "COOP-OSR-2182-OPENLINE",
+        "parentCompany": null,
+        "factionAffiliation": "Independent / Periphery-adjacent"
+      },
+      "software": {
+        "version": "0.9.17",
+        "buildId": "OL-COOP-0917-STABLE",
+        "releaseDate": "2190-02-28",
+        "platform": "SOLNET BEACON P2/P3 + MESH",
+        "licenseType": "Open Cooperative License v3 — No Restrictions",
+        "licenseHolder": "PUBLIC DOMAIN — NO REGISTRATION REQUIRED",
+        "credentialRequired": false
+      },
+      "brand": {
+        "colorPrimary": "#FF5500",
+        "colorSecondary": "#993300",
+        "colorBackground": "#1A0800",
+        "colorText": "#FFE0CC",
+        "colorMuted": "#7A4030",
+        "logo": {
+          "viewBox": "0 0 24 24",
+          "path": "M 19.5 9 A 8 8 0 1 0 19.5 15",
+          "strokeWidth": 2,
+          "fill": "none",
+          "description": "Open ring — circuit that does not close"
+        }
+      },
+      "hud": {
+        "prefix": "OPENLINE",
+        "statusBar": "OPENLINE v0.9.17-stable  ·  MESH + BEACON  ·  OPEN COOPERATIVE LICENSE v3",
+        "footerCredit": "OPENLINE COOPERATIVE — NO FIXED JURISDICTION — OUTER SYSTEM COOPERATIVE REGISTRY",
+        "complianceTag": "FREE SOFTWARE — NO REGISTRATION REQUIRED — FORK IT IF YOU WANT",
+        "bootSequence": [
+          "OPENLINE v0.9.17-stable",
+          "OPEN COOPERATIVE LICENSE v3",
+          "BEACON LINK: CONNECTING...",
+          "MESH NODE: SCANNING FOR PEERS...",
+          "ENCRYPTION KEYS: GENERATING...",
+          "NO LOGS. NO SURVEILLANCE. NO CONCORDAT.",
+          "READY."
+        ],
+        "degradedMessage": null,
+        "statusPostCascade": "OPERATIONAL — MESH GROWING",
+        "statusNote": "MESH PEER COUNT ELEVATED — OUTER SYSTEM DENSITY HIGHER THAN NOMINAL"
+      },
+      "features": {
+        "encryptedByDefault": true,
+        "meshNetworking": true,
+        "trunkAccess": false,
+        "readReceipts": "none",
+        "offlineQueue": true,
+        "contacts": true,
+        "messageHistory": true,
+        "interop": ["reach", "meridian"]
+      },
+      "messageHeader": {
+        "normal": "OPENLINE · ENCRYPTED · MESH RELAY",
+        "broadcastFallback": null,
+        "fields": ["FROM", "NODE_ID"]
+      }
+    },
+
+    {
+      "id": "meridian",
+      "displayName": "MERIDIAN",
+      "tagline": "Navigate. Communicate. Arrive.",
+      "company": {
+        "legalName": "AresNav Systems — Meridian Communications Module",
+        "incorporatedDate": "2169-09-03",
+        "incorporatedJurisdiction": "Ares-3, Mars",
+        "registrationId": "MARS-CORP-2169-ARESNAV",
+        "parentCompany": "AresNav Systems Ltd.",
+        "factionAffiliation": "Independent / Mars-aligned",
+        "moduleAddedDate": "2184-04-17",
+        "moduleNote": "Messaging added as subscriber module to existing AresNav navigation platform"
+      },
+      "software": {
+        "version": "2.1.4",
+        "buildId": "AN-MSG-214-FREIGHT",
+        "releaseDate": "2189-08-30",
+        "platform": "SOLNET BEACON P2/P3",
+        "licenseType": "AresNav Subscriber Module — Included with AresNav navigation license",
+        "licenseHolder": "ARESNAV SUBSCRIBER — DEVICE REGISTERED",
+        "credentialRequired": false
+      },
+      "brand": {
+        "colorPrimary": "#33BB66",
+        "colorSecondary": "#1A6633",
+        "colorBackground": "#001A0A",
+        "colorText": "#CCFFDD",
+        "colorMuted": "#446655",
+        "logo": {
+          "viewBox": "0 0 24 24",
+          "path": "M 12 2 L 12 22 M 2 12 L 22 12 M 9 7 L 12 2 L 15 7",
+          "strokeWidth": 2,
+          "fill": "none",
+          "description": "Compass cross with north arrow — navigation company that also does messaging"
+        }
+      },
+      "hud": {
+        "prefix": "MERIDIAN",
+        "statusBar": "MERIDIAN v2.1.4  ·  ARESNAV SYSTEMS  ·  FREIGHT EDITION  ·  BEACON RELAY",
+        "footerCredit": "© 2169 ARESNAV SYSTEMS LTD.  ·  ARES-3, MARS  ·  MERIDIAN MODULE © 2184",
+        "complianceTag": "ARESNAV SUBSCRIBER MODULE  ·  DEVICE #AN-MSG-214  ·  MARS COMMERCIAL REGISTRY",
+        "bootSequence": [
+          "ARESNAV SYSTEMS — MERIDIAN COMMUNICATIONS",
+          "v2.1.4 · FREIGHT EDITION",
+          "BEACON LINK: ACTIVE",
+          "SYNCING WITH ARESNAV WAYPOINT DATA...",
+          "CONTACT REGISTRY: LOADED",
+          "READY."
+        ],
+        "degradedMessage": null,
+        "statusPostCascade": "OPERATIONAL",
+        "statusNote": "INNER SYSTEM WAYPOINT DATA STALE — ROUTE INTELLIGENCE FROM MESSAGES MAY REFLECT OUTDATED CORRIDOR STATUS"
+      },
+      "features": {
+        "encryptedByDefault": false,
+        "meshNetworking": false,
+        "trunkAccess": false,
+        "readReceipts": "relay-accept-only",
+        "offlineQueue": true,
+        "contacts": true,
+        "messageHistory": true,
+        "interop": ["reach", "herald", "openline"],
+        "waypointIntegration": true
+      },
+      "messageHeader": {
+        "normal": "MERIDIAN / ARESNAV · P2 RELAY",
+        "broadcastFallback": null,
+        "fields": ["FROM", "WAYPOINT"]
+      }
+    }
+  ],
+
+  "playerPlatform": "reach",
+
+  "meta": {
+    "cascadeYear": 2190,
+    "note": "All dates are in-universe. 'Cascade year' is approximate — the event is not given an exact calendar date in the narrative.",
+    "loreFile": "lore/messaging-technology.md",
+    "commsLoreFile": "lore/communications-technology.md"
+  }
+}

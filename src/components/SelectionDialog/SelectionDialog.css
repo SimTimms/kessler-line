@@ -9,9 +9,25 @@
   pointer-events: auto;
 }
 
+/* ── Base dialog — defaults to REACH (cyan) ─────────────────────────────────── */
 .sd-dialog {
+  --sd-text:               #00cfff;
+  --sd-border:             rgba(0, 200, 255, 0.4);
+  --sd-border-strong:      rgba(0, 200, 255, 0.65);
+  --sd-glow:               rgba(0, 200, 255, 0.12);
+  --sd-muted:              rgba(0, 200, 255, 0.6);
+  --sd-dim:                rgba(0, 200, 255, 0.45);
+  --sd-item-bg:            rgba(0, 200, 255, 0.05);
+  --sd-item-bg-hover:      rgba(0, 200, 255, 0.12);
+  --sd-item-bg-active:     rgba(0, 200, 255, 0.18);
+  --sd-item-border:        rgba(0, 200, 255, 0.25);
+  --sd-item-border-hover:  rgba(0, 200, 255, 0.6);
+  --sd-item-border-active: rgba(0, 200, 255, 0.9);
+  --sd-item-glow-active:   rgba(0, 200, 255, 0.2);
+  --sd-sublabel:           rgba(0, 200, 255, 0.45);
+
   background: rgba(0, 8, 18, 0.97);
-  border: 1px solid rgba(0, 200, 255, 0.4);
+  border: 1px solid var(--sd-border);
   border-radius: 6px;
   padding: 28px 32px;
   min-width: 320px;
@@ -20,14 +36,72 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: 0 0 40px rgba(0, 200, 255, 0.12);
+  box-shadow: 0 0 40px var(--sd-glow);
   font-family: monospace;
 }
+
+/* ── Platform overrides ──────────────────────────────────────────────────────── */
+
+/* HERALD — amber-gold, authoritative */
+.sd-dialog[data-platform='HERALD'] {
+  --sd-text:               #cc8822;
+  --sd-border:             rgba(204, 136, 34, 0.45);
+  --sd-border-strong:      rgba(204, 136, 34, 0.75);
+  --sd-glow:               rgba(204, 136, 34, 0.2);
+  --sd-muted:              rgba(204, 136, 34, 0.6);
+  --sd-dim:                rgba(204, 136, 34, 0.42);
+  --sd-item-bg:            rgba(204, 136, 34, 0.05);
+  --sd-item-bg-hover:      rgba(204, 136, 34, 0.12);
+  --sd-item-bg-active:     rgba(204, 136, 34, 0.18);
+  --sd-item-border:        rgba(204, 136, 34, 0.25);
+  --sd-item-border-hover:  rgba(204, 136, 34, 0.6);
+  --sd-item-border-active: rgba(204, 136, 34, 0.9);
+  --sd-item-glow-active:   rgba(204, 136, 34, 0.2);
+  --sd-sublabel:           rgba(204, 136, 34, 0.45);
+}
+
+/* OPENLINE — aggressive orange, cooperative */
+.sd-dialog[data-platform='OPENLINE'] {
+  --sd-text:               #ff5500;
+  --sd-border:             rgba(255, 85, 0, 0.42);
+  --sd-border-strong:      rgba(255, 85, 0, 0.72);
+  --sd-glow:               rgba(255, 85, 0, 0.18);
+  --sd-muted:              rgba(255, 85, 0, 0.6);
+  --sd-dim:                rgba(255, 85, 0, 0.42);
+  --sd-item-bg:            rgba(255, 85, 0, 0.05);
+  --sd-item-bg-hover:      rgba(255, 85, 0, 0.12);
+  --sd-item-bg-active:     rgba(255, 85, 0, 0.18);
+  --sd-item-border:        rgba(255, 85, 0, 0.25);
+  --sd-item-border-hover:  rgba(255, 85, 0, 0.6);
+  --sd-item-border-active: rgba(255, 85, 0, 0.9);
+  --sd-item-glow-active:   rgba(255, 85, 0, 0.2);
+  --sd-sublabel:           rgba(255, 85, 0, 0.45);
+}
+
+/* MERIDIAN — navigational green, AresNav */
+.sd-dialog[data-platform='MERIDIAN'] {
+  --sd-text:               #33bb66;
+  --sd-border:             rgba(51, 187, 102, 0.4);
+  --sd-border-strong:      rgba(51, 187, 102, 0.7);
+  --sd-glow:               rgba(51, 187, 102, 0.18);
+  --sd-muted:              rgba(51, 187, 102, 0.6);
+  --sd-dim:                rgba(51, 187, 102, 0.42);
+  --sd-item-bg:            rgba(51, 187, 102, 0.05);
+  --sd-item-bg-hover:      rgba(51, 187, 102, 0.12);
+  --sd-item-bg-active:     rgba(51, 187, 102, 0.18);
+  --sd-item-border:        rgba(51, 187, 102, 0.25);
+  --sd-item-border-hover:  rgba(51, 187, 102, 0.6);
+  --sd-item-border-active: rgba(51, 187, 102, 0.9);
+  --sd-item-glow-active:   rgba(51, 187, 102, 0.2);
+  --sd-sublabel:           rgba(51, 187, 102, 0.45);
+}
+
+/* ── Dialog contents ──────────────────────────────────────────────────────────── */
 
 .sd-title {
   font-size: 11px;
   letter-spacing: 0.14em;
-  color: rgba(0, 200, 255, 0.6);
+  color: var(--sd-muted);
   text-align: center;
 }
 
@@ -44,10 +118,10 @@
   align-items: flex-start;
   gap: 2px;
   padding: 10px 16px;
-  background: rgba(0, 200, 255, 0.05);
-  border: 1px solid rgba(0, 200, 255, 0.25);
+  background: var(--sd-item-bg);
+  border: 1px solid var(--sd-item-border);
   border-radius: 4px;
-  color: #00cfff;
+  color: var(--sd-text);
   font-family: monospace;
   font-size: 13px;
   letter-spacing: 0.05em;
@@ -57,19 +131,19 @@
 }
 
 .sd-item:hover {
-  background: rgba(0, 200, 255, 0.12);
-  border-color: rgba(0, 200, 255, 0.6);
+  background: var(--sd-item-bg-hover);
+  border-color: var(--sd-item-border-hover);
 }
 
 .sd-item--active {
-  background: rgba(0, 200, 255, 0.18);
-  border-color: rgba(0, 200, 255, 0.9);
-  box-shadow: 0 0 10px rgba(0, 200, 255, 0.2);
+  background: var(--sd-item-bg-active);
+  border-color: var(--sd-item-border-active);
+  box-shadow: 0 0 10px var(--sd-item-glow-active);
 }
 
 .sd-item-sublabel {
   font-size: 10px;
-  color: rgba(0, 200, 255, 0.45);
+  color: var(--sd-sublabel);
   letter-spacing: 0.08em;
 }
 
@@ -77,9 +151,9 @@
   align-self: center;
   padding: 5px 14px;
   background: transparent;
-  border: 1px solid rgba(0, 200, 255, 0.2);
+  border: 1px solid var(--sd-border);
   border-radius: 4px;
-  color: rgba(0, 200, 255, 0.4);
+  color: var(--sd-dim);
   font-family: monospace;
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -87,6 +161,6 @@
 }
 
 .sd-close:hover {
-  color: rgba(0, 200, 255, 0.7);
-  border-color: rgba(0, 200, 255, 0.4);
+  color: var(--sd-muted);
+  border-color: var(--sd-border-strong);
 }

@@ -14,9 +14,10 @@ interface SelectionDialogProps {
   selectedId?: string;
   onSelect: (id: string) => void;
   onClose: () => void;
+  platform?: string;
 }
 
-export function SelectionDialog({ title, items, selectedId, onSelect, onClose }: SelectionDialogProps) {
+export function SelectionDialog({ title, items, selectedId, onSelect, onClose, platform }: SelectionDialogProps) {
   const soundFired = useRef(false);
   useEffect(() => {
     if (!soundFired.current) {
@@ -27,7 +28,7 @@ export function SelectionDialog({ title, items, selectedId, onSelect, onClose }:
 
   return (
     <div className="sd-backdrop" onClick={onClose}>
-      <div className="sd-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="sd-dialog" data-platform={platform} onClick={(e) => e.stopPropagation()}>
         <div className="sd-title">{title}</div>
         <div className="sd-list">
           {items.map((item) => (
