@@ -181,6 +181,28 @@ export default function VelocityIndicator({
       _simVel.copy(shipVelocity);
     }
 
+    // Adaptive timestep: if the orbit period exceeds the fixed simulation window,
+    // scale dt up so the full orbit fits in TRAJ_STEPS steps. Scale the closure
+    // distance proportionally so the arrival-back-at-start check still fires.
+    let simDt = TRAJ_DT;
+    let orbitCloseDist = ORBIT_CLOSE_DIST;
+    if (primaryBody) {
+      const r0 = _simPos.length();
+      const v2 = _simVel.lengthSq();
+      const energy = 0.5 * v2 - primaryBody.mu / Math.max(r0, 1);
+      if (energy < 0) {
+        const a = -primaryBody.mu / (2 * energy); // semi-major axis
+        const period = 2 * Math.PI * Math.sqrt((a * a * a) / primaryBody.mu);
+        const neededDt = period / (TRAJ_STEPS * 0.9); // cover >1 full orbit
+        if (neededDt > simDt) {
+          simDt = neededDt;
+          // Close-distance scales with step size so the loop-closure check
+          // can still trigger when each step covers more ground
+          orbitCloseDist = Math.max(ORBIT_CLOSE_DIST, _simVel.length() * simDt * 2.0);
+        }
+      }
+    }
+
     let orbitClosedAt = -1; // step where trajectory closed into a loop
     let maxDistFromStart = 0; // furthest the sim has travelled from the ship
     const startX = _simPos.x;
@@ -254,10 +276,10 @@ export default function VelocityIndicator({
       }
 
       // Symplectic Euler: kick then drift (energy-conserving for orbits)
-      _simVel.x += ax * TRAJ_DT;
-      _simVel.z += az * TRAJ_DT;
-      _simPos.x += _simVel.x * TRAJ_DT;
-      _simPos.z += _simVel.z * TRAJ_DT;
+      _simVel.x += ax * simDt;
+      _simVel.z += az * simDt;
+      _simPos.x += _simVel.x * simDt;
+      _simPos.z += _simVel.z * simDt;
 
       const cdx = _simPos.x - startX;
       const cdz = _simPos.z - startZ;
@@ -271,7 +293,7 @@ export default function VelocityIndicator({
       if (
         i >= ORBIT_MIN_STEPS &&
         maxDistFromStart > ORBIT_AWAY_DIST &&
-        distFromStart < ORBIT_CLOSE_DIST
+        distFromStart < orbitCloseDist
       ) {
         posArr[i * 3] = ship.x + VELOCITY_X_OFFSET;
         posArr[i * 3 + 1] = 0;
