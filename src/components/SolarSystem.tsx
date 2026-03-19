@@ -24,8 +24,8 @@ const r = (realKm: number) => Math.pow(realKm / 696_340, 0.2) * SUN_RADIUS;
 const orbit = (au: number) => 5500 * Math.pow(au / 30.07, 0.4);
 
 // ─── Speed helpers ─────────────────────────────────────────────────────────────
-// Orbital: 1 Earth year = 30 real seconds
-const ov = (years: number) => (2 * Math.PI) / (years * 30);
+// Orbital: 1 Earth year = 6 real hours (21,600 seconds)
+const ov = (years: number) => (2 * Math.PI) / (years * 21_600);
 
 // Spin: proportional to EarthPlanet's internal 0.04 rad/s (1 Earth day = reference)
 // Negative values = retrograde rotation

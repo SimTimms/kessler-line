@@ -19,23 +19,23 @@ const rW = (realKm: number) =>
 
 const MARS_R = rW(3_390); // ~138 world units
 
-// Moons: use the formula but clamp to minimum visible size
-const PHOBOS_R = Math.max(rW(11.267), 18); // ~44 wu → floors at 18
-const DEIMOS_R = Math.max(rW(6.2), 12);    // ~39 wu → floors at 12
+// Moons: use the formula but clamp to minimum visible size, then scale to 10%
+const PHOBOS_R = Math.max(rW(11.267), 18) * 0.15;
+const DEIMOS_R = Math.max(rW(6.2), 12) * 0.15;
 
 // Orbital radii maintain real moon:Mars radius ratios
-const PHOBOS_ORBIT = (9_376 / 3_390) * MARS_R;   // ~382 world units
-const DEIMOS_ORBIT = (23_459 / 3_390) * MARS_R;  // ~956 world units
+const PHOBOS_ORBIT = (9_376 / 3_390) * MARS_R * 3;   // ×3 visual separation
+const DEIMOS_ORBIT = (23_459 / 3_390) * MARS_R * 3;  // ×3 visual separation
 
 // Real inclinations to the Mars equatorial plane (nearly zero)
 const PHOBOS_INC = 1.093 * (Math.PI / 180);
 const DEIMOS_INC = 0.93 * (Math.PI / 180);
 
-// Visual orbital speeds — real ratio preserved (Phobos 4× faster than Deimos)
-// Full real-scale (2π / period_in_game_seconds) is hundreds of rad/s → invisible.
-// We cap at a visually readable pace while keeping the ratio.
-const PHOBOS_ORBIT_SPEED = 0.40; // rad/s  ≈ 15.7 s orbit
-const DEIMOS_ORBIT_SPEED = 0.10; // rad/s  ≈ 62.8 s orbit
+// Physically derived for 1 Earth year = 6 real hours (21,600 s):
+//   Phobos period = 7.65 h  → game period = 21600 / (8766/7.65)  ≈ 18.8 s
+//   Deimos period = 30.3 h  → game period = 21600 / (8766/30.3)  ≈ 74.7 s
+const PHOBOS_ORBIT_SPEED = (2 * Math.PI) / 18.8 * 0.1;  // 10% of physically correct
+const DEIMOS_ORBIT_SPEED = (2 * Math.PI) / 74.7 * 0.1;  // 10% of physically correct
 
 // Gravity — artificially boosted (same approach as PLANETS in SolarSystem.tsx)
 const MOON_SURFACE_G = 2.0;
