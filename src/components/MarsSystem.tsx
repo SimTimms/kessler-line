@@ -277,15 +277,29 @@ export default function MarsSystem() {
 
   // Colony emissive maps
   const phobosColony = useMemo(() => buildColonyTexture([
-    // Stickney crater rim — largest base (near 0°, +5°)
-    [0, 5, 9, 1.00],
-    // Southern polar research station
-    [-60, -28, 6, 0.75],
+    // Stickney crater cluster — main base
+    [  0,  5, 1, 1.00], [  8,  2, 1, 0.85], [ -5, 10, 1, 0.80],
+    [ 12,  8, 1, 0.75], [ -8,  0, 1, 0.78], [  5,-12, 1, 0.70],
+    // Southern polar research
+    [-60,-28, 1, 0.75], [-55,-20, 1, 0.65], [-65,-32, 1, 0.68], [-58,-35, 1, 0.62],
+    // Limb relay stations
+    [ 90, 15, 1, 0.70], [ 85, -5, 1, 0.65], [ 95, 20, 1, 0.62],
+    // Anti-sub hemisphere
+    [-90, 10, 1, 0.68], [-85, -8, 1, 0.60],
+    // Scattered outposts
+    [ 30, 40, 1, 0.65], [-30, 35, 1, 0.62], [ 45,-15, 1, 0.60],
+    [-45, 20, 1, 0.63], [150,-10, 1, 0.58],
   ]), []);
 
   const deimosColony = useMemo(() => buildColonyTexture([
-    // Northern relay & comm station (prime real estate for deep-space comms)
-    [55, 18, 7, 0.95],
+    // Northern relay — main station
+    [ 55, 18, 1, 0.95], [ 60, 12, 1, 0.80], [ 50, 22, 1, 0.75], [ 62, 28, 1, 0.70],
+    // Anti-Mars side
+    [-80, -5, 1, 0.72], [-75,  8, 1, 0.65], [-85,-10, 1, 0.60],
+    // Southern mining outpost
+    [  0,-30, 1, 0.65], [ 10,-25, 1, 0.60],
+    // Far hemisphere relay
+    [150, 15, 1, 0.62],
   ]), []);
 
   // Register gravity bodies once on mount
