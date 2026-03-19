@@ -22,7 +22,8 @@ import SpaceDebris from './SpaceDebris';
 import ProximityHighlight from './ProximityHighlight';
 import { sceneCamera } from '../context/CameraRef';
 import AIShip from './AIShip';
-import SolarSystem, { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import SolarSystem, { PLANETS } from './SolarSystem';
+import { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
 import SunGravity from './SunGravity';
 import { shipPosRef } from '../context/ShipPos';
 import { solarPlanetPositions, fuelStationWorldPos } from '../context/SolarSystemMinimap';
@@ -187,7 +188,7 @@ export default function Scene() {
   const marsWorldZ = mars
     ? -Math.sin(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
     : 0;
-  const MARS_TEST_START: [number, number, number] = [marsWorldX + 7200, 0, marsWorldZ];
+  const MARS_TEST_START: [number, number, number] = [marsWorldX + 14200, 0, marsWorldZ];
 
   const DEFAULT_START = DEV_MARS_TEST
     ? MARS_TEST_START
@@ -313,7 +314,7 @@ export default function Scene() {
         stationGroupRef={stationGroupRef}
         beaconGroupRef={beaconGroupRef}
       />
-      <SolarSystem scale={4} />
+      <SolarSystem scale={SOLAR_SYSTEM_SCALE} />
       <MarsSystem />
       <NeptuneNoFlyRing />
       <EarthAsteroidRing />

@@ -2,15 +2,17 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
+import { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
 
 const COUNT_PER_TYPE = 520; // 360 total across 3 geometry types
 const GROUP_Y = 0; // matches the <group position={[0, 5000, 0]}> offset below
 const COLLIDER_Y_MIN = -100;
 const COLLIDER_Y_MAX = 100;
 
-// Module-level constants derived from world config
-const NEP_POS = new THREE.Vector3(6084, 0, -6084);
-const RED_POS = new THREE.Vector3(6084, 0, -3084);
+// Belt endpoints authored at SOLAR_SYSTEM_SCALE=4; divide by 4 to get scale-1 base
+const S = SOLAR_SYSTEM_SCALE / 4;
+const NEP_POS = new THREE.Vector3(6084 * S, 0, -6084 * S);
+const RED_POS = new THREE.Vector3(6084 * S, 0, -3084 * S);
 
 // Perpendicular basis vectors for the belt plane (computed once)
 const _beltDir = new THREE.Vector3().subVectors(RED_POS, NEP_POS).normalize();
@@ -61,7 +63,7 @@ export default function AsteroidBelt() {
 
         // Scatter radially in the belt plane (perpendicular to path)
         const angle = rng() * Math.PI * 2;
-        const radius = 200 + rng() * 1800; // 600–2400 units from path axis
+        const radius = (200 + rng() * 1800) * S; // scales with solar system (200–1800 at scale=4)
         const alongAxis = (rng() - 0.5) * pathLength * 0.04; // slight along-axis jitter
 
         const pos = beltCenter

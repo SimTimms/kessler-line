@@ -1,12 +1,16 @@
 import Sun from './Sun';
 import OrbitingPlanet from './OrbitingPlanet';
+import { SOLAR_SYSTEM_SCALE as _SCALE, SUN_RADIUS_BASE } from '../config/solarConfig';
+
+// Re-export so existing consumers (NeptuneNoFlyRing, MiniMapScene, etc.) keep working
+export { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
 
 // ─── Sizing helpers ────────────────────────────────────────────────────────────
 // True 1:1 scale makes planets invisible at these orbital distances, so display
 // radii use a power-0.4 compression that preserves relative ordering.
-//   display_radius = SUN_RADIUS × (planet_km / 696340)^0.4
+//   display_radius = SUN_RADIUS_BASE × (planet_km / 696340)^0.2
 
-const SUN_RADIUS = 100;
+const SUN_RADIUS = SUN_RADIUS_BASE;
 const ORBIT_SPEED = 510;
 const r = (realKm: number) => Math.pow(realKm / 696_340, 0.2) * SUN_RADIUS;
 
@@ -132,9 +136,9 @@ export const PLANETS = [
 ] as const;
 
 // ─── World scale ──────────────────────────────────────────────────────────────
-// SolarSystem is rendered in Scene.tsx with this scale. Any consumer that needs
-// world-space planet positions must multiply solarPlanetPositions by this value.
-export const SOLAR_SYSTEM_SCALE = 4;
+// Sourced from solarConfig — re-exported above for backward-compat.
+// Use the private alias here to avoid circular reference.
+const SOLAR_SYSTEM_SCALE = _SCALE;
 
 // ─── Gravity parameters ───────────────────────────────────────────────────────
 // Surface gravity (world-space units/s²) and sphere-of-influence multiplier.

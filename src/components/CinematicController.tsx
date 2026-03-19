@@ -23,7 +23,7 @@ import {
 } from '../narrative';
 
 const CINEMATIC_AUTOPILOT_DURATION = 10;
-const NO_FLY_ZONE_DISTANCE = 20000;
+const NO_FLY_ZONE_DISTANCE = 5000 * SOLAR_SYSTEM_SCALE; // 20_000 at scale=4
 const FAMILY_MESSAGE_DELAY = 14000; // ms — a beat after autopilot ends
 const EMPLOYER_RECALL_DELAY = 8000; // ms after Neptune no-fly triggers
 

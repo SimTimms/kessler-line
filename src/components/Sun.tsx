@@ -1,5 +1,13 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
+
+// Point light intensity scales with scale² (inverse square law):
+// objects at 2× distance need 4× intensity to receive the same illumination.
+// distance scales linearly with the solar system.
+const S = SOLAR_SYSTEM_SCALE / 4; // ratio relative to authored baseline (scale=4)
+const LIGHT_INTENSITY = 20_000_000 * S * S; // 20M at scale=4
+const LIGHT_DISTANCE  = 200_000 * S;        // 200k at scale=4
 
 interface SunProps {
   radius: number;
@@ -129,7 +137,7 @@ export default function Sun({ radius }: SunProps) {
       </sprite>
       */}
 
-      <pointLight color="#fff8e0" intensity={20000000} distance={200000} decay={1.5} />
+      <pointLight color="#fff8e0" intensity={LIGHT_INTENSITY} distance={LIGHT_DISTANCE} decay={1.5} />
     </group>
   );
 }

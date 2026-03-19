@@ -46,20 +46,20 @@ export const SUN_RADIUS_BASE = 100;   // sun display radius at scale = 1
 export const SUN_WORLD_RADIUS = SUN_RADIUS_BASE * SOLAR_SYSTEM_SCALE;
 ```
 
-- [ ] File created at `src/config/solarConfig.ts`
+- [x] File created at `src/config/solarConfig.ts`
 
 ---
 
 ### STEP 2 — Update `SolarSystem.tsx`
 **File:** `my-r3f-app/src/components/SolarSystem.tsx`
 
-- [ ] Import `SOLAR_SYSTEM_SCALE` and `SUN_RADIUS_BASE` from `../config/solarConfig`
-- [ ] Remove (or replace) the local `SOLAR_SYSTEM_SCALE = 4` constant
-- [ ] Remove (or replace) the local `SUN_RADIUS = 100` constant — rename to `SUN_RADIUS_BASE`
+- [x] Import `SOLAR_SYSTEM_SCALE` and `SUN_RADIUS_BASE` from `../config/solarConfig`
+- [x] Remove (or replace) the local `SOLAR_SYSTEM_SCALE = 4` constant
+- [x] Remove (or replace) the local `SUN_RADIUS = 100` constant — rename to `SUN_RADIUS_BASE`
       so existing planet radius formulas (`Math.pow(realKm / 696_340, 0.2) * SUN_RADIUS_BASE`) still work
-- [ ] Keep `export { SOLAR_SYSTEM_SCALE }` so that files already importing from `./SolarSystem`
+- [x] Keep `export { SOLAR_SYSTEM_SCALE }` so that files already importing from `./SolarSystem`
       (NeptuneNoFlyRing, MiniMapScene) continue to work without changing their imports
-- [ ] `<SolarSystem scale={4} />` is called in `Scene.tsx` — the prop is currently hardcoded.
+- [x] `<SolarSystem scale={4} />` is called in `Scene.tsx` — the prop is currently hardcoded.
       Update `Scene.tsx` line 316 to import and pass `SOLAR_SYSTEM_SCALE` from solarConfig:
       `<SolarSystem scale={SOLAR_SYSTEM_SCALE} />`
 
@@ -76,10 +76,10 @@ Three values are currently hardcoded that should derive from `SUN_WORLD_RADIUS`:
 | `orbitAltitude: 1600` | `SUN_WORLD_RADIUS * 4` |
 | `soiRadius: 200_000` | `50_000 * SOLAR_SYSTEM_SCALE` (= 200000 at scale=4) |
 
-- [ ] Import `SOLAR_SYSTEM_SCALE` and `SUN_WORLD_RADIUS` from `../config/solarConfig`
-- [ ] Replace `surfaceRadius: 400` → `surfaceRadius: SUN_WORLD_RADIUS`
-- [ ] Replace `orbitAltitude: 1600` → `orbitAltitude: SUN_WORLD_RADIUS * 4`
-- [ ] Replace `soiRadius: 200_000` → `soiRadius: 50_000 * SOLAR_SYSTEM_SCALE`
+- [x] Import `SOLAR_SYSTEM_SCALE` and `SUN_WORLD_RADIUS` from `../config/solarConfig`
+- [x] Replace `surfaceRadius: 400` → `surfaceRadius: SUN_WORLD_RADIUS`
+- [x] Replace `orbitAltitude: 1600` → `orbitAltitude: SUN_WORLD_RADIUS * 4`
+- [x] Replace `soiRadius: 200_000` → `soiRadius: 50_000 * SOLAR_SYSTEM_SCALE`
 
 ---
 
@@ -89,9 +89,9 @@ Three values are currently hardcoded that should derive from `SUN_WORLD_RADIUS`:
 Station/object positions were authored at scale = 4. Normalise each to scale = 1
 (divide by 4) then multiply by `SOLAR_SYSTEM_SCALE`.
 
-- [ ] Import `SOLAR_SYSTEM_SCALE` from `./solarConfig`
-- [ ] Define a helper at the top: `const S = SOLAR_SYSTEM_SCALE;`
-- [ ] Update every hardcoded `position` array using the pattern:
+- [x] Import `SOLAR_SYSTEM_SCALE` from `./solarConfig`
+- [x] Define a helper at the top: `const S = SOLAR_SYSTEM_SCALE / 4` (ratio to authored baseline)
+- [x] Update every hardcoded `position` array using the pattern:
       `position: [x/4 * S, y/4 * S, z/4 * S]` as `[number, number, number]`
 
 Positions to update (current → base at scale=1):
@@ -112,15 +112,11 @@ Positions to update (current → base at scale=1):
 | SATURN | [-6000, 0, 4000] | [-1500, 0, 1000] |
 | URANUS | [-4000, 0, -3000] | [-1000, 0, -750] |
 
-- [ ] Update all 13 object positions above
-- [ ] Update radio beacon fixed positions (beacons 0–9) using same ÷4 × S pattern
-- [ ] Update orbital beacon radii:
-      - Venus beacon: `radius: 420` → `radius: 105 * S`
-      - Mercury beacon: `radius: 320` → `radius: 80 * S`
-- [ ] Note: `MINIMAP_SCALE` is excluded from this task (handled separately)
-- [ ] Note: `RADIO_BROADCAST_DEFS` reference `ASTEROID_DOCK_DEF.position` etc.
-      directly — they will auto-update since they reference the object, not hardcode values.
-      Verify this is the case for all three entries.
+- [x] Update all 13 object positions above
+- [x] Update radio beacon fixed positions (beacons 0–9) using same × S pattern
+- [x] Update orbital beacon radii (420 * S, 320 * S)
+- [x] MINIMAP_SCALE excluded from this task (handled separately)
+- [x] RADIO_BROADCAST_DEFS confirmed to reference DEF.position objects — auto-updated
 
 ---
 
@@ -135,8 +131,8 @@ const NO_FLY_ZONE_DISTANCE = 20000;
 const NO_FLY_ZONE_DISTANCE = 5000 * SOLAR_SYSTEM_SCALE; // = 20000 at scale=4
 ```
 
-- [ ] Import `SOLAR_SYSTEM_SCALE` from `../config/solarConfig`
-- [ ] Replace `NO_FLY_ZONE_DISTANCE = 20000` → `NO_FLY_ZONE_DISTANCE = 5000 * SOLAR_SYSTEM_SCALE`
+- [x] Import `SOLAR_SYSTEM_SCALE` from `../config/solarConfig` (already imported via SolarSystem re-export)
+- [x] Replace `NO_FLY_ZONE_DISTANCE = 20000` → `NO_FLY_ZONE_DISTANCE = 5000 * SOLAR_SYSTEM_SCALE`
 
 ---
 
@@ -155,8 +151,8 @@ One offset is hardcoded:
 // 55 * 4 = 220 at current scale
 ```
 
-- [ ] Verify `SOLAR_SYSTEM_SCALE` import already exists (it does — line 6 imports from `./SolarSystem`)
-- [ ] Replace the hardcoded `220` offset → `55 * SOLAR_SYSTEM_SCALE`
+- [x] Verified `SOLAR_SYSTEM_SCALE` import exists (line 6 imports from `./SolarSystem`)
+- [x] Replace the hardcoded `220` offset → `55 * SOLAR_SYSTEM_SCALE`
 
 ---
 
@@ -179,10 +175,10 @@ Also check scatter radius bands (`radial: 200–1800 units`) — these should sc
 - Min scatter: `50 * S` (= 200 at scale=4)
 - Max scatter: `450 * S` (= 1800 at scale=4)
 
-- [ ] Import `SOLAR_SYSTEM_SCALE` from `../config/solarConfig` (as `S`)
-- [ ] Replace `NEP_POS` and `RED_POS` with scale-relative values
-- [ ] Replace hardcoded scatter radius bands with `× S` equivalents
-- [ ] Check asteroid base sizes (10–65 units) — these are model sizes, leave unchanged
+- [x] Import `SOLAR_SYSTEM_SCALE` from `../config/solarConfig` (as `S = SOLAR_SYSTEM_SCALE / 4`)
+- [x] Replace `NEP_POS` and `RED_POS` with scale-relative values
+- [x] Replace hardcoded scatter radius bands with `× S` equivalents
+- [x] Asteroid base sizes (10–65 units) are model sizes — left unchanged
 
 ---
 
@@ -202,8 +198,8 @@ Leave speed/angle thresholds unchanged (they're not distance-based).
 | `RETROBURN_DONE_SPEED` | 5 | Leave fixed | — |
 | Speed/angle thresholds | — | Leave fixed | — |
 
-- [ ] Import `SOLAR_SYSTEM_SCALE` from `../config/solarConfig` (as `S`)
-- [ ] Update `THRUST_DIST_FAR`, `THRUST_DIST_MID`, `ORBIT_INSERTION_PERIAPSIS` with `× S`
+- [x] Import `SOLAR_SYSTEM_SCALE` from `../config/solarConfig` (as `S`)
+- [x] Updated `THRUST_DIST_FAR`, `THRUST_DIST_MID`, `ORBIT_INSERTION_PERIAPSIS` with `× S`
 
 ---
 
@@ -213,9 +209,8 @@ Leave speed/angle thresholds unchanged (they're not distance-based).
 Ring radii already derive from `earthWorldRadius` (which is computed from the planet radius formula).
 This should auto-scale — but verify.
 
-- [ ] Read the file and confirm `innerRadius` and `outerRadius` use a computed `earthWorldRadius`
-      (not a hardcoded number)
-- [ ] If any hardcoded distances exist, normalise them to scale=1 base × S
+- [x] Confirmed: `EarthAsteroidRing.tsx` imports `PLANETS` and `SOLAR_SYSTEM_SCALE` from SolarSystem
+      and derives all ring radii from `earthWorldRadius` — auto-scales correctly, no changes needed
 
 ---
 
@@ -223,7 +218,7 @@ This should auto-scale — but verify.
 After all changes, set `SOLAR_SYSTEM_SCALE` to `2` and `8` in `solarConfig.ts` and
 run `npm run dev` from `my-r3f-app/`. Verify:
 
-- [ ] `npm run build` passes (TypeScript strict mode — no unused vars, no type errors)
+- [x] `npm run build` passes (TypeScript strict mode — no unused vars, no type errors)
 - [ ] At scale=2: sun is half as far, planets orbit closer, stations are proportionally closer
 - [ ] At scale=8: solar system doubles in size from current (scale=4)
 - [ ] Neptune no-fly zone triggers at appropriate distance for the new scale

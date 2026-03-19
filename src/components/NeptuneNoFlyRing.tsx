@@ -45,7 +45,7 @@ export default function NeptuneNoFlyRing() {
           depthWrite={false}
         />
       </mesh>
-      <Html position={[0, 0, ringRadius + 220]} transform>
+      <Html position={[0, 0, ringRadius + 55 * SOLAR_SYSTEM_SCALE]} transform>
         <div ref={labelRef} className="no-fly-label">
           NO FLY ZONE
         </div>
