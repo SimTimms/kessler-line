@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import type { RadioBroadcastDef } from '../../config/worldConfig';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import './BroadcastDialog.css';
+import { gravityBodies } from '../../context/GravityRegistry';
 
 interface BroadcastDialogProps {
   broadcast: RadioBroadcastDef;

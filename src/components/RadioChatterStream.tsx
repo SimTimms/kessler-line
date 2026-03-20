@@ -3,7 +3,7 @@ import { chatterState } from '../context/CinematicState';
 import { RADIO_CHATTER_LINES } from '../narrative';
 import { playRadioChatterClip } from '../sound/SoundManager';
 import './RadioChatterStream.css';
-
+import { SHIP_NAMES, STATION_NAMES, BEACON_NAMES, DISPATCHNAME } from '../config/ghostFleetConfig';
 interface ChatterEntry {
   shipId: string;
   text: string;
@@ -53,7 +53,13 @@ export default function RadioChatterStream() {
       idx = Math.floor(Math.random() * pool.length);
     } while (usedRef.current.includes(idx));
     usedRef.current.push(idx);
-    return parseLine(pool[idx]);
+    return parseLine(
+      pool[idx]
+        .replace('<<SHIPNAME>>', SHIP_NAMES[Math.floor(Math.random() * SHIP_NAMES.length)])
+        .replace('<<STATIONNAME>>', STATION_NAMES[Math.floor(Math.random() * STATION_NAMES.length)])
+        .replace('<<BEACONNAME>>', BEACON_NAMES[Math.floor(Math.random() * BEACON_NAMES.length)])
+        .replace('<<DISPATCHNAME>>', DISPATCHNAME[Math.floor(Math.random() * DISPATCHNAME.length)])
+    );
   };
 
   const addLine = (entry: ChatterEntry) => {

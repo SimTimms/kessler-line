@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { cinematicThrustReverse } from '../context/ShipState';
+import { cinematicThrustReverse } from '../../context/ShipState';
 import {
   cinematicAutopilotActive,
   neptuneNoFlyZoneActive,
@@ -9,11 +9,11 @@ import {
   shipInstructionMessage,
   chatterState,
   setCascadePhase,
-} from '../context/CinematicState';
-import { addMessage } from '../context/MessageStore';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
-import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
-import { NO_FLY_ZONE_DISTANCE, EMPLOYER_RECALL_DELAY } from '../config/neptuneConfig';
+} from '../../context/CinematicState';
+import { addMessage } from '../../context/MessageStore';
+import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
+import { SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { NO_FLY_ZONE_DISTANCE, EMPLOYER_RECALL_DELAY } from '../../config/neptuneConfig';
 import {
   RADIO_CHATTER_LINES,
   RADIO_CHATTER_CASCADE_LINES,
@@ -21,7 +21,7 @@ import {
   MSG_FAMILY_EARTH,
   MSG_NEPTUNE_CONTROL,
   MSG_EMPLOYER_RECALL,
-} from '../narrative';
+} from '../../narrative';
 
 const CINEMATIC_AUTOPILOT_DURATION = 10;
 const FAMILY_MESSAGE_DELAY = 14000; // ms — a beat after autopilot ends

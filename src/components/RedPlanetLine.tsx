@@ -2,9 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { navTargetPosRef, navTargetIdRef } from '../context/NavTarget';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
-import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import { navTargetPosRef } from '../context/NavTarget';
 
 interface RedPlanetLineProps {
   shipPositionRef: { current: THREE.Vector3 };

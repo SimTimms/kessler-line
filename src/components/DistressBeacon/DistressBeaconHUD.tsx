@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { cascadePhase } from '../context/CinematicState';
+import { cascadePhase } from '../../context/CinematicState';
 
 const MAX_BEACONS = 50;
 
@@ -63,7 +63,11 @@ export default function DistressBeaconHUD() {
 
   useEffect(() => {
     const spawnOne = () => {
-      if (!activeRef.current || cascadePhase.current !== 'during' || countRef.current >= MAX_BEACONS)
+      if (
+        !activeRef.current ||
+        cascadePhase.current !== 'during' ||
+        countRef.current >= MAX_BEACONS
+      )
         return;
 
       const name = SHIP_NAMES[Math.floor(Math.random() * SHIP_NAMES.length)];
@@ -109,11 +113,7 @@ export default function DistressBeaconHUD() {
   return (
     <div className="db-hud">
       {beacons.map((b) => (
-        <div
-          key={b.id}
-          className="db-beacon"
-          style={{ left: `${b.x}%`, top: `${b.y}%` }}
-        >
+        <div key={b.id} className="db-beacon" style={{ left: `${b.x}%`, top: `${b.y}%` }}>
           <div className="db-sphere-wrap">
             <div className="db-ring" />
             <div className="db-ring db-ring--2" />

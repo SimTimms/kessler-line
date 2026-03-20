@@ -1,9 +1,9 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
-import { shipPosRef } from '../context/ShipPos';
-import { PLANETS, SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
+import { shipPosRef } from '../../context/ShipPos';
+import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
 
 const COUNT = 1400;
 const ORBIT_SPEED = 0.22;

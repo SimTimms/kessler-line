@@ -2,8 +2,8 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { cascadePhase } from '../context/CinematicState';
-import { shipPosRef } from '../context/ShipPos';
+import { cascadePhase } from '../../context/CinematicState';
+import { shipPosRef } from '../../context/ShipPos';
 
 const MAX_BEACONS = 50;
 
@@ -87,7 +87,7 @@ const SingleDistressBeacon = memo(function SingleDistressBeacon({
     mat1Ref.current.opacity = 0.55 * (1 - r1);
 
     // Ring 2: same but half-period offset
-    const r2 = ((t * 0.45) + 0.5) % 1;
+    const r2 = (t * 0.45 + 0.5) % 1;
     ring2Ref.current.scale.setScalar(1 + r2 * 4.8);
     mat2Ref.current.opacity = 0.55 * (1 - r2);
   });

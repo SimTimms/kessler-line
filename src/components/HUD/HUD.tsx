@@ -1,14 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-  Flashlight,
-  Magnet,
-  HardDrive,
-  Radar,
-  AudioLines,
-  Radiation,
-  Music,
-  Axis3D,
-} from 'lucide-react';
+import { Flashlight, Magnet, HardDrive, Radar, AudioLines, Radiation, Music } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HudButton } from '../HudButton';
 import { proximityScanRangeRef } from '../../context/ProximityScan';
@@ -17,11 +8,8 @@ import { driveSignatureRangeRef } from '../../context/DriveSignatureScan';
 import { radioRangeRef } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
 import './HUD.css';
-
+import { SCAN_RANGES, DRIVE_SIGNATURE_RANGES, MAGNETIC_RANGES } from '../../config/scanRanges';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
-const SCAN_RANGES = [0, 500, 1000, 1500, 2000];
-const DRIVE_SIGNATURE_RANGES = [0, 2000, 5000, 20000, 40000];
-const MAGNETIC_RANGES = [0, 2000, 5000, 20000, 40000];
 
 interface HUDProps {
   spotlightOn: boolean;

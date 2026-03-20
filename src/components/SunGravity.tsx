@@ -25,9 +25,9 @@ export default function SunGravity() {
       position: SUN_POSITION,
       velocity: new THREE.Vector3(0, 0, 0), // static body
       mu: MU_SUN,
-      soiRadius: 50_000 * S,       // covers the whole solar system (200_000 at scale=4)
-      surfaceRadius: SUN_WORLD_RADIUS,         // SUN_RADIUS_BASE × SOLAR_SYSTEM_SCALE
-      orbitAltitude: SUN_WORLD_RADIUS * 4,    // ideal orbit altitude above surface
+      soiRadius: 50_000 * S, // covers the whole solar system (200_000 at scale=4)
+      surfaceRadius: SUN_WORLD_RADIUS, // SUN_RADIUS_BASE × SOLAR_SYSTEM_SCALE
+      orbitAltitude: SUN_WORLD_RADIUS * 4, // ideal orbit altitude above surface
     });
     return () => {
       gravityBodies.delete('Sun');

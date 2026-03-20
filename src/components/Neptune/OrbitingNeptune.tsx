@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import Neptune from './Neptune';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
+import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 
 // Orbital time scale: 1 Earth year = 30 real seconds
 // Neptune year = 164.8 Earth years → one orbit every ~4944 real seconds

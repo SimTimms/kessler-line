@@ -3,10 +3,10 @@ import { Canvas } from '@react-three/fiber';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import MiniMapScene, { type HoverInfo } from './MiniMapScene';
-import { waypointPromptDef } from '../context/WaypointPrompt';
-import { navTargetPosRef, navTargetIdRef } from '../context/NavTarget';
-import { gravityBodies } from '../context/GravityRegistry';
-import type { WorldObjectDef } from '../config/worldConfig';
+import { waypointPromptDef } from '../../context/WaypointPrompt';
+import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
+import { gravityBodies } from '../../context/GravityRegistry';
+import type { WorldObjectDef } from '../../config/worldConfig';
 
 // HALF_H_DEFAULT shows the full solar system (Neptune orbit ≈ 4 583 minimap units).
 // HALF_H_MAX allows a small zoom-out beyond the default. HALF_H_MIN allows close-up.

@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  neptuneNoFlyZoneMessage,
-  shipInstructionMessage,
-} from '../context/CinematicState';
+import { neptuneNoFlyZoneMessage, shipInstructionMessage } from '../../context/CinematicState';
 
 export default function CinematicOverlay() {
   const [noFlyLine, setNoFlyLine] = useState('');

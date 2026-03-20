@@ -161,7 +161,8 @@ function buildColonyTexture(): THREE.CanvasTexture {
 
 // ── Procedural bump map (craters + terrain) ──────────────────────────────
 function buildMarsBumpMap(): THREE.CanvasTexture {
-  const W = 2048, H = 1024;
+  const W = 2048,
+    H = 1024;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -173,11 +174,16 @@ function buildMarsBumpMap(): THREE.CanvasTexture {
 
   // Deterministic LCG
   let s = 98765;
-  const rand = () => { s = ((s * 1664525 + 1013904223) >>> 0); return s / 0xffffffff; };
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
 
   // Large-scale terrain swells
   for (let i = 0; i < 50; i++) {
-    const x = rand() * W, y = rand() * H, r = rand() * 240 + 100;
+    const x = rand() * W,
+      y = rand() * H,
+      r = rand() * 240 + 100;
     const v = Math.floor(128 + (rand() - 0.5) * 60);
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(${v},${v},${v},0.35)`);
@@ -188,41 +194,57 @@ function buildMarsBumpMap(): THREE.CanvasTexture {
 
   // Large craters
   for (let i = 0; i < 80; i++) {
-    const x = rand() * W, y = rand() * H, r = rand() * 60 + 20;
+    const x = rand() * W,
+      y = rand() * H,
+      r = rand() * 60 + 20;
     const bowl = ctx.createRadialGradient(x, y, 0, x, y, r * 0.85);
     bowl.addColorStop(0, 'rgba(70,70,70,0.85)');
     bowl.addColorStop(0.7, 'rgba(100,100,100,0.4)');
     bowl.addColorStop(1, 'rgba(128,128,128,0)');
     ctx.fillStyle = bowl;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
     // Raised rim
     ctx.strokeStyle = 'rgba(195,195,195,0.55)';
     ctx.lineWidth = r * 0.12 + 1;
-    ctx.beginPath(); ctx.arc(x, y, r * 0.92, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.92, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   // Medium craters
   for (let i = 0; i < 400; i++) {
-    const x = rand() * W, y = rand() * H, r = rand() * 18 + 4;
+    const x = rand() * W,
+      y = rand() * H,
+      r = rand() * 18 + 4;
     const bowl = ctx.createRadialGradient(x, y, 0, x, y, r);
     bowl.addColorStop(0, 'rgba(75,75,75,0.80)');
     bowl.addColorStop(0.75, 'rgba(110,110,110,0.25)');
     bowl.addColorStop(1, 'rgba(128,128,128,0)');
     ctx.fillStyle = bowl;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = 'rgba(185,185,185,0.45)';
     ctx.lineWidth = r * 0.15 + 0.5;
-    ctx.beginPath(); ctx.arc(x, y, r * 0.88, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.88, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   // Small pits
   for (let i = 0; i < 1200; i++) {
-    const x = rand() * W, y = rand() * H, r = rand() * 5 + 1;
+    const x = rand() * W,
+      y = rand() * H,
+      r = rand() * 5 + 1;
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, 'rgba(85,85,85,0.75)');
     g.addColorStop(1, 'rgba(128,128,128,0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -317,10 +339,7 @@ export default function OrbitingPlanet({
     [showColonies]
   );
 
-  const bumpTexture = useMemo(
-    () => (useBumpMap ? buildMarsBumpMap() : null),
-    [useBumpMap]
-  );
+  const bumpTexture = useMemo(() => (useBumpMap ? buildMarsBumpMap() : null), [useBumpMap]);
 
   const glowTexture = useMemo(() => {
     const size = 256;

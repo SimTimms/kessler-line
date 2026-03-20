@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<!-- saved from url=(0022)http://localhost:5174/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;</script>
+
+    <script type="module" src="./my-r3f-app_files/client"></script>
+
+    
+    <link rel="icon" type="image/svg+xml" href="http://localhost:5174/vite.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>my-r3f-app</title>
+  <style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/index.css">:root {
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin-left: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: none;
+}
+button:focus,
+button:focus-visible {
+  outline: none;
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/App.css">#root {
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin-left: 0;
+  padding: 0;
+}
+
+body {
+  background: #000000;
+}
+:root {
+  /* ── Fonts ─────────────────────────────────────── */
+  --hud-font: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  --hud-font-mono: monospace;
+
+  /* ── Backgrounds ───────────────────────────────── */
+  --hud-bg: rgba(0, 8, 18, 0.85);
+  --hud-bg-dialog: rgba(2, 6, 14, 0.97);
+
+  /* ── Primary cyan/blue ─────────────────────────── */
+  --hud-text: #00cfff;
+  --hud-text-muted: rgba(0, 200, 255, 0.55);
+  --hud-text-dim: rgba(0, 200, 255, 0.35);
+  --hud-border: rgba(0, 200, 255, 0.3);
+  --hud-border-strong: rgba(0, 200, 255, 0.7);
+  --hud-divider: rgba(0, 200, 255, 0.18);
+  --hud-glow: rgba(0, 200, 255, 0.12);
+  --hud-glow-strong: rgba(0, 200, 255, 0.7);
+  --hud-dot-core: rgba(0, 0, 0, 0.7);
+
+  /* ── Semantic states ───────────────────────────── */
+  --color-danger: #ff7a8a;
+  --color-danger-border: rgba(255, 70, 90, 0.6);
+  --color-danger-bg: rgba(30, 6, 10, 0.9);
+  --color-success: #00ff88;
+  --color-success-border: rgba(0, 255, 136, 0.4);
+  --color-warning: #ffd27a;
+  --color-warning-border: rgba(255, 200, 90, 0.6);
+  --color-warning-bg: rgba(8, 6, 24, 0.86);
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.cinematic-overlay {
+  position: fixed;
+  left: 16px;
+  top: 244px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+  pointer-events: none;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cinematic-chatter {
+  padding: 10px 14px;
+  background: rgba(6, 16, 24, 0.82);
+  border: 1px solid rgba(120, 190, 255, 0.3);
+  color: #b8dcff;
+  box-shadow: 0 0 14px rgba(80, 140, 255, 0.25);
+  font-size: 0.7rem;
+}
+
+.cinematic-alert {
+  padding: 10px 14px;
+  background: rgba(30, 6, 10, 0.9);
+  border: 1px solid rgba(255, 70, 90, 0.6);
+  color: #ff7a8a;
+  font-size: 0.8rem;
+}
+
+.cinematic-instruction {
+  padding: 10px 14px;
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning);
+  font-size: 0.78rem;
+}
+
+@keyframes kessler-asteroid {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(120vw);
+  }
+}
+
+@keyframes kessler-letter-fade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes start-overlay-fade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.kessler-letter {
+  display: inline-block;
+  animation: kessler-letter-fade 1.2s forwards;
+}
+
+.start-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(3, 5, 10);
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  color: #e8f2ff;
+  animation: start-overlay-fade 3s ease-in 6s forwards;
+  pointer-events: auto;
+}
+
+.start-overlay.fading {
+  pointer-events: none;
+}
+
+.start-panel {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.start-title {
+  display: flex;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #d0e8ff;
+  text-shadow:
+    0 0 40px rgba(80, 160, 255, 0.4),
+    0 0 80px rgba(40, 100, 200, 0.2);
+  margin-bottom: 48px;
+  line-height: 1;
+}
+
+.start-subtitle {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  margin-bottom: 18px;
+}
+
+.start-button {
+  display: block;
+  padding: 8px 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  background: transparent;
+  border: none;
+  color: rgba(200, 225, 255, 0.7);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.start-button:hover {
+  color: rgba(200, 225, 255, 1);
+}
+
+.restart-button {
+  margin-top: 4px;
+  color: rgba(160, 180, 210, 0.4);
+}
+
+.restart-button:hover {
+  color: rgba(220, 120, 120, 0.8);
+}
+
+/* ── Start screen asteroid pass ──────────────────────────────────────────────── */
+.start-asteroids {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.start-asteroid {
+  position: absolute;
+  background: #000;
+  animation: kessler-asteroid linear forwards;
+  left: -20vw;
+}
+
+.no-fly-label {
+  padding: 6px 10px;
+  background: rgba(20, 6, 8, 0.75);
+  border: 1px solid rgba(255, 70, 90, 0.6);
+  color: #ff7a8a;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* ── Distress Beacon HUD ─────────────────────────────────────────────────────── */
+
+.db-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 35;
+}
+
+.db-beacon {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 3px 6px 4px 5px;
+  background: rgba(18, 3, 3, 0.82);
+  border: 1px solid rgba(255, 45, 45, 0.38);
+  animation: db-appear 0.4s ease forwards;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@keyframes db-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Sphere container */
+.db-sphere-wrap {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Solid pulsing core dot */
+.db-dot {
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  background: #ff2828;
+  box-shadow: 0 0 5px #ff2828, 0 0 10px rgba(255, 40, 40, 0.5);
+  animation: db-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes db-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Expanding sonar rings */
+.db-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 50, 50, 0.7);
+  animation: db-ring-expand 1.8s ease-out infinite;
+}
+
+.db-ring--2 {
+  animation-delay: 0.9s;
+}
+
+@keyframes db-ring-expand {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+/* Text labels */
+.db-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1;
+}
+
+.db-word {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #ff4040;
+  letter-spacing: 0.12em;
+}
+
+.db-name {
+  font-size: 6.5px;
+  color: rgba(255, 140, 100, 0.65);
+  letter-spacing: 0.06em;
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/PowerHUD/PowerHUD.css">.power-hud {
+  position: fixed;
+  top: 70px;
+  left: 10px;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 12px;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 100;
+}
+
+.power-hud-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.power-hud-divider {
+  color: rgba(0, 200, 255, 0.4);
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.power-hud-section {
+  color: #a0e8ff;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.power-hud-cargo-item {
+  color: #00ff88;
+  font-size: 14px;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: underline dotted;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+}
+
+.power-hud-target {
+  color: #00cfff;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.power-hud-hint {
+  opacity: 0.7;
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.power-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 8, 18, 0.95);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  border-radius: 6px;
+  padding: 24px 32px;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  color: #00cfff;
+  min-width: 280px;
+  text-align: center;
+  box-shadow: 0 0 32px rgba(0, 200, 255, 0.15);
+  pointer-events: auto;
+  z-index: 100;
+}
+
+.power-dialog-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(0, 200, 255, 0.5);
+}
+
+.power-dialog-body {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #a0e8ff;
+  line-height: 1.6;
+}
+
+.power-dialog-amount {
+  margin: 0 0 16px;
+  font-size: 22px;
+  color: #ff6666;
+  letter-spacing: 0.06em;
+}
+
+.power-dialog-range {
+  width: 100%;
+  margin-bottom: 20px;
+  accent-color: #ff6666;
+}
+
+.power-dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.power-btn {
+  padding: 8px 20px;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.power-btn-cancel {
+  background: transparent;
+  color: rgba(0, 200, 255, 0.5);
+  border: 1px solid rgba(0, 200, 255, 0.3);
+}
+
+.power-btn-danger {
+  background: rgba(255, 80, 80, 0.12);
+  color: #ff6666;
+  border: 1px solid rgba(255, 80, 80, 0.6);
+  box-shadow: 0 0 8px rgba(255, 80, 80, 0.15);
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/HUD/HUD.css">.button-panel {
+  position: fixed;
+  left: 16px;
+  bottom: 110px;
+  font-family: monospace;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/SelectionDialog/SelectionDialog.css">.sd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 4, 12, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+/* ── Base dialog — defaults to REACH (cyan) ─────────────────────────────────── */
+.sd-dialog {
+  --sd-text:               #00cfff;
+  --sd-border:             rgba(0, 200, 255, 0.4);
+  --sd-border-strong:      rgba(0, 200, 255, 0.65);
+  --sd-glow:               rgba(0, 200, 255, 0.12);
+  --sd-muted:              rgba(0, 200, 255, 0.6);
+  --sd-dim:                rgba(0, 200, 255, 0.45);
+  --sd-item-bg:            rgba(0, 200, 255, 0.05);
+  --sd-item-bg-hover:      rgba(0, 200, 255, 0.12);
+  --sd-item-bg-active:     rgba(0, 200, 255, 0.18);
+  --sd-item-border:        rgba(0, 200, 255, 0.25);
+  --sd-item-border-hover:  rgba(0, 200, 255, 0.6);
+  --sd-item-border-active: rgba(0, 200, 255, 0.9);
+  --sd-item-glow-active:   rgba(0, 200, 255, 0.2);
+  --sd-sublabel:           rgba(0, 200, 255, 0.45);
+
+  background: rgba(0, 8, 18, 0.97);
+  border: 1px solid var(--sd-border);
+  border-radius: 6px;
+  padding: 28px 32px;
+  min-width: 320px;
+  max-width: 480px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 40px var(--sd-glow);
+  font-family: monospace;
+}
+
+/* ── Platform overrides ──────────────────────────────────────────────────────── */
+
+/* HERALD — amber-gold, authoritative */
+.sd-dialog[data-platform='HERALD'] {
+  --sd-text:               #cc8822;
+  --sd-border:             rgba(204, 136, 34, 0.45);
+  --sd-border-strong:      rgba(204, 136, 34, 0.75);
+  --sd-glow:               rgba(204, 136, 34, 0.2);
+  --sd-muted:              rgba(204, 136, 34, 0.6);
+  --sd-dim:                rgba(204, 136, 34, 0.42);
+  --sd-item-bg:            rgba(204, 136, 34, 0.05);
+  --sd-item-bg-hover:      rgba(204, 136, 34, 0.12);
+  --sd-item-bg-active:     rgba(204, 136, 34, 0.18);
+  --sd-item-border:        rgba(204, 136, 34, 0.25);
+  --sd-item-border-hover:  rgba(204, 136, 34, 0.6);
+  --sd-item-border-active: rgba(204, 136, 34, 0.9);
+  --sd-item-glow-active:   rgba(204, 136, 34, 0.2);
+  --sd-sublabel:           rgba(204, 136, 34, 0.45);
+}
+
+/* OPENLINE — aggressive orange, cooperative */
+.sd-dialog[data-platform='OPENLINE'] {
+  --sd-text:               #ff5500;
+  --sd-border:             rgba(255, 85, 0, 0.42);
+  --sd-border-strong:      rgba(255, 85, 0, 0.72);
+  --sd-glow:               rgba(255, 85, 0, 0.18);
+  --sd-muted:              rgba(255, 85, 0, 0.6);
+  --sd-dim:                rgba(255, 85, 0, 0.42);
+  --sd-item-bg:            rgba(255, 85, 0, 0.05);
+  --sd-item-bg-hover:      rgba(255, 85, 0, 0.12);
+  --sd-item-bg-active:     rgba(255, 85, 0, 0.18);
+  --sd-item-border:        rgba(255, 85, 0, 0.25);
+  --sd-item-border-hover:  rgba(255, 85, 0, 0.6);
+  --sd-item-border-active: rgba(255, 85, 0, 0.9);
+  --sd-item-glow-active:   rgba(255, 85, 0, 0.2);
+  --sd-sublabel:           rgba(255, 85, 0, 0.45);
+}
+
+/* MERIDIAN — navigational green, AresNav */
+.sd-dialog[data-platform='MERIDIAN'] {
+  --sd-text:               #33bb66;
+  --sd-border:             rgba(51, 187, 102, 0.4);
+  --sd-border-strong:      rgba(51, 187, 102, 0.7);
+  --sd-glow:               rgba(51, 187, 102, 0.18);
+  --sd-muted:              rgba(51, 187, 102, 0.6);
+  --sd-dim:                rgba(51, 187, 102, 0.42);
+  --sd-item-bg:            rgba(51, 187, 102, 0.05);
+  --sd-item-bg-hover:      rgba(51, 187, 102, 0.12);
+  --sd-item-bg-active:     rgba(51, 187, 102, 0.18);
+  --sd-item-border:        rgba(51, 187, 102, 0.25);
+  --sd-item-border-hover:  rgba(51, 187, 102, 0.6);
+  --sd-item-border-active: rgba(51, 187, 102, 0.9);
+  --sd-item-glow-active:   rgba(51, 187, 102, 0.2);
+  --sd-sublabel:           rgba(51, 187, 102, 0.45);
+}
+
+/* ── Dialog contents ──────────────────────────────────────────────────────────── */
+
+.sd-title {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--sd-muted);
+  text-align: center;
+}
+
+.sd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.sd-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--sd-item-bg);
+  border: 1px solid var(--sd-item-border);
+  border-radius: 4px;
+  color: var(--sd-text);
+  font-family: monospace;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.sd-item-status {
+  font-size: 11px;
+  min-width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+  line-height: 1;
+}
+
+.sd-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sd-item--unread .sd-item-label {
+  opacity: 1;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+}
+
+.sd-item:hover {
+  background: var(--sd-item-bg-hover);
+  border-color: var(--sd-item-border-hover);
+}
+
+.sd-item--active {
+  background: var(--sd-item-bg-active);
+  border-color: var(--sd-item-border-active);
+  box-shadow: 0 0 10px var(--sd-item-glow-active);
+}
+
+.sd-item-sublabel {
+  font-size: 10px;
+  color: var(--sd-sublabel);
+  letter-spacing: 0.08em;
+}
+
+.sd-close {
+  align-self: center;
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid var(--sd-border);
+  border-radius: 4px;
+  color: var(--sd-dim);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.sd-close:hover {
+  color: var(--sd-muted);
+  border-color: var(--sd-border-strong);
+}
+
+/* ── Per-platform structural identities ──────────────────────────────────────── */
+
+/* HERALD — sharp corners, corporate authority, logo top-left, version bottom-right */
+.sd-dialog[data-platform='HERALD'] {
+  border-radius: 0;
+  border-width: 2px;
+  background: rgba(8, 6, 0, 0.97);
+}
+
+.sd-dialog[data-platform='HERALD']::before {
+  content: '◉ HERALD COMMS';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--sd-text);
+  opacity: 0.7;
+  border-bottom: 1px solid var(--sd-border);
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+  text-align: left;
+}
+
+.sd-dialog[data-platform='HERALD']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--sd-dim);
+  text-align: right;
+  margin-top: -4px;
+}
+
+.sd-dialog[data-platform='HERALD'] .sd-item {
+  border-radius: 0;
+}
+
+.sd-dialog[data-platform='HERALD'] .sd-close {
+  border-radius: 0;
+}
+
+/* OPENLINE — near-sharp, anonymous ethos, left-border item accents, no logo/version */
+.sd-dialog[data-platform='OPENLINE'] {
+  border-radius: 2px;
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-title {
+  text-align: left;
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-item {
+  border: none;
+  border-left: 2px solid var(--sd-item-border);
+  border-radius: 0;
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-item:hover {
+  border-left-color: var(--sd-item-border-hover);
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-item--active {
+  border-left-color: var(--sd-item-border-active);
+}
+
+/* MERIDIAN — navigation system, logo top-right, version bottom-right, green tint */
+.sd-dialog[data-platform='MERIDIAN'] {
+  border-radius: 4px;
+  background: rgba(0, 10, 4, 0.97);
+}
+
+.sd-dialog[data-platform='MERIDIAN']::before {
+  content: '⊕ MERIDIAN / ARESNAV';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--sd-text);
+  opacity: 0.7;
+  text-align: right;
+  border-bottom: 1px solid var(--sd-border);
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+}
+
+.sd-dialog[data-platform='MERIDIAN']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--sd-dim);
+  text-align: right;
+  margin-top: -4px;
+}
+
+/* BROADCAST — degraded relay, slightly faded */
+.sd-dialog[data-platform='BROADCAST'] {
+  opacity: 0.88;
+  filter: contrast(0.9) saturate(0.8);
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/NavHUD/NavHUD.css">.hud-bar-wrapper {
+  position: fixed;
+  pointer-events: none;
+  z-index: 60;
+  width: 100dvw;
+  width: 100vw;
+  box-sizing: border-box;
+  backdrop-filter: blur(4px);
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.nav-metrics {
+  flex: 1;
+}
+
+.nav-coords,
+.nav-orbit,
+.nav-apses,
+.nav-approach {
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+}
+
+.nav-target-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.nav-target-label {
+  color: rgba(160, 220, 255, 0.8);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  opacity: 0.3;
+}
+
+.nav-target-btn {
+  background: rgba(6, 18, 28, 0.75);
+  color: rgba(190, 230, 255, 0.95);
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 0.12em;
+  text-align: center;
+  border-radius: 0px;
+  text-transform: uppercase;
+  width: 100px;
+}
+
+.autopilot-btn {
+  background: transparent;
+  color: rgba(190, 230, 255, 0.95);
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 0.12em;
+  text-align: center;
+  border-radius: 0px;
+  text-transform: uppercase;
+  width: 300px;
+}
+.nav-target-btn:hover {
+  border-color: rgba(0, 200, 255, 0.9);
+  background: rgba(0, 200, 255, 0.08);
+}
+
+.autopilot-active {
+  color: rgba(80, 255, 160, 0.95);
+  font-size: 8px;
+}
+
+.hud-bar {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    rgba(6, 18, 28, 0.72),
+    rgba(6, 18, 28, 0.35),
+    rgba(6, 18, 28, 0.72)
+  );
+  border-bottom: 1px solid rgba(120, 190, 255, 0.35);
+  box-shadow: 0 8px 18px rgba(5, 18, 32, 0.45);
+  color: #9fdcff;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+}
+
+.hud-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.hud-metric-inline {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  text-align: center;
+  align-items: center;
+}
+
+.hud-label {
+  font-size: 8px;
+  opacity: 0.4;
+  letter-spacing: 0.2em;
+}
+
+.hud-metric-inline .hud-label {
+  font-size: 8px;
+  opacity: 0.4;
+  letter-spacing: 0.2em;
+}
+
+.hud-value {
+  font-size: 10px;
+  color: rgba(160, 220, 255, 0.95);
+}
+
+.hud-divider {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(
+    to bottom,
+    rgba(120, 190, 255, 0.15),
+    rgba(120, 190, 255, 0.55),
+    rgba(120, 190, 255, 0.15)
+  );
+}
+
+@keyframes autopilot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(80, 255, 160, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(80, 255, 160, 0.5);
+  }
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/BroadcastDialog/BroadcastDialog.css">.bd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 4, 12, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  pointer-events: auto;
+}
+
+.bd-dialog {
+  background: rgba(0, 8, 18, 0.97);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  border-radius: 6px;
+  padding: 28px 32px;
+  min-width: 340px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 40px rgba(0, 200, 255, 0.12);
+  font-family: monospace;
+}
+
+.bd-title {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 200, 255, 0.9);
+  text-align: center;
+  font-weight: bold;
+}
+
+.bd-dialogue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bd-line {
+  font-size: 12px;
+  color: rgba(0, 200, 255, 0.75);
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+
+.bd-audio-btn {
+  align-self: center;
+  padding: 6px 18px;
+  background: rgba(0, 200, 255, 0.08);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  border-radius: 4px;
+  color: #00cfff;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-audio-btn:hover {
+  background: rgba(0, 200, 255, 0.16);
+  border-color: rgba(0, 200, 255, 0.7);
+}
+
+.bd-close {
+  align-self: center;
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(0, 200, 255, 0.4);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-close:hover {
+  color: rgba(0, 200, 255, 0.7);
+  border-color: rgba(0, 200, 255, 0.4);
+}
+
+.bd-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(0, 200, 255, 0.15);
+  padding-top: 12px;
+}
+
+.bd-options-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 200, 255, 0.5);
+}
+
+.bd-option-btn {
+  align-self: flex-start;
+  padding: 5px 14px;
+  background: rgba(0, 200, 255, 0.06);
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  border-radius: 4px;
+  color: #00cfff;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-option-btn:hover {
+  background: rgba(0, 200, 255, 0.14);
+  border-color: rgba(0, 200, 255, 0.6);
+}
+
+.bd-docking-response {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.bd-docking-approved {
+  color: rgba(0, 255, 136, 0.85);
+}
+
+.bd-docking-denied {
+  color: rgba(255, 80, 80, 0.85);
+}
+
+.bd-nav-btn {
+  margin-top: 4px;
+  align-self: flex-start;
+  padding: 5px 14px;
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  border-radius: 4px;
+  color: #00ff88;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.bd-nav-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 136, 0.16);
+  border-color: rgba(0, 255, 136, 0.7);
+}
+
+.bd-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/RadioHUD/RadioHUD.css">.radio-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: fixed;
+  top: 56px;
+  right: 0;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 6px 14px;
+}
+
+.radio-label {
+  color: rgba(0, 200, 255, 0.8);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+
+.radio-no-signal {
+  color: rgba(0, 200, 255, 0.4);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-family: monospace;
+}
+
+.radio-signal-btn {
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(0, 200, 255, 0.8);
+  border: 1px solid rgba(0, 200, 255, 0.5);
+  font-family: monospace;
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 0.06em;
+  text-align: left;
+  border-radius: 3px;
+}
+
+.radio-signal-btn:hover {
+  border-color: rgba(0, 200, 255, 0.9);
+  background: rgba(0, 200, 255, 0.08);
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/MessageDialog/MessageDialog.css">.md-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.md-dialog {
+  background: var(--hud-bg-dialog);
+  border: 1px solid var(--hud-border);
+  border-radius: 6px;
+  padding: 28px 36px;
+  font-family: var(--hud-font-mono);
+  min-width: 360px;
+  max-width: 500px;
+  box-shadow: 0 0 40px var(--hud-glow);
+  pointer-events: auto;
+}
+
+/* ── Platform themes ──────────────────────────────────────────────────────── */
+/* REACH (default) — clean cyan, utilitarian */
+.md-dialog[data-platform='REACH'] {
+  --platform-color: #00c8c8;
+  --hud-border: rgba(0, 200, 200, 0.35);
+  --hud-border-strong: rgba(0, 200, 200, 0.7);
+  --hud-glow: rgba(0, 200, 200, 0.15);
+  --hud-text: #00c8c8;
+  --hud-text-muted: rgba(0, 200, 200, 0.55);
+  --hud-text-dim: rgba(0, 200, 200, 0.35);
+  --hud-divider: rgba(0, 200, 200, 0.2);
+}
+
+/* HERALD — amber-gold, authoritative, Concordat-aligned */
+.md-dialog[data-platform='HERALD'] {
+  --platform-color: #cc8822;
+  --hud-border: rgba(204, 136, 34, 0.45);
+  --hud-border-strong: rgba(204, 136, 34, 0.75);
+  --hud-glow: rgba(204, 136, 34, 0.2);
+  --hud-text: #cc8822;
+  --hud-text-muted: rgba(204, 136, 34, 0.6);
+  --hud-text-dim: rgba(204, 136, 34, 0.38);
+  --hud-divider: rgba(204, 136, 34, 0.22);
+}
+
+/* OPENLINE — aggressive orange, decentralised cooperative */
+.md-dialog[data-platform='OPENLINE'] {
+  --platform-color: #ff5500;
+  --hud-border: rgba(255, 85, 0, 0.4);
+  --hud-border-strong: rgba(255, 85, 0, 0.7);
+  --hud-glow: rgba(255, 85, 0, 0.18);
+  --hud-text: #ff5500;
+  --hud-text-muted: rgba(255, 85, 0, 0.6);
+  --hud-text-dim: rgba(255, 85, 0, 0.38);
+  --hud-divider: rgba(255, 85, 0, 0.2);
+}
+
+/* MERIDIAN — navigational green, AresNav integration */
+.md-dialog[data-platform='MERIDIAN'] {
+  --platform-color: #33bb66;
+  --hud-border: rgba(51, 187, 102, 0.4);
+  --hud-border-strong: rgba(51, 187, 102, 0.7);
+  --hud-glow: rgba(51, 187, 102, 0.18);
+  --hud-text: #33bb66;
+  --hud-text-muted: rgba(51, 187, 102, 0.58);
+  --hud-text-dim: rgba(51, 187, 102, 0.36);
+  --hud-divider: rgba(51, 187, 102, 0.2);
+}
+
+/* BROADCAST — muted purple-grey, degraded relay fallback, uncanny */
+.md-dialog[data-platform='BROADCAST'] {
+  --platform-color: #9988bb;
+  --hud-border: rgba(153, 136, 187, 0.38);
+  --hud-border-strong: rgba(153, 136, 187, 0.65);
+  --hud-glow: rgba(153, 136, 187, 0.14);
+  --hud-text: #9988bb;
+  --hud-text-muted: rgba(153, 136, 187, 0.55);
+  --hud-text-dim: rgba(153, 136, 187, 0.34);
+  --hud-divider: rgba(153, 136, 187, 0.2);
+}
+
+/* ── Platform header block ────────────────────────────────────────────────── */
+.md-platform-header {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--platform-color);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hud-divider);
+  line-height: 1.6;
+}
+
+.md-platform-label {
+  font-weight: bold;
+}
+
+.md-platform-sep {
+  opacity: 0.5;
+}
+
+.md-platform-status {
+  opacity: 0.85;
+}
+
+.md-platform-subline {
+  margin-top: 2px;
+  opacity: 0.6;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+}
+
+/* ── Message metadata ─────────────────────────────────────────────────────── */
+.md-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.md-from {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--hud-text-muted);
+  text-transform: uppercase;
+}
+
+.md-date {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--hud-text-dim);
+}
+
+.md-subject {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--hud-text);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.md-divider {
+  height: 1px;
+  background: var(--hud-divider);
+  margin-bottom: 18px;
+}
+
+.md-body {
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--hud-text-muted);
+  white-space: pre-wrap;
+  margin-bottom: 24px;
+}
+
+.md-close {
+  display: block;
+  margin: 0 auto;
+  padding: 8px 24px;
+  font-family: var(--hud-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  background: transparent;
+  color: var(--hud-text-dim);
+  border: 1px solid var(--hud-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.md-close:hover {
+  color: var(--hud-text);
+  border-color: var(--hud-border-strong);
+}
+
+.md-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: #ff9900;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: inherit;
+}
+
+.md-link:hover {
+  color: #ffbb44;
+}
+
+/* ── Per-platform structural identities ──────────────────────────────────────── */
+
+/* HERALD — sharp corners, corporate authority, logo block top, version block bottom */
+.md-dialog[data-platform='HERALD'] {
+  border-radius: 0;
+  border-width: 2px;
+  background: rgba(8, 6, 0, 0.98);
+}
+
+.md-dialog[data-platform='HERALD']::before {
+  content: '◉ HERALD COMMS';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--hud-text);
+  opacity: 0.7;
+  border-bottom: 1px solid var(--hud-divider);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.md-dialog[data-platform='HERALD']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--hud-text-dim);
+  text-align: right;
+  margin-top: 12px;
+}
+
+.md-dialog[data-platform='HERALD'] .md-close {
+  border-radius: 0;
+}
+
+/* OPENLINE — near-sharp, anonymous ethos */
+.md-dialog[data-platform='OPENLINE'] {
+  border-radius: 2px;
+}
+
+.md-dialog[data-platform='OPENLINE'] .md-close {
+  border-radius: 0;
+}
+
+/* MERIDIAN — navigation system, logo block top-right, version block bottom-right */
+.md-dialog[data-platform='MERIDIAN'] {
+  border-radius: 4px;
+  background: rgba(0, 10, 4, 0.98);
+}
+
+.md-dialog[data-platform='MERIDIAN']::before {
+  content: '⊕ MERIDIAN / ARESNAV';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--hud-text);
+  opacity: 0.7;
+  text-align: right;
+  border-bottom: 1px solid var(--hud-divider);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.md-dialog[data-platform='MERIDIAN']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--hud-text-dim);
+  text-align: right;
+  margin-top: 12px;
+}
+
+/* BROADCAST — degraded relay, slightly faded */
+.md-dialog[data-platform='BROADCAST'] {
+  opacity: 0.88;
+  filter: contrast(0.88) saturate(0.75);
+}
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/InboxHUD/InboxHUD.css">/* ── Base button — defaults to REACH (cyan) ──────────────────────────────────── */
+.inbox-hud-btn {
+  --btn-text:        rgba(0, 200, 200, 0.55);
+  --btn-text-full:   #00c8c8;
+  --btn-border:      rgba(0, 200, 200, 0.3);
+  --btn-border-on:   rgba(0, 200, 200, 0.7);
+  --btn-glow:        rgba(0, 200, 200, 0.15);
+  --btn-glow-strong: rgba(0, 200, 200, 0.4);
+  --btn-badge-bg:    #00c8c8;
+
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  background: var(--hud-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 0px;
+  color: var(--btn-text);
+  font-family: var(--hud-font);
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 40;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.inbox-hud-btn:hover {
+  border-color: var(--btn-border-on);
+  color: var(--btn-text-full);
+}
+
+.inbox-hud-btn--unread {
+  color: var(--btn-text-full);
+  box-shadow: 0 0 12px var(--btn-glow);
+  animation: inbox-pulse 2s ease-in-out infinite;
+}
+
+/* ── Platform overrides ───────────────────────────────────────────────────────── */
+
+.inbox-hud-btn[data-platform='HERALD'] {
+  --btn-text:        rgba(204, 136, 34, 0.58);
+  --btn-text-full:   #cc8822;
+  --btn-border:      rgba(204, 136, 34, 0.32);
+  --btn-border-on:   rgba(204, 136, 34, 0.72);
+  --btn-glow:        rgba(204, 136, 34, 0.18);
+  --btn-glow-strong: rgba(204, 136, 34, 0.45);
+  --btn-badge-bg:    #cc8822;
+}
+
+.inbox-hud-btn[data-platform='OPENLINE'] {
+  --btn-text:        rgba(255, 85, 0, 0.58);
+  --btn-text-full:   #ff5500;
+  --btn-border:      rgba(255, 85, 0, 0.32);
+  --btn-border-on:   rgba(255, 85, 0, 0.72);
+  --btn-glow:        rgba(255, 85, 0, 0.18);
+  --btn-glow-strong: rgba(255, 85, 0, 0.45);
+  --btn-badge-bg:    #ff5500;
+}
+
+.inbox-hud-btn[data-platform='MERIDIAN'] {
+  --btn-text:        rgba(51, 187, 102, 0.58);
+  --btn-text-full:   #33bb66;
+  --btn-border:      rgba(51, 187, 102, 0.32);
+  --btn-border-on:   rgba(51, 187, 102, 0.72);
+  --btn-glow:        rgba(51, 187, 102, 0.18);
+  --btn-glow-strong: rgba(51, 187, 102, 0.45);
+  --btn-badge-bg:    #33bb66;
+}
+
+/* ── Button internals ─────────────────────────────────────────────────────────── */
+
+.inbox-hud-platform-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.inbox-hud-platform-name {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  font-family: var(--hud-font-mono);
+  opacity: 0.85;
+}
+
+.inbox-hud-badge {
+  background: var(--btn-badge-bg);
+  color: #000;
+  font-size: 9px;
+  font-weight: bold;
+  font-family: var(--hud-font);
+  border-radius: 8px;
+  padding: 1px 5px;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.inbox-hud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--btn-text-full);
+  box-shadow: 0 0 8px var(--btn-glow-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inbox-hud-dot::after {
+  content: '';
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* ── Pulse animation ──────────────────────────────────────────────────────────── */
+@keyframes inbox-pulse {
+  0%, 100% { box-shadow: 0 0 8px var(--btn-glow); }
+  50%       { box-shadow: 0 0 18px var(--btn-glow-strong); }
+}
+
+/* ── Per-platform badge/dot shapes ───────────────────────────────────────────── */
+
+/* HERALD — square badges, authoritative */
+.inbox-hud-btn[data-platform='HERALD'] .inbox-hud-badge { border-radius: 0; }
+.inbox-hud-btn[data-platform='HERALD'] .inbox-hud-dot   { border-radius: 0; }
+
+/* OPENLINE — almost-square, stripped-down */
+.inbox-hud-btn[data-platform='OPENLINE'] .inbox-hud-badge { border-radius: 1px; }
+.inbox-hud-btn[data-platform='OPENLINE'] .inbox-hud-dot   { border-radius: 1px; }
+
+/* MERIDIAN — circular, navigational */
+.inbox-hud-btn[data-platform='MERIDIAN'] .inbox-hud-badge { border-radius: 50%; }
+.inbox-hud-btn[data-platform='MERIDIAN'] .inbox-hud-dot   { border-radius: 50%; }
+</style><style type="text/css" data-vite-dev-id="/Users/timsimms/Documents/GitHub/crubbs-pi/my-r3f-app/src/components/RadioChatterStream.css">.rcs-container {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+  max-width: 340px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.rcs-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  text-align: right;
+  animation: rcs-fade 8s ease forwards;
+  line-height: 1.5;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.rcs-icon {
+  width: 10px;
+  height: 9px;
+  color: rgba(0, 200, 255, 0.45);
+  flex-shrink: 0;
+  margin-right: 5px;
+  position: relative;
+  top: 0px;
+}
+
+.rcs-id {
+  font-family: monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(0, 200, 255, 0.55);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rcs-sep {
+  font-family: monospace;
+  font-size: 9px;
+  color: rgba(0, 200, 255, 0.25);
+  margin: 0 4px;
+}
+
+.rcs-text {
+  font-family: monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(180, 220, 240, 0.45);
+  text-align: right;
+}
+
+@keyframes rcs-fade {
+  0%   { opacity: 0; transform: translateX(6px); }
+  8%   { opacity: 1; transform: translateX(0); }
+  72%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+</style></head>
+  <body>
+    <div id="root"><div style="width: 100vw; height: 100vh; overflow: hidden;"><div style="position: relative; width: 100vw; height: 100vh; overflow: hidden; pointer-events: auto; background: rgb(0, 0, 0); touch-action: none;"><div style="width: 100%; height: 100%;"><canvas data-engine="three.js r182" width="1088" height="952" style="display: block; width: 1088px; height: 952px;"></canvas></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(283.768px, 411.593px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15874164;"><div style="position: absolute; transform: none;"><div style="display: none; color: rgb(255, 102, 102); background: rgba(0, 0, 0, 0.75); padding: 3px 10px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(255, 80, 80, 0.6); letter-spacing: 0.03em;">Power Source</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(283.768px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15874164;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(221.548px, 411.595px, 0px) scale(1); transform-origin: 0px 0px; z-index: 12962555; display: block;"><div style="position: absolute; transform: none;"><div style="display: none; color: rgb(255, 102, 102); background: rgba(0, 0, 0, 0.75); padding: 3px 10px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(255, 80, 80, 0.6); letter-spacing: 0.03em;">Power Source</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(221.548px, 411.594px, 0px) scale(1); transform-origin: 0px 0px; z-index: 12962555; display: block;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(282.939px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15868552;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(285.577px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15888384;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(291.536px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15876210;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(276.917px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15878012;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(300.062px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; z-index: 15884310; display: block;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(291.614px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15897317;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(281.332px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15859670;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(278.451px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15888127;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(287.657px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15862161;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(287.424px, 411.592px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 15897157;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(193.263px, 411.593px, 0px) scale(1); transform-origin: 0px 0px; z-index: 15264529; display: block;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(478.995px, 411.593px, 0px) scale(1); transform-origin: 0px 0px; z-index: 15487380; display: block;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(0, 255, 136); background: rgba(0, 0, 0, 0.8); padding: 5px 14px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 136, 0.6); letter-spacing: 0.08em; text-shadow: rgba(0, 255, 136, 0.8) 0px 0px 8px;">RadioBeacon</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(295.831px, 411.595px, 0px) scale(1); transform-origin: 0px 0px; z-index: 15901950; display: block;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="display: none; color: rgb(255, 255, 255); background: rgba(0, 0, 0, 0.7); padding: 3px 10px; border-radius: 4px; font-size: 13px; font-family: monospace; white-space: nowrap; pointer-events: none; border: 1px solid rgba(0, 255, 255, 0.5); letter-spacing: 0.03em;"></div></div></div><div style="position: absolute; top: 0px; left: 0px; pointer-events: none; overflow: hidden; z-index: 12996130; width: 1088px; height: 952px; perspective: 620.335px; display: block;"><div style="position: absolute; top: 0px; left: 0px; width: 1088px; height: 952px; transform-style: preserve-3d; pointer-events: none; transform: translateZ(620.335px) matrix3d(0.640963, -0.0792653, -0.763468, 0, 0, -0.994654, 0.103268, 0, 0.767571, 0.0661908, 0.637537, 0, -1.92894e+06, -500599, -4.8217e+06, 1) translate(544px, 476px);"><div style="position: absolute; pointer-events: auto; transform: translate(-50%, -50%) matrix3d(0.025, 0, 0, 0, 0, 0, 0.025, 0, 0, 0.025, 0, 0, 6.28737e+06, 104376, -1.61721e+07, 1);"><div><div class="no-fly-label" style="opacity: 0;">NO FLY ZONE</div></div></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1735.8px, 329.273px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16777259; display: none;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="color: rgba(0, 255, 255, 0.25); font-family: monospace; font-size: 12px; white-space: nowrap; pointer-events: none; text-shadow: rgba(0, 255, 255, 0.5) 0px 0px 8px;">95,999 u</div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(694.371px, 544.878px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16768185;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">DEPOT-KAPPA</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-155.001px, 340.697px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16765199;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">CERULEAN</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(3294.14px, 604.163px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16770269; display: none;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">ACHERON-2</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(52.8935px, 449.326px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16771268;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">CETUS-3</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1458.36px, 728.001px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16773332; display: none;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV JUNO</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(491.493px, 479.816px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16766332;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">ACHERON-2</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(686.456px, 348.922px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16769722;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">CERULEAN</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(2338.83px, 138.189px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16768293;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">VAGRANT III</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(226.138px, 618.821px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16769207;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">RELAY THETA</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-153.115px, 404.546px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16768998;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">SHUTTLE-4</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-115.476px, 316.822px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16761499;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">TC NESTOR</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(745.756px, 387.713px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16767813;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">VESSEL YANTARA</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(489.207px, 401.216px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16761917;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">TANKER-BRAVO</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(487.046px, 496.453px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16763773;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">WAYPOINT-9</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-1709.97px, 1353.77px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16772469;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">RELAY-11</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(597.936px, 470.651px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16763256;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">BRASK-ACTUAL</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-988.572px, 314.931px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16765321;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">TC NESTOR</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(173.796px, 278.989px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16764051;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV HELION</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1535.72px, 380.729px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16769864;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV JUNO</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-1941.36px, 544.105px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16764915;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">RELAY-11</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(3743.32px, -321.098px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16772046;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MERIDIAN</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-363.005px, 484.215px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16768313;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">RELAY THETA</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(870.813px, 319.372px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16767403;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">THE LONG HAUL</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(261.172px, 340.637px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16767146;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">SIRIX STATION</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(927.764px, 468.638px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16764981;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">FERRY-14</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(517.011px, 400.161px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16763521;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">COLDFIRE</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-596.425px, 566.62px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16769603;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">CERULEAN</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(420.462px, 338.948px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16768813;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV PALLOR</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(628.076px, 440.965px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16763881;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">PL IRONSIDE</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(222.632px, 466.25px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16761385;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">BRASK-ACTUAL</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(4155.03px, 173.292px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16768816;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">VAGRANT III</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(796.084px, 428.915px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16767863;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV HELION</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(477.035px, 419.727px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16769767;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">TANKER-BRAVO</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-19.8019px, 272.283px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16763664;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV LUCENT</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(876.38px, 512.135px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16760165;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">CETUS-3</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(266.398px, 215.509px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16768467;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV HELION</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(560.912px, 493.111px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16764508;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">OUTRIDER-7</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(493.066px, 417.468px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16765909;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">STATION MINERVA</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1390.13px, 547.93px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16759564;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV HELION</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1387.95px, 508.322px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16765851;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">ORION-7</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1747.77px, 414.531px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16764852;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">FERRY-14</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1556.4px, 538.992px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16764498;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">ACHERON-2</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1287.43px, 609.698px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16766077;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">IKORA</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-123.86px, 496.704px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16766765;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">KASTOR</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-32.4136px, 1946.7px, 0px) scale(1); transform-origin: 0px 0px; display: block; z-index: 16774805;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">STELLAROSA</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(372.218px, 448.651px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16760636;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">DRIFT-3</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(-909.216px, 410.674px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16763342;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">SABLE-WING</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(530.733px, 638.078px, 0px) scale(1); transform-origin: 0px 0px; z-index: 16771998;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">PL IRONSIDE</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(1457.87px, 655.769px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16775268;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV HELION</span></div></div></div><div style="position: absolute; top: 0px; left: 0px; transform: translate3d(999.182px, 336.381px, 0px) scale(1); transform-origin: 0px 0px; display: none; z-index: 16763239;"><div style="position: absolute; transform: translate3d(-50%, -50%, 0px);"><div style="padding: 3px 7px 4px; background: rgba(18, 3, 3, 0.82); border: 1px solid rgba(255, 45, 45, 0.38); font-family: &quot;Space Grotesk&quot;, Orbitron, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; gap: 1px;"><span class="db-word">DISTRESS</span><span class="db-name">MV HELION</span></div></div></div></div><div style="position: fixed; inset: 0px; background: rgb(0, 0, 0); opacity: 0.0180367; pointer-events: none;"></div><div class="power-hud" aria-live="polite"><div class="power-hud-row" style="color: rgba(255, 40, 140, 0.85);"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>0<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert" aria-hidden="true" style="color: rgba(255, 40, 140, 0.85);"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg><span style="color: rgba(255, 40, 140, 0.85); font-size: 10px; letter-spacing: 0.08em;">WARNING</span></div><div class="power-hud-row" style="color: rgb(0, 200, 255);"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>100</div><div class="power-hud-row" style="color: rgb(0, 200, 255);"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-droplets" aria-hidden="true"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"></path></svg>89</div><div class="power-hud-row" style="color: rgb(0, 200, 255);"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wind" aria-hidden="true"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"></path><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"></path><path d="M9.8 4.4A2 2 0 1 1 11 8H2"></path></svg>87</div><div class="power-hud-row" style="color: rgb(0, 200, 255);"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-gauge" aria-hidden="true"><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></svg>0.0g</div><div class="power-hud-row" style="color: rgb(0, 200, 255);"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path></svg>58.1 m/s</div></div><div style="position: fixed; inset: 0px; pointer-events: none; overflow: hidden;"><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="mhud-box"></div><div class="mhud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 170, 0); white-space: nowrap; text-shadow: rgba(255, 170, 0, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div></div><div style="position: fixed; inset: 0px; pointer-events: none; overflow: hidden;"><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 211.584px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">DEEP HAUL [3253.2km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 391.753px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">GHOST SIG [3755.4km]</div></div><div style="position: absolute; pointer-events: none; display: block; left: 372.934px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">MINING VESSEL [2828.0km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 23px; top: 437.934px;"><div class="dshud-box" style="width: 10px; height: 10px; background: rgba(255, 68, 68, 0.8); box-shadow: rgba(255, 68, 68, 0.9) 0px 0px 6px; transform: rotate(45deg); margin: 2px;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">COMMERCIAL [3755.7km]</div></div><div style="position: absolute; pointer-events: none; display: block; left: 189.409px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">UNIDENTIFIED [3631.9km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 358.686px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">GHOST SIG [2991.6km]</div></div><div style="position: absolute; pointer-events: none; display: block; left: 628.055px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">MINING VESSEL [3699.2km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 23px; top: 449.123px;"><div class="dshud-box" style="width: 10px; height: 10px; background: rgba(255, 68, 68, 0.8); box-shadow: rgba(255, 68, 68, 0.9) 0px 0px 6px; transform: rotate(45deg); margin: 2px;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">GHOST SIG [2982.8km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 345.237px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">DEBRIS HAULER [2471.7km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 496.404px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">DEEP HAUL [3881.4km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 459.447px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">COMMERCIAL [3789.0km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 818.821px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">GHOST SIG [2642.5km]</div></div><div style="position: absolute; pointer-events: none; display: block; left: 23px; top: 413.376px;"><div class="dshud-box" style="width: 10px; height: 10px; background: rgba(255, 68, 68, 0.8); box-shadow: rgba(255, 68, 68, 0.9) 0px 0px 6px; transform: rotate(45deg); margin: 2px;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">MINING VESSEL [3805.6km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: block; left: 154.279px; top: 397.596px;"><div class="dshud-box" style="width: 28px; height: 28px; border: 1px solid rgb(255, 68, 68); box-shadow: rgba(255, 68, 68, 0.5) 0px 0px 8px, rgba(255, 68, 68, 0.1) 0px 0px 4px inset;"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;">DEEP HAUL [3583.8km]</div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div><div style="position: absolute; pointer-events: none; display: none;"><div class="dshud-box"></div><div class="dshud-label" style="font-family: monospace; font-size: 10px; color: rgb(255, 68, 68); white-space: nowrap; text-shadow: rgba(255, 68, 68, 0.8) 0px 0px 4px; margin-top: 3px;"></div></div></div><div style="position: fixed; inset: 0px; pointer-events: none; overflow: hidden;"></div><div class="button-panel"><div style="display: flex; flex-direction: row; align-items: center; gap: 4px; width: 100px;"><button class="hud-btn" style="background: rgba(0, 200, 255, 0); color: rgb(0, 207, 255); cursor: pointer; user-select: none; padding: 1px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flashlight" aria-hidden="true"><path d="M12 13v1"></path><path d="M17 2a1 1 0 0 1 1 1v4a3 3 0 0 1-.6 1.8l-.6.8A4 4 0 0 0 16 12v8a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-8a4 4 0 0 0-.8-2.4l-.6-.8A3 3 0 0 1 6 7V3a1 1 0 0 1 1-1z"></path><path d="M6 6h12"></path></svg></button><div style="display: flex; gap: 4px; justify-content: center;"><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div></div></div><div style="display: flex; flex-direction: row; align-items: center; gap: 4px; width: 100px;"><button class="hud-btn" style="background: rgba(60, 60, 60, 0); color: rgb(136, 136, 136); cursor: pointer; user-select: none; padding: 1px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-magnet" aria-hidden="true"><path d="m12 15 4 4"></path><path d="M2.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.029-6.029a1 1 0 1 1 3 3l-6.029 6.029a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.365-6.367A1 1 0 0 0 8.716 4.282z"></path><path d="m5 8 4 4"></path></svg></button><div style="display: flex; gap: 4px; justify-content: center;"><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div></div></div><div style="display: flex; flex-direction: row; align-items: center; gap: 4px; width: 100px;"><button class="hud-btn" style="background: rgba(0, 200, 255, 0); color: rgb(0, 207, 255); cursor: pointer; user-select: none; padding: 1px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hard-drive" aria-hidden="true"><path d="M10 16h.01"></path><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><path d="M21.946 12.013H2.054"></path><path d="M6 16h.01"></path></svg></button><div style="display: flex; gap: 4px; justify-content: center;"><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(0, 207, 255); cursor: pointer; border: 1px solid rgba(0, 207, 255, 0.55); transition: background 0.12s, border-color 0.12s;"></div></div></div><div style="display: flex; flex-direction: row; align-items: center; gap: 4px; width: 100px;"><button class="hud-btn" style="background: rgba(60, 60, 60, 0); color: rgb(136, 136, 136); cursor: pointer; user-select: none; padding: 1px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-radar" aria-hidden="true"><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"></path><path d="M4 6h.01"></path><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"></path><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"></path><path d="M12 18h.01"></path><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"></path><circle cx="12" cy="12" r="2"></circle><path d="m13.41 10.59 5.66-5.66"></path></svg></button><div style="display: flex; gap: 4px; justify-content: center;"><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div></div></div><div style="display: flex; flex-direction: row; align-items: center; gap: 4px; width: 100px;"><button class="hud-btn" style="background: rgba(60, 60, 60, 0); color: rgb(136, 136, 136); cursor: pointer; user-select: none; padding: 1px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-audio-lines" aria-hidden="true"><path d="M2 10v3"></path><path d="M6 6v11"></path><path d="M10 3v18"></path><path d="M14 8v7"></path><path d="M18 5v13"></path><path d="M22 10v3"></path></svg></button><div style="display: flex; gap: 4px; justify-content: center;"><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div></div></div><div style="display: flex; flex-direction: row; align-items: center; gap: 4px; width: 100px;"><button class="hud-btn" style="background: rgba(60, 60, 60, 0); color: rgb(136, 136, 136); cursor: pointer; user-select: none; padding: 1px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-radiation" aria-hidden="true"><path d="M12 12h.01"></path><path d="M14 15.4641a4 4 0 0 1-4 0L7.52786 19.74597 A 1 1 0 0 0 7.99303 21.16211 10 10 0 0 0 16.00697 21.16211 1 1 0 0 0 16.47214 19.74597z"></path><path d="M16 12a4 4 0 0 0-2-3.464l2.472-4.282a1 1 0 0 1 1.46-.305 10 10 0 0 1 4.006 6.94A1 1 0 0 1 21 12z"></path><path d="M8 12a4 4 0 0 1 2-3.464L7.528 4.254a1 1 0 0 0-1.46-.305 10 10 0 0 0-4.006 6.94A1 1 0 0 0 3 12z"></path></svg></button><div style="display: flex; gap: 4px; justify-content: center;"><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div></div></div><div style="display: flex; flex-direction: row; align-items: center; gap: 4px; width: 100px;"><button class="hud-btn" style="background: rgba(60, 60, 60, 0); color: rgb(136, 136, 136); cursor: pointer; user-select: none; padding: 1px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-music" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></button><div style="display: flex; gap: 4px; justify-content: center;"><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div><div style="width: 7px; height: 7px; border-radius: 50%; background: rgb(30, 30, 30); cursor: pointer; border: 1px solid rgba(100, 100, 100, 0.35); transition: background 0.12s, border-color 0.12s;"></div></div></div></div><div class="hud-bar-wrapper "><div class="hud-bar"><div class="nav-target-group"><div class="nav-target-label">Nav Target</div><button class="nav-target-btn">—</button></div><div class="nav-target-group"><div class="nav-target-label">Autopilot</div><button class="autopilot-btn ">DISENGAGED</button></div><div class="hud-divider"></div><div class="hud-metrics nav-metrics"><div class="hud-metric"><div class="hud-label">SOI</div><span class="hud-value nav-orbit">Mars</span></div><div class="hud-divider"></div><div class="hud-metric" style="min-width: 50px;"><div class="hud-label">Altitude</div><span class="hud-value nav-alt">78412</span><span class="hud-value nav-apses-target">[68945]</span></div><div class="hud-divider"></div><div class="hud-metric"><div class="hud-label">Apsis</div><div class="hud-metric-inline"><div class="hud-label">Per</div><span class="hud-value nav-periapsis">0</span></div><div class="hud-metric-inline"><div class="hud-label">Apo</div><span class="hud-value nav-apoapsis">90705</span></div></div><div class="hud-divider"></div><div class="hud-metric"><div class="hud-label">Approach</div><span class="hud-value nav-approach">PERI -78412</span></div></div></div></div><button class="inbox-hud-btn inbox-hud-btn--unread" data-platform="HERALD" title="Open HERALD messages"><span class="inbox-hud-platform-icon" aria-hidden="true">◉</span><span class="inbox-hud-platform-name">HERALD</span><span class="inbox-hud-badge">2</span></button><div class="thrust-panel" style="position: fixed; bottom: 8px; right: 140px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; font-family: monospace; font-size: 12px; background: rgba(0, 0, 0, 0.15); backdrop-filter: blur(10px); padding: 8px 16px; border: 1px solid rgba(0, 200, 255, 0.23); user-select: none;"><div class="thrust-label-text" style="color: rgb(0, 207, 255); letter-spacing: 1px; font-weight: bold;">THRUST: 1.0x</div><input min="0.5" max="3" step="0.5" class="thrust-slider" type="range" value="1"><div class="thrust-ticks" style="display: flex; justify-content: space-between; width: 200px; color: rgb(102, 102, 102); font-size: 10px;"><span>0.5×</span><span>3×</span></div></div><div style="position: fixed; inset: 0px; background: black; opacity: 0; transition: opacity 3s ease-in; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; pointer-events: none; z-index: 300;"></div><div class="debug-cascade-panel"><div class="debug-cascade-label">DEBUG: CASCADE PHASE</div><div class="debug-cascade-track"><input min="0" max="2" step="1" class="debug-cascade-slider" type="range" value="0"><div class="debug-cascade-ticks"><span style="color: rgb(255, 255, 255);">PRE</span><span style="color: rgba(255, 255, 255, 0.35);">CASCADE</span><span style="color: rgba(255, 255, 255, 0.35);">POST</span></div></div></div><style>
+  @keyframes beaconPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(0,255,136,0.4); }
+    50%       { box-shadow: 0 0 18px rgba(0,255,136,0.9); }
+  }
+  .thrust-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 200px;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, rgba(0,200,255,0.8) 60.49%, rgba(0,0,0,0.8) 60.5%, rgba(255,40,140,0.85) 63%);
+    outline: none;
+    cursor: pointer;
+  }
+  .thrust-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #00cfff;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.25);
+  }
+  .thrust-slider.danger::-webkit-slider-thumb {
+    background: rgba(255,40,140,0.85);
+    box-shadow: 0 0 7px rgba(255,50,50,0.9);
+  }
+  .thrust-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #00cfff;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.25);
+  }
+  .thrust-slider.danger::-moz-range-thumb {
+    background: rgba(255,40,140,0.85);
+    box-shadow: 0 0 7px rgba(255,40,140,0.85);
+  }
+  .prox-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 200px;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, rgba(68,255,204,0.8) var(--prox-pct, 23%), rgba(0,0,0,0.6) 0%);
+    outline: none;
+    cursor: pointer;
+  }
+  .prox-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #44ffcc;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 6px rgba(68,255,204,0.7);
+  }
+  .prox-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #44ffcc;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 6px rgba(68,255,204,0.7);
+  }
+
+  .debug-cascade-panel {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 9999;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    padding: 8px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: all;
+  }
+  .debug-cascade-label {
+    font-family: monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+  }
+  .debug-cascade-track {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .debug-cascade-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 160px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.2);
+    outline: none;
+    cursor: pointer;
+  }
+  .debug-cascade-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,200,80,0.9);
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .debug-cascade-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,200,80,0.9);
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .debug-cascade-ticks {
+    display: flex;
+    justify-content: space-between;
+    width: 160px;
+    font-family: monospace;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+  }
+
+  @media (pointer: coarse) {
+    .hud-btn  { width: 68px !important; padding: 4px 6px !important; font-size: 10px !important; }
+    .hud-row  { font-size: 10px !important; padding: 3px 6px !important; gap: 5px !important; }
+    .power-hud { font-size: 10px !important; gap: 3px !important; }
+    .thrust-panel { padding: 5px 10px !important; font-size: 10px !important; }
+    .thrust-label-text { font-size: 10px !important; }
+    .thrust-slider { width: 130px !important; }
+    .thrust-ticks { width: 130px !important; font-size: 8px !important; }
+    .prox-panel { padding: 4px 8px !important; font-size: 10px !important; }
+    .prox-label { font-size: 10px !important; }
+    .prox-slider { width: 130px !important; }
+    .prox-ticks { width: 130px !important; font-size: 8px !important; }
+    .listen-btn { font-size: 10px !important; padding: 4px 10px !important; }
+    .mob-move { grid-template-columns: 36px 36px 36px !important; grid-template-rows: 36px 36px !important; gap: 5px !important; }
+    .mob-move > div[style] { width: 36px !important; height: 36px !important; font-size: 13px !important; }
+    .mob-rot  { gap: 5px !important; }
+    .mob-rot  > div[style] { width: 36px !important; height: 36px !important; font-size: 13px !important; }
+  }
+</style></div></div>
+    <script type="module" src="./my-r3f-app_files/main.tsx"></script>
+  
+
+</body></html>

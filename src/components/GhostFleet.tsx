@@ -4,6 +4,7 @@ import {
   registerDriveSignature,
   unregisterDriveSignature,
 } from '../context/DriveSignatureRegistry';
+import { SHIP_LABELS, GHOST_FLEET_RADIUS } from '../config/ghostFleetConfig';
 
 interface GhostShipDef {
   id: string;
@@ -20,25 +21,12 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-const SHIP_LABELS = [
-  'FREIGHT SIG',
-  'UNREGISTERED',
-  'DRIVE TRACE',
-  'GHOST SIG',
-  'MINING VESSEL',
-  'DEEP HAUL',
-  'TRANSIT DRIVE',
-  'DEBRIS HAULER',
-  'COMMERCIAL',
-  'UNIDENTIFIED',
-];
-
 function buildGhostFleet(): GhostShipDef[] {
   const rand = seededRandom(42);
   const ships: GhostShipDef[] = [];
   for (let i = 0; i < 100; i++) {
     const angle = rand() * Math.PI * 2;
-    const r = 20000 + rand() * 180000; // spread across outer solar system
+    const r = -GHOST_FLEET_RADIUS + rand() * GHOST_FLEET_RADIUS; // spread across outer solar system
     ships.push({
       id: `ghost-${i}`,
       label: SHIP_LABELS[i % SHIP_LABELS.length],

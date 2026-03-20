@@ -106,7 +106,10 @@ export default function RailgunWarning({ shipPositionRef, shipGroupRef }: Railgu
     const now = clock.getElapsedTime();
 
     if (!shotActiveRef.current) {
-      if (distance <= RAILGUN_STRIKE_DISTANCE && now - lastStrikeRef.current >= RAILGUN_STRIKE_COOLDOWN) {
+      if (
+        distance <= RAILGUN_STRIKE_DISTANCE &&
+        now - lastStrikeRef.current >= RAILGUN_STRIKE_COOLDOWN
+      ) {
         const target = getEngineTarget();
         if (!target) return;
         lastStrikeRef.current = now;

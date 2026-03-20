@@ -10,7 +10,6 @@ import {
   autopilotYawRight,
   autopilotRadialOut,
   autopilotRadialIn,
-  disableAutopilot,
 } from '../context/AutopilotState';
 import { navTargetPosRef, navTargetIdRef } from '../context/NavTarget';
 import { shipPosRef } from '../context/ShipPos';
@@ -24,13 +23,8 @@ import {
 import { gravityBodies } from '../context/GravityRegistry';
 
 import { clearThrusts } from '../autopilot/clearThrusts';
-import { computeYaw } from '../autopilot/computeYaw';
 import { autopilotThrust } from '../autopilot/autopilotThrust';
-import { Approach } from '../autopilot/Approach';
 import { CoastToPeriapsis } from '../autopilot/CoastToPeriapsis';
-import { OrbitInsertion } from '../autopilot/OrbitInsertion';
-import { Circularize } from '../autopilot/Circularize';
-import { StabilizeOrbit } from '../autopilot/StabilizeOrbit';
 import { HyperbolicApproach, resetHyperbolicApproach } from '../autopilot/HyperbolicApproach';
 import { HyperbolicCapture } from '../autopilot/HyperbolicCapture';
 import { apLogReset, apLogPhaseChange, apLogStatus, apLogThrust } from '../autopilot/log';
@@ -68,7 +62,7 @@ export default function AutopilotController() {
         autopilotYawLeft,
         autopilotYawRight,
         autopilotRadialOut,
-        autopilotRadialIn,
+        autopilotRadialIn
       );
       return;
     }
@@ -87,7 +81,7 @@ export default function AutopilotController() {
       autopilotYawLeft,
       autopilotYawRight,
       autopilotRadialOut,
-      autopilotRadialIn,
+      autopilotRadialIn
     );
 
     // ── Per-frame shared state ────────────────────────────────────────────────
@@ -208,12 +202,12 @@ export default function AutopilotController() {
       const next = HyperbolicApproach(ctx);
       if (next) autopilotPhase.current = next;
 
-    // ── coast-to-periapsis: no thrust; pre-orient retrograde ─────────────────
+      // ── coast-to-periapsis: no thrust; pre-orient retrograde ─────────────────
     } else if (autopilotPhase.current === 'coast-to-periapsis') {
       const next = CoastToPeriapsis(ctx);
       if (next) autopilotPhase.current = next;
 
-    // ── hyperbolic-capture ───────────────────────────────────────────────────
+      // ── hyperbolic-capture ───────────────────────────────────────────────────
     } else if (autopilotPhase.current === 'hyperbolic-capture') {
       const next = HyperbolicCapture(ctx);
       if (next) autopilotPhase.current = next;
@@ -277,7 +271,7 @@ export default function AutopilotController() {
       autopilotThrustReverse.current,
       autopilotYawLeft.current,
       autopilotYawRight.current,
-      speed,
+      speed
     );
   });
 

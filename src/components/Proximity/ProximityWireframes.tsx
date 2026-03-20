@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { proximityScanOnRef, proximityScanRangeRef } from '../context/ProximityScan';
-import { getCollidables, type CollidableEntry } from '../context/CollisionRegistry';
-import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { SHIP_COLLISION_ID } from '../context/ShipState';
+import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
+import { getCollidables, type CollidableEntry } from '../../context/CollisionRegistry';
+import { minimapShipPosition } from '../../context/MinimapShipPosition';
+import { SHIP_COLLISION_ID } from '../../context/ShipState';
 
 // Module-level scratch — component is a singleton
 const _pos = new THREE.Vector3();
@@ -65,10 +65,10 @@ function buildShapeWireframe(entry: CollidableEntry): ShapeWireframe {
 
   if (shape.type === 'sphere') {
     // Use the right polyhedron for known asteroid types, sphere otherwise
-    if (id.startsWith('asteroid-0-'))      src = new THREE.IcosahedronGeometry(shape.radius, 1);
+    if (id.startsWith('asteroid-0-')) src = new THREE.IcosahedronGeometry(shape.radius, 1);
     else if (id.startsWith('asteroid-1-')) src = new THREE.OctahedronGeometry(shape.radius);
     else if (id.startsWith('asteroid-2-')) src = new THREE.DodecahedronGeometry(shape.radius);
-    else                                   src = new THREE.SphereGeometry(shape.radius, 10, 7);
+    else src = new THREE.SphereGeometry(shape.radius, 10, 7);
   } else if (shape.type === 'box') {
     const { halfExtents: h } = shape;
     src = new THREE.BoxGeometry(h.x * 2, h.y * 2, h.z * 2);
@@ -83,10 +83,13 @@ function buildShapeWireframe(entry: CollidableEntry): ShapeWireframe {
 
 function applyStyle(mat: THREE.LineBasicMaterial, ratio: number) {
   const color: THREE.ColorRepresentation =
-    ratio < 0.25 ? 'rgba(255,40,140,0.85)' :
-    ratio < 0.5  ? 'rgba(255,40,140,0.85)' :
-    ratio < 0.75 ? 'rgba(0,200,255,0.8)' :
-                   'rgba(0,200,255,0.8)';
+    ratio < 0.25
+      ? 'rgba(255,40,140,0.85)'
+      : ratio < 0.5
+        ? 'rgba(255,40,140,0.85)'
+        : ratio < 0.75
+          ? 'rgba(0,200,255,0.8)'
+          : 'rgba(0,200,255,0.8)';
   mat.color.set(color);
   mat.opacity = 0.2 + (1 - ratio) * 0.55;
 }

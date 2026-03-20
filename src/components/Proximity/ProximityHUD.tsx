@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { sceneCamera } from '../context/CameraRef';
-import { proximityScanOnRef, proximityScanRangeRef } from '../context/ProximityScan';
-import { getCollidables } from '../context/CollisionRegistry';
-import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { SHIP_COLLISION_ID, drainPower } from '../context/ShipState';
+import { sceneCamera } from '../../context/CameraRef';
+import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
+import { getCollidables } from '../../context/CollisionRegistry';
+import { minimapShipPosition } from '../../context/MinimapShipPosition';
+import { SHIP_COLLISION_ID, drainPower } from '../../context/ShipState';
 
 const EDGE_PAD = 30;
 

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import MobileControls from '../MobileControls';
-import { GForceOverlay } from '../../GForceOverlay';
+import { GForceOverlay } from './GForceOverlay';
 
 const OverlayLayer = memo(function OverlayLayer() {
   return (

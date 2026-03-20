@@ -14,8 +14,7 @@ import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
 
 // ── Scale helpers ──────────────────────────────────────────────────────────
 // Same power-law as SolarSystem.tsx, expressed in world-space units.
-const rW = (realKm: number) =>
-  Math.pow(realKm / 696_340, 0.2) * 100 * SOLAR_SYSTEM_SCALE;
+const rW = (realKm: number) => Math.pow(realKm / 696_340, 0.2) * 100 * SOLAR_SYSTEM_SCALE;
 
 const MARS_R = rW(3_390); // ~138 world units
 
@@ -24,8 +23,8 @@ const PHOBOS_R = Math.max(rW(11.267), 18) * 0.15;
 const DEIMOS_R = Math.max(rW(6.2), 12) * 0.15;
 
 // Orbital radii maintain real moon:Mars radius ratios
-const PHOBOS_ORBIT = (9_376 / 3_390) * MARS_R * 3;   // ×3 visual separation
-const DEIMOS_ORBIT = (23_459 / 3_390) * MARS_R * 3;  // ×3 visual separation
+const PHOBOS_ORBIT = (9_376 / 3_390) * MARS_R * 3; // ×3 visual separation
+const DEIMOS_ORBIT = (23_459 / 3_390) * MARS_R * 3; // ×3 visual separation
 
 // Real inclinations to the Mars equatorial plane (nearly zero)
 const PHOBOS_INC = 1.093 * (Math.PI / 180);
@@ -34,8 +33,8 @@ const DEIMOS_INC = 0.93 * (Math.PI / 180);
 // Physically derived for 1 Earth year = 6 real hours (21,600 s):
 //   Phobos period = 7.65 h  → game period = 21600 / (8766/7.65)  ≈ 18.8 s
 //   Deimos period = 30.3 h  → game period = 21600 / (8766/30.3)  ≈ 74.7 s
-const PHOBOS_ORBIT_SPEED = (2 * Math.PI) / 18.8 * 0.1;  // 10% of physically correct
-const DEIMOS_ORBIT_SPEED = (2 * Math.PI) / 74.7 * 0.1;  // 10% of physically correct
+const PHOBOS_ORBIT_SPEED = ((2 * Math.PI) / 18.8) * 0.1; // 10% of physically correct
+const DEIMOS_ORBIT_SPEED = ((2 * Math.PI) / 74.7) * 0.1; // 10% of physically correct
 
 // Gravity — artificially boosted (same approach as PLANETS in SolarSystem.tsx)
 const MOON_SURFACE_G = 2.0;
@@ -47,11 +46,9 @@ const moonGravParams = (worldRadius: number) => ({
 });
 
 // ── Procedural rocky surface texture ─────────────────────────────────────
-function buildRockyTexture(
-  seed: number,
-  base: [number, number, number]
-): THREE.CanvasTexture {
-  const W = 512, H = 256;
+function buildRockyTexture(seed: number, base: [number, number, number]): THREE.CanvasTexture {
+  const W = 512,
+    H = 256;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -60,7 +57,7 @@ function buildRockyTexture(
   // LCG so the texture is deterministic
   let s = seed >>> 0;
   const rand = () => {
-    s = ((s * 1664525 + 1013904223) >>> 0);
+    s = (s * 1664525 + 1013904223) >>> 0;
     return s / 0xffffffff;
   };
 
@@ -75,9 +72,9 @@ function buildRockyTexture(
     const r = rand() * 22 + 2;
     const dk = Math.floor(rand() * 35);
     const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
-    gr.addColorStop(0,   `rgba(${r0 - dk},${g0 - dk},${b0 - dk},0.65)`);
-    gr.addColorStop(0.65,`rgba(${r0 - dk},${g0 - dk},${b0 - dk},0.20)`);
-    gr.addColorStop(1,   'rgba(0,0,0,0)');
+    gr.addColorStop(0, `rgba(${r0 - dk},${g0 - dk},${b0 - dk},0.65)`);
+    gr.addColorStop(0.65, `rgba(${r0 - dk},${g0 - dk},${b0 - dk},0.20)`);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = gr;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -99,11 +96,13 @@ function buildRockyTexture(
 
   // Stickney-like large crater for Phobos (seed 42 → draw one big crater)
   if (seed === 42) {
-    const sx = 0.62 * W, sy = 0.45 * H, sr = 44;
+    const sx = 0.62 * W,
+      sy = 0.45 * H,
+      sr = 44;
     const sgr = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
-    sgr.addColorStop(0,   `rgba(${r0 - 40},${g0 - 40},${b0 - 40},0.80)`);
-    sgr.addColorStop(0.75,`rgba(${r0 - 20},${g0 - 20},${b0 - 20},0.35)`);
-    sgr.addColorStop(1,   'rgba(0,0,0,0)');
+    sgr.addColorStop(0, `rgba(${r0 - 40},${g0 - 40},${b0 - 40},0.80)`);
+    sgr.addColorStop(0.75, `rgba(${r0 - 20},${g0 - 20},${b0 - 20},0.35)`);
+    sgr.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = sgr;
     ctx.beginPath();
     ctx.arc(sx, sy, sr, 0, Math.PI * 2);
@@ -124,11 +123,16 @@ function buildRockyTexture(
 // ── Colony emissive texture ───────────────────────────────────────────────
 type ColonyPt = [number, number, number, number]; // [lon, lat, px_radius, brightness]
 const DOT_OFFSETS: [number, number][] = [
-  [-0.7, -0.5], [0.5, -0.8], [0.8, 0.4], [-0.4, 0.7], [0.6, 0.6],
+  [-0.7, -0.5],
+  [0.5, -0.8],
+  [0.8, 0.4],
+  [-0.4, 0.7],
+  [0.6, 0.6],
 ];
 
 function buildColonyTexture(colonies: ColonyPt[]): THREE.CanvasTexture {
-  const W = 512, H = 256;
+  const W = 512,
+    H = 256;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -141,9 +145,9 @@ function buildColonyTexture(colonies: ColonyPt[]): THREE.CanvasTexture {
     const y = ((90 - lat) / 180) * H;
 
     const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 5);
-    glow.addColorStop(0,   `rgba(255, 210, 120, ${bright * 0.95})`);
-    glow.addColorStop(0.4, `rgba(255, 160,  60, ${bright * 0.40})`);
-    glow.addColorStop(1,   'rgba(0,0,0,0)');
+    glow.addColorStop(0, `rgba(255, 210, 120, ${bright * 0.95})`);
+    glow.addColorStop(0.4, `rgba(255, 160,  60, ${bright * 0.4})`);
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow;
     ctx.fillRect(x - r * 5, y - r * 5, r * 10, r * 10);
 
@@ -236,7 +240,7 @@ function SoiRing({ radius }: { radius: number }) {
     const arr = new Float32Array((segments + 1) * 3);
     for (let i = 0; i <= segments; i++) {
       const θ = (i / segments) * Math.PI * 2;
-      arr[i * 3]     = Math.cos(θ) * radius;
+      arr[i * 3] = Math.cos(θ) * radius;
       arr[i * 3 + 1] = 0;
       arr[i * 3 + 2] = Math.sin(θ) * radius;
     }
@@ -246,7 +250,7 @@ function SoiRing({ radius }: { radius: number }) {
       color: 0x4499ff,
       dashSize: radius * 0.06,
       gapSize: radius * 0.06,
-      opacity: 0.30,
+      opacity: 0.3,
       transparent: true,
       depthWrite: false,
     });
@@ -260,47 +264,74 @@ function SoiRing({ radius }: { radius: number }) {
 
 // ── Main component ────────────────────────────────────────────────────────
 export default function MarsSystem() {
-  const rootRef          = useRef<THREE.Group>(null);
-  const phobosOrbitRef   = useRef<THREE.Group>(null);
-  const deimosOrbitRef   = useRef<THREE.Group>(null);
-  const phobosCenterRef  = useRef<THREE.Group>(null);
-  const deimosCenterRef  = useRef<THREE.Group>(null);
+  const rootRef = useRef<THREE.Group>(null);
+  const phobosOrbitRef = useRef<THREE.Group>(null);
+  const deimosOrbitRef = useRef<THREE.Group>(null);
+  const phobosCenterRef = useRef<THREE.Group>(null);
+  const deimosCenterRef = useRef<THREE.Group>(null);
 
-  const phobosPrevPos    = useRef(new THREE.Vector3());
-  const deimosPrevPos    = useRef(new THREE.Vector3());
-  const hasPhobosPrev    = useRef(false);
-  const hasDeimoPrev     = useRef(false);
+  const phobosPrevPos = useRef(new THREE.Vector3());
+  const deimosPrevPos = useRef(new THREE.Vector3());
+  const hasPhobosPrev = useRef(false);
+  const hasDeimoPrev = useRef(false);
 
   // Procedural surface textures
-  const phobosMap = useMemo(() => buildRockyTexture(42,  [88, 76, 66]), []);
+  const phobosMap = useMemo(() => buildRockyTexture(42, [88, 76, 66]), []);
   const deimosMap = useMemo(() => buildRockyTexture(137, [102, 90, 78]), []);
 
   // Colony emissive maps
-  const phobosColony = useMemo(() => buildColonyTexture([
-    // Stickney crater cluster — main base
-    [  0,  5, 1, 1.00], [  8,  2, 1, 0.85], [ -5, 10, 1, 0.80],
-    [ 12,  8, 1, 0.75], [ -8,  0, 1, 0.78], [  5,-12, 1, 0.70],
-    // Southern polar research
-    [-60,-28, 1, 0.75], [-55,-20, 1, 0.65], [-65,-32, 1, 0.68], [-58,-35, 1, 0.62],
-    // Limb relay stations
-    [ 90, 15, 1, 0.70], [ 85, -5, 1, 0.65], [ 95, 20, 1, 0.62],
-    // Anti-sub hemisphere
-    [-90, 10, 1, 0.68], [-85, -8, 1, 0.60],
-    // Scattered outposts
-    [ 30, 40, 1, 0.65], [-30, 35, 1, 0.62], [ 45,-15, 1, 0.60],
-    [-45, 20, 1, 0.63], [150,-10, 1, 0.58],
-  ]), []);
+  const phobosColony = useMemo(
+    () =>
+      buildColonyTexture([
+        // Stickney crater cluster — main base
+        [0, 5, 1, 1.0],
+        [8, 2, 1, 0.85],
+        [-5, 10, 1, 0.8],
+        [12, 8, 1, 0.75],
+        [-8, 0, 1, 0.78],
+        [5, -12, 1, 0.7],
+        // Southern polar research
+        [-60, -28, 1, 0.75],
+        [-55, -20, 1, 0.65],
+        [-65, -32, 1, 0.68],
+        [-58, -35, 1, 0.62],
+        // Limb relay stations
+        [90, 15, 1, 0.7],
+        [85, -5, 1, 0.65],
+        [95, 20, 1, 0.62],
+        // Anti-sub hemisphere
+        [-90, 10, 1, 0.68],
+        [-85, -8, 1, 0.6],
+        // Scattered outposts
+        [30, 40, 1, 0.65],
+        [-30, 35, 1, 0.62],
+        [45, -15, 1, 0.6],
+        [-45, 20, 1, 0.63],
+        [150, -10, 1, 0.58],
+      ]),
+    []
+  );
 
-  const deimosColony = useMemo(() => buildColonyTexture([
-    // Northern relay — main station
-    [ 55, 18, 1, 0.95], [ 60, 12, 1, 0.80], [ 50, 22, 1, 0.75], [ 62, 28, 1, 0.70],
-    // Anti-Mars side
-    [-80, -5, 1, 0.72], [-75,  8, 1, 0.65], [-85,-10, 1, 0.60],
-    // Southern mining outpost
-    [  0,-30, 1, 0.65], [ 10,-25, 1, 0.60],
-    // Far hemisphere relay
-    [150, 15, 1, 0.62],
-  ]), []);
+  const deimosColony = useMemo(
+    () =>
+      buildColonyTexture([
+        // Northern relay — main station
+        [55, 18, 1, 0.95],
+        [60, 12, 1, 0.8],
+        [50, 22, 1, 0.75],
+        [62, 28, 1, 0.7],
+        // Anti-Mars side
+        [-80, -5, 1, 0.72],
+        [-75, 8, 1, 0.65],
+        [-85, -10, 1, 0.6],
+        // Southern mining outpost
+        [0, -30, 1, 0.65],
+        [10, -25, 1, 0.6],
+        // Far hemisphere relay
+        [150, 15, 1, 0.62],
+      ]),
+    []
+  );
 
   // Register gravity bodies once on mount
   useEffect(() => {
@@ -371,14 +402,13 @@ export default function MarsSystem() {
 
   return (
     <group ref={rootRef}>
-
       {/* ── Mars orbital satellites ─────────────────────────────────────── */}
       {/* Reconnaissance satellite — polar orbit */}
       <Satellite
         orbitRadius={MARS_R * 2.8}
         orbitSpeed={0.22}
         orbitPhase={0.0}
-        inclinationZ={Math.PI / 2}     // polar orbit
+        inclinationZ={Math.PI / 2} // polar orbit
         inclinationX={0.05}
       />
       {/* Communications relay — equatorial */}
@@ -392,7 +422,7 @@ export default function MarsSystem() {
       {/* Science platform — inclined */}
       <Satellite
         orbitRadius={MARS_R * 4.5}
-        orbitSpeed={0.10}
+        orbitSpeed={0.1}
         orbitPhase={4.3}
         inclinationZ={0.5}
         inclinationX={0.2}

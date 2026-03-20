@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { solarPlanetPositions } from '../context/SolarSystemMinimap';
-import { SOLAR_SYSTEM_SCALE, PLANETS } from './SolarSystem';
-import { neptuneNoFlyZoneActive } from '../context/CinematicState';
+import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
+import { SOLAR_SYSTEM_SCALE, PLANETS } from '../SolarSystem';
+import { neptuneNoFlyZoneActive } from '../../context/CinematicState';
 
 const SAFE_RING_COLOR = '#00ff6a';
 const NO_FLY_COLOR = '#ff3344';

@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { proximityScanOnRef, proximityScanRangeRef } from '../context/ProximityScan';
-import { getCollidables } from '../context/CollisionRegistry';
-import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { SHIP_COLLISION_ID } from '../context/ShipState';
+import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
+import { getCollidables } from '../../context/CollisionRegistry';
+import { minimapShipPosition } from '../../context/MinimapShipPosition';
+import { SHIP_COLLISION_ID } from '../../context/ShipState';
 
 const _pos = new THREE.Vector3();
 
@@ -44,7 +44,7 @@ export default function ProximityHighlight() {
 
     const range = proximityScanRangeRef.current;
     const collidables = getCollidables().filter(
-      (c) => c.id !== SHIP_COLLISION_ID && c.getObject3D != null,
+      (c) => c.id !== SHIP_COLLISION_ID && c.getObject3D != null
     );
     const inRange = new Set<string>();
 
