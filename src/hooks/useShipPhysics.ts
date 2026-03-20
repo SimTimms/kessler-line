@@ -41,6 +41,7 @@ import {
   updateThrusterLight,
 } from './shipPhysics';
 import { cinematicAutopilotActive, neptuneNoFlyZoneActive } from '../context/CinematicState';
+import { RAILGUN_DAMAGE_MIN, RAILGUN_DAMAGE_MAX } from '../config/damageConfig';
 
 const ENGINE_TORQUE_SCALE = 0.15;
 const DEBUG_RAILGUN_ENGINE_HITS = true;
@@ -145,7 +146,7 @@ export function useShipPhysics({
       lastRailgunTarget.current = detail?.targetEngine ?? railgunTargetEngine.current;
       playImpactSoundOverlap();
       playRailgunHit();
-      const damage = 20 + Math.random() * 10;
+      const damage = RAILGUN_DAMAGE_MIN + Math.random() * (RAILGUN_DAMAGE_MAX - RAILGUN_DAMAGE_MIN);
       damageHull(damage);
     };
     window.addEventListener('RailgunHit', onRailgunHit);

@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const COUNT = 1200;
-const HALF = 1500; // half-extent of the wrapping cube (3000 units across)
+const HALF = 2500; // half-extent of the wrapping cube (3000 units across)
 
 function makeParticleTexture(): THREE.Texture {
   const size = 64;
@@ -68,9 +68,9 @@ export default function SpaceParticles({ shipPositionRef }: SpaceParticlesProps)
       </bufferGeometry>
       <pointsMaterial
         color="white"
-        size={0.4}
+        size={4}
         transparent
-        opacity={0.55}
+        opacity={1.55}
         map={texture}
         depthWrite={false}
         blending={THREE.AdditiveBlending}

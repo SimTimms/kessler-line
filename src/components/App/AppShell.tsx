@@ -10,6 +10,7 @@ import AudioLayer from './AudioLayer';
 import ControlLayer from './ControlLayer';
 import StartOverlay from './StartOverlay';
 import BackgroundHum from './BackgroundHum';
+import { O2DeathOverlay } from '../Ship/O2DeathOverlay';
 import DebugCascadePanel from './DebugCascadePanel';
 import type { NPCHailDetail } from '../NPCContactDialog';
 import type { MissionId } from '../../hooks/useMissionState';
@@ -122,6 +123,7 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
       />
       <ControlLayer thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
       {showStartOverlay ? <StartOverlay onStart={onStart} /> : <BackgroundHum />}
+      <O2DeathOverlay />
       <DebugCascadePanel />
       <AppStyles />
     </AppContainer>

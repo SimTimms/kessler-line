@@ -17,21 +17,21 @@ let _orbitSignLocked = false;
 /** Call when starting a fresh hyperbolic-approach to reset the locked side. */
 export function resetHyperbolicApproach() {
   _orbitSignLocked = false;
-  _log.thrust  = false;
-  _log.yawDir  = 0;
+  _log.thrust = false;
+  _log.yawDir = 0;
   _log.phi_deg = -999;
 }
 
 // ── Debug logging ────────────────────────────────────────────────────────────
 const _log = {
-  thrust:  false,
-  yawDir:  0,       // -1 = left, 0 = none, +1 = right
-  phi_deg: -999,    // last logged heading angle
+  thrust: false,
+  yawDir: 0, // -1 = left, 0 = none, +1 = right
+  phi_deg: -999, // last logged heading angle
 };
 
 function hlog(msg: string, color = '#aaffcc') {
   // eslint-disable-next-line no-console
-  console.log(`%c[HA] ${msg}`, `color:${color};font-weight:bold`);
+  // console.log(`%c[HA] ${msg}`, `color:${color};font-weight:bold`);
 }
 
 /**
@@ -73,15 +73,15 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
 
   if (!gravBody) return 'burn';
 
-  const mu  = gravBody.mu;
+  const mu = gravBody.mu;
   const r_p = gravBody.surfaceRadius + gravBody.orbitAltitude;
-  const bp  = gravBody.position;
+  const bp = gravBody.position;
 
   // ── Planet-relative position and velocity (XZ plane) ─────────────────────
   _rRel.set(shipPos.x - bp.x, 0, shipPos.z - bp.z);
   _vRel.set(velFlat.x - gravBody.velocity.x, 0, velFlat.z - gravBody.velocity.z);
 
-  const r    = _rRel.length();
+  const r = _rRel.length();
   const v_sq = _vRel.x * _vRel.x + _vRel.z * _vRel.z;
   if (r < 1 || v_sq < 0.01) return null;
   const v = Math.sqrt(v_sq);
@@ -100,11 +100,11 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
   {
     const rv_now = _vRel.dot(_rRel) / Math.max(r, 1); // planet-relative radial vel
     if (rv_now < 0) {
-      const v_pe_sq  = Math.max(0, v_sq - 2 * mu / r + 2 * mu / r_p);
-      const deltaV   = Math.max(0, Math.sqrt(v_pe_sq) - Math.sqrt(mu / r_p));
+      const v_pe_sq = Math.max(0, v_sq - (2 * mu) / r + (2 * mu) / r_p);
+      const deltaV = Math.max(0, Math.sqrt(v_pe_sq) - Math.sqrt(mu / r_p));
       const burnTime = deltaV / (THRUST * MAX_THRUST_MULTIPLIER);
       const distToPe = Math.max(0, r - r_p);
-      const timeToPe = (-rv_now) > 0.1 ? distToPe / (-rv_now) : Infinity;
+      const timeToPe = -rv_now > 0.1 ? distToPe / -rv_now : Infinity;
       if (timeToPe <= burnTime) return 'coast-to-periapsis';
     }
   }
@@ -125,8 +125,8 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
     _orbitSignLocked = true;
     hlog(
       `orbitSign LOCKED ${_orbitSign > 0 ? '+1(CCW)' : '-1(CW)'}` +
-      `  |h|=${Math.round(Math.abs(h_scalar))}  r=${Math.round(r)}  v=${Math.round(v)}`,
-      '#ffcc44',
+        `  |h|=${Math.round(Math.abs(h_scalar))}  r=${Math.round(r)}  v=${Math.round(v)}`,
+      '#ffcc44'
     );
   }
   const orbitSign = _orbitSign;
@@ -134,7 +134,7 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
   // ── Impact parameter for the desired periapsis ────────────────────────────
   // v∞² = v² − 2μ/r  (excess energy; clamp to small positive)
   const v_inf_sq = Math.max(0.01, v_sq - (2 * mu) / r);
-  const v_inf    = Math.sqrt(v_inf_sq);
+  const v_inf = Math.sqrt(v_inf_sq);
   // b = r_p × √(1 + 2μ / (r_p × v∞²))
   const b_target = r_p * Math.sqrt(1 + (2 * mu) / (r_p * v_inf_sq));
 
@@ -143,9 +143,9 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
   // sin(φ)    = h_desired / (r × v)
   // The ship needs to fly at angle φ off the direct planet direction.
   const h_desired = b_target * v_inf;
-  const sin_phi   = Math.min(1.0, h_desired / (r * v));
-  const cos_phi   = Math.sqrt(Math.max(0, 1 - sin_phi * sin_phi));
-  const phi_deg   = Math.asin(sin_phi) * 180 / Math.PI;
+  const sin_phi = Math.min(1.0, h_desired / (r * v));
+  const cos_phi = Math.sqrt(Math.max(0, 1 - sin_phi * sin_phi));
+  const phi_deg = (Math.asin(sin_phi) * 180) / Math.PI;
 
   // ── Stable aim point: far away in the desired heading direction ───────────
   // r̂ = unit vector from ship toward planet
@@ -153,10 +153,10 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
   // heading = cos(φ)·r̂ + sin(φ)·orbitSign·⊥r̂
   // Aim point = shipPos + large_dist × heading
   // This aim point only shifts as the ship moves, not as it yaws — stable.
-  const r_hat_x  = -_rRel.x / r;               // toward planet
-  const r_hat_z  = -_rRel.z / r;
-  const perp_r_x = -r_hat_z;                   // 90° CCW of r̂ in XZ
-  const perp_r_z =  r_hat_x;
+  const r_hat_x = -_rRel.x / r; // toward planet
+  const r_hat_z = -_rRel.z / r;
+  const perp_r_x = -r_hat_z; // 90° CCW of r̂ in XZ
+  const perp_r_z = r_hat_x;
 
   const heading_x = cos_phi * r_hat_x + sin_phi * orbitSign * perp_r_x;
   const heading_z = cos_phi * r_hat_z + sin_phi * orbitSign * perp_r_z;
@@ -178,18 +178,18 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
   if (_toAim.length() < 0.1) return null;
   _toAim.normalize();
 
-  const crossY      = noseDir.x * _toAim.z - noseDir.z * _toAim.x;
+  const crossY = noseDir.x * _toAim.z - noseDir.z * _toAim.x;
   const signedError = Math.atan2(crossY, noseDir.dot(_toAim));
   const { yawLeft: yl, yawRight: yr } = computeYaw(signedError, angVel);
-  yawLeft.current  = yl;
+  yawLeft.current = yl;
   yawRight.current = yr;
 
   // ── Log heading angle changes (every 2°) ─────────────────────────────────
   if (Math.abs(phi_deg - _log.phi_deg) >= 2) {
     hlog(
       `φ=${phi_deg.toFixed(1)}°  b=${Math.round(b_target)}  v∞=${v_inf.toFixed(1)}` +
-      `  r=${Math.round(r)}  v=${Math.round(v)}  sin_φ=${sin_phi.toFixed(3)}`,
-      '#ccaaff',
+        `  r=${Math.round(r)}  v=${Math.round(v)}  sin_φ=${sin_phi.toFixed(3)}`,
+      '#ccaaff'
     );
     _log.phi_deg = phi_deg;
   }
@@ -197,11 +197,14 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
   // ── Log yaw decision changes ──────────────────────────────────────────────
   const newYawDir = yl ? -1 : yr ? 1 : 0;
   if (newYawDir !== _log.yawDir) {
-    const errDeg = (signedError * 180 / Math.PI).toFixed(1);
+    const errDeg = ((signedError * 180) / Math.PI).toFixed(1);
     if (newYawDir === 0) {
       hlog(`yaw STOP  err=${errDeg}°  angVel=${angVel.toFixed(3)}`, '#88ccff');
     } else {
-      hlog(`yaw ${newYawDir < 0 ? 'LEFT ←' : 'RIGHT →'}  err=${errDeg}°  angVel=${angVel.toFixed(3)}`, '#88ccff');
+      hlog(
+        `yaw ${newYawDir < 0 ? 'LEFT ←' : 'RIGHT →'}  err=${errDeg}°  angVel=${angVel.toFixed(3)}`,
+        '#88ccff'
+      );
     }
     _log.yawDir = newYawDir;
   }
@@ -212,12 +215,18 @@ export function HyperbolicApproach(ctx: AutopilotCtx): AutopilotPhase | null {
 
   // ── Log thrust changes ────────────────────────────────────────────────────
   if (shouldThrust !== _log.thrust) {
-    const errDeg = (signedError * 180 / Math.PI).toFixed(1);
-    const pe     = Math.round(orbitStatus.hyperbolicPeriapsis ?? 0);
+    const errDeg = ((signedError * 180) / Math.PI).toFixed(1);
+    const pe = Math.round(orbitStatus.hyperbolicPeriapsis ?? 0);
     if (shouldThrust) {
-      hlog(`ENGINE ON   err=${errDeg}°  Pe~${pe}  φ=${phi_deg.toFixed(1)}°  b=${Math.round(b_target)}  v∞=${v_inf.toFixed(1)}`, '#44ff88');
+      hlog(
+        `ENGINE ON   err=${errDeg}°  Pe~${pe}  φ=${phi_deg.toFixed(1)}°  b=${Math.round(b_target)}  v∞=${v_inf.toFixed(1)}`,
+        '#44ff88'
+      );
     } else {
-      hlog(`ENGINE OFF  err=${errDeg}°  Pe~${pe}  φ=${phi_deg.toFixed(1)}°  b=${Math.round(b_target)}  v∞=${v_inf.toFixed(1)}`, '#ff8844');
+      hlog(
+        `ENGINE OFF  err=${errDeg}°  Pe~${pe}  φ=${phi_deg.toFixed(1)}°  b=${Math.round(b_target)}  v∞=${v_inf.toFixed(1)}`,
+        '#ff8844'
+      );
     }
     _log.thrust = shouldThrust;
   }

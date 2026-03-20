@@ -8,6 +8,7 @@ import {
   Activity,
   Crosshair,
   ArrowLeftRight,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   power,
@@ -22,6 +23,39 @@ import { selectedTargetName, selectedTargetVelocity } from '../../context/Target
 import { cargo, type CargoItem, reduceCargoItem } from '../../context/Inventory';
 import { triggerEject } from '../../context/EjectEvent';
 import './PowerHUD.css';
+
+type WarnLevel = 'orange' | 'red' | null;
+
+function resourceLevel(val: number): WarnLevel {
+  if (val <= 20) return 'red';
+  if (val <= 50) return 'orange';
+  return null;
+}
+
+function gforceLevel(val: number): WarnLevel {
+  if (val >= 6) return 'red';
+  if (val >= 3) return 'orange';
+  return null;
+}
+
+function velocityLevel(val: number): WarnLevel {
+  if (val > 300) return 'red';
+  if (val > 150) return 'orange';
+  return null;
+}
+
+function WarningBadge({ level }: { level: WarnLevel }) {
+  if (!level) return null;
+  const color = level === 'red' ? 'rgba(255, 40, 140, 0.85)' : '#ffaa00';
+  return (
+    <>
+      <AlertTriangle size={11} strokeWidth={2} style={{ color }} />
+      {level === 'red' && (
+        <span style={{ color, fontSize: '10px', letterSpacing: '0.08em' }}>WARNING</span>
+      )}
+    </>
+  );
+}
 
 interface EjectState {
   item: CargoItem;
@@ -49,7 +83,7 @@ export default function PowerHUD() {
       setDisplayFuel(Math.floor(fuel));
       setDisplayO2(Math.floor(o2));
       setTargetName(selectedTargetName);
-      setDisplayGForce(shipAcceleration.current / 9.81);
+      setDisplayGForce((shipAcceleration.current * 10) / 9.81);
       setDisplayVelocity(getShipSpeedMps());
       // Relative speed = magnitude of (shipVelocity − targetVelocity)
       setRelSpeed(shipVelocity.distanceTo(selectedTargetVelocity) * 1);
@@ -93,26 +127,42 @@ export default function PowerHUD() {
         <div className="power-hud-row" style={{ color: powerColor }}>
           <Zap size={13} strokeWidth={1.5} />
           {displayPower}
+          <WarningBadge level={resourceLevel(displayPower)} />
         </div>
         <div className="power-hud-row" style={{ color: hullColor }}>
           <Shield size={13} strokeWidth={1.5} />
           {displayHull}
+          <WarningBadge level={resourceLevel(displayHull)} />
         </div>
         <div className="power-hud-row" style={{ color: fuelColor }}>
           <Droplets size={13} strokeWidth={1.5} />
           {displayFuel}
+          <WarningBadge level={resourceLevel(displayFuel)} />
         </div>
         <div className="power-hud-row" style={{ color: o2Color }}>
           <Wind size={13} strokeWidth={1.5} />
           {displayO2}
+          <WarningBadge level={resourceLevel(displayO2)} />
         </div>
         <div className="power-hud-row" style={{ color: gForceColor }}>
           <Gauge size={13} strokeWidth={1.5} />
           {displayGForce.toFixed(1)}g
+          <WarningBadge level={gforceLevel(displayGForce)} />
         </div>
-        <div className="power-hud-row" style={{ color: 'rgba(0,200,255,1)' }}>
+        <div
+          className="power-hud-row"
+          style={{
+            color:
+              velocityLevel(displayVelocity) === 'red'
+                ? 'rgba(255, 40, 140, 0.85)'
+                : velocityLevel(displayVelocity) === 'orange'
+                  ? '#ffaa00'
+                  : 'rgba(0,200,255,1)',
+          }}
+        >
           <Activity size={13} strokeWidth={1.5} />
           {displayVelocity.toFixed(1)} m/s
+          <WarningBadge level={velocityLevel(displayVelocity)} />
         </div>
         {displayCargo.length > 0 && (
           <>

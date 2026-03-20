@@ -14,19 +14,19 @@
 type ThrustSnapshot = { fw: boolean; rv: boolean; yaw: boolean };
 
 const _prev = {
-  phase:  '',
+  phase: '',
   status: '',
   thrust: { fw: false, rv: false, yaw: false } as ThrustSnapshot,
 };
 
 function print(msg: string, color: string) {
   // eslint-disable-next-line no-console
-  console.log(`%c[AP] ${msg}`, `color:${color};font-weight:bold`);
+  //console.log(`%c[AP] ${msg}`, `color:${color};font-weight:bold`);
 }
 
 /** Call once when autopilot activates to clear stale state from last run. */
 export function apLogReset() {
-  _prev.phase  = '';
+  _prev.phase = '';
   _prev.status = '';
   _prev.thrust = { fw: false, rv: false, yaw: false };
 }
@@ -52,22 +52,16 @@ export function apLogStatus(status: string) {
  * Yaw is collapsed to a single boolean (turning / not turning) to avoid
  * flooding the console with every bang-bang oscillation tick.
  */
-export function apLogThrust(
-  fw: boolean,
-  rv: boolean,
-  yl: boolean,
-  yr: boolean,
-  speed: number,
-) {
-  const yaw  = yl || yr;
+export function apLogThrust(fw: boolean, rv: boolean, yl: boolean, yr: boolean, speed: number) {
+  const yaw = yl || yr;
   const prev = _prev.thrust;
 
   if (fw === prev.fw && rv === prev.rv && yaw === prev.yaw) return;
 
   const parts: string[] = [];
-  if (fw  !== prev.fw)  parts.push(fw  ? '▶ FWD ON'     : '■ fwd off');
-  if (rv  !== prev.rv)  parts.push(rv  ? '▶ ENGINE ON'   : '■ engine off');
-  if (yaw !== prev.yaw) parts.push(yaw ? '↺ TURNING'     : '↺ turn stop');
+  if (fw !== prev.fw) parts.push(fw ? '▶ FWD ON' : '■ fwd off');
+  if (rv !== prev.rv) parts.push(rv ? '▶ ENGINE ON' : '■ engine off');
+  if (yaw !== prev.yaw) parts.push(yaw ? '↺ TURNING' : '↺ turn stop');
 
   if (parts.length) {
     print(`  ${parts.join('  ')}   ${Math.round(speed)} m/s`, '#88ff88');

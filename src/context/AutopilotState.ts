@@ -10,9 +10,9 @@ export type AutopilotPhase =
   | 'stabilize-orbit'
   | 'done';
 
-export const autopilotActive  = { current: false };
-export const autopilotPhase:  { current: AutopilotPhase } = { current: 'idle' };
-export const autopilotStatus  = { current: 'AUTOPILOT' }; // human-readable label shown in NavHUD
+export const autopilotActive = { current: false };
+export const autopilotPhase: { current: AutopilotPhase } = { current: 'idle' };
+export const autopilotStatus = { current: 'ENGAGED' }; // human-readable label shown in NavHUD
 
 // Thrust outputs consumed by getCombinedInputs each frame
 export const autopilotThrustForward = { current: false };

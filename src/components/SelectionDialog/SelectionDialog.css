@@ -114,9 +114,9 @@
 
 .sd-item {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
   padding: 10px 16px;
   background: var(--sd-item-bg);
   border: 1px solid var(--sd-item-border);
@@ -128,6 +128,29 @@
   cursor: pointer;
   text-align: left;
   transition: background 0.1s, border-color 0.1s;
+}
+
+.sd-item-status {
+  font-size: 11px;
+  min-width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+  line-height: 1;
+}
+
+.sd-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sd-item--unread .sd-item-label {
+  opacity: 1;
+  font-weight: bold;
+  letter-spacing: 0.06em;
 }
 
 .sd-item:hover {
@@ -163,4 +186,102 @@
 .sd-close:hover {
   color: var(--sd-muted);
   border-color: var(--sd-border-strong);
+}
+
+/* ── Per-platform structural identities ──────────────────────────────────────── */
+
+/* HERALD — sharp corners, corporate authority, logo top-left, version bottom-right */
+.sd-dialog[data-platform='HERALD'] {
+  border-radius: 0;
+  border-width: 2px;
+  background: rgba(8, 6, 0, 0.97);
+}
+
+.sd-dialog[data-platform='HERALD']::before {
+  content: '◉ HERALD COMMS';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--sd-text);
+  opacity: 0.7;
+  border-bottom: 1px solid var(--sd-border);
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+  text-align: left;
+}
+
+.sd-dialog[data-platform='HERALD']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--sd-dim);
+  text-align: right;
+  margin-top: -4px;
+}
+
+.sd-dialog[data-platform='HERALD'] .sd-item {
+  border-radius: 0;
+}
+
+.sd-dialog[data-platform='HERALD'] .sd-close {
+  border-radius: 0;
+}
+
+/* OPENLINE — near-sharp, anonymous ethos, left-border item accents, no logo/version */
+.sd-dialog[data-platform='OPENLINE'] {
+  border-radius: 2px;
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-title {
+  text-align: left;
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-item {
+  border: none;
+  border-left: 2px solid var(--sd-item-border);
+  border-radius: 0;
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-item:hover {
+  border-left-color: var(--sd-item-border-hover);
+}
+
+.sd-dialog[data-platform='OPENLINE'] .sd-item--active {
+  border-left-color: var(--sd-item-border-active);
+}
+
+/* MERIDIAN — navigation system, logo top-right, version bottom-right, green tint */
+.sd-dialog[data-platform='MERIDIAN'] {
+  border-radius: 4px;
+  background: rgba(0, 10, 4, 0.97);
+}
+
+.sd-dialog[data-platform='MERIDIAN']::before {
+  content: '⊕ MERIDIAN / ARESNAV';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--sd-text);
+  opacity: 0.7;
+  text-align: right;
+  border-bottom: 1px solid var(--sd-border);
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+}
+
+.sd-dialog[data-platform='MERIDIAN']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--sd-dim);
+  text-align: right;
+  margin-top: -4px;
+}
+
+/* BROADCAST — degraded relay, slightly faded */
+.sd-dialog[data-platform='BROADCAST'] {
+  opacity: 0.88;
+  filter: contrast(0.9) saturate(0.8);
 }

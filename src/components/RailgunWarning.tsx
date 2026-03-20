@@ -9,12 +9,14 @@ import {
   railgunTargetEngine,
 } from '../context/ShipState';
 import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import {
+  RAILGUN_STRIKE_DISTANCE,
+  RAILGUN_STRIKE_COOLDOWN,
+  RAILGUN_SHOT_DURATION,
+  RAILGUN_SHOT_OVERSHOOT,
+  RAILGUN_SHOT_HEIGHT_VARIANCE,
+} from '../config/neptuneConfig';
 
-const STRIKE_DISTANCE = 20000;
-const STRIKE_COOLDOWN = 2.0;
-const SHOT_DURATION = 0.28;
-const SHOT_OVERSHOOT = 8000;
-const SHOT_HEIGHT_VARIANCE = 12000;
 const DEBUG_RAILGUN = true;
 const DEBUG_HIT_SCALE = 10;
 
@@ -28,7 +30,7 @@ interface RailgunWarningProps {
 export default function RailgunWarning({ shipPositionRef, shipGroupRef }: RailgunWarningProps) {
   const beamRef = useRef<THREE.Group>(null!);
   const debugRef = useRef<THREE.Group>(null!);
-  const lastStrikeRef = useRef(-STRIKE_COOLDOWN);
+  const lastStrikeRef = useRef(-RAILGUN_STRIKE_COOLDOWN);
   const shotStartRef = useRef(0);
   const shotActiveRef = useRef(false);
   const shotTargetRef = useRef(new THREE.Vector3());
@@ -104,13 +106,13 @@ export default function RailgunWarning({ shipPositionRef, shipGroupRef }: Railgu
     const now = clock.getElapsedTime();
 
     if (!shotActiveRef.current) {
-      if (distance <= STRIKE_DISTANCE && now - lastStrikeRef.current >= STRIKE_COOLDOWN) {
+      if (distance <= RAILGUN_STRIKE_DISTANCE && now - lastStrikeRef.current >= RAILGUN_STRIKE_COOLDOWN) {
         const target = getEngineTarget();
         if (!target) return;
         lastStrikeRef.current = now;
         shotActiveRef.current = true;
         shotStartRef.current = now;
-        shotHeightRef.current = (Math.random() * 2 - 1) * SHOT_HEIGHT_VARIANCE;
+        shotHeightRef.current = (Math.random() * 2 - 1) * RAILGUN_SHOT_HEIGHT_VARIANCE;
         shotTargetRef.current.copy(target);
         railgunImpactDir.subVectors(target, shotOriginRef.current).normalize();
         railgunImpactAt.current = performance.now();
@@ -128,7 +130,7 @@ export default function RailgunWarning({ shipPositionRef, shipGroupRef }: Railgu
       return;
     }
 
-    const t = (now - shotStartRef.current) / SHOT_DURATION;
+    const t = (now - shotStartRef.current) / RAILGUN_SHOT_DURATION;
     if (t >= 1) {
       shotActiveRef.current = false;
       beamRef.current.visible = false;
@@ -147,7 +149,7 @@ export default function RailgunWarning({ shipPositionRef, shipGroupRef }: Railgu
     }
 
     dir.current.normalize();
-    const extendedLen = len + SHOT_OVERSHOOT;
+    const extendedLen = len + RAILGUN_SHOT_OVERSHOOT;
     mid.current.copy(shotOriginRef.current).addScaledVector(dir.current, extendedLen * 0.5);
     quat.current.setFromUnitVectors(Y_AXIS, dir.current);
 

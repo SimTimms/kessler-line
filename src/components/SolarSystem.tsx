@@ -181,6 +181,7 @@ export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSy
           orbitRadius={p.orbitRadius}
           radius={p.radius}
           color={p.name === 'Earth' ? '#ffffff' : p.name === 'Mars' ? '#ffffff' : p.color}
+          glowColor={p.color}
           textureUrl={
             p.name === 'Earth' ? '/earth.jpg' : p.name === 'Mars' ? '/mars.jpg' : undefined
           }
@@ -191,6 +192,7 @@ export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSy
           initialAngle={p.initialAngle}
           rings={'rings' in p ? p.rings : false}
           showColonies={p.name === 'Mars'}
+          useBumpMap={p.name === 'Mars'}
           {...gravParams(p.radius)}
         />
       ))}

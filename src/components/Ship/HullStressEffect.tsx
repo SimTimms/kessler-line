@@ -9,8 +9,9 @@ import {
   shipDestroyed,
 } from '../../context/ShipState';
 import { setHullStressSound, playHullCreak } from '../../sound/SoundManager';
+import { HULL_STRESS_DAMAGE_INTERVAL } from '../../config/damageConfig';
 
-const DAMAGE_INTERVAL = 5;      // seconds between 1hp hull damage ticks
+const DAMAGE_INTERVAL = HULL_STRESS_DAMAGE_INTERVAL;
 const CREAK_INTERVAL_MIN = 3;
 const CREAK_INTERVAL_MAX = 8;
 

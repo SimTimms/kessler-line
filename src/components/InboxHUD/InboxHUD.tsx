@@ -76,7 +76,9 @@ export default function InboxHUD() {
         onClick={() => setInboxOpen(true)}
         title={`Open ${ui.fullName} messages`}
       >
-        <span className="inbox-hud-platform-icon" aria-hidden>{ui.icon}</span>
+        <span className="inbox-hud-platform-icon" aria-hidden>
+          {ui.icon}
+        </span>
         <span className="inbox-hud-platform-name">{ui.name}</span>
         {unread > 0 && <span className="inbox-hud-badge">{unread}</span>}
         {notifVisible && unread === 0 && <span className="inbox-hud-dot" aria-hidden />}
@@ -89,7 +91,8 @@ export default function InboxHUD() {
           items={messageStore.current.map((m) => ({
             id: m.id,
             label: m.subject,
-            sublabel: m.from + (m.read ? '' : '  ●'),
+            sublabel: m.from,
+            statusIcon: m.read ? undefined : ui.unreadIcon,
           }))}
           onSelect={handleSelect}
           onClose={() => setInboxOpen(false)}

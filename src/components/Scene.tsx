@@ -36,6 +36,7 @@ import RailgunWarning from './RailgunWarning';
 import NebulaClouds from './NebulaClouds';
 import StartZoneAsteroidCluster from './StartZoneAsteroidCluster';
 import GhostFleet from './GhostFleet';
+import DistressBeaconField from './DistressBeaconField';
 import MarsSystem from './MarsSystem';
 import {
   RADIO_BEACON_DEFS,
@@ -189,7 +190,7 @@ export default function Scene() {
   const marsWorldZ = mars
     ? -Math.sin(mars.initialAngle) * mars.orbitRadius * SOLAR_SYSTEM_SCALE
     : 0;
-  const MARS_TEST_START: [number, number, number] = [marsWorldX + 1004200, 0, marsWorldZ];
+  const MARS_TEST_START: [number, number, number] = [marsWorldX + 105200, 0, marsWorldZ];
 
   const DEFAULT_START = DEV_MARS_TEST
     ? MARS_TEST_START
@@ -338,6 +339,7 @@ export default function Scene() {
       <VelocityIndicator shipPositionRef={spaceshipPos} />
       <AIShip id="0" url="/untitled.gltf" scale={1} position={[100, 0, -2000]} />
       <GhostFleet />
+      <DistressBeaconField />
       <ShipDepthOfField shipPosRef={spaceshipPos} />
       <OrbitCamera followTarget={spaceshipPos} attachTo={spaceshipGroupRef} />
       <CinematicController shipPositionRef={spaceshipPos} />

@@ -1,10 +1,20 @@
-.nav-bar {
+.hud-bar-wrapper {
+  position: fixed;
+  pointer-events: none;
   z-index: 60;
   width: 100dvw;
   width: 100vw;
-  position: fixed;
   box-sizing: border-box;
   backdrop-filter: blur(4px);
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .nav-metrics {
@@ -22,6 +32,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100%;
+  justify-content: center;
   pointer-events: auto;
 }
 
@@ -36,7 +48,7 @@
   background: rgba(6, 18, 28, 0.75);
   color: rgba(190, 230, 255, 0.95);
   font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
-  font-size: 0.7rem;
+  font-size: 10px;
   padding: 6px 10px;
   cursor: pointer;
   outline: none;
@@ -47,6 +59,20 @@
   width: 100px;
 }
 
+.autopilot-btn {
+  background: transparent;
+  color: rgba(190, 230, 255, 0.95);
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 0.12em;
+  text-align: center;
+  border-radius: 0px;
+  text-transform: uppercase;
+  width: 300px;
+}
 .nav-target-btn:hover {
   border-color: rgba(0, 200, 255, 0.9);
   background: rgba(0, 200, 255, 0.08);
@@ -54,9 +80,77 @@
 
 .autopilot-active {
   color: rgba(80, 255, 160, 0.95);
-  border-color: rgba(80, 255, 160, 0.6);
-  background: rgba(0, 80, 40, 0.5);
-  animation: autopilot-pulse 2s ease-in-out infinite;
+  font-size: 8px;
+}
+
+.hud-bar {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    rgba(6, 18, 28, 0.72),
+    rgba(6, 18, 28, 0.35),
+    rgba(6, 18, 28, 0.72)
+  );
+  border-bottom: 1px solid rgba(120, 190, 255, 0.35);
+  box-shadow: 0 8px 18px rgba(5, 18, 32, 0.45);
+  color: #9fdcff;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+}
+
+.hud-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.hud-metric-inline {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  text-align: center;
+  align-items: center;
+}
+
+.hud-label {
+  font-size: 8px;
+  opacity: 0.4;
+  letter-spacing: 0.2em;
+}
+
+.hud-metric-inline .hud-label {
+  font-size: 8px;
+  opacity: 0.4;
+  letter-spacing: 0.2em;
+}
+
+.hud-value {
+  font-size: 10px;
+  color: rgba(160, 220, 255, 0.95);
+}
+
+.hud-divider {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(
+    to bottom,
+    rgba(120, 190, 255, 0.15),
+    rgba(120, 190, 255, 0.55),
+    rgba(120, 190, 255, 0.15)
+  );
 }
 
 @keyframes autopilot-pulse {

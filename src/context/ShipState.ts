@@ -5,7 +5,7 @@ export const THRUST = 2.2; // units per second²
 export const YAW_THRUST = 1.0; // radians per second²
 export const SHIP_RADIUS = 3; // bounding sphere radius (world units)
 export const RESTITUTION = 0.4; // bounciness: 0 = dead stop, 1 = elastic
-export const DAMAGE_MULTIPLIER = 0.2; // hull damage = impactSpeed × multiplier
+export { COLLISION_DAMAGE_MULTIPLIER as DAMAGE_MULTIPLIER } from '../config/damageConfig';
 export const SHIP_COLLISION_ID = 'spaceship';
 export const DOCKING_PORT_RADIUS = 2; // port detection sphere radius (world units)
 export const DOCKING_PORT_LOCAL_Z = 11; // local +Z from ship center to nose port
@@ -102,8 +102,8 @@ export const railgunTargetEngine = {
 // ── Main engine damage state ───────────────────────────────────────────────
 export const MAIN_ENGINE_HIT_RADIUS = 2.5;
 export const MAIN_ENGINE_LOCAL_POS = {
-  reverseA: new THREE.Vector3(-3.5, 2.5, -11.5),
-  reverseB: new THREE.Vector3(3.5, 2.5, -11.5),
+  reverseA: new THREE.Vector3(-3.5, 0, -11.5),
+  reverseB: new THREE.Vector3(3.5, 0, -11.5),
 } as const;
 export const mainEngineDisabled = {
   reverseA: { current: false },

@@ -190,3 +190,83 @@
 .md-link:hover {
   color: #ffbb44;
 }
+
+/* ── Per-platform structural identities ──────────────────────────────────────── */
+
+/* HERALD — sharp corners, corporate authority, logo block top, version block bottom */
+.md-dialog[data-platform='HERALD'] {
+  border-radius: 0;
+  border-width: 2px;
+  background: rgba(8, 6, 0, 0.98);
+}
+
+.md-dialog[data-platform='HERALD']::before {
+  content: '◉ HERALD COMMS';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--hud-text);
+  opacity: 0.7;
+  border-bottom: 1px solid var(--hud-divider);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.md-dialog[data-platform='HERALD']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--hud-text-dim);
+  text-align: right;
+  margin-top: 12px;
+}
+
+.md-dialog[data-platform='HERALD'] .md-close {
+  border-radius: 0;
+}
+
+/* OPENLINE — near-sharp, anonymous ethos */
+.md-dialog[data-platform='OPENLINE'] {
+  border-radius: 2px;
+}
+
+.md-dialog[data-platform='OPENLINE'] .md-close {
+  border-radius: 0;
+}
+
+/* MERIDIAN — navigation system, logo block top-right, version block bottom-right */
+.md-dialog[data-platform='MERIDIAN'] {
+  border-radius: 4px;
+  background: rgba(0, 10, 4, 0.98);
+}
+
+.md-dialog[data-platform='MERIDIAN']::before {
+  content: '⊕ MERIDIAN / ARESNAV';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--hud-text);
+  opacity: 0.7;
+  text-align: right;
+  border-bottom: 1px solid var(--hud-divider);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.md-dialog[data-platform='MERIDIAN']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--hud-text-dim);
+  text-align: right;
+  margin-top: 12px;
+}
+
+/* BROADCAST — degraded relay, slightly faded */
+.md-dialog[data-platform='BROADCAST'] {
+  opacity: 0.88;
+  filter: contrast(0.88) saturate(0.75);
+}

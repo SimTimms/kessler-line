@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, use } from 'react';
 import { NAV_TARGET_DEFS } from '../../config/worldConfig';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import { gravityBodies } from '../../context/GravityRegistry';
@@ -26,7 +26,9 @@ export const NavHUD = () => {
   const coordsRef = useRef<HTMLSpanElement>(null!);
   const orbitRef = useRef<HTMLSpanElement>(null!);
   const altRef = useRef<HTMLSpanElement>(null!);
-  const apsesRef = useRef<HTMLSpanElement>(null!);
+  const periapsisRef = useRef<HTMLSpanElement>(null!);
+  const apoapsisRef = useRef<HTMLSpanElement>(null!);
+  const apsesTargetRef = useRef<HTMLSpanElement>(null!);
   const approachRef = useRef<HTMLSpanElement>(null!);
   const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
 
@@ -38,9 +40,9 @@ export const NavHUD = () => {
         coordsRef.current.textContent = `${Math.round(x)}, ${Math.round(z)}`;
       }
       if (orbitRef.current) {
-        const { bodyId, isOrbiting } = orbitStatusRef.current;
+        const { bodyId } = orbitStatusRef.current;
         const label = bodyId ? (ORBIT_LABELS.get(bodyId) ?? bodyId) : '—';
-        orbitRef.current.textContent = isOrbiting ? `ORBITING: ${label}` : `SOI: ${label}`;
+        orbitRef.current.textContent = label;
       }
       if (altRef.current) {
         const { bodyId, surfaceRadius } = orbitStatusRef.current;
@@ -58,20 +60,36 @@ export const NavHUD = () => {
           altRef.current.textContent = '—';
         }
       }
-      if (apsesRef.current) {
-        const { bodyId, periapsis, apoapsis, surfaceRadius } = orbitStatusRef.current;
+      if (periapsisRef.current) {
+        const { bodyId, periapsis, surfaceRadius } = orbitStatusRef.current;
         if (bodyId && periapsis > 0) {
           const periAlt = Math.max(0, periapsis - surfaceRadius);
-          const apoAlt = apoapsis > 0 ? Math.max(0, apoapsis - surfaceRadius) : -1;
-          const idealAlt = gravityBodies.get(bodyId)?.orbitAltitude;
-          const ideal = idealAlt != null ? ` [${Math.round(idealAlt)}]` : '';
-          apsesRef.current.textContent = `PERI: ${Math.round(periAlt)}${ideal}  APO: ${apoAlt >= 0 ? Math.round(apoAlt) : '—'}${ideal}`;
+          periapsisRef.current.textContent = `${Math.round(periAlt)}`;
         } else {
-          apsesRef.current.textContent = 'PERI: —  APO: —';
+          periapsisRef.current.textContent = '—';
+        }
+      }
+      if (apoapsisRef.current) {
+        const { bodyId, apoapsis, surfaceRadius } = orbitStatusRef.current;
+        if (bodyId && apoapsis > 0) {
+          const apoAlt = Math.max(0, apoapsis - surfaceRadius);
+          apoapsisRef.current.textContent = `${Math.round(apoAlt)}`;
+        } else {
+          apoapsisRef.current.textContent = '—';
+        }
+      }
+      if (apsesTargetRef.current) {
+        const { bodyId } = orbitStatusRef.current;
+        if (bodyId) {
+          const idealAlt = gravityBodies.get(bodyId)?.orbitAltitude;
+          apsesTargetRef.current.textContent = idealAlt != null ? `[${Math.round(idealAlt)}]` : '—';
+        } else {
+          apsesTargetRef.current.textContent = '—';
         }
       }
       if (approachRef.current) {
-        const { bodyId, periapsis, apoapsis, surfaceRadius, radialVelocity } = orbitStatusRef.current;
+        const { bodyId, periapsis, apoapsis, surfaceRadius, radialVelocity } =
+          orbitStatusRef.current;
         if (bodyId && periapsis > 0) {
           const body = gravityBodies.get(bodyId);
           if (body) {
@@ -93,10 +111,8 @@ export const NavHUD = () => {
       }
       if (autopilotBtnRef.current) {
         const active = autopilotActive.current;
-        autopilotBtnRef.current.textContent = active
-          ? autopilotStatus.current
-          : 'AUTOPILOT';
-        autopilotBtnRef.current.className = `nav-target-btn autopilot-btn${active ? ' autopilot-active' : ''}`;
+        autopilotBtnRef.current.textContent = active ? autopilotStatus.current : 'DISENGAGED';
+        autopilotBtnRef.current.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -160,48 +176,62 @@ export const NavHUD = () => {
 
   return (
     <>
-      <div className="hud-bar nav-bar">
+      <div className="hud-bar-wrapper ">
+        <div className="hud-bar">
+          {/*
         <div className="hud-metrics nav-metrics">
           <div className="hud-metric">
-            <div className="hud-label">Position</div>
+            <div className="hud-label">X | Z</div>
             <span ref={coordsRef} className="hud-value nav-coords" />
           </div>
-          <div className="hud-divider" />
-          <div className="hud-metric">
-            <div className="hud-label">Orbit</div>
-            <span ref={orbitRef} className="hud-value nav-orbit" />
-          </div>
-          <div className="hud-divider" />
-          <div className="hud-metric">
-            <div className="hud-label">Altitude</div>
-            <span ref={altRef} className="hud-value nav-alt" />
-          </div>
-          <div className="hud-divider" />
-          <div className="hud-metric">
-            <div className="hud-label">Apsis</div>
-            <span ref={apsesRef} className="hud-value nav-apses" />
-          </div>
-          <div className="hud-divider" />
-          <div className="hud-metric">
-            <div className="hud-label">Approach</div>
-            <span ref={approachRef} className="hud-value nav-approach" />
-          </div>
         </div>
-        <div className="nav-target-group">
-          <div className="nav-target-label">Nav Target</div>
-          <button className="nav-target-btn" onClick={() => setDialogOpen(true)}>
-            {displayLabel}
-          </button>
-        </div>
-        <div className="nav-target-group">
-          <div className="nav-target-label">Autopilot</div>
-          <button
-            ref={autopilotBtnRef}
-            className="nav-target-btn autopilot-btn"
-            onClick={handleAutopilot}
-          >
-            AUTOPILOT
-          </button>
+        */}
+          <div className="nav-target-group">
+            <div className="nav-target-label">Nav Target</div>
+            <button className="nav-target-btn" onClick={() => setDialogOpen(true)}>
+              {displayLabel}
+            </button>
+          </div>
+          <div className="nav-target-group">
+            <div className="nav-target-label">Autopilot</div>
+            <button ref={autopilotBtnRef} className="autopilot-btn" onClick={handleAutopilot}>
+              AUTOPILOT
+            </button>
+          </div>
+          <div className="hud-divider" />
+
+          <div className="hud-metrics nav-metrics">
+            <div className="hud-metric">
+              <div className="hud-label">
+                {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
+              </div>
+              <span ref={orbitRef} className="hud-value nav-orbit" />
+            </div>
+            <div className="hud-divider" />
+            <div className="hud-metric" style={{ minWidth: '50px' }}>
+              <div className="hud-label">Altitude</div>
+              <span ref={altRef} className="hud-value nav-alt" />
+              <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
+            </div>
+            <div className="hud-divider" />
+            <div className="hud-metric">
+              <div className="hud-label">Apsis</div>
+              <div className="hud-metric-inline">
+                <div className="hud-label">Per</div>
+                <span ref={periapsisRef} className="hud-value nav-periapsis" />
+              </div>
+              <div className="hud-metric-inline">
+                <div className="hud-label">Apo</div>
+                <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
+              </div>
+            </div>
+
+            <div className="hud-divider" />
+            <div className="hud-metric">
+              <div className="hud-label">Approach</div>
+              <span ref={approachRef} className="hud-value nav-approach" />
+            </div>
+          </div>
         </div>
       </div>
 

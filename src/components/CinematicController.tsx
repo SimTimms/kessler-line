@@ -13,6 +13,7 @@ import {
 import { addMessage } from '../context/MessageStore';
 import { solarPlanetPositions } from '../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import { NO_FLY_ZONE_DISTANCE, EMPLOYER_RECALL_DELAY } from '../config/neptuneConfig';
 import {
   RADIO_CHATTER_LINES,
   RADIO_CHATTER_CASCADE_LINES,
@@ -23,9 +24,8 @@ import {
 } from '../narrative';
 
 const CINEMATIC_AUTOPILOT_DURATION = 10;
-const NO_FLY_ZONE_DISTANCE = 5000 * SOLAR_SYSTEM_SCALE; // 20_000 at scale=4
 const FAMILY_MESSAGE_DELAY = 14000; // ms — a beat after autopilot ends
-const EMPLOYER_RECALL_DELAY = 8000; // ms after Neptune no-fly triggers
+const CASCADE_TRIGGER_DELAY = 30000; // ms — cascade begins 30s after game start
 
 interface CinematicControllerProps {
   shipPositionRef: { current: THREE.Vector3 };
@@ -56,10 +56,19 @@ export default function CinematicController({ shipPositionRef }: CinematicContro
       addMessage(MSG_FAMILY_EARTH);
     }, FAMILY_MESSAGE_DELAY);
 
+    const cascadeTimer = window.setTimeout(() => {
+      if (!noFlyTriggered.current) {
+        setCascadePhase('during');
+        chatterState.lines = RADIO_CHATTER_CASCADE_LINES;
+        chatterState.index = 0;
+      }
+    }, CASCADE_TRIGGER_DELAY);
+
     return () => {
       window.clearTimeout(autopilotTimer);
       window.clearTimeout(dispatchIntroTimer);
       window.clearTimeout(familyMessageTimer);
+      window.clearTimeout(cascadeTimer);
       if (employerRecallTimer.current) window.clearTimeout(employerRecallTimer.current);
       cinematicAutopilotActive.current = false;
       cinematicThrustReverse.current = false;

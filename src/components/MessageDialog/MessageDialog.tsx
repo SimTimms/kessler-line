@@ -1,6 +1,7 @@
 import type { InboxMessage, MessagePlatform } from '../../context/MessageStore';
 import { ASTEROID_DOCK_DEF } from '../../config/worldConfig';
 import { waypointPromptDef } from '../../context/WaypointPrompt';
+import { PLATFORM_UI } from '../../context/ActivePlatform';
 import './MessageDialog.css';
 
 interface MessageDialogProps {
@@ -75,7 +76,7 @@ export default function MessageDialog({ message, onClose, onMinimize }: MessageD
 
   return (
     <div className="md-backdrop" onClick={onClose}>
-      <div className="md-dialog" data-platform={platform} onClick={(e) => e.stopPropagation()}>
+      <div className="md-dialog" data-platform={platform} data-version={PLATFORM_UI[platform]?.version ?? ''} onClick={(e) => e.stopPropagation()}>
         <div className="md-platform-header">
           <span className="md-platform-label">{cfg.label}</span>
           <span className="md-platform-sep"> · </span>

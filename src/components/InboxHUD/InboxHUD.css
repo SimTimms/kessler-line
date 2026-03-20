@@ -120,3 +120,17 @@
   0%, 100% { box-shadow: 0 0 8px var(--btn-glow); }
   50%       { box-shadow: 0 0 18px var(--btn-glow-strong); }
 }
+
+/* ── Per-platform badge/dot shapes ───────────────────────────────────────────── */
+
+/* HERALD — square badges, authoritative */
+.inbox-hud-btn[data-platform='HERALD'] .inbox-hud-badge { border-radius: 0; }
+.inbox-hud-btn[data-platform='HERALD'] .inbox-hud-dot   { border-radius: 0; }
+
+/* OPENLINE — almost-square, stripped-down */
+.inbox-hud-btn[data-platform='OPENLINE'] .inbox-hud-badge { border-radius: 1px; }
+.inbox-hud-btn[data-platform='OPENLINE'] .inbox-hud-dot   { border-radius: 1px; }
+
+/* MERIDIAN — circular, navigational */
+.inbox-hud-btn[data-platform='MERIDIAN'] .inbox-hud-badge { border-radius: 50%; }
+.inbox-hud-btn[data-platform='MERIDIAN'] .inbox-hud-dot   { border-radius: 50%; }
