@@ -3,12 +3,15 @@
 
 import type { ShipClass, ShipFaction, ShipAgenda, ShipRegion, ShipRecord } from './shipRegistry';
 import { getPlayerRegion } from './shipRegistry';
+import type { MessagePlatform, InboxMessage, ReplyOption } from '../context/MessageStore';
 
 export interface PlayerOption {
   id: string;
   label: string; // short button label
   text: string; // full player message text
   nextTurnId: string | null; // null = end of tree
+  /** For inbox messages: shown when the reply cannot be delivered. */
+  deliveryNote?: string;
 }
 
 export interface DialogueTurn {
@@ -34,6 +37,17 @@ export interface DialogueTree {
   openingTurnId: string;
   /** If set, plays this audio file for the opening NPC message instead of TTS. */
   audioFile?: string;
+  /**
+   * 'inbox' — narrative inbox message; excluded from NPC ship assignment.
+   * 'radio' / undefined — real-time radio conversation.
+   */
+  kind?: 'radio' | 'inbox';
+  /** Inbox message metadata — only used when kind === 'inbox'. */
+  from?: string;
+  subject?: string;
+  platform?: MessagePlatform;
+  senderLocationId?: string;
+  audioVoice?: string;
   /** If set, this tree is only matched to ships whose profile aligns with these conditions. */
   conditions?: DialogueConditions;
   turns: Record<string, DialogueTurn>;
@@ -61,6 +75,142 @@ export const CAPTAIN_NAMES = [
   'Aria Voss',
   'Kade Roran',
 ];
+
+// ── Inbox message trees ────────────────────────────────────────────────────
+// These use the same DialogueTree structure but kind:'inbox' excludes them from
+// NPC ship assignment. Convert to InboxMessage via treeToInboxMessage().
+
+export const MSG_DISPATCH_INTRO: DialogueTree = {
+  id: 'dispatch-intro-1',
+  kind: 'inbox',
+  captainName: 'Outer Lanes Ltd. — Routing',
+  vesselName: 'OL Routing',
+  from: 'Outer Lanes Ltd. — Routing',
+  subject: 'Job #OL-4471',
+  platform: 'REACH',
+  senderLocationId: 'Neptune',
+  openingTurnId: 'intro',
+  turns: {
+    intro: {
+      id: 'intro',
+      npcText: `Delivery to Sirix Station, Neptune vicinity.\n\nParcel: 1x sealed unit, ref. MX-7734. Handle with care.\n\nDrop and go. Signature not required.\n\n— Mara Voss\nRouting Coordinator, Outer Lanes Ltd.`,
+      playerOptions: [
+        {
+          id: 'dispatch-ack',
+          label: 'Acknowledged. En route.',
+          text: `Job #OL-4471 acknowledged. Parcel MX-7734 confirmed in hold.\n\nProceeding to Sirix Station, Neptune vicinity. ETA dependent on corridor clearance.\n\n— Pilot, Independent`,
+          nextTurnId: 'dispatch-reply-ack',
+        },
+        {
+          id: 'dispatch-query-contents',
+          label: "Query: what's in MX-7734?",
+          text: `Routing query — MX-7734 is listed as sealed, no contents declaration on my manifest copy. If Neptune Traffic asks, what am I carrying?\n\n— Pilot, Independent`,
+          nextTurnId: 'dispatch-reply-query',
+        },
+        {
+          id: 'dispatch-sirix-checkin',
+          label: 'Sirix flagging missed check-in.',
+          text: `Heads up — BEACON is flagging a missed automated check-in for Sirix Station. Status shows unknown.\n\nWant me to verify before final approach?\n\n— Pilot, Independent`,
+          nextTurnId: 'dispatch-reply-sirix',
+        },
+      ],
+    },
+    'dispatch-reply-ack': {
+      id: 'dispatch-reply-ack',
+      npcText: `Good. Don't dawdle — the Sirix window is narrow and I can't extend your clearance if you miss it.\n\nMX-7734 is time-sensitive. Move.\n\n— M.V.`,
+      playerOptions: [],
+    },
+    'dispatch-reply-query': {
+      id: 'dispatch-reply-query',
+      npcText: `Contents are proprietary cargo. Outer Lanes is cleared through Neptune Traffic — that clearance covers your manifest.\n\nYou're being paid to deliver, not to know. Keep moving.\n\n— M.V.`,
+      playerOptions: [],
+    },
+    'dispatch-reply-sirix': {
+      id: 'dispatch-reply-sirix',
+      npcText: `Automated systems miss check-ins. Sirix is active.\n\nComplete the delivery. If there's no one to receive, leave it at the dock terminal and log the drop.\n\nDon't deviate.\n\n— M.V.`,
+      playerOptions: [],
+    },
+  },
+};
+
+export const MSG_FAMILY_EARTH: DialogueTree = {
+  id: 'family-earth-1',
+  kind: 'inbox',
+  captainName: 'Home — Earth, Sector 9',
+  vesselName: 'Still here',
+  from: 'Home — Earth, Sector 9',
+  subject: 'Still here',
+  audioFile: 'https://kessler-audio.s3.eu-west-2.amazonaws.com/family-earth-1.mp3',
+  audioVoice: 'Marcela',
+  platform: 'BROADCAST',
+  senderLocationId: 'Earth',
+  openingTurnId: 'intro',
+  turns: {
+    intro: {
+      id: 'intro',
+      npcText: `Power's been stable for three weeks now. The feeds are patchy but we're getting through.\n\nOksana's growing fast. She asks about you.\n\nWe're okay. Come back when you can.\n\n— M`,
+      playerOptions: [
+        {
+          id: 'family-reply-okay',
+          label: "I'm okay — near Neptune.",
+          text: `I'm okay. Running a courier job in the Neptune corridor. Quiet out here.\n\nTell Oksana I'll bring something back.\n\nMiss you both. I'll make it back soon.`,
+          nextTurnId: null,
+          deliveryNote: `RELAY FAILED — INNER SYSTEM DESTINATION UNRESOLVABLE\nMessage held in outgoing queue. No delivery window available.`,
+        },
+        {
+          id: 'family-reply-coming-back',
+          label: "Tell Oksana I'll be back.",
+          text: `Tell Oksana I'm coming home. It's going to take a while — the lanes are complicated right now — but I'm coming.\n\nKeep the power stable and stay where you are.\n\nI love you.`,
+          nextTurnId: null,
+          deliveryNote: `RELAY FAILED — INNER SYSTEM DESTINATION UNRESOLVABLE\nMessage held in outgoing queue. No delivery window available.`,
+        },
+        {
+          id: 'family-reply-hang-on',
+          label: 'Hang on. On my way.',
+          text: `We're okay out here. The feeds are patchy on this end too.\n\nI'm going to work my way back in. Stay where you are — don't try to move.\n\nI love you both. I'm coming.`,
+          nextTurnId: null,
+          deliveryNote: `RELAY FAILED — INNER SYSTEM DESTINATION UNRESOLVABLE\nMessage held in outgoing queue. No delivery window available.`,
+        },
+      ],
+    },
+  },
+};
+
+export const MSG_NEPTUNE_CONTROL: DialogueTree = {
+  id: 'neptune-control-1',
+  kind: 'inbox',
+  captainName: 'Neptune Control — Traffic Authority',
+  vesselName: 'Approach Corridor Closed',
+  from: 'Neptune Control — Traffic Authority',
+  subject: 'Approach Corridor Closed',
+  platform: 'REACH',
+  openingTurnId: 'intro',
+  turns: {
+    intro: {
+      id: 'intro',
+      npcText: `Vessel, you have entered a restricted approach corridor.\n\nNo-fly zone is active. All docking rights for the inner ring are suspended pending security review.\n\nReverse thrust immediately and hold at minimum 20,000 units from the planet surface. Failure to comply will be treated as a hostile approach.\n\nNEPTUNE CONTROL OUT.`,
+      playerOptions: [],
+    },
+  },
+};
+
+export const MSG_EMPLOYER_RECALL: DialogueTree = {
+  id: 'employer-recall-1',
+  kind: 'inbox',
+  captainName: '— DISPATCH',
+  vesselName: 'PRIORITY-1',
+  from: '— DISPATCH',
+  subject: '⚠ PRIORITY-1 — ABORT APPROACH',
+  platform: 'HERALD',
+  openingTurnId: 'intro',
+  turns: {
+    intro: {
+      id: 'intro',
+      npcText: `Stop.\n\nDo not attempt Neptune entry. The corridor is locked and your window is gone.\n\nReturn to Asteroid Dock. Now.\n\nDo not contact Neptune Control. Do not respond to hails.\n\nThis is not a request.`,
+      playerOptions: [],
+    },
+  },
+};
 
 export const DIALOGUE_TREES: DialogueTree[] = [
   // ── Tree 1: Cargo hauler in transit ───────────────────────────────────────
@@ -1077,12 +1227,20 @@ export const DIALOGUE_TREES: DialogueTree[] = [
       },
     },
   },
+  // ── Inbox message trees (kind:'inbox' — excluded from ship assignment) ──────
+  MSG_DISPATCH_INTRO,
+  MSG_FAMILY_EARTH,
+  MSG_NEPTUNE_CONTROL,
+  MSG_EMPLOYER_RECALL,
 ];
 
 // ── Session-local tree assignment ─────────────────────────────────────────────
 // When a ShipRecord is provided, the best-matching tree is selected by scoring
 // conditions against the ship's profile. Without a record, falls back to
 // sequential round-robin. Assignment is cached per shipId.
+
+/** Radio-conversation trees only — inbox trees (kind:'inbox') are excluded. */
+const RADIO_TREES = DIALOGUE_TREES.filter((t) => t.kind !== 'inbox');
 
 const _shipAssignments = new Map<string, string>();
 let _nextTreeIndex = 0;
@@ -1107,22 +1265,22 @@ function scoreTree(tree: DialogueTree, record: ShipRecord): number {
 export function getOrAssignDialogueTree(shipId: string, record?: ShipRecord): DialogueTree {
   if (_shipAssignments.has(shipId)) {
     const treeId = _shipAssignments.get(shipId)!;
-    return DIALOGUE_TREES.find((t) => t.id === treeId) ?? DIALOGUE_TREES[0];
+    return DIALOGUE_TREES.find((t) => t.id === treeId) ?? RADIO_TREES[0];
   }
 
   let tree: DialogueTree;
 
   if (record) {
     // Score every tree; negative scores are hard-excluded (e.g. playerRegions mismatch)
-    const scored = DIALOGUE_TREES.map((t) => ({ t, s: scoreTree(t, record) })).filter(
+    const scored = RADIO_TREES.map((t) => ({ t, s: scoreTree(t, record) })).filter(
       (x) => x.s >= 0
     );
-    const eligible = scored.length > 0 ? scored : DIALOGUE_TREES.map((t) => ({ t, s: 1 }));
+    const eligible = scored.length > 0 ? scored : RADIO_TREES.map((t) => ({ t, s: 1 }));
     const best = Math.max(...eligible.map((x) => x.s));
     const candidates = eligible.filter((x) => x.s === best).map((x) => x.t);
     tree = candidates[Math.floor(Math.random() * candidates.length)];
   } else {
-    tree = DIALOGUE_TREES[_nextTreeIndex % DIALOGUE_TREES.length];
+    tree = RADIO_TREES[_nextTreeIndex % RADIO_TREES.length];
     _nextTreeIndex++;
   }
 
@@ -1161,4 +1319,50 @@ export function resolveDialogueText(text: string, record: ShipRecord): string {
     .replace(/\{\{destination\}\}/g, dest)
     .replace(/\{\{currentRegion\}\}/g, record.currentRegion)
     .replace(/\{\{faction\}\}/g, record.faction);
+}
+
+// ── Inbox message conversion ────────────────────────────────────────────────
+// Converts a DialogueTree with kind:'inbox' into the InboxMessage shape that
+// MessageStore / MessageDialog expect. The opening turn's npcText becomes the
+// message body; playerOptions become reply choices; nextTurnId references
+// become NPC follow-up messages (npcResponse).
+
+export function treeToInboxMessage(tree: DialogueTree): Omit<InboxMessage, 'read' | 'timestamp'> {
+  const opening = tree.turns[tree.openingTurnId];
+  const from = tree.from ?? tree.captainName;
+  const subject = tree.subject ?? tree.vesselName;
+
+  const replies: ReplyOption[] | undefined =
+    opening.playerOptions.length > 0
+      ? opening.playerOptions.map((opt) => {
+          const npcTurn = opt.nextTurnId ? tree.turns[opt.nextTurnId] : undefined;
+          return {
+            id: opt.id,
+            label: opt.label,
+            playerText: opt.text,
+            deliveryNote: opt.deliveryNote,
+            npcResponse: npcTurn
+              ? {
+                  id: opt.nextTurnId!,
+                  from,
+                  subject: `Re: ${subject}`,
+                  body: npcTurn.npcText,
+                  platform: tree.platform,
+                }
+              : undefined,
+          };
+        })
+      : undefined;
+
+  return {
+    id: tree.id,
+    from,
+    subject,
+    body: opening.npcText,
+    audioFile: tree.audioFile || undefined,
+    audioVoice: tree.audioVoice,
+    platform: tree.platform,
+    senderLocationId: tree.senderLocationId,
+    replies,
+  };
 }

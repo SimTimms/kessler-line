@@ -15,17 +15,17 @@ import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
 import { NO_FLY_ZONE_DISTANCE, EMPLOYER_RECALL_DELAY } from '../../config/neptuneConfig';
 import { shipPosRef } from '../../context/ShipPos';
+import { RADIO_CHATTER_LINES, RADIO_CHATTER_CASCADE_LINES } from '../../narrative';
 import {
-  RADIO_CHATTER_LINES,
-  RADIO_CHATTER_CASCADE_LINES,
   MSG_DISPATCH_INTRO,
   MSG_FAMILY_EARTH,
   MSG_NEPTUNE_CONTROL,
   MSG_EMPLOYER_RECALL,
-} from '../../narrative';
+  treeToInboxMessage,
+} from '../../narrative/npcDialogues';
 
 const CINEMATIC_AUTOPILOT_DURATION = 10;
-const FAMILY_MESSAGE_DELAY = 14000; // ms — a beat after autopilot ends
+const FAMILY_MESSAGE_DELAY = 4000; // ms — a beat after autopilot ends
 const CASCADE_TRIGGER_DELAY = 30000; // ms — cascade begins 30s after game start
 
 export default function CinematicController() {
@@ -46,11 +46,11 @@ export default function CinematicController() {
     }, CINEMATIC_AUTOPILOT_DURATION * 1000);
 
     const dispatchIntroTimer = window.setTimeout(() => {
-      addMessage(MSG_DISPATCH_INTRO);
+      addMessage(treeToInboxMessage(MSG_DISPATCH_INTRO), 'outer-lanes-dispatch');
     }, 3000);
 
     const familyMessageTimer = window.setTimeout(() => {
-      addMessage(MSG_FAMILY_EARTH);
+      addMessage(treeToInboxMessage(MSG_FAMILY_EARTH), 'family-earth');
     }, FAMILY_MESSAGE_DELAY);
 
     const cascadeTimer = window.setTimeout(() => {
@@ -87,10 +87,10 @@ export default function CinematicController() {
       setCascadePhase('during');
       chatterState.lines = RADIO_CHATTER_CASCADE_LINES;
       chatterState.index = 0;
-      addMessage(MSG_NEPTUNE_CONTROL);
+      addMessage(treeToInboxMessage(MSG_NEPTUNE_CONTROL), 'neptune-control');
 
       employerRecallTimer.current = window.setTimeout(() => {
-        addMessage(MSG_EMPLOYER_RECALL);
+        addMessage(treeToInboxMessage(MSG_EMPLOYER_RECALL), 'outer-lanes-dispatch');
       }, EMPLOYER_RECALL_DELAY);
     }
   });

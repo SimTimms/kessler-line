@@ -6,34 +6,56 @@ import {
   setChatTurn,
   type ChatThread,
 } from '../../context/ChatStore';
-import { getOrAssignDialogueTree, getOrAssignCaptainName, resolveDialogueText } from '../../narrative/npcDialogues';
 import {
-  getOrCreateShipRecord,
-  addContactEvent,
-  formatShipClass,
-  formatAgenda,
-} from '../../narrative/shipRegistry';
+  getOrAssignDialogueTree,
+  getOrAssignCaptainName,
+  resolveDialogueText,
+} from '../../narrative/npcDialogues';
+import { getOrCreateShipRecord, addContactEvent } from '../../narrative/shipRegistry';
 import { speakNpcLine } from '../../sound/PiperTTS';
+import type { HailStatus } from '../../context/HailState';
+import DialogueThread from './DialogueThread';
 import './CommsChat.css';
+import { DIALOGUE_TREES } from '../../narrative/npcDialogues';
 
 interface CommsChatProps {
   shipId: string;
   shipName: string;
   onClose: () => void;
+  hailStatus?: HailStatus;
+  radioActive?: boolean;
+  incomingHail?: boolean;
+  hailOfferContent?: { header: string; body: string };
+  onHail?: () => void;
+  onAcceptHail?: () => void;
+  onDeclineHail?: () => void;
+  staticContact?: StaticContact;
 }
 
-function formatTime(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-}
-
-export default function CommsChat({ shipId, shipName, onClose }: CommsChatProps) {
+export default function CommsChat({
+  shipId,
+  shipName,
+  onClose,
+  hailStatus,
+  radioActive,
+  incomingHail,
+  hailOfferContent,
+  onHail,
+  onAcceptHail,
+  onDeclineHail,
+  staticContact,
+}: CommsChatProps) {
   const [thread, setThread] = useState<ChatThread | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const closedRef = useRef(false);
+  const threadInitRef = useRef(false);
+
+  const effectiveHailStatus: HailStatus = hailStatus ?? 'accepted';
+  const isIncoming = incomingHail ?? false;
+  const isRadioActive = radioActive ?? true;
 
   // Sync from store whenever ChatUpdated fires for this ship
   useEffect(() => {
+    if (staticContact) return;
     const onUpdate = (e: Event) => {
       const { shipId: sid } = (e as CustomEvent<{ shipId: string }>).detail;
       if (sid === shipId) {
@@ -43,17 +65,29 @@ export default function CommsChat({ shipId, shipName, onClose }: CommsChatProps)
     };
     window.addEventListener('ChatUpdated', onUpdate);
     return () => window.removeEventListener('ChatUpdated', onUpdate);
-  }, [shipId]);
+  }, [shipId, staticContact]);
 
-  // Initialise thread on mount
+  // Initialise thread only when hail is accepted
   useEffect(() => {
+    if (staticContact) return;
+
+    const status = hailStatus ?? 'accepted';
+    if (status !== 'accepted') return;
+    if (threadInitRef.current) return;
+    threadInitRef.current = true;
+
     let t = getThread(shipId);
     if (!t) {
       const record = getOrCreateShipRecord(shipId, shipName);
       const tree = getOrAssignDialogueTree(shipId, record);
-      t = createThread(shipId, shipName, getOrAssignCaptainName(shipId), tree.id, tree.openingTurnId);
+      t = createThread(
+        shipId,
+        shipName,
+        getOrAssignCaptainName(shipId),
+        tree.id,
+        tree.openingTurnId
+      );
 
-      // Deliver the opening NPC message after a short transmission delay
       const firstTurn = tree.turns[tree.openingTurnId];
       if (firstTurn) {
         const delay = 1200 + Math.random() * 1800;
@@ -68,7 +102,9 @@ export default function CommsChat({ shipId, shipName, onClose }: CommsChatProps)
           setChatTurn(shipId, tree.openingTurnId, false);
           if (tree.audioFile) {
             const audio = new Audio(tree.audioFile);
-            audio.play().catch(() => {/* autoplay blocked */});
+            audio.play().catch(() => {
+              /* autoplay blocked */
+            });
           } else {
             speakNpcLine(openingText, tree.id);
           }
@@ -76,34 +112,59 @@ export default function CommsChat({ shipId, shipName, onClose }: CommsChatProps)
       }
     }
     setThread({ ...t, messages: [...t.messages] });
-  }, [shipId, shipName]);
+  }, [shipId, shipName, hailStatus, staticContact]);
 
-  // Scroll to bottom on new messages
+  // Initialise thread only when hail is accepted
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [thread?.messages.length]);
+    if (!staticContact) return;
+    console.log(staticContact.relatedMessageIds[0]);
+
+    const audioFile = DIALOGUE_TREES.find(
+      (t) => t.id === staticContact.relatedMessageIds[0]
+    )?.audioFile;
+    if (audioFile) {
+      const audio = new Audio(audioFile);
+      audio.play().catch(() => {
+        /* autoplay blocked */
+      });
+      return () => {
+        audio.pause();
+        audio.currentTime = 0;
+      };
+    }
+  }, [staticContact]);
 
   // Log a contact event when the conversation ends
   useEffect(() => {
-    if (!thread || closedRef.current) return;
-    const ended = thread.currentTurnId === null && !thread.awaitingNpc && thread.messages.length > 0;
+    if (staticContact || !thread || closedRef.current) return;
+    const ended =
+      thread.currentTurnId === null && !thread.awaitingNpc && thread.messages.length > 0;
     if (ended) {
       closedRef.current = true;
       addContactEvent(shipId, `Channel closed. ${thread.messages.length} messages exchanged.`);
     }
-  }, [thread?.currentTurnId, thread?.awaitingNpc, thread?.messages.length, shipId]);
+  }, [thread?.currentTurnId, thread?.awaitingNpc, thread?.messages.length, shipId, staticContact]);
+
+  // ── Dialogue tree (handles pre-hail and accepted states) ─────────────────────
+  const tree = !staticContact && thread ? getOrAssignDialogueTree(shipId) : null;
+  const currentTurn = thread?.currentTurnId && tree ? tree.turns[thread.currentTurnId] : null;
+  const showOptions =
+    !!thread &&
+    !thread.awaitingNpc &&
+    currentTurn !== null &&
+    (currentTurn?.playerOptions.length ?? 0) > 0;
+  const isEnded = !!thread && thread.currentTurnId === null && !thread.awaitingNpc;
 
   const handleOption = (optionId: string) => {
     if (!thread) return;
-    const tree = getOrAssignDialogueTree(shipId);
+    const dialogueTree = getOrAssignDialogueTree(shipId);
     const record = getOrCreateShipRecord(shipId, shipName);
-    const currentTurn = thread.currentTurnId ? tree.turns[thread.currentTurnId] : null;
-    if (!currentTurn) return;
+    const activeTurn = thread.currentTurnId ? dialogueTree.turns[thread.currentTurnId] : null;
+    if (!activeTurn) return;
 
-    const option = currentTurn.playerOptions.find((o) => o.id === optionId);
+    const option = activeTurn.playerOptions.find((o) => o.id === optionId);
     if (!option) return;
 
-    // Add player message immediately
     addChatMessage(shipId, {
       id: `player-${shipId}-${optionId}-${Date.now()}`,
       role: 'player',
@@ -111,11 +172,10 @@ export default function CommsChat({ shipId, shipName, onClose }: CommsChatProps)
       timestamp: Date.now(),
     });
 
-    // Mark awaiting NPC if there's a follow-up turn
     setChatTurn(shipId, option.nextTurnId, option.nextTurnId !== null);
 
     if (option.nextTurnId !== null) {
-      const nextTurn = tree.turns[option.nextTurnId];
+      const nextTurn = dialogueTree.turns[option.nextTurnId];
       if (nextTurn) {
         const delay = 2000 + Math.random() * 3000;
         const npcText = resolveDialogueText(nextTurn.npcText, record);
@@ -127,88 +187,30 @@ export default function CommsChat({ shipId, shipName, onClose }: CommsChatProps)
             timestamp: Date.now(),
           });
           setChatTurn(shipId, option.nextTurnId!, false);
-          speakNpcLine(npcText, tree.id);
+          speakNpcLine(npcText, dialogueTree.id);
         }, delay);
       }
     }
   };
 
-  if (!thread) return null;
-
-  const tree = getOrAssignDialogueTree(shipId);
-  const record = getOrCreateShipRecord(shipId, shipName);
-  const currentTurn = thread.currentTurnId ? tree.turns[thread.currentTurnId] : null;
-  const showOptions = !thread.awaitingNpc && currentTurn && currentTurn.playerOptions.length > 0;
-  const isEnded = thread.currentTurnId === null && !thread.awaitingNpc;
-
   return (
-    <div className="comms-chat">
-      <div className="comms-chat-header">
-        <div className="comms-chat-vessel">{shipName}</div>
-        <div className="comms-chat-captain">
-          {thread.captainName.toUpperCase()} · OPENLINE
-        </div>
-        <div className="comms-chat-profile">
-          {formatShipClass(record.shipClass)} · {formatAgenda(record.agenda)}
-          {record.destination !== 'none' ? ` → ${record.destination.toUpperCase()}` : ''}
-          {' · '}{record.faction.toUpperCase()}
-        </div>
-      </div>
-
-      <div className="comms-chat-messages">
-        {thread.messages.length === 0 && thread.awaitingNpc && (
-          <div className="comms-chat-connecting">
-            <span className="comms-chat-ellipsis">◈ OPENING CHANNEL</span>
-          </div>
-        )}
-
-        {thread.messages.map((msg) => (
-          <div key={msg.id} className={`comms-chat-row comms-chat-row--${msg.role}`}>
-            {msg.role === 'npc' && (
-              <div className="comms-chat-sender">{thread.captainName}</div>
-            )}
-            <div className={`comms-chat-bubble comms-chat-bubble--${msg.role}`}>
-              {msg.text}
-            </div>
-            <div className="comms-chat-time">{formatTime(msg.timestamp)}</div>
-          </div>
-        ))}
-
-        {thread.messages.length > 0 && thread.awaitingNpc && (
-          <div className="comms-chat-row comms-chat-row--npc">
-            <div className="comms-chat-sender">{thread.captainName}</div>
-            <div className="comms-chat-bubble comms-chat-bubble--pending">
-              <span className="comms-chat-ellipsis">◈ TRANSMITTING</span>
-            </div>
-          </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-
-      <div className="comms-chat-footer">
-        {showOptions && (
-          <div className="comms-chat-options">
-            {currentTurn.playerOptions.map((opt) => (
-              <button
-                key={opt.id}
-                className="comms-chat-opt"
-                onClick={() => handleOption(opt.id)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {isEnded && (
-          <div className="comms-chat-ended">— TRANSMISSION CLOSED —</div>
-        )}
-
-        <button className="comms-chat-close" onClick={onClose}>
-          CLOSE COMMS
-        </button>
-      </div>
-    </div>
+    <DialogueThread
+      shipId={shipId}
+      shipName={shipName}
+      contact={staticContact}
+      effectiveHailStatus={effectiveHailStatus}
+      isIncoming={isIncoming}
+      isRadioActive={isRadioActive}
+      hailOfferContent={hailOfferContent}
+      onHail={onHail}
+      onAcceptHail={onAcceptHail}
+      onDeclineHail={onDeclineHail}
+      thread={thread}
+      playerOptions={currentTurn?.playerOptions ?? []}
+      showOptions={showOptions}
+      isEnded={isEnded}
+      onOption={handleOption}
+      onClose={onClose}
+    />
   );
 }

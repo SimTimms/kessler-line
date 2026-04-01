@@ -87,7 +87,6 @@ const HudLayer = memo(function HudLayer({
       <NavHUD />
       <ContactsHUD />
       <RadioChatterStream />
-      <CinematicOverlay />
     </>
   );
 });

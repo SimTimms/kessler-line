@@ -9,14 +9,11 @@ import {
   addMessage,
   queueMessage,
   markRead,
-  isMessagePending,
   getUnreadCount,
 } from '../../context/MessageStore';
-import type { InboxMessage } from '../../context/MessageStore';
 import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
 import { KM_PER_UNIT } from '../../config/commsConfig';
 import { STATIC_CONTACTS } from '../../narrative/contacts';
-import type { StaticContact } from '../../narrative/contacts';
 import { type HailStatus, setHailStatus } from '../../context/HailState';
 import {
   setIncomingHail,
@@ -28,8 +25,6 @@ import type { RadioBroadcastDef } from '../../config/worldConfig';
 import { getCollidables } from '../../context/CollisionRegistry';
 import { ContactsHudDialog } from './ContactsHudDialog/ContactsHudDialog';
 import type { SelectionItem } from './ContactsHudDialog/ContactsHudDialog';
-import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
-import MessageDialog from '../MessageDialog/MessageDialog';
 import CommsChat from '../CommsChat/CommsChat';
 import './ContactsHUD.css';
 
@@ -141,20 +136,6 @@ function driveStatusPulse(hs: HailStatus, radioActive: boolean): boolean {
   return false;
 }
 
-function getTransmitStatus(m: InboxMessage): { statusLine?: string; statusPulse?: boolean } {
-  if (!m.repliedWith || !m.replies) return {};
-  const reply = m.replies.find((r) => r.id === m.repliedWith);
-  if (!reply) return {};
-  if (reply.deliveryNote) return { statusLine: '✕ RELAY FAILED' };
-  if (reply.npcResponse) {
-    const pending = isMessagePending(reply.npcResponse.id);
-    const delivered = messageStore.current.some((msg) => msg.id === reply.npcResponse!.id);
-    if (pending) return { statusLine: '◈ IN TRANSIT', statusPulse: true };
-    if (delivered) return { statusLine: '✓ RESPONSE RECEIVED' };
-  }
-  return {};
-}
-
 export default function ContactsHUD() {
   const [open, setOpen] = useState(false);
   const [chatShipId, setChatShipId] = useState<string | null>(null);
@@ -163,10 +144,6 @@ export default function ContactsHUD() {
   const [hailStates, setHailStates] = useState<Map<string, HailStatus>>(new Map());
   const [incomingHails, setIncomingHails] = useState<Set<string>>(new Set());
   const [savedContactIds, setSavedContactIds] = useState<Set<string>>(new Set());
-  const [selectedStaticContact, setSelectedStaticContact] = useState<StaticContact | null>(null);
-  const [messageListOpen, setMessageListOpen] = useState(false);
-  const [activeMessage, setActiveMessage] = useState<InboxMessage | null>(null);
-  const [activeMessageWasUnread, setActiveMessageWasUnread] = useState(false);
   const [hailOffers, setHailOffers] = useState<Map<string, HailOffer>>(new Map());
   const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
 
@@ -288,8 +265,6 @@ export default function ContactsHUD() {
   useEffect(() => {
     const onIncoming = (e: Event) => {
       const { id, active } = (e as CustomEvent<IncomingHailEventDetail>).detail;
-      const audio = new Audio('incoming-message.mp3');
-      audio.play().catch(() => {});
       setIncomingHails((prev) => {
         const next = new Set(prev);
         if (active) next.add(id);
@@ -320,13 +295,6 @@ export default function ContactsHUD() {
   }, []);
 
   const handleSelect = (id: string) => {
-    const staticContact = STATIC_CONTACTS.find((c) => c.id === id);
-    if (staticContact) {
-      setSelectedStaticContact(staticContact);
-      setMessageListOpen(true);
-      return;
-    }
-    // Drive or broadcast → open CommsChat directly
     setChatShipId(id);
     if (incomingHails.has(id)) dismissIncomingHail(id);
     setOpen(false);
@@ -334,16 +302,6 @@ export default function ContactsHUD() {
 
   const saveContact = (id: string) => {
     setSavedContactIds((prev) => new Set(prev).add(id));
-  };
-
-  const handleMessageSelect = (id: string) => {
-    const msg = messageStore.current.find((m) => m.id === id);
-    if (msg) {
-      const wasUnread = !msg.read;
-      markRead(id);
-      setActiveMessage(msg);
-      setActiveMessageWasUnread(wasUnread);
-    }
   };
 
   function handleAcceptHailOffer(shipId: string) {
@@ -376,12 +334,7 @@ export default function ContactsHUD() {
           },
         ],
       });
-      const msg = messageStore.current.find((m) => m.id === msgId);
-      if (msg) {
-        markRead(msgId);
-        setActiveMessage(msg);
-        setActiveMessageWasUnread(true);
-      }
+      markRead(msgId);
       setHailOffers((prev) => {
         const next = new Map(prev);
         next.delete(shipId);
@@ -426,13 +379,17 @@ export default function ContactsHUD() {
 
   const savedItems: SelectionItem[] = [
     ...STATIC_CONTACTS.map((c) => {
+      const isIncoming = incomingHails.has(c.id);
       const hasUnread =
+        !isIncoming &&
         unreadCount > 0 &&
         messageStore.current.some((m) => c.relatedMessageIds.includes(m.id) && !m.read);
       return {
         id: c.id,
         label: c.name,
         sublabel: c.role,
+        statusLine: isIncoming ? commsStatus.incoming : undefined,
+        statusPulse: isIncoming ? true : undefined,
         statusIcon: hasUnread ? PLATFORM_UI[activePlatform].unreadIcon : undefined,
       };
     }),
@@ -460,11 +417,6 @@ export default function ContactsHUD() {
       broadcastContacts.find((b) => b.def.id === chatShipId)?.inRadioRange ??
       false)
     : false;
-
-  const messagesForContact =
-    selectedStaticContact && messageListOpen
-      ? messageStore.current.filter((m) => selectedStaticContact.relatedMessageIds.includes(m.id))
-      : [];
 
   function getChatOfferContent(): { header: string; body: string } | undefined {
     if (!chatShipId) return undefined;
@@ -506,54 +458,38 @@ export default function ContactsHUD() {
         />
       )}
 
-      {/* Inline message list for static contact */}
-      {messageListOpen && selectedStaticContact && !activeMessage && (
-        <SelectionDialog
-          title={selectedStaticContact.name}
-          platform={selectedStaticContact.platform}
-          items={messagesForContact.map((m) => ({
-            id: m.id,
-            label: m.subject,
-            sublabel: m.from,
-            statusIcon: m.read ? undefined : PLATFORM_UI[m.platform ?? activePlatform]?.unreadIcon,
-            ...getTransmitStatus(m),
-          }))}
-          onSelect={handleMessageSelect}
-          onClose={() => {
-            setMessageListOpen(false);
-            setSelectedStaticContact(null);
-          }}
-        />
-      )}
-
-      {/* Message viewer */}
-      {activeMessage && (
-        <MessageDialog
-          message={activeMessage}
-          wasUnread={activeMessageWasUnread}
-          onClose={() => setActiveMessage(null)}
-          onMinimize={() => setActiveMessage(null)}
-        />
-      )}
-
-      {/* Comms chat */}
-      {chatShipId && (
-        <CommsChat
-          shipId={chatShipId}
-          shipName={chatShipName}
-          hailStatus={hailStates.get(chatShipId) ?? 'none'}
-          radioActive={chatRadioActive}
-          incomingHail={incomingHails.has(chatShipId)}
-          hailOfferContent={getChatOfferContent()}
-          onHail={() => sendHailContact(chatShipId, chatShipName)}
-          onAcceptHail={() => handleAcceptHailOffer(chatShipId)}
-          onDeclineHail={() => {
-            dismissIncomingHail(chatShipId);
-            setChatShipId(null);
-          }}
-          onClose={() => setChatShipId(null)}
-        />
-      )}
+      {/* Comms chat — handles both static contacts (inbox mode) and live ships */}
+      {chatShipId &&
+        (() => {
+          const staticContact = STATIC_CONTACTS.find((c) => c.id === chatShipId);
+          if (staticContact) {
+            return (
+              <CommsChat
+                shipId={chatShipId}
+                shipName={staticContact.name}
+                staticContact={staticContact}
+                onClose={() => setChatShipId(null)}
+              />
+            );
+          }
+          return (
+            <CommsChat
+              shipId={chatShipId}
+              shipName={chatShipName}
+              hailStatus={hailStates.get(chatShipId) ?? 'none'}
+              radioActive={chatRadioActive}
+              incomingHail={incomingHails.has(chatShipId)}
+              hailOfferContent={getChatOfferContent()}
+              onHail={() => sendHailContact(chatShipId, chatShipName)}
+              onAcceptHail={() => handleAcceptHailOffer(chatShipId)}
+              onDeclineHail={() => {
+                dismissIncomingHail(chatShipId);
+                setChatShipId(null);
+              }}
+              onClose={() => setChatShipId(null)}
+            />
+          );
+        })()}
     </>
   );
 }

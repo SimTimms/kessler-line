@@ -25,7 +25,7 @@ export const STATIC_CONTACTS: StaticContact[] = [
   },
   {
     id: 'family-earth',
-    name: 'Home — Earth',
+    name: 'Home - Earth',
     role: 'PERSONAL · DEGRADED RELAY',
     platform: 'BROADCAST',
     relatedMessageIds: ['family-earth-1'],

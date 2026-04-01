@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { messageStore, markRead, getUnreadCount, isMessagePending, addMessage } from '../../context/MessageStore';
+import {
+  messageStore,
+  markRead,
+  getUnreadCount,
+  isMessagePending,
+  addMessage,
+} from '../../context/MessageStore';
 import type { InboxMessage } from '../../context/MessageStore';
 import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
 import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
@@ -17,7 +23,10 @@ const SHIP_DESIGNATIONS: Record<string, string> = {
   '0': 'HEKTOR-7',
 };
 
-const HAIL_CONTENT: Record<'trade' | 'mission', Record<string, { header: string; body: string }>> = {
+const HAIL_CONTENT: Record<
+  'trade' | 'mission',
+  Record<string, { header: string; body: string }>
+> = {
   trade: {
     '0': {
       header: 'SURPLUS CARGO — FUEL CELLS',
@@ -40,6 +49,7 @@ export default function InboxHUD() {
   const [notifVisible, setNotifVisible] = useState(false);
   const [hailRequest, setHailRequest] = useState<HailRequest | null>(null);
   const hideTimeoutRef = useRef<number | null>(null);
+  const prevUnreadRef = useRef(getUnreadCount());
 
   const ui = PLATFORM_UI[activePlatform];
 
@@ -61,8 +71,10 @@ export default function InboxHUD() {
     };
 
     const onInboxUpdated = () => {
-      setUnread(getUnreadCount());
-      setNotifVisible(false);
+      const newCount = getUnreadCount();
+      if (newCount > prevUnreadRef.current) showTransient();
+      prevUnreadRef.current = newCount;
+      setUnread(newCount);
     };
     const onNpcHailRequest = (e: Event) => {
       const detail = (e as CustomEvent<HailRequest>).detail;
@@ -184,10 +196,16 @@ export default function InboxHUD() {
             {hailRequest.type === 'trade' ? 'TRADE OFFER' : 'MISSION OFFER'}
           </div>
           <div className="hail-request-actions">
-            <button className="hail-request-btn hail-request-btn--accept" onClick={handleAcceptHail}>
+            <button
+              className="hail-request-btn hail-request-btn--accept"
+              onClick={handleAcceptHail}
+            >
               ACCEPT
             </button>
-            <button className="hail-request-btn hail-request-btn--decline" onClick={handleDeclineHail}>
+            <button
+              className="hail-request-btn hail-request-btn--decline"
+              onClick={handleDeclineHail}
+            >
               DECLINE
             </button>
           </div>

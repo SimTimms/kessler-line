@@ -33,6 +33,7 @@ import DistressBeaconField from './DistressBeacon/DistressBeaconField';
 import MarsSystem from './Planets/MarsSystem';
 import SkySphere from './Environment/SkySphere';
 import { RadioBeacons } from './RadioBeacons';
+import CinematicController from '../components/Cinematic/CinematicController';
 import { SPACE_STATION_DEF, ASTEROID_DOCK_DEF } from '../config/worldConfig';
 import { START_ZONE_CENTER } from '../config/spawnConfig';
 import {
@@ -158,6 +159,7 @@ export default function Scene() {
       <DistressBeaconField />
       <ShipDepthOfField />
       <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
+      <CinematicController />
       <AutopilotController />
       {/*<CollisionDebug />*/}
     </Canvas>

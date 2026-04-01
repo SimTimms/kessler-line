@@ -48,12 +48,17 @@ export function ContactsHudDialog({
 
   function itemClass(item: SelectionItem): string {
     const statusClass =
-      item.statusLine === commsStatus.incoming ? ' chd-item-content--incoming'
-      : item.statusLine === commsStatus.rejected ? ' chd-item-content--rejected'
-      : item.statusLine === commsStatus.radioActive ? ' chd-item-content--radio-active'
-      : item.statusLine === commsStatus.accepted ? ' chd-item-content--accepted'
-      : item.statusLine === commsStatus.pending ? ' chd-item-content--pending'
-      : '';
+      item.statusLine === commsStatus.incoming
+        ? ' chd-item-content--incoming'
+        : item.statusLine === commsStatus.rejected
+          ? ' chd-item-content--rejected'
+          : item.statusLine === commsStatus.radioActive
+            ? ' chd-item-content--radio-active'
+            : item.statusLine === commsStatus.accepted
+              ? ' chd-item-content--accepted'
+              : item.statusLine === commsStatus.pending
+                ? ' chd-item-content--pending'
+                : '';
     return `chd-item${item.id === selectedId ? ' chd-item--active' : ''}${item.statusIcon ? ' chd-item--unread' : ''}${statusClass}`;
   }
 
@@ -72,7 +77,9 @@ export function ContactsHudDialog({
             <span className="chd-item-label">{item.label}</span>
             {item.sublabel && <span className="chd-item-sublabel">{item.sublabel}</span>}
             {item.statusLine && (
-              <span className={`chd-item-status-line${item.statusPulse ? ' chd-item-status-line--pulse' : ''}`}>
+              <span
+                className={`chd-item-status-line${item.statusPulse ? ' chd-item-status-line--pulse' : ''}`}
+              >
                 {item.statusLine}
               </span>
             )}

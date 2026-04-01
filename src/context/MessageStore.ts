@@ -35,6 +35,7 @@ export interface InboxMessage {
 interface PendingMessage {
   msg: Omit<InboxMessage, 'read' | 'timestamp'>;
   deliverAt: number; // Date.now() ms
+  hailId?: string;
 }
 
 const _messages: InboxMessage[] = [];
@@ -42,15 +43,24 @@ const _pending: PendingMessage[] = [];
 
 export const messageStore: { current: InboxMessage[] } = { current: _messages };
 
+function _fireIncomingHail(hailId: string) {
+  window.dispatchEvent(
+    new CustomEvent<{ id: string; active: boolean }>('IncomingHailUpdated', {
+      detail: { id: hailId, active: true },
+    })
+  );
+}
+
 // Check pending queue every second and deliver due messages.
 setInterval(() => {
   const now = Date.now();
   let delivered = false;
   for (let i = _pending.length - 1; i >= 0; i--) {
     if (_pending[i].deliverAt <= now) {
-      const { msg } = _pending.splice(i, 1)[0];
-      if (!_messages.some((m) => m.id === msg.id)) {
-        _messages.push({ ...msg, read: false, timestamp: Date.now() });
+      const entry = _pending.splice(i, 1)[0];
+      if (!_messages.some((m) => m.id === entry.msg.id)) {
+        _messages.push({ ...entry.msg, read: false, timestamp: Date.now() });
+        if (entry.hailId) _fireIncomingHail(entry.hailId);
         delivered = true;
       }
     }
@@ -58,18 +68,23 @@ setInterval(() => {
   if (delivered) window.dispatchEvent(new Event('InboxUpdated'));
 }, 1000);
 
-export function addMessage(msg: Omit<InboxMessage, 'read' | 'timestamp'>) {
+export function addMessage(msg: Omit<InboxMessage, 'read' | 'timestamp'>, hailId?: string) {
   if (_messages.some((m) => m.id === msg.id)) return;
   if (_pending.some((p) => p.msg.id === msg.id)) return;
   _messages.push({ ...msg, read: false, timestamp: Date.now() });
+  if (hailId) _fireIncomingHail(hailId);
   window.dispatchEvent(new Event('InboxUpdated'));
 }
 
 /** Queue a message to arrive after delayMs real milliseconds. */
-export function queueMessage(msg: Omit<InboxMessage, 'read' | 'timestamp'>, delayMs: number) {
+export function queueMessage(
+  msg: Omit<InboxMessage, 'read' | 'timestamp'>,
+  delayMs: number,
+  hailId?: string
+) {
   if (_messages.some((m) => m.id === msg.id)) return;
   if (_pending.some((p) => p.msg.id === msg.id)) return;
-  _pending.push({ msg, deliverAt: Date.now() + delayMs });
+  _pending.push({ msg, deliverAt: Date.now() + delayMs, hailId });
   window.dispatchEvent(new Event('InboxUpdated'));
 }
 

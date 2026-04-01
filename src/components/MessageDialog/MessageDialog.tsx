@@ -6,7 +6,11 @@ import { ASTEROID_DOCK_DEF } from '../../config/worldConfig';
 import { waypointPromptDef } from '../../context/WaypointPrompt';
 import { PLATFORM_UI } from '../../context/ActivePlatform';
 import { PRIORITY_PLATFORMS } from '../../config/commsConfig';
-import { computeOneWayDelayMs, formatGameDuration, computeDistanceAu } from '../../narrative/commsDelay';
+import {
+  computeOneWayDelayMs,
+  formatGameDuration,
+  computeDistanceAu,
+} from '../../narrative/commsDelay';
 import './MessageDialog.css';
 
 interface MessageDialogProps {
@@ -76,15 +80,21 @@ interface SentState {
   distanceAu: string;
 }
 
-export default function MessageDialog({ message, wasUnread, onClose, onMinimize }: MessageDialogProps) {
+export default function MessageDialog({
+  message,
+  wasUnread,
+  onClose,
+  onMinimize,
+}: MessageDialogProps) {
   const date = new Date(message.timestamp).toISOString().slice(0, 10);
-
   useEffect(() => {
     if (!wasUnread) return;
 
     if (message.audioFile) {
       const audio = new Audio(message.audioFile);
-      audio.play().catch(() => {/* autoplay blocked */});
+      audio.play().catch(() => {
+        /* autoplay blocked */
+      });
       return () => {
         audio.pause();
         audio.currentTime = 0;
@@ -100,7 +110,7 @@ export default function MessageDialog({ message, wasUnread, onClose, onMinimize 
         cancelSpeech();
       };
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const platform = message.platform ?? 'REACH';
   const cfg = PLATFORM_CONFIG[platform];
@@ -148,7 +158,12 @@ export default function MessageDialog({ message, wasUnread, onClose, onMinimize 
 
   return (
     <div className="md-backdrop" onClick={onClose}>
-      <div className="md-dialog" data-platform={platform} data-version={PLATFORM_UI[platform]?.version ?? ''} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="md-dialog"
+        data-platform={platform}
+        data-version={PLATFORM_UI[platform]?.version ?? ''}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="md-platform-header">
           <span className="md-platform-label">{cfg.label}</span>
           <span className="md-platform-sep"> · </span>
@@ -167,9 +182,11 @@ export default function MessageDialog({ message, wasUnread, onClose, onMinimize 
         {sent && (
           <div className="md-sent-panel">
             <div className="md-sent-header">
-              {sent.isPriority || sent.reply.deliveryNote
-                ? `OUTGOING — ${cfg.label}`
-                : <span className="md-sent-transmitting">◈ TRANSMITTING — {cfg.label}</span>}
+              {sent.isPriority || sent.reply.deliveryNote ? (
+                `OUTGOING — ${cfg.label}`
+              ) : (
+                <span className="md-sent-transmitting">◈ TRANSMITTING — {cfg.label}</span>
+              )}
             </div>
             <div className="md-sent-body">{sent.reply.playerText}</div>
             {sent.reply.deliveryNote ? (
@@ -184,12 +201,16 @@ export default function MessageDialog({ message, wasUnread, onClose, onMinimize 
                 </div>
                 <div className="md-delivery-row">
                   <span className="md-delivery-label">EST. DELIVERY</span>
-                  <span className="md-delivery-value">{formatGameDuration(sent.oneWayDelayMs)}</span>
+                  <span className="md-delivery-value">
+                    {formatGameDuration(sent.oneWayDelayMs)}
+                  </span>
                 </div>
                 {sent.reply.npcResponse && (
                   <div className="md-delivery-row">
                     <span className="md-delivery-label">RESPONSE WINDOW</span>
-                    <span className="md-delivery-value">{formatGameDuration(sent.oneWayDelayMs * 2)}</span>
+                    <span className="md-delivery-value">
+                      {formatGameDuration(sent.oneWayDelayMs * 2)}
+                    </span>
                   </div>
                 )}
                 <div className="md-relay-animation">
@@ -209,7 +230,11 @@ export default function MessageDialog({ message, wasUnread, onClose, onMinimize 
           <div className="md-reply-panel">
             <div className="md-reply-header">SELECT RESPONSE</div>
             {message.replies.map((reply) => (
-              <button key={reply.id} className="md-reply-option" onClick={() => handleSendReply(reply)}>
+              <button
+                key={reply.id}
+                className="md-reply-option"
+                onClick={() => handleSendReply(reply)}
+              >
                 {reply.label}
               </button>
             ))}
