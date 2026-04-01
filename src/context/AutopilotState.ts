@@ -24,6 +24,8 @@ export const autopilotRadialIn = { current: false };
 
 export function enableAutopilot() {
   autopilotActive.current = true;
+  const audio = new Audio('hyperbolic.mp3');
+  audio.play().catch(() => {});
   autopilotPhase.current = 'hyperbolic-approach'; // DEBUG: skip align
 }
 

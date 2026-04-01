@@ -18,7 +18,11 @@ import { KM_PER_UNIT } from '../../config/commsConfig';
 import { STATIC_CONTACTS } from '../../narrative/contacts';
 import type { StaticContact } from '../../narrative/contacts';
 import { type HailStatus, setHailStatus } from '../../context/HailState';
-import { setIncomingHail, dismissIncomingHail, type IncomingHailEventDetail } from '../../context/IncomingHailState';
+import {
+  setIncomingHail,
+  dismissIncomingHail,
+  type IncomingHailEventDetail,
+} from '../../context/IncomingHailState';
 import { RADIO_BROADCAST_DEFS } from '../../config/worldConfig';
 import type { RadioBroadcastDef } from '../../config/worldConfig';
 import { getCollidables } from '../../context/CollisionRegistry';
@@ -53,7 +57,10 @@ const SHIP_DESIGNATIONS: Record<string, string> = {
   '0': 'HEKTOR-7',
 };
 
-const HAIL_CONTENT: Record<'trade' | 'mission', Record<string, { header: string; body: string }>> = {
+const HAIL_CONTENT: Record<
+  'trade' | 'mission',
+  Record<string, { header: string; body: string }>
+> = {
   trade: {
     '0': {
       header: 'SURPLUS CARGO — FUEL CELLS',
@@ -193,7 +200,13 @@ export default function ContactsHUD() {
                   ? `${(km / 1_000).toFixed(1)} Mm`
                   : `${km.toFixed(0)} km`;
             const radioActive = radioOnRef.current && dist <= radioRangeRef.current;
-            inRange.push({ id: sig.id, name: sig.label, distanceLabel: distLabel, distanceRaw: dist, radioActive });
+            inRange.push({
+              id: sig.id,
+              name: sig.label,
+              distanceLabel: distLabel,
+              distanceRaw: dist,
+              radioActive,
+            });
           }
         }
 
@@ -275,9 +288,12 @@ export default function ContactsHUD() {
   useEffect(() => {
     const onIncoming = (e: Event) => {
       const { id, active } = (e as CustomEvent<IncomingHailEventDetail>).detail;
+      const audio = new Audio('incoming-message.mp3');
+      audio.play().catch(() => {});
       setIncomingHails((prev) => {
         const next = new Set(prev);
-        if (active) next.add(id); else next.delete(id);
+        if (active) next.add(id);
+        else next.delete(id);
         return next;
       });
     };
@@ -435,21 +451,19 @@ export default function ContactsHUD() {
 
   const chatShipName = chatShipId
     ? (inRangeDrives.find((d) => d.id === chatShipId)?.name ??
-       broadcastContacts.find((b) => b.def.id === chatShipId)?.def.label ??
-       chatShipId)
+      broadcastContacts.find((b) => b.def.id === chatShipId)?.def.label ??
+      chatShipId)
     : '';
 
   const chatRadioActive = chatShipId
     ? (inRangeDrives.find((d) => d.id === chatShipId)?.radioActive ??
-       broadcastContacts.find((b) => b.def.id === chatShipId)?.inRadioRange ??
-       false)
+      broadcastContacts.find((b) => b.def.id === chatShipId)?.inRadioRange ??
+      false)
     : false;
 
   const messagesForContact =
     selectedStaticContact && messageListOpen
-      ? messageStore.current.filter((m) =>
-          selectedStaticContact.relatedMessageIds.includes(m.id)
-        )
+      ? messageStore.current.filter((m) => selectedStaticContact.relatedMessageIds.includes(m.id))
       : [];
 
   function getChatOfferContent(): { header: string; body: string } | undefined {
@@ -501,9 +515,7 @@ export default function ContactsHUD() {
             id: m.id,
             label: m.subject,
             sublabel: m.from,
-            statusIcon: m.read
-              ? undefined
-              : PLATFORM_UI[m.platform ?? activePlatform]?.unreadIcon,
+            statusIcon: m.read ? undefined : PLATFORM_UI[m.platform ?? activePlatform]?.unreadIcon,
             ...getTransmitStatus(m),
           }))}
           onSelect={handleMessageSelect}

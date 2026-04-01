@@ -120,11 +120,7 @@ export default function AutopilotController() {
           (targetPos.x - shipPos.x) ** 2 + (targetPos.z - shipPos.z) ** 2
         );
         const toa = speed > 0.1 ? roughDist / speed : 0;
-        _predictedTargetPos.set(
-          targetPos.x + tvx * toa,
-          targetPos.y,
-          targetPos.z + tvz * toa
-        );
+        _predictedTargetPos.set(targetPos.x + tvx * toa, targetPos.y, targetPos.z + tvz * toa);
         effectiveTargetPos = _predictedTargetPos;
       }
     }
@@ -248,7 +244,7 @@ export default function AutopilotController() {
     if (autopilotPhase.current === 'done') {
       autopilotStatus.current = 'ARRIVED';
 
-    // ── align: rotate nose toward target ─────────────────────────────────────
+      // ── align: rotate nose toward target ─────────────────────────────────────
     } else if (autopilotPhase.current === 'align') {
       autopilotStatus.current = 'ALIGNING';
       const { yawLeft: yl, yawRight: yr } = computeYaw(signedErrorToTarget, angVel);
@@ -264,12 +260,12 @@ export default function AutopilotController() {
         }
       }
 
-    // ── burn: straight-line approach to station ───────────────────────────────
+      // ── burn: straight-line approach to station ───────────────────────────────
     } else if (autopilotPhase.current === 'burn') {
       const next = Approach(ctx);
       if (next) autopilotPhase.current = next;
 
-    // ── retroburn: brake to near-zero at arrival radius ───────────────────────
+      // ── retroburn: brake to near-zero at arrival radius ───────────────────────
     } else if (autopilotPhase.current === 'retroburn') {
       const next = OrbitInsertion(ctx);
       if (next) autopilotPhase.current = next;
