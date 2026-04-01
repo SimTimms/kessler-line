@@ -16,7 +16,7 @@ const ORBIT_CLOSE_DIST = 150; // world units to declare orbit closed
 // Prevents approach arcs that curve near the start from being mistaken for orbits.
 const ORBIT_AWAY_DIST = 500;
 const HUD_BLUE = 0x00c8ff;
-const VELOCITY_ORANGE = 0xff8800;
+const VELOCITY_ORANGE = 0x00ffff;
 const VELOCITY_X_OFFSET = 0;
 
 // Module-level scratch — no GC per frame
@@ -159,7 +159,8 @@ export default function VelocityIndicator() {
     sprite.visible = speed > MIN_SPEED;
 
     const ship = shipPositionRef.current;
-    const sx = ship.x, sz = ship.z;
+    const sx = ship.x,
+      sz = ship.z;
 
     // Anchor line at ship world position — geometry stored in ship-relative coords
     // so computeLineDistances works on small values (no float32 precision loss).
@@ -191,7 +192,11 @@ export default function VelocityIndicator() {
     const noseOffZ = _noseFwd.z * DOCKING_PORT_LOCAL_Z;
 
     if (primaryBody) {
-      _simPos.set(ship.x + noseOffX - primaryBody.position.x, 0, ship.z + noseOffZ - primaryBody.position.z);
+      _simPos.set(
+        ship.x + noseOffX - primaryBody.position.x,
+        0,
+        ship.z + noseOffZ - primaryBody.position.z
+      );
       _simVel.set(
         shipVelocity.x - primaryBody.velocity.x,
         0,

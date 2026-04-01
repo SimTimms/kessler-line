@@ -19,16 +19,17 @@ export default function TargetIndicatorLine({
 }: {
   shipGroupRef: React.RefObject<THREE.Group>;
 }) {
+  const opacity = 0.05;
   const line = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(6); // 2 points × 3 components
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const mat = new THREE.LineDashedMaterial({
-      color: 'rgba(0, 255, 255, 0.5)',
+      color: 'rgba(255, 255, 255, 0.5)',
       dashSize: 80,
       gapSize: 60,
       transparent: true,
-      opacity: 0.003,
+      opacity: opacity,
       depthTest: false,
       depthWrite: false,
     });
@@ -76,12 +77,13 @@ export default function TargetIndicatorLine({
           <div
             ref={textRef}
             style={{
-              color: 'rgba(0, 255, 255, 0.25)',
+              color: 'rgba(255, 255, 255, 0.25)',
               fontFamily: 'monospace',
               fontSize: '12px',
               whiteSpace: 'nowrap',
               pointerEvents: 'none',
-              textShadow: '0 0 8px rgba(0, 255, 255, 0.5)',
+              textShadow: '0 0 8px rgba(255, 255, 255, 0.5)',
+              opacity: opacity * 10,
             }}
           />
         </Html>
