@@ -393,8 +393,7 @@ export default function ShipParticleCloud({
         toneMapped={false}
         vertexColors
         blending={THREE.AdditiveBlending}
-        map={flashTexture}
-        alphaTest={0.05}
+        alphaMap={flashTexture}
       />
     </points>
   );

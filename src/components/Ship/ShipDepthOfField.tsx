@@ -31,7 +31,7 @@ export function ShipDepthOfField() {
         intensity={1}
       />
       <Vignette eskil={false} offset={0.1} darkness={0.8} />
-      <Noise opacity={0.005} />
+      <Noise opacity={0.025} />
       <HueSaturation saturation={-0.2} />
     </EffectComposer>
   );
