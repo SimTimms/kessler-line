@@ -1,14 +1,20 @@
 import * as THREE from 'three';
+import { MAIN_ENGINE_LOCAL_POS_A, MAIN_ENGINE_LOCAL_POS_B } from '../config/shipConfig';
 
-// ── Physics constants ──────────────────────────────────────────────────────────
-export const THRUST = 2.2; // units per second²
-export const YAW_THRUST = 1.0; // radians per second²
-export const SHIP_RADIUS = 3; // bounding sphere radius (world units)
-export const RESTITUTION = 0.4; // bounciness: 0 = dead stop, 1 = elastic
+// ── Physics constants (values live in src/config/shipConfig.ts) ────────────────
+export {
+  THRUST,
+  YAW_THRUST,
+  SHIP_RADIUS,
+  RESTITUTION,
+  MAX_THRUST_MULTIPLIER,
+  SHIP_IMPACT_PULSE_MS,
+  DOCKING_PORT_RADIUS,
+  DOCKING_PORT_LOCAL_Z,
+  MAIN_ENGINE_HIT_RADIUS,
+} from '../config/shipConfig';
 export { COLLISION_DAMAGE_MULTIPLIER as DAMAGE_MULTIPLIER } from '../config/damageConfig';
 export const SHIP_COLLISION_ID = 'spaceship';
-export const DOCKING_PORT_RADIUS = 2; // port detection sphere radius (world units)
-export const DOCKING_PORT_LOCAL_Z = 11; // local +Z from ship center to nose port
 
 // ── Resource state ────────────────────────────────────────────────────────────
 export let power = 100; // 0–100, decreases by 1 per active thrust key/sec
@@ -85,12 +91,10 @@ export const cinematicThrustReverse = { current: false };
 
 export const isRefueling = { current: false }; // set by Refuel button while docked
 export const isTransferringO2 = { current: false }; // set by Transfer O2 button while docked
-export const MAX_THRUST_MULTIPLIER = 3; // global cap for both player slider and autopilot
 export const thrustMultiplier = { current: 1 }; // range 0.5–MAX_THRUST_MULTIPLIER
 export const shipDestroyed = { current: false }; // set true when hull reaches 0
 
 // ── Damage / control effects ───────────────────────────────────────────────
-export const SHIP_IMPACT_PULSE_MS = 1200;
 export const shipImpactPulseUntil = { current: 0 }; // performance.now() ms
 export const shipControlDisabledUntil = { current: 0 }; // performance.now() ms
 export const railgunImpactDir = new THREE.Vector3();
@@ -100,10 +104,9 @@ export const railgunTargetEngine = {
 };
 
 // ── Main engine damage state ───────────────────────────────────────────────
-export const MAIN_ENGINE_HIT_RADIUS = 2.5;
 export const MAIN_ENGINE_LOCAL_POS = {
-  reverseA: new THREE.Vector3(-3.5, 0, -11.5),
-  reverseB: new THREE.Vector3(3.5, 0, -11.5),
+  reverseA: new THREE.Vector3(MAIN_ENGINE_LOCAL_POS_A[0], MAIN_ENGINE_LOCAL_POS_A[1], MAIN_ENGINE_LOCAL_POS_A[2]),
+  reverseB: new THREE.Vector3(MAIN_ENGINE_LOCAL_POS_B[0], MAIN_ENGINE_LOCAL_POS_B[1], MAIN_ENGINE_LOCAL_POS_B[2]),
 } as const;
 export const mainEngineDisabled = {
   reverseA: { current: false },

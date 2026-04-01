@@ -24,9 +24,12 @@ import { gravityBodies } from '../context/GravityRegistry';
 
 import { clearThrusts } from '../autopilot/clearThrusts';
 import { autopilotThrust } from '../autopilot/autopilotThrust';
+import { Approach } from '../autopilot/Approach';
 import { CoastToPeriapsis } from '../autopilot/CoastToPeriapsis';
 import { HyperbolicApproach, resetHyperbolicApproach } from '../autopilot/HyperbolicApproach';
 import { HyperbolicCapture } from '../autopilot/HyperbolicCapture';
+import { OrbitInsertion } from '../autopilot/OrbitInsertion';
+import { computeYaw } from '../autopilot/computeYaw';
 import { apLogReset, apLogPhaseChange, apLogStatus, apLogThrust } from '../autopilot/log';
 import {
   ALIGN_ANGLE_THRESHOLD,
@@ -35,6 +38,8 @@ import {
   STATION_ARRIVAL_RADIUS,
 } from '../autopilot/constants';
 import type { AutopilotCtx } from '../autopilot/types';
+import { selectedTargetVelocity } from '../context/TargetSelection';
+import { fuelStationWorldVel } from '../context/SolarSystemMinimap';
 
 // Saved player thrust level — restored when autopilot disengages
 const _savedThrust = { current: 1 };
@@ -44,6 +49,7 @@ const _autopilotWasActive = { current: false };
 const _noseDir = new THREE.Vector3();
 const _toTarget = new THREE.Vector3();
 const _velFlat = new THREE.Vector3();
+const _predictedTargetPos = new THREE.Vector3();
 
 export default function AutopilotController() {
   useFrame(() => {
@@ -96,7 +102,34 @@ export default function AutopilotController() {
 
     const targetPos = navTargetPosRef.current;
 
-    _toTarget.set(targetPos.x - shipPos.x, 0, targetPos.z - shipPos.z);
+    // Velocity computed first — needed for predictive intercept below
+    _velFlat.set(shipVelocity.x, 0, shipVelocity.z);
+    const speed = _velFlat.length();
+
+    // For non-gravity targets that are moving, aim at predicted intercept position:
+    // predict where the target will be when the ship arrives rather than where it is now.
+    // Use the live per-frame velocity for the fuel station; fall back to selectedTargetVelocity
+    // (set once at selection time) for other targets.
+    let effectiveTargetPos = targetPos;
+    if (!gravBody) {
+      const isFuelStation = targetId === 'fuel-station';
+      const tvx = isFuelStation ? fuelStationWorldVel.x : selectedTargetVelocity.x;
+      const tvz = isFuelStation ? fuelStationWorldVel.z : selectedTargetVelocity.z;
+      if (tvx * tvx + tvz * tvz > 0.01) {
+        const roughDist = Math.sqrt(
+          (targetPos.x - shipPos.x) ** 2 + (targetPos.z - shipPos.z) ** 2
+        );
+        const toa = speed > 0.1 ? roughDist / speed : 0;
+        _predictedTargetPos.set(
+          targetPos.x + tvx * toa,
+          targetPos.y,
+          targetPos.z + tvz * toa
+        );
+        effectiveTargetPos = _predictedTargetPos;
+      }
+    }
+
+    _toTarget.set(effectiveTargetPos.x - shipPos.x, 0, effectiveTargetPos.z - shipPos.z);
     const dist = _toTarget.length();
     if (dist < 0.1) {
       autopilotPhase.current = 'done';
@@ -117,9 +150,7 @@ export default function AutopilotController() {
       ? Math.min(PLANET_RETRO_ARRIVAL_SPEED, Math.sqrt(gravBody.mu / arrivalRadius) * 0.2)
       : 0;
 
-    _velFlat.set(shipVelocity.x, 0, shipVelocity.z);
     const vToward = _velFlat.dot(_toTarget); // + = closing on target
-    const speed = _velFlat.length();
     const distToArrival = dist - arrivalRadius;
 
     // Scale thrust multiplier for this phase and distance
@@ -213,53 +244,36 @@ export default function AutopilotController() {
       if (next) autopilotPhase.current = next;
     }
 
-    // ── idle: nothing to do ───────────────────────────────────────────────────
-    // if (autopilotPhase.current === 'idle') {
-    //   // no-op
+    // ── done: arrived — disengage ─────────────────────────────────────────────
+    if (autopilotPhase.current === 'done') {
+      autopilotStatus.current = 'ARRIVED';
 
-    // // ── done: orbit established — disengage ──────────────────────────────────
-    // } else if (autopilotPhase.current === 'done') {
-    //   autopilotStatus.current = 'ORBIT ESTABLISHED';
-    //   disableAutopilot();
-    //   window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+    // ── align: rotate nose toward target ─────────────────────────────────────
+    } else if (autopilotPhase.current === 'align') {
+      autopilotStatus.current = 'ALIGNING';
+      const { yawLeft: yl, yawRight: yr } = computeYaw(signedErrorToTarget, angVel);
+      autopilotYawLeft.current = yl;
+      autopilotYawRight.current = yr;
+      if (aligned) {
+        if (distToArrival <= 0) {
+          autopilotPhase.current = 'done';
+        } else if (gravBody) {
+          autopilotPhase.current = 'hyperbolic-approach';
+        } else {
+          autopilotPhase.current = 'burn';
+        }
+      }
 
-    // // ── align: rotate nose toward target ────────────────────────────────────
-    // } else if (autopilotPhase.current === 'align') {
-    //   autopilotStatus.current = 'ALIGNING';
-    //   const { yawLeft, yawRight } = computeYaw(signedErrorToTarget, angVel);
-    //   autopilotYawLeft.current = yawLeft;
-    //   autopilotYawRight.current = yawRight;
-    //   if (aligned) {
-    //     if (distToArrival <= 0) {
-    //       autopilotPhase.current = 'done';
-    //     } else if (gravBody) {
-    //       autopilotPhase.current = 'hyperbolic-approach';
-    //     } else {
-    //       autopilotPhase.current = 'burn';
-    //     }
-    //   }
+    // ── burn: straight-line approach to station ───────────────────────────────
+    } else if (autopilotPhase.current === 'burn') {
+      const next = Approach(ctx);
+      if (next) autopilotPhase.current = next;
 
-    // // ── burn: straight-line approach (stations only) ─────────────────────────
-    // } else if (autopilotPhase.current === 'burn') {
-    //   autopilotStatus.current = 'APPROACH BURN';
-    //   const next = Approach(ctx);
-    //   if (next) autopilotPhase.current = next;
-
-    // // ── retroburn ────────────────────────────────────────────────────────────
-    // } else if (autopilotPhase.current === 'retroburn') {
-    //   const next = OrbitInsertion(ctx);
-    //   if (next) autopilotPhase.current = next;
-
-    // // ── circularize ──────────────────────────────────────────────────────────
-    // } else if (autopilotPhase.current === 'circularize') {
-    //   const next = Circularize(ctx);
-    //   if (next) autopilotPhase.current = next;
-
-    // // ── stabilize-orbit ──────────────────────────────────────────────────────
-    // } else if (autopilotPhase.current === 'stabilize-orbit') {
-    //   const next = StabilizeOrbit(ctx);
-    //   if (next) autopilotPhase.current = next;
-    // }
+    // ── retroburn: brake to near-zero at arrival radius ───────────────────────
+    } else if (autopilotPhase.current === 'retroburn') {
+      const next = OrbitInsertion(ctx);
+      if (next) autopilotPhase.current = next;
+    }
 
     // ── Log any changes that happened this frame ──────────────────────────────
     if (autopilotPhase.current !== prevPhase) {

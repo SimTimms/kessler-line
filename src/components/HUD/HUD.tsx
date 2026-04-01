@@ -8,7 +8,12 @@ import { driveSignatureRangeRef } from '../../context/DriveSignatureScan';
 import { radioRangeRef } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
 import './HUD.css';
-import { SCAN_RANGES, DRIVE_SIGNATURE_RANGES, MAGNETIC_RANGES } from '../../config/scanRanges';
+import {
+  SCAN_RANGES,
+  DRIVE_SIGNATURE_RANGES,
+  MAGNETIC_RANGES,
+  RADIO_RANGES,
+} from '../../config/scanRanges';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
 
 interface HUDProps {
@@ -62,6 +67,7 @@ export const HUD = ({
   const audio3Ref = useRef<HTMLAudioElement | null>(null);
   const audio4Ref = useRef<HTMLAudioElement | null>(null);
   const musicActiveRef = useRef(false);
+  console.log(driveSignatureOnRef.current);
 
   useEffect(() => {
     const a1 = new Audio('/piano.mp3');
@@ -135,7 +141,7 @@ export const HUD = ({
     {
       id: 'magnet',
       icon: Magnet,
-      initialPower: 1,
+      initialPower: 2,
       isActive: magneticOn,
       onSideEffect: (on, level) => {
         magneticOnRef.current = on;
@@ -146,7 +152,7 @@ export const HUD = ({
     {
       id: 'drive',
       icon: HardDrive,
-      initialPower: 1,
+      initialPower: 3,
       isActive: driveSignatureOn,
       onSideEffect: (on, level) => {
         driveSignatureOnRef.current = on;
@@ -157,7 +163,7 @@ export const HUD = ({
     {
       id: 'proximity',
       icon: Radar,
-      initialPower: 1,
+      initialPower: 2,
       isActive: proximity,
       onSideEffect: (on, level) => {
         proximityScanOnRef.current = on;
@@ -168,11 +174,11 @@ export const HUD = ({
     {
       id: 'radio',
       icon: AudioLines,
-      initialPower: 1,
+      initialPower: 3,
       isActive: radioOn,
       onSideEffect: (on, level) => {
         radioOnRef.current = on;
-        radioRangeRef.current = SCAN_RANGES[level - 1] * 5;
+        radioRangeRef.current = RADIO_RANGES[level - 1] * 5;
         setRadioOn(on);
       },
     },

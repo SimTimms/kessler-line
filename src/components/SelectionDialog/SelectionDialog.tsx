@@ -9,6 +9,8 @@ export interface SelectionItem {
   label: string;
   sublabel?: string;
   statusIcon?: string; // platform-specific unread indicator; absent when read
+  statusLine?: string; // transmission status shown under sublabel
+  statusPulse?: boolean; // animate the status line (in-transit)
 }
 
 interface SelectionDialogProps {
@@ -20,7 +22,14 @@ interface SelectionDialogProps {
   platform?: string;
 }
 
-export function SelectionDialog({ title, items, selectedId, onSelect, onClose, platform }: SelectionDialogProps) {
+export function SelectionDialog({
+  title,
+  items,
+  selectedId,
+  onSelect,
+  onClose,
+  platform,
+}: SelectionDialogProps) {
   const soundFired = useRef(false);
   useEffect(() => {
     if (!soundFired.current) {
@@ -33,7 +42,12 @@ export function SelectionDialog({ title, items, selectedId, onSelect, onClose, p
 
   return (
     <div className="sd-backdrop" onClick={onClose}>
-      <div className="sd-dialog" data-platform={platform} data-version={version} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="sd-dialog"
+        data-platform={platform}
+        data-version={version}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sd-title">{title}</div>
         <div className="sd-list">
           {items.map((item) => (
@@ -53,11 +67,20 @@ export function SelectionDialog({ title, items, selectedId, onSelect, onClose, p
               <span className="sd-item-content">
                 <span className="sd-item-label">{item.label}</span>
                 {item.sublabel && <span className="sd-item-sublabel">{item.sublabel}</span>}
+                {item.statusLine && (
+                  <span
+                    className={`sd-item-status-line${item.statusPulse ? ' sd-item-status-line--pulse' : ''}`}
+                  >
+                    {item.statusLine}
+                  </span>
+                )}
               </span>
             </button>
           ))}
         </div>
-        <button className="sd-close" onClick={onClose}>✕ CLOSE</button>
+        <button className="sd-close" onClick={onClose}>
+          ✕ CLOSE
+        </button>
       </div>
     </div>
   );

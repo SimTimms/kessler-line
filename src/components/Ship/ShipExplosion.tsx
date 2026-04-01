@@ -2,15 +2,14 @@ import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from '../../context/ShipState';
+import { shipPosRef } from '../../context/ShipPos';
 
 const VAPOR_COUNT = 280;
 const VAPOR_DURATION = 1.4; // seconds
 
 export default function ShipExplosion({
-  shipPositionRef,
   shipGroupRef,
 }: {
-  shipPositionRef?: { current: THREE.Vector3 };
   shipGroupRef?: { current: THREE.Group | null };
 }) {
   const activeRef = useRef(false);
@@ -69,10 +68,8 @@ export default function ShipExplosion({
       explodeVelocityRef.current.copy(shipVelocity);
       if (shipGroupRef?.current) {
         shipGroupRef.current.getWorldPosition(explodeOriginRef.current);
-      } else if (shipPositionRef) {
-        explodeOriginRef.current.copy(shipPositionRef.current);
       } else {
-        explodeOriginRef.current.set(0, 0, 0);
+        explodeOriginRef.current.copy(shipPosRef.current);
       }
       timeRef.current = 0;
       activeRef.current = true;
@@ -81,7 +78,7 @@ export default function ShipExplosion({
 
     window.addEventListener('ShipDestroyed', onDestroyed);
     return () => window.removeEventListener('ShipDestroyed', onDestroyed);
-  }, [shipGroupRef, shipPositionRef]);
+  }, [shipGroupRef]);
 
   useFrame((_, delta) => {
     if (!activeRef.current) return;

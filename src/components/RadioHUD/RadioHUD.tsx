@@ -9,7 +9,7 @@ import {
 } from '../../config/worldConfig';
 import type { RadioBroadcastDef } from '../../config/worldConfig';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
-import { SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
 import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
 import { BroadcastDialog } from '../BroadcastDialog/BroadcastDialog';
 import { getCollidables } from '../../context/CollisionRegistry';

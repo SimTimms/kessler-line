@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { sceneCamera } from '../context/CameraRef';
 import { magneticOnRef, magneticScanRangeRef } from '../context/MagneticScan';
-import { debrisEntries } from './SpaceDebris';
+import { debrisEntries } from './WorldObjects/SpaceDebris';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators

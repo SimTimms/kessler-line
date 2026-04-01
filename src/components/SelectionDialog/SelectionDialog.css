@@ -170,6 +170,23 @@
   letter-spacing: 0.08em;
 }
 
+.sd-item-status-line {
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--sd-dim);
+  margin-top: 2px;
+}
+
+.sd-item-status-line--pulse {
+  animation: sd-status-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes sd-status-pulse {
+  0%, 100% { opacity: 0.9; }
+  50%       { opacity: 0.3; }
+}
+
 .sd-close {
   align-self: center;
   padding: 5px 14px;

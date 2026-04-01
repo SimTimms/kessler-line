@@ -3,7 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from './Ship/Spaceship';
 import { gravityBodies } from '../context/GravityRegistry';
-import { orbitStatusRef, trajectoryApsisRef } from '../context/ShipState';
+import { orbitStatusRef, trajectoryApsisRef, shipQuaternion } from '../context/ShipState';
+import { shipPosRef } from '../context/ShipPos';
+import { DOCKING_PORT_LOCAL_Z } from '../config/shipConfig';
 
 const MIN_SPEED = 0.05;
 const TRAJ_STEPS = 400;
@@ -23,6 +25,7 @@ const _simVel = new THREE.Vector3();
 const _orbitPos = new THREE.Vector3();
 const _orbitVel = new THREE.Vector3();
 const _orbitDir = new THREE.Vector3();
+const _noseFwd = new THREE.Vector3();
 
 function makeApsisSprite(color: string) {
   const canvas = document.createElement('canvas');
@@ -55,93 +58,100 @@ function drawApsisLabel(ctx: CanvasRenderingContext2D, color: string, label: str
   ctx.fillText(`${label}  ${alt}`, 128, 60);
 }
 
-export default function VelocityIndicator({
-  shipPositionRef,
-}: {
-  shipPositionRef: { current: THREE.Vector3 };
-}) {
-  const { line, sprite, spriteCtx, posArr, orbitLine, orbitSprite, orbitSpriteCtx, orbitPosArr, periMarker, apoMarker } =
-    useMemo(() => {
-      const geo = new THREE.BufferGeometry();
-      const arr = new Float32Array(TRAJ_STEPS * 3);
-      geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+export default function VelocityIndicator() {
+  const shipPositionRef = shipPosRef;
+  const {
+    line,
+    sprite,
+    spriteCtx,
+    posArr,
+    orbitLine,
+    orbitSprite,
+    orbitSpriteCtx,
+    orbitPosArr,
+    periMarker,
+    apoMarker,
+  } = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    const arr = new Float32Array(TRAJ_STEPS * 3);
+    geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
 
-      const mat = new THREE.LineDashedMaterial({
-        color: VELOCITY_ORANGE,
-        dashSize: 3,
-        gapSize: 2,
-        opacity: 0.015,
-        transparent: true,
-        depthTest: false,
-      });
+    const mat = new THREE.LineDashedMaterial({
+      color: VELOCITY_ORANGE,
+      dashSize: 3,
+      gapSize: 2,
+      opacity: 0.15,
+      transparent: true,
+      depthTest: false,
+    });
 
-      const l = new THREE.Line(geo, mat);
-      l.frustumCulled = false;
+    const l = new THREE.Line(geo, mat);
+    l.frustumCulled = false;
 
-      const orbitGeo = new THREE.BufferGeometry();
-      const orbitArr = new Float32Array(TRAJ_STEPS * 3);
-      orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitArr, 3));
+    const orbitGeo = new THREE.BufferGeometry();
+    const orbitArr = new Float32Array(TRAJ_STEPS * 3);
+    orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitArr, 3));
 
-      const orbitMat = new THREE.LineDashedMaterial({
-        color: 0x30ff7a,
-        dashSize: 3,
-        gapSize: 2,
-        opacity: 0.22,
-        transparent: true,
-        depthTest: false,
-      });
+    const orbitMat = new THREE.LineDashedMaterial({
+      color: 0x30ff7a,
+      dashSize: 3,
+      gapSize: 2,
+      opacity: 0.22,
+      transparent: true,
+      depthTest: false,
+    });
 
-      const ol = new THREE.Line(orbitGeo, orbitMat);
-      ol.frustumCulled = false;
+    const ol = new THREE.Line(orbitGeo, orbitMat);
+    ol.frustumCulled = false;
 
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas 2D context unavailable');
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable');
 
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMat = new THREE.SpriteMaterial({
-        map: texture,
-        depthTest: false,
-        transparent: true,
-      });
-      const s = new THREE.Sprite(spriteMat);
-      s.frustumCulled = false;
-      s.visible = false;
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({
+      map: texture,
+      depthTest: false,
+      transparent: true,
+    });
+    const s = new THREE.Sprite(spriteMat);
+    s.frustumCulled = false;
+    s.visible = false;
 
-      const orbitCanvas = document.createElement('canvas');
-      orbitCanvas.width = 256;
-      orbitCanvas.height = 64;
-      const orbitCtx = orbitCanvas.getContext('2d');
-      if (!orbitCtx) throw new Error('Canvas 2D context unavailable');
+    const orbitCanvas = document.createElement('canvas');
+    orbitCanvas.width = 256;
+    orbitCanvas.height = 64;
+    const orbitCtx = orbitCanvas.getContext('2d');
+    if (!orbitCtx) throw new Error('Canvas 2D context unavailable');
 
-      const orbitTexture = new THREE.CanvasTexture(orbitCanvas);
-      const orbitSpriteMat = new THREE.SpriteMaterial({
-        map: orbitTexture,
-        depthTest: false,
-        transparent: true,
-      });
-      const orbitSprite = new THREE.Sprite(orbitSpriteMat);
-      orbitSprite.frustumCulled = false;
-      orbitSprite.visible = false;
+    const orbitTexture = new THREE.CanvasTexture(orbitCanvas);
+    const orbitSpriteMat = new THREE.SpriteMaterial({
+      map: orbitTexture,
+      depthTest: false,
+      transparent: true,
+    });
+    const orbitSprite = new THREE.Sprite(orbitSpriteMat);
+    orbitSprite.frustumCulled = false;
+    orbitSprite.visible = false;
 
-      const peri = makeApsisSprite('#00e5ff');
-      const apo = makeApsisSprite('#00e5ff');
+    const peri = makeApsisSprite('#00e5ff');
+    const apo = makeApsisSprite('#00e5ff');
 
-      return {
-        line: l,
-        sprite: s,
-        spriteCtx: ctx,
-        posArr: arr,
-        orbitLine: ol,
-        orbitSprite,
-        orbitSpriteCtx: orbitCtx,
-        orbitPosArr: orbitArr,
-        periMarker: peri,
-        apoMarker: apo,
-      };
-    }, []);
+    return {
+      line: l,
+      sprite: s,
+      spriteCtx: ctx,
+      posArr: arr,
+      orbitLine: ol,
+      orbitSprite,
+      orbitSpriteCtx: orbitCtx,
+      orbitPosArr: orbitArr,
+      periMarker: peri,
+      apoMarker: apo,
+    };
+  }, []);
 
   useFrame(() => {
     const speed = shipVelocity.length();
@@ -149,6 +159,11 @@ export default function VelocityIndicator({
     sprite.visible = speed > MIN_SPEED;
 
     const ship = shipPositionRef.current;
+    const sx = ship.x, sz = ship.z;
+
+    // Anchor line at ship world position — geometry stored in ship-relative coords
+    // so computeLineDistances works on small values (no float32 precision loss).
+    line.position.set(sx, 0, sz);
 
     let primaryBody: (typeof gravityBodies extends Map<string, infer T> ? T : never) | null = null;
     let primaryBodyId: string | null = null;
@@ -169,15 +184,21 @@ export default function VelocityIndicator({
     }
     const primaryIsPlanet = primaryBodyId !== null && primaryBodyId !== 'Sun';
 
+    // Nose offset: start the simulation from the ship's nose tip so the
+    // trajectory line appears to emerge from the front of the hull, not the center.
+    _noseFwd.set(0, 0, 1).applyQuaternion(shipQuaternion);
+    const noseOffX = _noseFwd.x * DOCKING_PORT_LOCAL_Z;
+    const noseOffZ = _noseFwd.z * DOCKING_PORT_LOCAL_Z;
+
     if (primaryBody) {
-      _simPos.set(ship.x - primaryBody.position.x, 0, ship.z - primaryBody.position.z);
+      _simPos.set(ship.x + noseOffX - primaryBody.position.x, 0, ship.z + noseOffZ - primaryBody.position.z);
       _simVel.set(
         shipVelocity.x - primaryBody.velocity.x,
         0,
         shipVelocity.z - primaryBody.velocity.z
       );
     } else {
-      _simPos.copy(ship);
+      _simPos.set(ship.x + noseOffX, 0, ship.z + noseOffZ);
       _simVel.copy(shipVelocity);
     }
 
@@ -209,22 +230,31 @@ export default function VelocityIndicator({
     const startZ = _simPos.z;
 
     // Apsis tracking
-    let periStep = -1, apoStep = -1;
-    let periDist = Infinity, apoDist = -Infinity;
+    let periStep = -1,
+      apoStep = -1;
+    let periDist = Infinity,
+      apoDist = -Infinity;
 
     for (let i = 0; i < TRAJ_STEPS; i++) {
-      const baseX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
-      posArr[i * 3] = baseX + VELOCITY_X_OFFSET;
+      const worldX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
+      const worldZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
+      posArr[i * 3] = worldX - sx + VELOCITY_X_OFFSET;
       posArr[i * 3 + 1] = 0;
-      posArr[i * 3 + 2] = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
+      posArr[i * 3 + 2] = worldZ - sz;
 
       // Track min/max distance from primary for apsis markers
       if (primaryBody) {
         const pdx = posArr[i * 3] - primaryBody.position.x;
         const pdz = posArr[i * 3 + 2] - primaryBody.position.z;
         const pd = Math.sqrt(pdx * pdx + pdz * pdz);
-        if (pd < periDist) { periDist = pd; periStep = i; }
-        if (pd > apoDist) { apoDist = pd; apoStep = i; }
+        if (pd < periDist) {
+          periDist = pd;
+          periStep = i;
+        }
+        if (pd > apoDist) {
+          apoDist = pd;
+          apoStep = i;
+        }
       }
 
       // Gravitational acceleration — skip inside a body's surface to prevent
@@ -265,12 +295,12 @@ export default function VelocityIndicator({
 
       if (hitSurface) {
         // Fill remaining points at this position so line ends cleanly at impact
-        const hitX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
-        const hitZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
+        const hitWorldX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
+        const hitWorldZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
         for (let j = i + 1; j < TRAJ_STEPS; j++) {
-          posArr[j * 3] = hitX + VELOCITY_X_OFFSET;
+          posArr[j * 3] = hitWorldX - sx + VELOCITY_X_OFFSET;
           posArr[j * 3 + 1] = 0;
-          posArr[j * 3 + 2] = hitZ;
+          posArr[j * 3 + 2] = hitWorldZ - sz;
         }
         break;
       }
@@ -295,9 +325,9 @@ export default function VelocityIndicator({
         maxDistFromStart > ORBIT_AWAY_DIST &&
         distFromStart < orbitCloseDist
       ) {
-        posArr[i * 3] = ship.x + VELOCITY_X_OFFSET;
+        posArr[i * 3] = noseOffX + VELOCITY_X_OFFSET; // close back to nose start
         posArr[i * 3 + 1] = 0;
-        posArr[i * 3 + 2] = ship.z;
+        posArr[i * 3 + 2] = noseOffZ;
         orbitClosedAt = i;
         break;
       }
@@ -329,8 +359,9 @@ export default function VelocityIndicator({
     // Speed label at the midpoint of the active trajectory
     const activeEnd = orbitClosedAt >= 0 ? orbitClosedAt : TRAJ_STEPS - 1;
     const mid = Math.floor(activeEnd / 2);
-    const lx = posArr[mid * 3];
-    const lz = posArr[mid * 3 + 2];
+    // posArr is ship-relative — convert back to world for sprites
+    const lx = posArr[mid * 3] + sx;
+    const lz = posArr[mid * 3 + 2] + sz;
     const labelScale = Math.min(Math.max(speed * 0.25, 8), 36);
     sprite.scale.set(labelScale * 3.8, labelScale, 1);
     sprite.position.set(lx, 0, lz);
@@ -349,12 +380,12 @@ export default function VelocityIndicator({
     const orbitDist = primaryBody
       ? Math.sqrt((ship.x - primaryBody.position.x) ** 2 + (ship.z - primaryBody.position.z) ** 2)
       : 0;
-    const mH = Math.max(orbitDist * 0.06, 60);
+    const mH = Math.max(orbitDist * 0.006, 60);
     const mW = mH * 3.2;
 
     if (primaryIsPlanet && primaryBody && periStep >= 0) {
-      const px = posArr[periStep * 3];
-      const pz = posArr[periStep * 3 + 2];
+      const px = posArr[periStep * 3] + sx;
+      const pz = posArr[periStep * 3 + 2] + sz;
       const alt = Math.round(Math.max(0, periDist - primaryBody.surfaceRadius));
       periMarker.sprite.visible = true;
       periMarker.sprite.position.set(px, 0, pz);
@@ -367,8 +398,8 @@ export default function VelocityIndicator({
 
     // Apoapsis only meaningful for a closed orbit
     if (primaryIsPlanet && primaryBody && apoStep >= 0 && orbitClosedAt >= 0) {
-      const ax = posArr[apoStep * 3];
-      const az = posArr[apoStep * 3 + 2];
+      const ax = posArr[apoStep * 3] + sx;
+      const az = posArr[apoStep * 3 + 2] + sz;
       const alt = Math.round(Math.max(0, apoDist - primaryBody.surfaceRadius));
       apoMarker.sprite.visible = true;
       apoMarker.sprite.position.set(ax, 0, az);
@@ -410,13 +441,16 @@ export default function VelocityIndicator({
     _orbitVel.x += primaryBody.velocity.x;
     _orbitVel.z += primaryBody.velocity.z;
 
+    // Anchor orbit line at body position — geometry in body-relative coords
+    orbitLine.position.set(primaryBody.position.x, 0, primaryBody.position.z);
+
     const baseAngle = Math.atan2(vz, vx);
     const step = (Math.PI * 2) / (TRAJ_STEPS - 1);
     for (let i = 0; i < TRAJ_STEPS; i++) {
       const theta = baseAngle + i * step;
-      orbitPosArr[i * 3] = primaryBody.position.x + Math.cos(theta) * idealOrbitRadius;
+      orbitPosArr[i * 3] = Math.cos(theta) * idealOrbitRadius;
       orbitPosArr[i * 3 + 1] = 0;
-      orbitPosArr[i * 3 + 2] = primaryBody.position.z + Math.sin(theta) * idealOrbitRadius;
+      orbitPosArr[i * 3 + 2] = Math.sin(theta) * idealOrbitRadius;
     }
 
     const orbitPos = orbitLine.geometry.attributes.position;
@@ -424,8 +458,9 @@ export default function VelocityIndicator({
     orbitLine.computeLineDistances();
 
     const orbitMid = Math.floor(TRAJ_STEPS / 2);
-    const ox = orbitPosArr[orbitMid * 3];
-    const oz = orbitPosArr[orbitMid * 3 + 2];
+    // Convert body-relative back to world for sprite
+    const ox = orbitPosArr[orbitMid * 3] + primaryBody.position.x;
+    const oz = orbitPosArr[orbitMid * 3 + 2] + primaryBody.position.z;
     orbitSprite.scale.set(32, 10, 1);
     orbitSprite.position.set(ox, 0, oz);
 
@@ -439,11 +474,7 @@ export default function VelocityIndicator({
     if (periapsis > 0 && apoapsis > 0) {
       const periAlt = Math.max(0, periapsis - surfaceRadius);
       const apoAlt = Math.max(0, apoapsis - surfaceRadius);
-      orbitSpriteCtx.fillText(
-        `PERI: ${Math.round(periAlt)}  APO: ${Math.round(apoAlt)}`,
-        128,
-        20
-      );
+      orbitSpriteCtx.fillText(`PERI: ${Math.round(periAlt)}  APO: ${Math.round(apoAlt)}`, 128, 20);
     }
     orbitSpriteCtx.fillText('CIRCULAR ORBIT', 128, 34);
     (orbitSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;

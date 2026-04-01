@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { cascadePhase } from '../../context/CinematicState';
 import { shipPosRef } from '../../context/ShipPos';
 
-const MAX_BEACONS = 50;
+const MAX_BEACONS = 2;
 
 const SHIP_NAMES = [
   'ACHERON-2',

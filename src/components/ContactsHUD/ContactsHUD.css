@@ -1,0 +1,202 @@
+/* ── Contacts HUD button ───────────────────────────────────────────────────── */
+
+.contacts-hud-wrapper {
+  position: fixed;
+  top: 120px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 40;
+}
+
+.contacts-hud-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  background: var(--hud-bg, rgba(0, 0, 0, 0.5));
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  border-radius: 0;
+  color: rgba(0, 200, 255, 0.5);
+  font-family: var(--hud-font, monospace);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.contacts-hud-btn:hover {
+  border-color: rgba(0, 200, 255, 0.65);
+  color: #00cfff;
+}
+
+.contacts-hud-btn--active {
+  color: #00cfff;
+  box-shadow: 0 0 12px rgba(0, 200, 255, 0.15);
+  animation: contacts-pulse 2s ease-in-out infinite;
+}
+
+@keyframes contacts-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(0, 200, 255, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(0, 200, 255, 0.3);
+  }
+}
+
+.contacts-hud-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.contacts-hud-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  font-family: var(--hud-font-mono, monospace);
+  opacity: 0.85;
+}
+
+.contacts-hud-badge {
+  background: #00c8c8;
+  color: #000;
+  font-size: 9px;
+  font-weight: bold;
+  font-family: var(--hud-font, monospace);
+  border-radius: 8px;
+  padding: 1px 5px;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.contacts-hud-badge--incoming {
+  background: #ffaa00;
+  animation: incoming-badge-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes incoming-badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* ── Contact detail panel ──────────────────────────────────────────────────── */
+
+.contacts-detail-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 8, 18, 0.95);
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  padding: 28px 36px;
+  font-family: monospace;
+  color: #00cfff;
+  min-width: 320px;
+  max-width: 440px;
+  z-index: 50;
+  box-shadow: 0 0 32px rgba(0, 200, 255, 0.12);
+  pointer-events: auto;
+}
+
+.contacts-detail-role {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: rgba(0, 200, 255, 0.45);
+}
+
+.contacts-detail-name {
+  margin: 0 0 8px;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: #00cfff;
+}
+
+.contacts-detail-platform {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: rgba(0, 200, 255, 0.4);
+}
+
+.contacts-detail-status {
+  margin: 0 0 24px;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  color: rgba(0, 200, 255, 0.55);
+}
+
+.contacts-detail-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.contacts-detail-btn {
+  padding: 8px 20px;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  background: transparent;
+  color: rgba(0, 200, 255, 0.5);
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.contacts-detail-btn:hover {
+  border-color: rgba(0, 200, 255, 0.6);
+  color: #00cfff;
+}
+
+.contacts-detail-btn--primary {
+  background: rgba(0, 200, 255, 0.08);
+  color: #00cfff;
+  border-color: rgba(0, 200, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 200, 255, 0.1);
+}
+
+.contacts-detail-btn--primary:hover {
+  background: rgba(0, 200, 255, 0.14);
+  border-color: rgba(0, 200, 255, 0.75);
+}
+
+/* ── Quick-dial nearest contacts ───────────────────────────────────────────── */
+
+.contacts-quick-dial {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.contacts-quick-dial-item {
+  background: transparent;
+  border: none;
+  color: rgba(0, 200, 255, 0.45);
+  font-family: var(--hud-font-mono, monospace);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-align: right;
+  cursor: pointer;
+  padding: 2px 0;
+  line-height: 1.5;
+  transition: color 0.15s;
+}
+
+.contacts-quick-dial-item:hover {
+  color: #00cfff;
+}
+
+.contacts-quick-dial-item--incoming {
+  color: #ffaa00;
+  animation: incoming-badge-pulse 0.8s ease-in-out infinite;
+}
+
+.contacts-quick-dial-item--incoming:hover {
+  color: #ffd055;
+}

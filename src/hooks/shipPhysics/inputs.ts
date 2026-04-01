@@ -31,6 +31,25 @@ export interface ThrustInputRefs {
   thrustRadialIn: MutableRefObject<boolean>;
 }
 
+export function getManualInput(refs: ThrustInputRefs): boolean {
+  return (
+    refs.thrustForward.current ||
+    refs.thrustReverse.current ||
+    refs.thrustLeft.current ||
+    refs.thrustRight.current ||
+    refs.thrustStrafeLeft.current ||
+    refs.thrustStrafeRight.current ||
+    refs.thrustRadialOut.current ||
+    refs.thrustRadialIn.current ||
+    mobileThrustForward.current ||
+    mobileThrustReverse.current ||
+    mobileThrustLeft.current ||
+    mobileThrustRight.current ||
+    mobileThrustStrafeLeft.current ||
+    mobileThrustStrafeRight.current
+  );
+}
+
 export function getCombinedInputs(refs: ThrustInputRefs) {
   const yawLeft = refs.thrustLeft.current || mobileThrustLeft.current || autopilotYawLeft.current;
   const yawRight =

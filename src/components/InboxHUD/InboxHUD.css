@@ -121,6 +121,84 @@
   50%       { box-shadow: 0 0 18px var(--btn-glow-strong); }
 }
 
+/* ── Hail Request Banner ────────────────────────────────────────────────────── */
+
+.hail-request-banner {
+  position: fixed;
+  top: 118px;
+  right: 16px;
+  background: rgba(0, 8, 18, 0.95);
+  border: 1px solid rgba(0, 200, 255, 0.45);
+  padding: 10px 14px;
+  font-family: var(--hud-font-mono, monospace);
+  min-width: 180px;
+  z-index: 40;
+  pointer-events: auto;
+  animation: hail-banner-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes hail-banner-pulse {
+  0%, 100% { border-color: rgba(0, 200, 255, 0.35); box-shadow: none; }
+  50%       { border-color: rgba(0, 200, 255, 0.7); box-shadow: 0 0 16px rgba(0, 200, 255, 0.12); }
+}
+
+.hail-request-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(0, 200, 255, 0.5);
+  margin-bottom: 3px;
+}
+
+.hail-request-ship {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #00cfff;
+  margin-bottom: 3px;
+}
+
+.hail-request-type {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+}
+
+.hail-request-type--trade   { color: #00ff88; }
+.hail-request-type--mission { color: #ffcc00; }
+
+.hail-request-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hail-request-btn {
+  flex: 1;
+  padding: 5px 8px;
+  font-family: var(--hud-font-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.hail-request-btn--accept {
+  color: #00cfff;
+  border: 1px solid rgba(0, 200, 255, 0.55);
+}
+
+.hail-request-btn--accept:hover {
+  background: rgba(0, 200, 255, 0.1);
+}
+
+.hail-request-btn--decline {
+  color: rgba(0, 200, 255, 0.4);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+}
+
+.hail-request-btn--decline:hover {
+  background: rgba(0, 200, 255, 0.05);
+}
+
 /* ── Per-platform badge/dot shapes ───────────────────────────────────────────── */
 
 /* HERALD — square badges, authoritative */

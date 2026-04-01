@@ -12,8 +12,9 @@ import {
 } from '../../context/CinematicState';
 import { addMessage } from '../../context/MessageStore';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
-import { SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
 import { NO_FLY_ZONE_DISTANCE, EMPLOYER_RECALL_DELAY } from '../../config/neptuneConfig';
+import { shipPosRef } from '../../context/ShipPos';
 import {
   RADIO_CHATTER_LINES,
   RADIO_CHATTER_CASCADE_LINES,
@@ -27,11 +28,7 @@ const CINEMATIC_AUTOPILOT_DURATION = 10;
 const FAMILY_MESSAGE_DELAY = 14000; // ms — a beat after autopilot ends
 const CASCADE_TRIGGER_DELAY = 30000; // ms — cascade begins 30s after game start
 
-interface CinematicControllerProps {
-  shipPositionRef: { current: THREE.Vector3 };
-}
-
-export default function CinematicController({ shipPositionRef }: CinematicControllerProps) {
+export default function CinematicController() {
   const noFlyTriggered = useRef(false);
   const neptuneWorld = useRef(new THREE.Vector3());
   const employerRecallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,7 +77,7 @@ export default function CinematicController({ shipPositionRef }: CinematicContro
     if (!planetPos) return;
 
     neptuneWorld.current.set(planetPos.x * SOLAR_SYSTEM_SCALE, 0, planetPos.z * SOLAR_SYSTEM_SCALE);
-    const distance = neptuneWorld.current.distanceTo(shipPositionRef.current);
+    const distance = neptuneWorld.current.distanceTo(shipPosRef.current);
 
     if (!noFlyTriggered.current && distance <= NO_FLY_ZONE_DISTANCE) {
       noFlyTriggered.current = true;

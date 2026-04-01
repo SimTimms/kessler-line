@@ -1,0 +1,381 @@
+.chd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 4, 12, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+/* ── Base dialog — defaults to REACH (cyan) ─────────────────────────────────── */
+.chd-dialog {
+  --chd-text: #00cfff;
+  --chd-border: rgba(0, 200, 255, 0.4);
+  --chd-border-strong: rgba(0, 200, 255, 0.65);
+  --chd-glow: rgba(0, 200, 255, 0.12);
+  --chd-muted: rgba(0, 200, 255, 0.6);
+  --chd-dim: rgba(0, 200, 255, 0.45);
+  --chd-item-bg: rgba(0, 200, 255, 0.05);
+  --chd-item-bg-hover: rgba(0, 200, 255, 0.12);
+  --chd-item-bg-active: rgba(0, 200, 255, 0.18);
+  --chd-item-border: rgba(0, 200, 255, 0.25);
+  --chd-item-border-hover: rgba(0, 200, 255, 0.6);
+  --chd-item-border-active: rgba(0, 200, 255, 0.9);
+  --chd-item-glow-active: rgba(0, 200, 255, 0.2);
+  --chd-sublabel: rgba(0, 200, 255, 0.45);
+
+  background: rgba(0, 8, 18, 0.97);
+  border: 1px solid var(--chd-border);
+  border-radius: 6px;
+  padding: 28px 32px;
+  min-width: 320px;
+  max-width: 480px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 40px var(--chd-glow);
+  font-family: monospace;
+}
+
+/* ── Platform overrides ──────────────────────────────────────────────────────── */
+
+/* HERALD — amber-gold, authoritative */
+.chd-dialog[data-platform='HERALD'] {
+  --chd-text: #cc8822;
+  --chd-border: rgba(204, 136, 34, 0.45);
+  --chd-border-strong: rgba(204, 136, 34, 0.75);
+  --chd-glow: rgba(204, 136, 34, 0.2);
+  --chd-muted: rgba(204, 136, 34, 0.6);
+  --chd-dim: rgba(204, 136, 34, 0.42);
+  --chd-item-bg: rgba(204, 136, 34, 0.05);
+  --chd-item-bg-hover: rgba(204, 136, 34, 0.12);
+  --chd-item-bg-active: rgba(204, 136, 34, 0.18);
+  --chd-item-border: rgba(204, 136, 34, 0.25);
+  --chd-item-border-hover: rgba(204, 136, 34, 0.6);
+  --chd-item-border-active: rgba(204, 136, 34, 0.9);
+  --chd-item-glow-active: rgba(204, 136, 34, 0.2);
+  --chd-sublabel: rgba(204, 136, 34, 0.45);
+}
+
+/* OPENLINE — aggressive orange, cooperative */
+.chd-dialog[data-platform='OPENLINE'] {
+  --chd-text: #ff5500;
+  --chd-border: rgba(255, 85, 0, 0.42);
+  --chd-border-strong: rgba(255, 85, 0, 0.72);
+  --chd-glow: rgba(255, 85, 0, 0.18);
+  --chd-muted: rgba(255, 85, 0, 0.6);
+  --chd-dim: rgba(255, 85, 0, 0.42);
+  --chd-item-bg: rgba(255, 85, 0, 0.05);
+  --chd-item-bg-hover: rgba(255, 85, 0, 0.12);
+  --chd-item-bg-active: rgba(255, 85, 0, 0.18);
+  --chd-item-border: rgba(255, 85, 0, 0.25);
+  --chd-item-border-hover: rgba(255, 85, 0, 0.6);
+  --chd-item-border-active: rgba(255, 85, 0, 0.9);
+  --chd-item-glow-active: rgba(255, 85, 0, 0.2);
+  --chd-sublabel: rgba(255, 85, 0, 0.45);
+}
+
+/* MERIDIAN — navigational green, AresNav */
+.chd-dialog[data-platform='MERIDIAN'] {
+  --chd-text: #33bb66;
+  --chd-border: rgba(51, 187, 102, 0.4);
+  --chd-border-strong: rgba(51, 187, 102, 0.7);
+  --chd-glow: rgba(51, 187, 102, 0.18);
+  --chd-muted: rgba(51, 187, 102, 0.6);
+  --chd-dim: rgba(51, 187, 102, 0.42);
+  --chd-item-bg: rgba(51, 187, 102, 0.05);
+  --chd-item-bg-hover: rgba(51, 187, 102, 0.12);
+  --chd-item-bg-active: rgba(51, 187, 102, 0.18);
+  --chd-item-border: rgba(51, 187, 102, 0.25);
+  --chd-item-border-hover: rgba(51, 187, 102, 0.6);
+  --chd-item-border-active: rgba(51, 187, 102, 0.9);
+  --chd-item-glow-active: rgba(51, 187, 102, 0.2);
+  --chd-sublabel: rgba(51, 187, 102, 0.45);
+}
+
+/* ── Dialog contents ──────────────────────────────────────────────────────────── */
+
+.chd-title {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--chd-muted);
+  text-align: center;
+}
+
+.chd-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.chd-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: none;
+  color: var(--chd-text);
+  font-family: monospace;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 0;
+  padding: 2px;
+  transition: border-color 0.1s;
+}
+
+.chd-item-status {
+  font-size: 11px;
+  min-width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+  line-height: 1;
+}
+
+.chd-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.chd-item-content--rejected {
+  color: rgba(255, 85, 0, 0.6);
+}
+
+.chd-item-content--radio-active {
+  opacity: 0.2;
+  font-weight: bold;
+}
+
+.chd-item-content--accepted {
+  color: rgba(51, 187, 102, 0.9);
+  font-weight: bold;
+}
+
+.chd-item-content--pending {
+  color: rgba(235, 143, 52, 0.9);
+  font-weight: bold;
+}
+
+.chd-item-content--incoming {
+  color: rgba(255, 170, 0, 0.95);
+  font-weight: bold;
+}
+
+.chd-item--unread .chd-item-label {
+  opacity: 1;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+}
+
+.chd-item:hover {
+  background: var(--chd-item-bg-hover);
+}
+
+.chd-item--active {
+  background: var(--chd-item-bg-active);
+  border-color: var(--chd-item-border-active);
+  box-shadow: 0 0 10px var(--chd-item-glow-active);
+}
+
+.chd-item-sublabel {
+  font-size: 10px;
+  color: var(--chd-sublabel);
+  letter-spacing: 0.08em;
+}
+
+.chd-item-status-line {
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.chd-item-status-line--pulse {
+  animation: chd-status-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes chd-status-pulse {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.chd-close {
+  align-self: center;
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid var(--chd-border);
+  border-radius: 4px;
+  color: var(--chd-dim);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.chd-close:hover {
+  color: var(--chd-muted);
+  border-color: var(--chd-border-strong);
+}
+
+/* ── Two-section layout ──────────────────────────────────────────────────────── */
+
+.chd-section-header {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--chd-dim);
+  padding: 8px 2px 4px;
+  border-bottom: 1px solid var(--chd-border);
+  margin-bottom: 2px;
+  margin-top: 6px;
+}
+
+section:first-child .chd-section-header {
+  margin-top: 0;
+}
+
+.chd-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chd-item-row .chd-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.chd-save-btn {
+  background: transparent;
+  border: 1px solid var(--chd-border);
+  color: var(--chd-dim);
+  font-family: monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  padding: 2px 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.chd-save-btn:hover {
+  color: var(--chd-text);
+  border-color: var(--chd-border-strong);
+}
+
+.chd-empty {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--chd-dim);
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* ── Per-platform structural identities ──────────────────────────────────────── */
+
+/* HERALD — sharp corners, corporate authority, logo top-left, version bottom-right */
+.chd-dialog[data-platform='HERALD'] {
+  border-radius: 0;
+  border-width: 2px;
+  background: rgba(8, 6, 0, 0.97);
+}
+
+.chd-dialog[data-platform='HERALD']::before {
+  content: '◉ HERALD COMMS';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--chd-text);
+  opacity: 0.7;
+  border-bottom: 1px solid var(--chd-border);
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+  text-align: left;
+}
+
+.chd-dialog[data-platform='HERALD']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--chd-dim);
+  text-align: right;
+  margin-top: -4px;
+}
+
+.chd-dialog[data-platform='HERALD'] .chd-item {
+  border-radius: 0;
+}
+
+.chd-dialog[data-platform='HERALD'] .chd-close {
+  border-radius: 0;
+}
+
+/* OPENLINE — near-sharp, anonymous ethos, left-border item accents, no logo/version */
+.chd-dialog[data-platform='OPENLINE'] {
+  border-radius: 2px;
+}
+
+.chd-dialog[data-platform='OPENLINE'] .chd-title {
+  text-align: left;
+}
+
+.chd-dialog[data-platform='OPENLINE'] .chd-item {
+  border: none;
+  border-left: 2px solid var(--chd-item-border);
+  border-radius: 0;
+}
+
+.chd-dialog[data-platform='OPENLINE'] .chd-item:hover {
+  border-left-color: var(--chd-item-border-hover);
+}
+
+.chd-dialog[data-platform='OPENLINE'] .chd-item--active {
+  border-left-color: var(--chd-item-border-active);
+}
+
+/* MERIDIAN — navigation system, logo top-right, version bottom-right, green tint */
+.chd-dialog[data-platform='MERIDIAN'] {
+  border-radius: 4px;
+  background: rgba(0, 10, 4, 0.97);
+}
+
+.chd-dialog[data-platform='MERIDIAN']::before {
+  content: '⊕ MERIDIAN / ARESNAV';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--chd-text);
+  opacity: 0.7;
+  text-align: right;
+  border-bottom: 1px solid var(--chd-border);
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+}
+
+.chd-dialog[data-platform='MERIDIAN']::after {
+  content: attr(data-version);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--chd-dim);
+  text-align: right;
+  margin-top: -4px;
+}
+
+/* BROADCAST — degraded relay, slightly faded */
+.chd-dialog[data-platform='BROADCAST'] {
+  opacity: 0.88;
+  filter: contrast(0.9) saturate(0.8);
+}

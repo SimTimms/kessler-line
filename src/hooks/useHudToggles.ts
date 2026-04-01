@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 
 export function useHudToggles() {
   const [spotlightOn, setSpotlightOn] = useState(true);
-  const [magneticOn, setMagneticOn] = useState(false);
-  const [driveSignatureOn, setDriveSignatureOn] = useState(false);
-  const [proximity, setProximity] = useState(false);
-  const [radioOn, setRadioOn] = useState(false);
+  const [magneticOn, setMagneticOn] = useState(true);
+  const [driveSignatureOn, setDriveSignatureOn] = useState(true);
+  const [proximity, setProximity] = useState(true);
+  const [radioOn, setRadioOn] = useState(true);
   const [showMinimap, setShowMinimap] = useState(false);
 
   useEffect(() => {

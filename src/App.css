@@ -236,6 +236,48 @@ body {
   left: -20vw;
 }
 
+/* ── Ship title card (shown after Kessler fades) ────────────────────────────── */
+@keyframes ship-title-show {
+  0%   { opacity: 0; transform: translateY(10px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+.ship-title-card {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  animation: ship-title-show 5.2s ease-in-out forwards;
+}
+
+.ship-title-name {
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 300;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #d0e8ff;
+  text-shadow:
+    0 0 40px rgba(80, 160, 255, 0.5),
+    0 0 80px rgba(40, 100, 200, 0.25);
+  line-height: 1;
+}
+
+.ship-title-mission {
+  margin-top: 14px;
+  font-size: clamp(0.7rem, 1.6vw, 0.95rem);
+  font-weight: 400;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: rgba(160, 210, 255, 0.55);
+}
+
 .no-fly-label {
   padding: 6px 10px;
   background: rgba(20, 6, 8, 0.75);

@@ -45,7 +45,7 @@ export const SPACE_STATION_DEF: WorldObjectDef = {
 
 export const FUEL_STATION_DEF: WorldObjectDef = {
   id: 'fuel-station',
-  label: 'Sirix Station',
+  label: 'N51744X',
   position: [6084 * S, 0, -6584 * S],
   minimapColor: '#00cfff',
   minimapRadius: 0.5,
@@ -291,12 +291,12 @@ export const RADIO_BROADCAST_DEFS: RadioBroadcastDef[] = [
   },
   {
     id: 'fuel-station',
-    label: 'Sirix Station',
+    label: 'N51744X',
     position: FUEL_STATION_DEF.position,
     dockable: true,
     dockingBay: '07',
     dialogue: [
-      'SIRIX STATION BROADCASTING.',
+      'N51744X BROADCASTING.',
       'DOCKING AVAILABLE. FUEL RESERVES AT CAPACITY.',
       'OXYGEN TRANSFER SYSTEMS ONLINE.',
     ],

@@ -1,8 +1,17 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { thrustMultiplier, shipAcceleration } from '../context/ShipState';
 import { hudShakeOffset } from '../context/HudShake';
+import { shipInstructionMessage } from '../context/CinematicState';
+import {
+  CAMERA_MOUSE_SENSITIVITY,
+  CAMERA_WHEEL_SENSITIVITY,
+  CAMERA_ZOOM_MIN,
+  CAMERA_ZOOM_MAX,
+  CAMERA_SHAKE_AMP_MAX,
+  CAMERA_SHAKE_FREQUENCIES,
+} from '../config/visualConfig';
 
 // Scratch vectors — avoid allocating on every frame
 const _offset = new THREE.Vector3();
@@ -22,15 +31,43 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
   const spherical = useRef(new THREE.Spherical(50, Math.PI / 4, 0));
   const didInitSpherical = useRef(false);
   const shakeTime = useRef(0);
+  const [decoupled, setDecoupled] = useState(false);
 
   useEffect(() => {
+    if (decoupled) {
+      scene.add(camera);
+      return;
+    }
     const parent = attachTo?.current;
     if (!parent) return;
     parent.add(camera);
     return () => {
       scene.add(camera);
     };
-  }, [attachTo, camera, scene]);
+  }, [attachTo, camera, scene, decoupled]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'KeyC') {
+        setDecoupled((prev) => {
+          const next = !prev;
+          shipInstructionMessage.current = next ? 'CAMERA: FREE LOOK' : 'CAMERA: COUPLED';
+          setTimeout(() => {
+            shipInstructionMessage.current = '';
+          }, 2000);
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    const onDestroyed = () => setDecoupled(true);
+    window.addEventListener('ShipDestroyed', onDestroyed);
+    return () => window.removeEventListener('ShipDestroyed', onDestroyed);
+  }, []);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -47,8 +84,8 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
       const dy = e.clientY - lastPointer.current.y;
       lastPointer.current = { x: e.clientX, y: e.clientY };
 
-      spherical.current.theta -= dx * 0.005;
-      spherical.current.phi -= dy * 0.005;
+      spherical.current.theta -= dx * CAMERA_MOUSE_SENSITIVITY;
+      spherical.current.phi -= dy * CAMERA_MOUSE_SENSITIVITY;
       spherical.current.phi = THREE.MathUtils.clamp(spherical.current.phi, 0.05, Math.PI - 0.05);
     };
 
@@ -57,8 +94,12 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     };
 
     const onWheel = (e: WheelEvent) => {
-      spherical.current.radius *= 1 + e.deltaY * 0.001;
-      spherical.current.radius = THREE.MathUtils.clamp(spherical.current.radius, 2, 10500);
+      spherical.current.radius *= 1 + e.deltaY * CAMERA_WHEEL_SENSITIVITY;
+      spherical.current.radius = THREE.MathUtils.clamp(
+        spherical.current.radius,
+        CAMERA_ZOOM_MIN,
+        CAMERA_ZOOM_MAX
+      );
     };
 
     canvas.addEventListener('pointerdown', onPointerDown);
@@ -86,10 +127,16 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     let shakeY = 0;
     if (isThrusting) {
       shakeTime.current += delta * (8 + excessMultiplier * 0.3);
-      const amp = Math.min(excessMultiplier * 0.05, 1.0);
+      const amp = Math.min(excessMultiplier * 0.05, CAMERA_SHAKE_AMP_MAX);
       const t = shakeTime.current;
-      shakeX = (Math.sin(t * 23.7) + Math.sin(t * 11.3) * 0.5) * amp;
-      shakeY = (Math.sin(t * 17.9) + Math.sin(t * 8.1) * 0.5) * amp;
+      shakeX =
+        (Math.sin(t * CAMERA_SHAKE_FREQUENCIES[0]) +
+          Math.sin(t * CAMERA_SHAKE_FREQUENCIES[1]) * 0.5) *
+        amp;
+      shakeY =
+        (Math.sin(t * CAMERA_SHAKE_FREQUENCIES[2]) +
+          Math.sin(t * CAMERA_SHAKE_FREQUENCIES[3]) * 0.5) *
+        amp;
       hudShakeOffset.x = shakeX * 4;
       hudShakeOffset.y = shakeY * 4;
     } else {
@@ -98,7 +145,7 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
       hudShakeOffset.y = 0;
     }
 
-    if (attachTo?.current) {
+    if (attachTo?.current && !decoupled) {
       _offset.setFromSpherical(spherical.current);
       camera.position.copy(_offset);
       camera.position.x += shakeX;
@@ -108,9 +155,7 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     }
 
     _offset.setFromSpherical(spherical.current);
-    const target = followTarget
-      ? followTarget.current
-      : _target.set(0, 0, 0);
+    const target = followTarget ? followTarget.current : _target.set(0, 0, 0);
     camera.position.copy(target).add(_offset);
     camera.position.x += shakeX;
     camera.position.y += shakeY;

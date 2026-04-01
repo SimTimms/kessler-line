@@ -3,7 +3,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import ThrusterParticles from './ThrusterParticles';
 import ThrusterHitboxDebug from './ThrusterHitboxDebug';
-import DockingReleaseParticles from '../DockingReleaseParticles';
+import DockingReleaseParticles from '../WorldObjects/DockingReleaseParticles';
 import ShipExplosion from './ShipExplosion';
 import ShipParticleCloud, { type ShipParticleCloudProps } from './ShipParticleCloud';
 import RailgunDamagePainter from './RailgunDamagePainter';
@@ -11,8 +11,17 @@ import RailgunOxygenVents from './RailgunOxygenVents';
 import HullStressEffect from './HullStressEffect';
 import ShipBreakApart from './ShipBreakApart';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
-import { useShipPhysics } from '../../hooks/useShipPhysics';
+import { useShipPhysics } from '../../hooks/shipPhysics';
+import TargetIndicatorLine from '../TargetIndicatorLine';
+import VelocityIndicator from '../VelocityIndicator';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
+import { DEBUG_THRUSTER_HITBOXES } from '../../config/debugConfig';
+import {
+  THRUSTER_LIGHT_POSITION,
+  THRUSTER_LIGHT_COLOR,
+  THRUSTER_LIGHT_DISTANCE,
+  THRUSTER_LIGHT_DECAY,
+} from '../../config/shipConfig';
 
 // Re-export everything consumers currently import from this file
 export {
@@ -37,26 +46,20 @@ export {
 interface SpaceshipProps {
   url: string;
   scale?: number;
-  positionRef?: { current: THREE.Vector3 };
   shipGroupRef?: { current: THREE.Group | null };
   initialPosition?: [number, number, number];
   initialRotation?: [number, number, number];
   enableShipExplosion?: boolean;
-  enableShipParticleCloud?: boolean;
   shipParticleCloudProps?: Partial<ShipParticleCloudProps>;
 }
-
-const DEBUG_THRUSTER_HITBOXES = false;
 
 export default function Spaceship({
   url,
   scale = 2,
-  positionRef,
   shipGroupRef,
   initialPosition,
   initialRotation,
   enableShipExplosion = false,
-  enableShipParticleCloud = false,
   shipParticleCloudProps,
 }: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
@@ -92,7 +95,7 @@ export default function Spaceship({
     thrustStrafeRight,
     releaseParticleTrigger,
     thrusterLightRef,
-  } = useShipPhysics({ groupRef, dockingPortRef, positionRef });
+  } = useShipPhysics({ groupRef, dockingPortRef });
 
   return (
     <>
@@ -104,11 +107,11 @@ export default function Spaceship({
         {/* Thruster point light — rear of ship, activates when any thruster fires */}
         <pointLight
           ref={thrusterLightRef}
-          position={[0, 0, -14]}
-          color="#88ccff"
+          position={THRUSTER_LIGHT_POSITION}
+          color={THRUSTER_LIGHT_COLOR}
           intensity={0}
-          distance={40}
-          decay={2}
+          distance={THRUSTER_LIGHT_DISTANCE}
+          decay={THRUSTER_LIGHT_DECAY}
         />
         {/* Docking port at ship nose — local +Z = forward direction of port */}
         <group ref={dockingPortRef} position={[0, 0, DOCKING_PORT_LOCAL_Z]}>
@@ -136,18 +139,14 @@ export default function Spaceship({
         thrustStrafeLeft={thrustStrafeLeft}
         thrustStrafeRight={thrustStrafeRight}
       />
-      {enableShipParticleCloud && (
-        <ShipParticleCloud shipGroupRef={groupRef} {...shipParticleCloudProps} />
-      )}
+      <ShipParticleCloud shipGroupRef={groupRef} {...shipParticleCloudProps} />
       <RailgunDamagePainter shipGroupRef={groupRef} />
       <RailgunOxygenVents shipGroupRef={groupRef} />
       <HullStressEffect shipGroupRef={groupRef} />
-      {enableShipExplosion && (
-        <ShipExplosion shipGroupRef={groupRef} shipPositionRef={positionRef} />
-      )}
-      {enableShipExplosion && (
-        <ShipBreakApart shipGroupRef={groupRef} shipPositionRef={positionRef} />
-      )}
+      {enableShipExplosion && <ShipExplosion shipGroupRef={groupRef} />}
+      {enableShipExplosion && <ShipBreakApart shipGroupRef={groupRef} />}
+      <TargetIndicatorLine shipGroupRef={groupRef} />
+      <VelocityIndicator />
     </>
   );
 }

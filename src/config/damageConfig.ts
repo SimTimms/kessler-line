@@ -13,7 +13,7 @@ export const O2_DRAIN_RATE = 0.05;
 
 // Hull stress damage — applies when thrust multiplier is maxed out and thrusting
 // One damage tick (1 HP) fires every HULL_STRESS_DAMAGE_INTERVAL seconds
-export const HULL_STRESS_DAMAGE_INTERVAL = 10;
+export const HULL_STRESS_DAMAGE_INTERVAL = 100;
 
 // Refill rates while docked (units per second)
 export const FUEL_REFILL_RATE = 10;

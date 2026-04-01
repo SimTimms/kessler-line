@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from '../../context/ShipState';
+import { shipPosRef } from '../../context/ShipPos';
 
 const CHUNK_COUNT = 140;
 const DURATION = 5.0;
@@ -11,10 +12,8 @@ const COLOR_ORANGE = new THREE.Color(1, 0.5, 0);
 const COLOR_BLACK = new THREE.Color(0, 0, 0);
 
 export default function ShipBreakApart({
-  shipPositionRef,
   shipGroupRef,
 }: {
-  shipPositionRef?: { current: THREE.Vector3 };
   shipGroupRef?: { current: THREE.Group | null };
 }) {
   const activeRef = useRef(false);
@@ -65,8 +64,8 @@ export default function ShipBreakApart({
 
           scalesRef.current[i] = 0.4 + Math.random() * 1.2;
         }
-      } else if (shipPositionRef) {
-        originRef.current.copy(shipPositionRef.current);
+      } else {
+        originRef.current.copy(shipPosRef.current);
         for (let i = 0; i < CHUNK_COUNT; i++) {
           const base = i * 3;
           positionsRef.current[base + 0] = originRef.current.x;
@@ -80,8 +79,6 @@ export default function ShipBreakApart({
           velocitiesRef.current[base + 2] = Math.cos(phi) * speed + shipVel.z;
           scalesRef.current[i] = 0.4 + Math.random() * 1.2;
         }
-      } else {
-        originRef.current.set(0, 0, 0);
       }
 
       timeRef.current = 0;
@@ -91,7 +88,7 @@ export default function ShipBreakApart({
 
     window.addEventListener('ShipDestroyed', onDestroyed);
     return () => window.removeEventListener('ShipDestroyed', onDestroyed);
-  }, [shipGroupRef, shipPositionRef]);
+  }, [shipGroupRef]);
 
   useFrame((_, delta) => {
     if (!activeRef.current || !meshRef.current) return;

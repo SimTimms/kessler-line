@@ -89,7 +89,15 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
   yawLeft.current = yl;
   yawRight.current = yr;
 
-  if (distToArrival <= 0) return 'retroburn';
+  // Brake-distance trigger: same kinematic calculation as planetary approach.
+  // retroTargetSpeed is 0 for stations, so simplifies to v² / (2 * a_max).
+  let brakeDist =
+    speed > retroTargetSpeed
+      ? (speed * speed - retroTargetSpeed * retroTargetSpeed) / (2 * A_MAX)
+      : 0;
+  brakeDist += speed * T_FLIP_180;
+
+  if (distToArrival <= brakeDist) return 'retroburn';
 
   // Suppress thrust from `velFlat` perpendicular component (match straight approach)
   const dotNoseTarget = noseDir.x * toTarget.x + noseDir.z * toTarget.z;

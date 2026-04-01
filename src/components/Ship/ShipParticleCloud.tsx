@@ -7,10 +7,11 @@ import {
   SHIP_IMPACT_PULSE_MS,
   shipImpactPulseUntil,
   shipVelocity,
+  shipQuaternion,
 } from '../../context/ShipState';
 import { playAsteroidImpact, setAsteroidHiss } from '../../sound/SoundManager';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
-import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { PLANETS, SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
 
 export interface ShipParticleCloudProps {
   count?: number;
@@ -30,6 +31,22 @@ export interface ShipParticleCloudProps {
   speedGateOverridesField?: boolean;
 }
 
+// ── Particle tuning constants ─────────────────────────────────────────────
+const PARTICLE_LIFETIME_MIN = 1.05; // seconds
+const PARTICLE_LIFETIME_MAX = 3.3; // seconds
+const EARTH_FIELD_OUTER_SCALE = 5.2; // multiplier on earth.radius * SOLAR_SYSTEM_SCALE
+const IMPACT_BOOST = 2.2; // extra brightness multiplier during hull impact pulse
+const SPEED_BOOST_MAX = 10.5; // extra brightness multiplier at max speed gate
+const SPAWN_JITTER_XZ = 3; // world-space random spawn offset on X/Z axes
+const SPAWN_JITTER_Y = 1; // world-space random spawn offset on Y axis
+const FALLBACK_SPAWN_RADIUS = 10; // spawn radius when no hull surface sample is available
+const SPRAY_SPEED_MIN = 8; // units/s outward from hull surface
+const SPRAY_SPEED_RANGE = 20; // added to SPRAY_SPEED_MIN via rng
+const VELOCITY_JITTER = 0; // random lateral velocity added per axis
+const IMPACT_SIZE_MULTIPLIER = 1.35; // point size scale during impact pulse
+const NORMAL_OPACITY_SCALE = 0.85; // opacity scale when no impact is active
+// ─────────────────────────────────────────────────────────────────────────
+
 // Seeded pseudo-random (mulberry32)
 function mulberry32(seed: number): () => number {
   let a = seed;
@@ -43,23 +60,24 @@ function mulberry32(seed: number): () => number {
 }
 
 export default function ShipParticleCloud({
-  count = 44,
-  minRadius = 15,
-  maxRadius = 50,
+  count = 1,
+  minRadius = 1,
+  maxRadius = 10,
   color = '#ffffff',
-  size = 0.15,
-  opacity = 0.3,
+  size = 0.1,
+  opacity = 0.2,
   shipGroupRef,
   enableInEarthField = false,
   enableImpactSound = false,
   impactSoundMinInterval = 0.05,
   impactSoundMaxInterval = 0.12,
   enableSpeedGate = false,
-  speedGateMin = 200,
-  speedGateMax = 600,
+  speedGateMin = 10,
+  speedGateMax = 300,
   speedGateOverridesField = false,
 }: ShipParticleCloudProps) {
   const positionsRef = useRef<Float32Array>(new Float32Array(count * 3));
+  const pointsMeshRef = useRef<THREE.Points | null>(null);
   const materialRef = useRef<THREE.PointsMaterial | null>(null);
   const positionAttrRef = useRef<THREE.BufferAttribute | null>(null);
   const colorsRef = useRef<Float32Array>(new Float32Array(count * 3));
@@ -104,7 +122,7 @@ export default function ShipParticleCloud({
         colors[base + 2] = 0.2;
       }
       // Staggered initial ages so they don't all respawn on frame 1
-      const lt = 0.05 + rng() * 0.25;
+      const lt = PARTICLE_LIFETIME_MIN + rng() * (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN);
       lifetimes[i] = lt;
       ages[i] = rng() * lt; // start at random point in lifetime
     }
@@ -115,10 +133,10 @@ export default function ShipParticleCloud({
   const worldPos = useMemo(() => new THREE.Vector3(), []);
   const localPos = useMemo(() => new THREE.Vector3(), []);
   const earthWorldPos = useMemo(() => new THREE.Vector3(), []);
-  const _invMatrix = useMemo(() => new THREE.Matrix4(), []);
+  const _invQuat = useMemo(() => new THREE.Quaternion(), []);
   const _localVelDir = useMemo(() => new THREE.Vector3(), []);
   const earth = useMemo(() => PLANETS.find((planet) => planet.name === 'Earth'), []);
-  const fieldOuter = (earth?.radius ?? 92) * SOLAR_SYSTEM_SCALE * 5.2;
+  const fieldOuter = (earth?.radius ?? 92) * SOLAR_SYSTEM_SCALE * EARTH_FIELD_OUTER_SCALE;
 
   const flashTexture = useMemo(() => {
     const sizePx = 64;
@@ -175,6 +193,12 @@ export default function ShipParticleCloud({
 
   useFrame(({ clock }, delta) => {
     const shipPos = shipPosRef.current;
+
+    // Anchor mesh at ship world position so buffer values stay small (ship-relative)
+    // — avoids float32 precision loss at large solar-system coordinates.
+    if (pointsMeshRef.current) {
+      pointsMeshRef.current.position.copy(shipPos);
+    }
     const positions = positionsRef.current;
     const colors = colorsRef.current;
     const baseColors = pulseColorsRef.current;
@@ -184,14 +208,14 @@ export default function ShipParticleCloud({
     const impactRemaining = shipImpactPulseUntil.current - nowMs;
     const impactActive = impactRemaining > 0;
     const impactAlpha = impactActive ? Math.min(1, impactRemaining / SHIP_IMPACT_PULSE_MS) : 0;
-    const impactBoost = 1 + impactAlpha * 2.2;
+    const impactBoost = 1 + impactAlpha * IMPACT_BOOST;
 
     const currentSpeed = getShipSpeedMps();
     const speedGateActive = enableSpeedGate && currentSpeed >= speedGateMin;
     const speedT = enableSpeedGate
       ? Math.min(1, Math.max(0, (currentSpeed - speedGateMin) / (speedGateMax - speedGateMin)))
       : 0;
-    const speedBoost = 1 + speedT * 1.5;
+    const speedBoost = 1 + speedT * SPEED_BOOST_MAX;
 
     if (!impactActive && enableInEarthField && !(speedGateOverridesField && speedGateActive)) {
       const earthPos = solarPlanetPositions.Earth;
@@ -240,9 +264,9 @@ export default function ShipParticleCloud({
 
     // Velocity direction in ship-local space for directional culling
     let velDirValid = false;
-    if (!impactActive && shipGroupRef?.current && shipVelocity.lengthSq() > 0.01) {
-      _invMatrix.copy(shipGroupRef.current.matrixWorld).invert();
-      _localVelDir.copy(shipVelocity).transformDirection(_invMatrix);
+    if (!impactActive && shipVelocity.lengthSq() > 0.01) {
+      _invQuat.copy(shipQuaternion).invert();
+      _localVelDir.copy(shipVelocity).applyQuaternion(_invQuat);
       velDirValid = true;
     }
 
@@ -261,39 +285,50 @@ export default function ShipParticleCloud({
 
       // Respawn particle when its lifetime expires
       if (ages[i] >= lifetimes[i]) {
-        lifetimes[i] = 0.0025 + rng() * 0.025;
+        lifetimes[i] =
+          PARTICLE_LIFETIME_MIN + rng() * (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN);
         ages[i] = 0;
 
         // World-space spawn position from local hull offset at current ship transform
         if (group && hasSurfaceSampleRef.current) {
           temp.set(localOffsets[base], localOffsets[base + 1], localOffsets[base + 2]);
-          temp.applyMatrix4(group.matrixWorld);
-          spawnPos[base] = -Math.random() * 3 + temp.x + Math.random() * 3;
-          spawnPos[base + 1] = -Math.random() * 1 + temp.y + Math.random() * 1;
-          spawnPos[base + 2] = -Math.random() * 3 + temp.z + Math.random() * 3;
+          temp.applyQuaternion(shipQuaternion).add(shipPos);
+          spawnPos[base] =
+            -Math.random() * SPAWN_JITTER_XZ + temp.x + Math.random() * SPAWN_JITTER_XZ;
+          spawnPos[base + 1] =
+            -Math.random() * SPAWN_JITTER_Y + temp.y + Math.random() * SPAWN_JITTER_Y;
+          spawnPos[base + 2] =
+            -Math.random() * SPAWN_JITTER_XZ + temp.z + Math.random() * SPAWN_JITTER_XZ;
         } else {
-          spawnPos[base] = shipPos.x + (rng() - 0.5) * 10;
-          spawnPos[base + 1] = shipPos.y + (rng() - 0.5) * 10;
-          spawnPos[base + 2] = shipPos.z + (rng() - 0.5) * 10;
+          spawnPos[base] = shipPos.x + (rng() - 0.5) * FALLBACK_SPAWN_RADIUS;
+          spawnPos[base + 1] = shipPos.y + (rng() - 0.5) * FALLBACK_SPAWN_RADIUS;
+          spawnPos[base + 2] = shipPos.z + (rng() - 0.5) * FALLBACK_SPAWN_RADIUS;
         }
 
-        // Velocity: spray outward from hull surface in world space
-        // Particles do NOT inherit ship velocity — they stay in world space as the ship moves past
+        // Velocity: spray in the reverse direction of ship travel (debris/wake effect).
+        // Fall back to outward hull normal when ship is stationary.
         const ox = localOffsets[base];
         const oy = localOffsets[base + 1];
         const oz = localOffsets[base + 2];
-        const len = Math.sqrt(ox * ox + oy * oy + oz * oz) || 1;
-        const spraySpeed = 8 + rng() * 20; // units/s outward from hull
-        vels[base] = (ox / len) * spraySpeed + (rng() - 0.5) * 20;
-        vels[base + 1] = (oy / len) * spraySpeed + (rng() - 0.5) * 20;
-        vels[base + 2] = (oz / len) * spraySpeed + (rng() - 0.5) * 20;
+        const shipSpeed = shipVelocity.length();
+        if (shipSpeed > 0.001) {
+          temp.copy(shipVelocity).normalize().negate();
+        } else {
+          const len = Math.sqrt(ox * ox + oy * oy + oz * oz) || 1;
+          temp.set(ox / len, oy / len, oz / len).applyQuaternion(shipQuaternion);
+        }
+        const spraySpeed = SPRAY_SPEED_MIN + rng() * SPRAY_SPEED_RANGE; // units/s
+        vels[base] = temp.x * spraySpeed + (rng() - 0.5) * VELOCITY_JITTER;
+        vels[base + 1] = temp.y * spraySpeed + (rng() - 0.5) * VELOCITY_JITTER;
+        vels[base + 2] = temp.z * spraySpeed + (rng() - 0.5) * VELOCITY_JITTER;
       }
 
-      // World-space position: fixed spawn + velocity drift
+      // Ship-relative position: world spawn + drift − ship anchor
+      // Keeping values near zero avoids float32 precision jitter at large coordinates.
       const age = ages[i];
-      positions[base] = spawnPos[base] + vels[base] * age;
-      positions[base + 1] = spawnPos[base + 1] + vels[base + 1] * age;
-      positions[base + 2] = spawnPos[base + 2] + vels[base + 2] * age;
+      positions[base] = spawnPos[base] + vels[base] * age - shipPos.x;
+      positions[base + 1] = spawnPos[base + 1] + vels[base + 1] * age - shipPos.y;
+      positions[base + 2] = spawnPos[base + 2] + vels[base + 2] * age - shipPos.z;
 
       // Fade: bright at spawn, dark at end of lifetime
       const lifeT = age / lifetimes[i];
@@ -320,8 +355,8 @@ export default function ShipParticleCloud({
     }
 
     if (materialRef.current) {
-      materialRef.current.size = size * (impactActive ? 1.35 : 1);
-      materialRef.current.opacity = opacity * (impactActive ? 1 : 0.85);
+      materialRef.current.size = size * (impactActive ? IMPACT_SIZE_MULTIPLIER : 1);
+      materialRef.current.opacity = opacity * (impactActive ? 1 : NORMAL_OPACITY_SCALE);
     }
 
     if (positionAttrRef.current) positionAttrRef.current.needsUpdate = true;
@@ -329,7 +364,7 @@ export default function ShipParticleCloud({
   });
 
   return (
-    <points frustumCulled={false}>
+    <points frustumCulled={false} ref={pointsMeshRef}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"

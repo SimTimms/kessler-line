@@ -5,11 +5,16 @@ import { resumeAudioContext } from './sound/SoundManager';
 import { useCallback, useState } from 'react';
 function App() {
   useAppLifecycle();
-  const { hud, docking, npcHail, setNpcHail, beacon, mission, thrust } = useAppState();
+  const { hud, docking, beacon, mission, thrust } = useAppState();
   const [hasStarted, setHasStarted] = useState(false);
+  const [showShipTitle, setShowShipTitle] = useState(false);
   const handleStart = useCallback(() => {
     resumeAudioContext();
     setHasStarted(true);
+    setShowShipTitle(true);
+  }, []);
+  const handleShipTitleDone = useCallback(() => {
+    setShowShipTitle(false);
   }, []);
 
   return (
@@ -35,8 +40,6 @@ function App() {
       onTransferO2={docking.onTransferO2}
       onMissionSelect={mission.onMissionSelect}
       onMissionComplete={mission.onMissionComplete}
-      npcHail={npcHail}
-      setNpcHail={setNpcHail}
       beaconActivated={beacon.beaconActivated}
       listeningToMessage={beacon.listeningToMessage}
       setListeningToMessage={beacon.setListeningToMessage}
@@ -45,6 +48,8 @@ function App() {
       setThrustLevel={thrust.setThrustLevel}
       showStartOverlay={!hasStarted}
       onStart={handleStart}
+      showShipTitle={showShipTitle}
+      onShipTitleDone={handleShipTitleDone}
     />
   );
 }

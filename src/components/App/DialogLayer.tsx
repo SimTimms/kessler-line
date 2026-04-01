@@ -1,21 +1,18 @@
 import { memo } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
-import DockingDialog from '../DockingDialog';
-import NPCContactDialog, { type NPCHailDetail } from '../NPCContactDialog';
+import DockingDialog from '../WorldObjects/DockingDialog';
+import type { MissionId } from '../../hooks/useMissionState';
 
 interface DialogLayerProps {
   docked: boolean;
   dockedStation: string | null;
-  activeMission: 'kronos4' | 'mars' | 'neptune' | null;
+  activeMission: MissionId | null;
   completedMissions: string[];
   refueling: boolean;
   transferringO2: boolean;
   onRefuel: () => void;
   onTransferO2: () => void;
-  onMissionSelect: (mission: 'kronos4' | 'mars' | 'neptune') => void;
+  onMissionSelect: (mission: MissionId) => void;
   onMissionComplete: () => void;
-  npcHail: NPCHailDetail | null;
-  setNpcHail: Dispatch<SetStateAction<NPCHailDetail | null>>;
 }
 
 const DialogLayer = memo(function DialogLayer({
@@ -29,15 +26,9 @@ const DialogLayer = memo(function DialogLayer({
   onTransferO2,
   onMissionSelect,
   onMissionComplete,
-  npcHail,
-  setNpcHail,
 }: DialogLayerProps) {
   return (
     <>
-      {npcHail && !docked && (
-        <NPCContactDialog detail={npcHail} onDismiss={() => setNpcHail(null)} />
-      )}
-
       {docked && (
         <DockingDialog
           stationId={dockedStation}

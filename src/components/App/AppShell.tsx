@@ -9,10 +9,10 @@ import DialogLayer from './DialogLayer';
 import AudioLayer from './AudioLayer';
 import ControlLayer from './ControlLayer';
 import StartOverlay from './StartOverlay';
+import ShipTitleCard from './ShipTitleCard';
 import BackgroundHum from './BackgroundHum';
-import { O2DeathOverlay } from '../Ship/O2DeathOverlay';
+import { DeathOverlay } from '../Ship/DeathOverlay';
 import DebugCascadePanel from './DebugCascadePanel';
-import type { NPCHailDetail } from '../NPCContactDialog';
 import type { MissionId } from '../../hooks/useMissionState';
 
 interface AppShellProps {
@@ -37,8 +37,6 @@ interface AppShellProps {
   onTransferO2: () => void;
   onMissionSelect: (mission: MissionId) => void;
   onMissionComplete: () => void;
-  npcHail: NPCHailDetail | null;
-  setNpcHail: Dispatch<SetStateAction<NPCHailDetail | null>>;
   beaconActivated: boolean;
   listeningToMessage: boolean;
   setListeningToMessage: Dispatch<SetStateAction<boolean>>;
@@ -47,6 +45,8 @@ interface AppShellProps {
   setThrustLevel: Dispatch<SetStateAction<number>>;
   showStartOverlay: boolean;
   onStart: () => void;
+  showShipTitle: boolean;
+  onShipTitleDone: () => void;
 }
 
 const AppShell = memo(function AppShell(props: AppShellProps) {
@@ -72,8 +72,6 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
     onTransferO2,
     onMissionSelect,
     onMissionComplete,
-    npcHail,
-    setNpcHail,
     beaconActivated,
     listeningToMessage,
     setListeningToMessage,
@@ -82,6 +80,8 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
     setThrustLevel,
     showStartOverlay,
     onStart,
+    showShipTitle,
+    onShipTitleDone,
   } = props;
 
   return (
@@ -112,8 +112,6 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
         onTransferO2={onTransferO2}
         onMissionSelect={onMissionSelect}
         onMissionComplete={onMissionComplete}
-        npcHail={npcHail}
-        setNpcHail={setNpcHail}
       />
       <AudioLayer
         beaconActivated={beaconActivated}
@@ -123,7 +121,8 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
       />
       <ControlLayer thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
       {showStartOverlay ? <StartOverlay onStart={onStart} /> : <BackgroundHum />}
-      <O2DeathOverlay />
+      {showShipTitle && <ShipTitleCard onDone={onShipTitleDone} />}
+      <DeathOverlay />
       <DebugCascadePanel />
       <AppStyles />
     </AppContainer>

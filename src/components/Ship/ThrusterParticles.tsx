@@ -13,8 +13,10 @@ import {
   mobileThrustRight,
   mobileThrustStrafeLeft,
   mobileThrustStrafeRight,
+  shipQuaternion,
 } from '../../context/ShipState';
 import { autopilotThrustForward, autopilotThrustReverse } from '../../context/AutopilotState';
+import { shipPosRef } from '../../context/ShipPos';
 
 const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.04; // seconds — short, intense burn (jittered ±30%)
@@ -207,8 +209,7 @@ export default function ThrusterParticles({
     positions: Float32Array,
     colors: Float32Array,
     delta: number,
-    geoRef: { current: THREE.BufferGeometry },
-    shipMatrix: THREE.Matrix4
+    geoRef: { current: THREE.BufferGeometry }
   ) {
     for (let i = 0; i < maxCount; i++) {
       const p = pool[i];
@@ -246,8 +247,9 @@ export default function ThrusterParticles({
       p.py -= radY * pull;
       p.pz -= radZ * pull;
 
-      // Transform local → world for rendering
-      _worldPos.set(p.px, p.py, p.pz).applyMatrix4(shipMatrix);
+      // Transform local → world for rendering using live renderPosition + rotation refs
+      // (avoids matrixWorld staleness from the physics smooth-render two-step)
+      _worldPos.set(p.px, p.py, p.pz).applyQuaternion(shipQuaternion).add(shipPosRef.current);
       positions[i * 3] = _worldPos.x;
       positions[i * 3 + 1] = _worldPos.y;
       positions[i * 3 + 2] = _worldPos.z;
@@ -277,7 +279,6 @@ export default function ThrusterParticles({
   useFrame((_, delta) => {
     const m = thrustMultiplier.current;
     const emitRate = EMIT_RATE * Math.sqrt(m);
-    const shipMatrix = shipGroupRef.current.matrixWorld;
 
     // Main engines — both nozzles fire together on reverse thrust
     const reverseActive =
@@ -334,8 +335,8 @@ export default function ThrusterParticles({
     if (mainMatRef.current) mainMatRef.current.size = 1.4 * Math.sqrt(m);
     if (rcsMatRef.current) rcsMatRef.current.size = 0.18 * Math.sqrt(m);
 
-    tickPool(mainPool.current, MAIN_MAX, mainPos, mainCol, delta, mainGeoRef, shipMatrix);
-    tickPool(rcsPool.current, RCS_MAX, rcsPos, rcsCol, delta, rcsGeoRef, shipMatrix);
+    tickPool(mainPool.current, MAIN_MAX, mainPos, mainCol, delta, mainGeoRef);
+    tickPool(rcsPool.current, RCS_MAX, rcsPos, rcsCol, delta, rcsGeoRef);
   });
 
   const sharedMatProps = {

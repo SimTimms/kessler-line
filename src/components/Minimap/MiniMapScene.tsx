@@ -13,7 +13,7 @@ import {
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { solarPlanetPositions, fuelStationWorldPos } from '../../context/SolarSystemMinimap';
 import { waypointPromptDef } from '../../context/WaypointPrompt';
-import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { PLANETS, SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
 import { shipVelocity, shipQuaternion } from '../../context/ShipState';
 import { navTargetPosRef } from '../../context/NavTarget';
 import { neptuneNoFlyZoneActive } from '../../context/CinematicState';

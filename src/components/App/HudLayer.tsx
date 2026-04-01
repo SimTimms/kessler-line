@@ -8,11 +8,10 @@ import ProximityHUD from '../Proximity/ProximityHUD';
 import MiniMap from '../Minimap/MiniMap';
 import { HUD } from '../HUD/HUD';
 import { NavHUD } from '../NavHUD/NavHUD';
-import { RadioHUD } from '../RadioHUD/RadioHUD';
 import CinematicOverlay from '../Cinematic/CinematicOverlay';
-import InboxHUD from '../InboxHUD/InboxHUD';
-import RadioChatterStream from '../RadioChatterStream';
-import { spotlightOnRef } from '../LaserRay';
+import ContactsHUD from '../ContactsHUD/ContactsHUD';
+import RadioChatterStream from '../Radio/RadioChatterStream';
+import { spotlightOnRef } from '../Combat/LaserRay';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { proximityScanOnRef } from '../../context/ProximityScan';
@@ -86,8 +85,7 @@ const HudLayer = memo(function HudLayer({
         radioOnRef={radioOnRef}
       />
       <NavHUD />
-      <RadioHUD />
-      <InboxHUD />
+      <ContactsHUD />
       <RadioChatterStream />
       <CinematicOverlay />
     </>

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { RefObject } from 'react';
 import { getCollidables } from '../../context/CollisionRegistry';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
+import { shipPosRef } from '../../context/ShipPos';
 import {
   DOCKING_PORT_LOCAL_Z,
   DOCKING_PORT_RADIUS,
@@ -31,7 +32,6 @@ interface DockedStateParams {
   dockedTo: { current: string | null };
   thrusterLightRef: RefObject<THREE.PointLight>;
   thrusterLightIntensity: { current: number };
-  positionRef?: { current: THREE.Vector3 };
   rawDelta: number;
 }
 
@@ -40,7 +40,6 @@ export function applyDockedState({
   dockedTo,
   thrusterLightRef,
   thrusterLightIntensity,
-  positionRef,
   rawDelta,
 }: DockedStateParams): boolean {
   if (!dockedTo.current) return false;
@@ -63,7 +62,7 @@ export function applyDockedState({
   if (isRefueling.current) setFuel(Math.min(100, fuel + FUEL_REFILL_RATE * rawDelta));
   if (isTransferringO2.current) setO2(Math.min(100, o2 + O2_REFILL_RATE * rawDelta));
   setO2(Math.max(0, o2 - O2_DRAIN_RATE * rawDelta));
-  if (positionRef) positionRef.current.copy(group.position);
+  // shipPosRef.current.copy(group.position);
   minimapShipPosition.copy(group.position);
   return true;
 }
