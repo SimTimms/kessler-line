@@ -13,4 +13,5 @@ export const START_ZONE_CENTER: [number, number, number] = [76000, -3000, -12937
  *  Negative = prograde (same direction as planet rotation). */
 export const FUEL_STATION_ORBIT_SPEED = -0.00005;
 
-export const START_PLANET = 'Neptune';
+export const PLANETS = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
+export const START_PLANET = PLANETS[Math.floor(Math.random() * PLANETS.length)];

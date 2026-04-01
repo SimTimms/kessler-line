@@ -50,27 +50,28 @@ export interface PlayerShip {
 
 /** 20 possible player vessels. One is selected at game start. */
 export const PLAYER_SHIPS: PlayerShip[] = [
-  { name: 'Black Kestrel',       mission: 'En route to Neptune' },
-  { name: 'Pale Meridian',       mission: 'Salvage run, outer belt' },
-  { name: 'Iron Vagrant',        mission: 'Ore delivery, Titan Station' },
-  { name: 'Copper Drift',        mission: 'Supply run, Kuiper outpost' },
-  { name: 'Silent Margin',       mission: 'Prospecting, Uranus L4' },
-  { name: 'Dust Runner',         mission: 'Contract haul, Ceres' },
-  { name: 'Far Passage',         mission: 'Resupply, Periphery depot' },
-  { name: 'The Sullen Moon',     mission: 'Salvage, derelict ring' },
-  { name: "Widow's Wake",        mission: 'Medical cargo, Europa' },
-  { name: 'Cold Meridian',       mission: 'Ice extraction, Saturn' },
-  { name: 'Rust Cardinal',       mission: 'Scrap haul, Jupiter L5' },
-  { name: 'Phantom Haul',        mission: 'Classified freight, outer route' },
-  { name: 'The Iron Tide',       mission: 'Convoy escort, Neptune lane' },
-  { name: 'Distant Shore',       mission: 'Long-range survey, Eris' },
-  { name: 'Cinder Hawk',         mission: 'Emergency resupply, Triton' },
-  { name: 'The Leaden Sky',      mission: 'Refugee transport, Ganymede' },
-  { name: 'Vagrant Star',        mission: 'Fuel transfer, deep belt' },
-  { name: 'Ashen Light',         mission: 'Data courier, inner relay' },
-  { name: 'The Broken Compass',  mission: 'Search and salvage, Sedna approach' },
-  { name: 'Last Waypoint',       mission: 'Independent freight, no fixed route' },
+  { name: 'Black Kestrel', mission: 'En route to Neptune' },
+  { name: 'Pale Meridian', mission: 'Salvage run, outer belt' },
+  { name: 'Iron Vagrant', mission: 'Ore delivery, Titan Station' },
+  { name: 'Copper Drift', mission: 'Supply run, Kuiper outpost' },
+  { name: 'Silent Margin', mission: 'Prospecting, Uranus L4' },
+  { name: 'Dust Runner', mission: 'Contract haul, Ceres' },
+  { name: 'Far Passage', mission: 'Resupply, Periphery depot' },
+  { name: 'The Sullen Moon', mission: 'Salvage, derelict ring' },
+  { name: "Widow's Wake", mission: 'Medical cargo, Europa' },
+  { name: 'Cold Meridian', mission: 'Ice extraction, Saturn' },
+  { name: 'Rust Cardinal', mission: 'Scrap haul, Jupiter L5' },
+  { name: 'Phantom Haul', mission: 'Classified freight, outer route' },
+  { name: 'The Iron Tide', mission: 'Convoy escort, Neptune lane' },
+  { name: 'Distant Shore', mission: 'Long-range survey, Eris' },
+  { name: 'Cinder Hawk', mission: 'Emergency resupply, Triton' },
+  { name: 'The Leaden Sky', mission: 'Refugee transport, Ganymede' },
+  { name: 'Vagrant Star', mission: 'Fuel transfer, deep belt' },
+  { name: 'Ashen Light', mission: 'Data courier, inner relay' },
+  { name: 'The Broken Compass', mission: 'Search and salvage, Sedna approach' },
+  { name: 'Last Waypoint', mission: 'Independent freight, no fixed route' },
 ];
 
 /** Current session ship — will be randomly selected from PLAYER_SHIPS in a future update. */
-export const CURRENT_SHIP: PlayerShip = PLAYER_SHIPS[0];
+export const CURRENT_SHIP: PlayerShip =
+  PLAYER_SHIPS[Math.floor(Math.random() * PLAYER_SHIPS.length)];
