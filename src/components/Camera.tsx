@@ -3,7 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { thrustMultiplier, shipAcceleration } from '../context/ShipState';
 import { hudShakeOffset } from '../context/HudShake';
-import { shipInstructionMessage } from '../context/CinematicState';
+import { shipInstructionMessage, scrapperIntroActive } from '../context/CinematicState';
 import {
   CAMERA_MOUSE_SENSITIVITY,
   CAMERA_WHEEL_SENSITIVITY,
@@ -12,6 +12,7 @@ import {
   CAMERA_SHAKE_AMP_MAX,
   CAMERA_SHAKE_FREQUENCIES,
 } from '../config/visualConfig';
+import { SCRAPPER_INTRO_CAMERA_RADIUS } from '../config/scrapperConfig';
 
 // Scratch vectors — avoid allocating on every frame
 const _offset = new THREE.Vector3();
@@ -143,6 +144,10 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
       shakeTime.current = 0;
       hudShakeOffset.x = 0;
       hudShakeOffset.y = 0;
+    }
+
+    if (scrapperIntroActive.current) {
+      spherical.current.radius = SCRAPPER_INTRO_CAMERA_RADIUS;
     }
 
     if (attachTo?.current && !decoupled) {

@@ -4,6 +4,7 @@ import { hudShakeOffset } from '../../context/HudShake';
 import PowerHUD from '../PowerHUD/PowerHUD';
 import MagneticHUD from '../MagneticHUD';
 import DriveSignatureHUD from '../DriveSignatureHUD';
+import RadiationHUD from '../RadiationHUD';
 import ProximityHUD from '../Proximity/ProximityHUD';
 import MiniMap from '../Minimap/MiniMap';
 import { HUD } from '../HUD/HUD';
@@ -65,6 +66,7 @@ const HudLayer = memo(function HudLayer({
       <MagneticHUD />
       <DriveSignatureHUD />
       <ProximityHUD />
+      <RadiationHUD />
       {showMinimap && <MiniMap />}
 
       <HUD

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { cinematicThrustReverse } from '../../context/ShipState';
+import { cinematicThrustReverse, shipControlDisabledUntil } from '../../context/ShipState';
 import {
   cinematicAutopilotActive,
   neptuneNoFlyZoneActive,
@@ -9,7 +9,13 @@ import {
   shipInstructionMessage,
   chatterState,
   setCascadePhase,
+  scrapperIntroActive,
 } from '../../context/CinematicState';
+import {
+  SCRAPPER_BRAKE_EVENT_DELAY,
+  SCRAPPER_CAPTAIN_CUE_DELAY,
+  SCRAPPER_CONTROLS_ENABLE_DELAY,
+} from '../../config/scrapperConfig';
 import { addMessage } from '../../context/MessageStore';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
@@ -34,8 +40,45 @@ export default function CinematicController() {
   const employerRecallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    cinematicAutopilotActive.current = true;
-    cinematicThrustReverse.current = true;
+    // ── Scrapper intro: lock controls until captain's cue ─────────────────────
+    scrapperIntroActive.current = true;
+    shipControlDisabledUntil.current = Infinity;
+
+    const brakingChatterLines = [
+      "Captain, we're losing the cargo pod—",
+      'Braking thrusters are nominal. How far did it drift?',
+      "It's heading for atmosphere. Someone needs to go get it.",
+      'Pilot — your ship is in Bay 2. You know what to do.',
+    ];
+
+    let brakingTimers: ReturnType<typeof setTimeout>[] = [];
+
+    const onBrakingStarted = () => {
+      // Crewmate chatter
+      chatterState.lines = brakingChatterLines;
+      chatterState.index = 0;
+
+      const releaseTimer = window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('ScrapperCargoRelease'));
+      }, SCRAPPER_BRAKE_EVENT_DELAY);
+
+      const captainTimer = window.setTimeout(() => {
+        shipInstructionMessage.current = 'CAPTAIN: LAUNCH AND RETRIEVE THE CARGO';
+      }, SCRAPPER_CAPTAIN_CUE_DELAY);
+
+      const enableTimer = window.setTimeout(() => {
+        scrapperIntroActive.current = false;
+        shipControlDisabledUntil.current = 0;
+        shipInstructionMessage.current = '';
+      }, SCRAPPER_CONTROLS_ENABLE_DELAY);
+
+      brakingTimers = [releaseTimer, captainTimer, enableTimer];
+    };
+
+    window.addEventListener('ScrapperBrakingStarted', onBrakingStarted);
+
+    cinematicAutopilotActive.current = false;
+    cinematicThrustReverse.current = false;
     chatterState.lines = RADIO_CHATTER_LINES;
     chatterState.index = 0;
     noFlyTriggered.current = false;
@@ -67,8 +110,12 @@ export default function CinematicController() {
       window.clearTimeout(familyMessageTimer);
       window.clearTimeout(cascadeTimer);
       if (employerRecallTimer.current) window.clearTimeout(employerRecallTimer.current);
+      brakingTimers.forEach((t) => window.clearTimeout(t));
+      window.removeEventListener('ScrapperBrakingStarted', onBrakingStarted);
       cinematicAutopilotActive.current = false;
       cinematicThrustReverse.current = false;
+      scrapperIntroActive.current = false;
+      shipControlDisabledUntil.current = 0;
     };
   }, []);
 

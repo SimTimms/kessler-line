@@ -185,7 +185,7 @@ export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSy
           orbitRadius={p.orbitRadius}
           radius={p.radius}
           color={
-            p.name === 'Earth' || p.name === 'Mars' || p.name === 'Neptune' ? '#ffffff' : p.color
+            p.name === 'Earth' || p.name === 'Mars' || p.name === 'Neptune' || p.name === 'Venus' ? '#ffffff' : p.color
           }
           glowColor={p.color}
           textureUrl={
@@ -195,7 +195,9 @@ export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSy
                 ? '/mars.jpg'
                 : p.name === 'Neptune'
                   ? '/neptune.jpg'
-                  : undefined
+                  : p.name === 'Venus'
+                    ? '/assets/venus.jpeg'
+                    : undefined
           }
           emissive={p.name === 'Earth' ? '#000000' : p.emissive}
           orbitalSpeed={p.orbitalSpeed}

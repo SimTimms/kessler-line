@@ -2,19 +2,13 @@ import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { sceneCamera } from '../context/CameraRef';
 import { magneticOnRef, magneticScanRangeRef } from '../context/MagneticScan';
-import { debrisEntries } from './WorldObjects/SpaceDebris';
+import { getMagneticTargets } from '../context/MagneticRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
-
-// Only metallic (magnetic) entries need tracking
-const MAGNETIC_ENTRIES = debrisEntries.filter((e) => e.isMagnetic);
+const MAX_MARKERS = 200; // pre-allocated pool — supports up to this many simultaneous targets
 
 // ─── Marker DOM structure ────────────────────────────────────────────────────
-// Each marker is:  <div class="mhud-marker">
-//   <div class="mhud-box" />
-//   <div class="mhud-label" />
-// </div>
 function createMarker(container: HTMLElement) {
   const root = document.createElement('div');
   root.style.cssText = `
@@ -75,8 +69,10 @@ export default function MagneticHUD() {
     const container = containerRef.current;
     if (!container) return;
 
-    // Pre-create one marker DOM node per magnetic entry
-    const markers: Marker[] = MAGNETIC_ENTRIES.map(() => createMarker(container));
+    // Pre-allocate a fixed pool of marker DOM nodes
+    const markers: Marker[] = Array.from({ length: MAX_MARKERS }, () =>
+      createMarker(container),
+    );
 
     const _vec = new THREE.Vector3();
 
@@ -84,29 +80,36 @@ export default function MagneticHUD() {
     const update = () => {
       rafId = requestAnimationFrame(update);
 
-      if (!magneticOnRef.current || !sceneCamera.current) {
+      const camera = sceneCamera.current;
+      if (!magneticOnRef.current || !camera) {
         for (const m of markers) m.root.style.display = 'none';
         return;
       }
 
-      const camera = sceneCamera.current;
+      const targets = getMagneticTargets();
       const W = window.innerWidth;
       const H = window.innerHeight;
       const cx = W * 0.5;
       const cy = H * 0.5;
 
-      for (let i = 0; i < MAGNETIC_ENTRIES.length; i++) {
-        const entry = MAGNETIC_ENTRIES[i];
+      for (let i = 0; i < MAX_MARKERS; i++) {
+        const target = targets[i];
         const marker = markers[i];
 
-        const dist = minimapShipPosition.distanceTo(entry.position);
+        if (!target) {
+          marker.root.style.display = 'none';
+          continue;
+        }
+
+        target.getPosition(_vec);
+        const dist = minimapShipPosition.distanceTo(_vec);
+
         if (dist > magneticScanRangeRef.current) {
           marker.root.style.display = 'none';
           continue;
         }
 
         // Project to normalised device coords
-        _vec.copy(entry.position);
         _vec.project(camera);
 
         const isBehind = _vec.z > 1;
@@ -122,7 +125,7 @@ export default function MagneticHUD() {
           dist >= 1000 ? `${(dist / 1000).toFixed(1)}km` : `${Math.round(dist)}m`;
 
         marker.root.style.display = 'block';
-        marker.label.textContent = `${entry.label} [${distText}]`;
+        marker.label.textContent = `${target.label} [${distText}]`;
 
         if (onScreen) {
           const SIZE = 28;
@@ -130,10 +133,8 @@ export default function MagneticHUD() {
           marker.root.style.left = `${sx - SIZE * 0.5}px`;
           marker.root.style.top  = `${sy - SIZE * 0.5}px`;
         } else {
-          // Flip direction when behind camera
           if (isBehind) { sx = W - sx; sy = H - sy; }
 
-          // Clamp to screen edge
           const dx = sx - cx;
           const dy = sy - cy;
           const scale = Math.min(

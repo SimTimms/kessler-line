@@ -52,14 +52,18 @@ export function useInputListeners({
       if (e.code === 'KeyQ') thrustStrafeRight.current = true;
       if (e.code === 'KeyR') thrustRadialOut.current = true;
       if (e.code === 'KeyF') thrustRadialIn.current = true;
-      if (e.code === 'Space' && dockedTo.current) {
-        dockedTo.current = null;
-        window.dispatchEvent(new CustomEvent('ShipUndocked'));
-        if (groupRef.current) {
-          const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
-          velocity.current.copy(forward.multiplyScalar(4)); // 4 m/s release velocity
+      if (e.code === 'Space') {
+        if (dockedTo.current) {
+          dockedTo.current = null;
+          window.dispatchEvent(new CustomEvent('ShipUndocked'));
+          if (groupRef.current) {
+            const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
+            velocity.current.copy(forward.multiplyScalar(4)); // 4 m/s release velocity
+          }
+          releaseParticleTrigger.current = true;
+        } else {
+          window.dispatchEvent(new CustomEvent('CargoRelease'));
         }
-        releaseParticleTrigger.current = true;
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {

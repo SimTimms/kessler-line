@@ -1272,9 +1272,7 @@ export function getOrAssignDialogueTree(shipId: string, record?: ShipRecord): Di
 
   if (record) {
     // Score every tree; negative scores are hard-excluded (e.g. playerRegions mismatch)
-    const scored = RADIO_TREES.map((t) => ({ t, s: scoreTree(t, record) })).filter(
-      (x) => x.s >= 0
-    );
+    const scored = RADIO_TREES.map((t) => ({ t, s: scoreTree(t, record) })).filter((x) => x.s >= 0);
     const eligible = scored.length > 0 ? scored : RADIO_TREES.map((t) => ({ t, s: 1 }));
     const best = Math.max(...eligible.map((x) => x.s));
     const candidates = eligible.filter((x) => x.s === best).map((x) => x.t);

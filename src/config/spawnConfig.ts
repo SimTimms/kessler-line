@@ -14,4 +14,5 @@ export const START_ZONE_CENTER: [number, number, number] = [76000, -3000, -12937
 export const FUEL_STATION_ORBIT_SPEED = -0.00005;
 
 export const PLANETS = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
-export const START_PLANET = PLANETS[Math.floor(Math.random() * PLANETS.length)];
+//export const START_PLANET = PLANETS[Math.floor(Math.random() * PLANETS.length)];
+export const START_PLANET = 'Venus';

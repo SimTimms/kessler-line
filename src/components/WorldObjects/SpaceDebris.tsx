@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
+import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
 
 // Seeded pseudo-random (mulberry32) — same pattern as AsteroidBelt
 function mulberry32(seed: number): () => number {
@@ -155,7 +156,7 @@ export default function SpaceDebris() {
     new Array(debrisEntries.length).fill(null),
   );
 
-  // Register sphere colliders for each debris piece
+  // Register sphere colliders and magnetic targets for each debris piece
   useEffect(() => {
     debrisEntries.forEach((entry, i) => {
       registerCollidable({
@@ -164,9 +165,19 @@ export default function SpaceDebris() {
         shape: { type: 'sphere', radius: entry.radius },
         getObject3D: () => meshRefs.current[i],
       });
+      if (entry.isMagnetic) {
+        registerMagnetic({
+          id: entry.id,
+          label: entry.label,
+          getPosition: (target) => target.copy(entry.position),
+        });
+      }
     });
     return () => {
-      debrisEntries.forEach((entry) => unregisterCollidable(entry.id));
+      debrisEntries.forEach((entry) => {
+        unregisterCollidable(entry.id);
+        if (entry.isMagnetic) unregisterMagnetic(entry.id);
+      });
     };
   }, []);
 

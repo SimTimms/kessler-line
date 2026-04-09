@@ -17,6 +17,7 @@ import type { HailStatus } from '../../context/HailState';
 import DialogueThread from './DialogueThread';
 import './CommsChat.css';
 import { DIALOGUE_TREES } from '../../narrative/npcDialogues';
+import type { StaticContact } from '../../narrative/contacts';
 
 interface CommsChatProps {
   shipId: string;

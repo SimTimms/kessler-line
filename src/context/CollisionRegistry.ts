@@ -33,6 +33,14 @@ export interface CollidableEntry {
 
   /** Returns the actual rendered Three.js object for wireframe overlay, if available. */
   getObject3D?: () => THREE.Object3D | null;
+
+  /**
+   * Called when the ship collides with this object.
+   * `impulse` is `collisionNormal * impactSpeed` — a vector pointing away from
+   * the ship's approach direction, pre-scaled by impact magnitude.
+   * The receiver should scale by its own mass/impulse factor.
+   */
+  applyImpulse?: (impulse: THREE.Vector3) => void;
 }
 
 const registry = new Map<string, CollidableEntry>();

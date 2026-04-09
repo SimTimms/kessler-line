@@ -11,6 +11,7 @@ import {
 const _shipWorldPos = new THREE.Vector3();
 const _collidablePos = new THREE.Vector3();
 const _collisionNormal = new THREE.Vector3();
+const _impulse = new THREE.Vector3();
 const _boxQuat = new THREE.Quaternion();
 const _invBoxQuat = new THREE.Quaternion();
 const _localShipPos = new THREE.Vector3();
@@ -118,6 +119,11 @@ function resolveEntryCollision(
     shipPos.addScaledVector(_collisionNormal, overlap);
     if (impactSpeed < 0) {
       velocity.addScaledVector(_collisionNormal, -impactSpeed * (1 + RESTITUTION));
+      if (collidable.applyImpulse) {
+        // Pass normal * impactSpeed: negative impactSpeed * normal points away from ship approach
+        _impulse.copy(_collisionNormal).multiplyScalar(impactSpeed);
+        collidable.applyImpulse(_impulse);
+      }
     }
   }
 }

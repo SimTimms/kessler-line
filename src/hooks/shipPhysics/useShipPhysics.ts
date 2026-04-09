@@ -22,14 +22,23 @@ import { getCombinedInputs, getManualInput } from './inputs';
 import { PHYSICS_MAX_DELTA, PHYSICS_MAX_STEP } from './constants';
 import { updateEngineAudio } from './engineAudio';
 import { updateThrusterLight } from './thrusterLight';
-import { cinematicAutopilotActive, neptuneNoFlyZoneActive } from '../../context/CinematicState';
+import {
+  cinematicAutopilotActive,
+  neptuneNoFlyZoneActive,
+  scrapperIntroActive,
+  scrapperWorldPos,
+  scrapperWorldQuat,
+} from '../../context/CinematicState';
 import { shipPosRef } from '../../context/ShipPos';
+import { SCRAPPER_PLAYER_OFFSET_X, SCRAPPER_PLAYER_OFFSET_Z } from '../../config/scrapperConfig';
 import { DEBUG_DISABLE_GRAVITY, DEBUG_FREEZE_COLLISIONS } from '../../config/debugConfig';
 import { useInputListeners } from './inputListeners';
 import { checkShipDestruction } from './destruction';
 import { getActiveMainEngines, applyEngineAsymmetryTorque } from './engineDamage';
+import { applyRadiationDamage } from './radiation';
 
 const _spinEuler = new THREE.Vector3();
+const _scrapperOffset = new THREE.Vector3();
 
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
@@ -107,6 +116,20 @@ export function useShipPhysics({
         rawDelta,
       })
     ) {
+      updateEngineAudio({ mainThrust: false, rcsThrust: false });
+      return;
+    }
+
+    // ── Scrapper intro: pin player ship inside the hold ───────────────────────
+    if (scrapperIntroActive.current) {
+      _scrapperOffset
+        .set(SCRAPPER_PLAYER_OFFSET_X, 0, SCRAPPER_PLAYER_OFFSET_Z)
+        .applyQuaternion(scrapperWorldQuat);
+      groupRef.current.position.copy(scrapperWorldPos).add(_scrapperOffset);
+      physicsPosition.current.copy(groupRef.current.position);
+      shipPosRef.current.copy(physicsPosition.current);
+      minimapShipPosition.copy(physicsPosition.current);
+      velocity.current.set(0, 0, 0);
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
       return;
     }
@@ -260,6 +283,7 @@ export function useShipPhysics({
       (strL ? 1 : 0) +
       (strR ? 1 : 0);
     applyResourceDrain({ keysHeld, rawDelta });
+    applyRadiationDamage(physicsPosition.current, rawDelta);
 
     if (!neptuneNoFlyZoneActive.current) {
       checkDockingPort({

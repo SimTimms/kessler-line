@@ -13,7 +13,9 @@ import {
   DRIVE_SIGNATURE_RANGES,
   MAGNETIC_RANGES,
   RADIO_RANGES,
+  RADIATION_RANGES,
 } from '../../config/scanRanges';
+import { radiationOnRef, radiationRangeRef } from '../../context/RadiationScan';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
 
 interface HUDProps {
@@ -62,6 +64,7 @@ export const HUD = ({
 }: HUDProps) => {
   // ── Background music ──────────────────────────────────────────────────────
   const [musicOn, setMusicOn] = useState(false);
+  const [radiationOn, setRadiationOn] = useState(false);
   const audio1Ref = useRef<HTMLAudioElement | null>(null);
   const audio2Ref = useRef<HTMLAudioElement | null>(null);
   const audio3Ref = useRef<HTMLAudioElement | null>(null);
@@ -186,8 +189,12 @@ export const HUD = ({
       id: 'radiation',
       icon: Radiation,
       initialPower: 1,
-      isActive: false,
-      onSideEffect: () => {},
+      isActive: radiationOn,
+      onSideEffect: (on, level) => {
+        radiationOnRef.current = on;
+        radiationRangeRef.current = RADIATION_RANGES[level - 1];
+        setRadiationOn(on);
+      },
     },
     {
       id: 'music',

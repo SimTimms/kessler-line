@@ -12,12 +12,16 @@ import LaserRay from './Combat/LaserRay';
 import RadioBeacon from './Radio/RadioBeacon';
 import AsteroidBelt from './Environment/AsteroidBelt';
 import EarthAsteroidRing from './Planets/Earth/EarthAsteroidRing';
+import BrokenVenusMoon from './Planets/Venus/BrokenVenusMoon';
 import DockingBay from './WorldObjects/DockingBay';
 import EjectedCargo from './WorldObjects/EjectedCargo';
 import SpaceDebris from './WorldObjects/SpaceDebris';
+import CargoContainerField from './WorldObjects/CargoContainerField';
 import ProximityHighlight from './Proximity/ProximityHighlight';
 import { sceneCamera } from '../context/CameraRef';
 import AIShip from './NPCs/AIShip';
+import AIScrapper from './NPCs/AIScrapper';
+import ScrapperCargoContainer from './NPCs/ScrapperCargoContainer';
 import SolarSystem from './Planets/SolarSystem';
 import { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
 import SunGravity from './Environment/SunGravity';
@@ -36,6 +40,7 @@ import { RadioBeacons } from './RadioBeacons';
 import CinematicController from '../components/Cinematic/CinematicController';
 import { SPACE_STATION_DEF, ASTEROID_DOCK_DEF } from '../config/worldConfig';
 import { START_ZONE_CENTER } from '../config/spawnConfig';
+import CollisionDebug from './Debug/CollisionDebug';
 import {
   FOG_COLOR,
   FOG_DENSITY,
@@ -49,6 +54,7 @@ import {
   SHIP_PARTICLE_SPEED_MAX,
 } from '../config/particleConfig';
 import { OrbitingFuelStation } from './OrbitingFuelStation';
+import RadiationZones from './RadiationZones';
 
 // Captures the R3F camera into a shared module-level ref so DOM overlays
 // (MagneticHUD) can project 3D positions to screen space without being
@@ -146,15 +152,20 @@ export default function Scene() {
       <NeptuneNoFlyRing />
       <NeptuneDustRing />
       <EarthAsteroidRing />
+      <BrokenVenusMoon />
+      <RadiationZones />
       <SunGravity />
       <AsteroidBelt />
       <StartZoneAsteroidCluster center={START_ZONE_CENTER} />
       <NebulaClouds center={START_ZONE_CENTER} />
       <SpaceDebris />
+      <CargoContainerField />
+      <ScrapperCargoContainer />
       <EjectedCargo />
       <ProximityHighlight />
       <RailgunWarning shipGroupRef={spaceshipGroupRef} />
       <AIShip id="0" url="/untitled.gltf" scale={1} position={[-401000, 0, 0]} />
+      <AIScrapper url="/large_ship.glb" />
       <GhostFleet />
       <DistressBeaconField />
       <ShipDepthOfField />
