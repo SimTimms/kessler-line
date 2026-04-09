@@ -15,6 +15,8 @@ import {
   SCRAPPER_BRAKE_EVENT_DELAY,
   SCRAPPER_CAPTAIN_CUE_DELAY,
   SCRAPPER_CONTROLS_ENABLE_DELAY,
+  SCRAPPER_INTRO_DIALOGUE_URLS,
+  SCRAPPER_DIALOGUE_START_OFFSET,
 } from '../../config/scrapperConfig';
 import { addMessage } from '../../context/MessageStore';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
@@ -38,6 +40,15 @@ export default function CinematicController() {
   const noFlyTriggered = useRef(false);
   const neptuneWorld = useRef(new THREE.Vector3());
   const employerRecallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dialogueAudio = useRef<HTMLAudioElement | null>(null);
+
+  const playDialogueSequence = (urls: string[], index = 0) => {
+    if (index >= urls.length) return;
+    const audio = new Audio(urls[index]);
+    dialogueAudio.current = audio;
+    audio.onended = () => playDialogueSequence(urls, index + 1);
+    audio.play().catch(() => {});
+  };
 
   useEffect(() => {
     // ── Scrapper intro: lock controls until captain's cue ─────────────────────
@@ -72,7 +83,11 @@ export default function CinematicController() {
         shipInstructionMessage.current = '';
       }, SCRAPPER_CONTROLS_ENABLE_DELAY);
 
-      brakingTimers = [releaseTimer, captainTimer, enableTimer];
+      const dialogueTimer = window.setTimeout(() => {
+        playDialogueSequence(SCRAPPER_INTRO_DIALOGUE_URLS);
+      }, SCRAPPER_BRAKE_EVENT_DELAY + SCRAPPER_DIALOGUE_START_OFFSET);
+
+      brakingTimers = [releaseTimer, captainTimer, enableTimer, dialogueTimer];
     };
 
     window.addEventListener('ScrapperBrakingStarted', onBrakingStarted);
@@ -112,6 +127,11 @@ export default function CinematicController() {
       if (employerRecallTimer.current) window.clearTimeout(employerRecallTimer.current);
       brakingTimers.forEach((t) => window.clearTimeout(t));
       window.removeEventListener('ScrapperBrakingStarted', onBrakingStarted);
+      if (dialogueAudio.current) {
+        dialogueAudio.current.pause();
+        dialogueAudio.current.onended = null;
+        dialogueAudio.current = null;
+      }
       cinematicAutopilotActive.current = false;
       cinematicThrustReverse.current = false;
       scrapperIntroActive.current = false;

@@ -14,7 +14,7 @@ export const SCRAPPER_TURN_SPEED = 0.8; // ~3.9 s for a full 180°
 
 // ── Retro-burn emitter positions (scrapper local space, scale = 3) ────────────
 // These are placeholder positions — adjust to align with model nozzles.
-export const SCRAPPER_EMITTER_A: [number, number, number] = [-6, 0, 22];
+export const SCRAPPER_EMITTER_A: [number, number, number] = [-6, 0, 0];
 export const SCRAPPER_EMITTER_B: [number, number, number] = [6, 0, 22];
 
 /** Half-extents of the scrapper's box collider (at scale = 3). */
@@ -34,6 +34,19 @@ export const SCRAPPER_CAPTAIN_CUE_DELAY = 6000;
 
 /** Delay before player controls are enabled. */
 export const SCRAPPER_CONTROLS_ENABLE_DELAY = 9000;
+
+/** Ordered dialogue clips played ~2 s after the cargo-release event. */
+export const SCRAPPER_INTRO_DIALOGUE_URLS = [
+  'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-000.mp3',
+  'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-005.mp3',
+  'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-001.mp3',
+  'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-002.mp3',
+  'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-003.mp3',
+  'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-004.mp3',
+];
+
+/** Extra delay (ms) after SCRAPPER_BRAKE_EVENT_DELAY before dialogue starts. */
+export const SCRAPPER_DIALOGUE_START_OFFSET = 2000;
 
 // ── Initial orientation ───────────────────────────────────────────────────────
 
