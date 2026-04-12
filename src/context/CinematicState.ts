@@ -9,6 +9,8 @@ export const scrapperWorldPos = new THREE.Vector3();
 export const scrapperWorldQuat = new THREE.Quaternion();
 /** True while the scrapper is firing retro-burn engines. */
 export const scrapperRetroFiring = { current: false };
+/** True while the scrapper is firing forward (main cruise) engines. */
+export const scrapperForwardFiring = { current: false };
 
 // ── Cascade phase ─────────────────────────────────────────────────────────────
 export type CascadePhase = 'pre' | 'during' | 'post';

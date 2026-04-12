@@ -10,6 +10,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { capture, apply } from '../context/SaveManager';
 import { saveSlot, loadSlot, AUTOSAVE_SLOT } from '../context/SaveStore';
+import { KEY_MANUAL_SAVE, KEY_MANUAL_LOAD } from '../config/keybindings';
 
 const AUTOSAVE_INTERVAL_S = 60;
 const MANUAL_SLOT = 'manual';
@@ -30,12 +31,12 @@ export function useSaveSystem() {
   // Keyboard shortcuts
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'F5') {
+      if (e.key === KEY_MANUAL_SAVE) {
         e.preventDefault();
         saveSlot(MANUAL_SLOT, 'Manual Save', capture());
         console.info('[save] manual save written');
       }
-      if (e.key === 'F9') {
+      if (e.key === KEY_MANUAL_LOAD) {
         e.preventDefault();
         const data = loadSlot(MANUAL_SLOT) ?? loadSlot(AUTOSAVE_SLOT);
         if (data) {

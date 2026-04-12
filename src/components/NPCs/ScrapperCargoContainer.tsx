@@ -5,7 +5,12 @@ import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
 import { shipPosRef } from '../../context/ShipPos';
-import { shipVelocity, shipQuaternion, DOCKING_PORT_LOCAL_Z, DOCKING_PORT_RADIUS } from '../../context/ShipState';
+import {
+  shipVelocity,
+  shipQuaternion,
+  DOCKING_PORT_LOCAL_Z,
+  DOCKING_PORT_RADIUS,
+} from '../../context/ShipState';
 import { scrapperWorldPos, scrapperWorldQuat } from '../../context/CinematicState';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
@@ -71,25 +76,23 @@ export default function ScrapperCargoContainer() {
       releaseCooldownUntil.current = performance.now() + 3000;
       const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(shipQuaternion);
       velRef.current.copy(shipVelocity).addScaledVector(forward, CONTAINER_RELEASE_IMPULSE);
-      window.dispatchEvent(new CustomEvent('CargoReleased', { detail: { id: SCRAPPER_CONTAINER_ID } }));
+      window.dispatchEvent(
+        new CustomEvent('CargoReleased', { detail: { id: SCRAPPER_CONTAINER_ID } })
+      );
     };
     window.addEventListener('CargoRelease', onRelease);
 
     const onCargoRelease = () => {
       // Position the container at the scrapper's current world position + side offset
       posRef.current.copy(scrapperWorldPos);
-      posRef.current.x += 10; // slight offset so it's not exactly centred
+      posRef.current.x -= 60; // slight offset so it's not exactly centred
       quatRef.current.copy(scrapperWorldQuat);
 
       // Give it a velocity toward Venus
       const venusPlanetPos = solarPlanetPositions['Venus'];
       if (venusPlanetPos) {
         _toVenus
-          .set(
-            venusPlanetPos.x * SOLAR_SYSTEM_SCALE,
-            0,
-            venusPlanetPos.z * SOLAR_SYSTEM_SCALE,
-          )
+          .set(venusPlanetPos.x * SOLAR_SYSTEM_SCALE, 0, venusPlanetPos.z * SOLAR_SYSTEM_SCALE)
           .sub(posRef.current)
           .normalize();
         velRef.current.copy(_toVenus).multiplyScalar(RELEASE_DRIFT_SPEED);
@@ -109,8 +112,8 @@ export default function ScrapperCargoContainer() {
       window.removeEventListener('CargoRelease', onRelease);
       window.removeEventListener('ScrapperCargoRelease', onCargoRelease);
     };
-  // halfExtents is stable — intentionally omitted
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // halfExtents is stable — intentionally omitted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useFrame((_, delta) => {
@@ -128,7 +131,7 @@ export default function ScrapperCargoContainer() {
         .set(
           CONTAINER_DOCK_OFFSET_X,
           CONTAINER_DOCK_OFFSET_Y,
-          DOCKING_PORT_LOCAL_Z + CONTAINER_DOCK_OFFSET_Z,
+          DOCKING_PORT_LOCAL_Z + CONTAINER_DOCK_OFFSET_Z
         )
         .applyQuaternion(shipQuaternion)
         .add(shipPosRef.current);
@@ -158,7 +161,7 @@ export default function ScrapperCargoContainer() {
           capturedRef.current = true;
           velRef.current.set(0, 0, 0);
           window.dispatchEvent(
-            new CustomEvent('CargoContained', { detail: { id: SCRAPPER_CONTAINER_ID } }),
+            new CustomEvent('CargoContained', { detail: { id: SCRAPPER_CONTAINER_ID } })
           );
         }
       }

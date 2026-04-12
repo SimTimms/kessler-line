@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { KEY_TOGGLE_MINIMAP } from '../config/keybindings';
 
 export function useHudToggles() {
   const [spotlightOn, setSpotlightOn] = useState(true);
@@ -10,7 +11,7 @@ export function useHudToggles() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'KeyM') setShowMinimap((v) => !v);
+      if (e.code === KEY_TOGGLE_MINIMAP) setShowMinimap((v) => !v);
     };
     const onOpen = () => setShowMinimap(true);
     window.addEventListener('keydown', onKey);

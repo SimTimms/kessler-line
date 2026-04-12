@@ -9,6 +9,8 @@ let hissSource: AudioBufferSourceNode | null = null;
 let hissGainNode: GainNode | null = null;
 let engineSource: AudioBufferSourceNode | null = null;
 let engineGainNode: GainNode | null = null;
+let scrapperEngineSource: AudioBufferSourceNode | null = null;
+let scrapperEngineGainNode: GainNode | null = null;
 let hullStressSource: AudioBufferSourceNode | null = null;
 let hullStressGainNode: GainNode | null = null;
 let railgunLoopId: ReturnType<typeof window.setInterval> | null = null;
@@ -221,6 +223,56 @@ export function setEngineHiss(enabled: boolean, volume = 0.06, cutoff = 420): vo
     source.start();
     engineSource = source;
     engineGainNode = gain;
+  } catch {
+    /* non-critical */
+  }
+}
+
+/** Dedicated engine hiss for the AIScrapper — separate from the player ship's audio. */
+export function setScrapperEngineHiss(enabled: boolean, volume = 0.09, cutoff = 420): void {
+  try {
+    const ac = getCtx();
+    if (ac.state === 'suspended') ac.resume();
+
+    if (!enabled) {
+      if (scrapperEngineGainNode) {
+        const now = ac.currentTime;
+        scrapperEngineGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+      }
+      if (scrapperEngineSource) {
+        scrapperEngineSource.stop(ac.currentTime + 0.3);
+        scrapperEngineSource = null;
+      }
+      return;
+    }
+
+    if (scrapperEngineSource) return;
+
+    const bufferLength = ac.sampleRate * 2;
+    const buffer = ac.createBuffer(1, bufferLength, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.22;
+    }
+
+    const source = ac.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    const filter = ac.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(cutoff, ac.currentTime);
+
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(volume, ac.currentTime);
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ac.destination);
+
+    source.start();
+    scrapperEngineSource = source;
+    scrapperEngineGainNode = gain;
   } catch {
     /* non-critical */
   }

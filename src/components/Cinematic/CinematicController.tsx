@@ -17,6 +17,8 @@ import {
   SCRAPPER_CONTROLS_ENABLE_DELAY,
   SCRAPPER_INTRO_DIALOGUE_URLS,
   SCRAPPER_DIALOGUE_START_OFFSET,
+  SCRAPPER_THRUST_HINT,
+  SCRAPPER_THRUST_HINT_DURATION,
 } from '../../config/scrapperConfig';
 import { addMessage } from '../../context/MessageStore';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
@@ -79,8 +81,12 @@ export default function CinematicController() {
 
       const enableTimer = window.setTimeout(() => {
         scrapperIntroActive.current = false;
+        window.dispatchEvent(new CustomEvent('ScrapperIntroEnded'));
         shipControlDisabledUntil.current = 0;
-        shipInstructionMessage.current = '';
+        shipInstructionMessage.current = SCRAPPER_THRUST_HINT;
+        window.setTimeout(() => {
+          shipInstructionMessage.current = '';
+        }, SCRAPPER_THRUST_HINT_DURATION);
       }, SCRAPPER_CONTROLS_ENABLE_DELAY);
 
       const dialogueTimer = window.setTimeout(() => {
@@ -135,6 +141,7 @@ export default function CinematicController() {
       cinematicAutopilotActive.current = false;
       cinematicThrustReverse.current = false;
       scrapperIntroActive.current = false;
+      window.dispatchEvent(new CustomEvent('ScrapperIntroEnded'));
       shipControlDisabledUntil.current = 0;
     };
   }, []);

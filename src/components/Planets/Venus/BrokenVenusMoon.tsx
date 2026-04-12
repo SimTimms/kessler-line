@@ -6,7 +6,7 @@ import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
 
 // Moon orbits Venus once every ~35 real minutes
 const MOON_ORBIT_SPEED = (2 * Math.PI) / 10100;
-const DEBRIS_COUNT = 260;
+const DEBRIS_COUNT = 160;
 
 // ── Seeded PRNG ────────────────────────────────────────────────────────────────
 function mulberry32(seed: number): () => number {
@@ -254,6 +254,7 @@ export default function BrokenVenusMoon() {
         attenuationDistance: CHUNK_RADIUS * 0.35,
         transparent: true,
         side: THREE.DoubleSide,
+        opacity: 0.7,
       }),
     [iceColorMap, moonBumpMap, CHUNK_RADIUS]
   );
@@ -368,6 +369,7 @@ export default function BrokenVenusMoon() {
             material={chunkMaterial}
             position={[-CHUNK_SEPARATION, 0, 0]}
             rotation={[0, Math.PI, 0]}
+            scale={0.4}
           />
 
           {/* Debris field between and around the chunks */}

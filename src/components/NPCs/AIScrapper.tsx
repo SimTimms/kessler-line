@@ -15,7 +15,9 @@ import {
   scrapperWorldPos,
   scrapperWorldQuat,
   scrapperRetroFiring,
+  scrapperForwardFiring,
 } from '../../context/CinematicState';
+import { setScrapperEngineHiss } from '../../sound/SoundManager';
 import {
   SCRAPPER_CRUISE_SPEED,
   SCRAPPER_BRAKE_DECEL,
@@ -64,6 +66,9 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
   const turnTargetQuat = useRef(new THREE.Quaternion());
   const turnProgressRef = useRef(0); // 0 → 1
 
+  //Spotlight
+  const spotlightRef = useRef<THREE.PointLight>(null!);
+
   useEffect(() => {
     registerDriveSignature({
       id,
@@ -80,6 +85,9 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
     return () => {
       unregisterDriveSignature(id);
       unregisterCollidable(id);
+      scrapperForwardFiring.current = false;
+      scrapperRetroFiring.current = false;
+      setScrapperEngineHiss(false);
     };
   }, [id]);
 
@@ -98,8 +106,17 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
       );
     }
 
+    // ── Engine audio + forward thruster state ────────────────────────────────
+    const isStopped = phase === 'stopped';
+    setScrapperEngineHiss(!isStopped, 0.09, 420);
+    scrapperForwardFiring.current = phase === 'cruising' || phase === 'turning';
+
+    //Spotlight
+
     // ── Phase: CRUISING ───────────────────────────────────────────────────────
     if (phase === 'cruising') {
+      spotlightRef.current.intensity = 100000;
+
       const distToVenus = _venusWorld.distanceTo(groupRef.current.position);
 
       if (distToVenus < SCRAPPER_BRAKE_TRIGGER_DIST) {
@@ -133,6 +150,9 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
 
     // ── Phase: TURNING (180° Y flip) ──────────────────────────────────────────
     if (phase === 'turning') {
+      spotlightRef.current.intensity = 0;
+
+      scrapperForwardFiring.current = false;
       // Keep drifting at cruise speed while turning
       _forward.subVectors(_venusWorld, groupRef.current.position).normalize();
       groupRef.current.position.addScaledVector(_forward, speedRef.current * delta);
@@ -157,6 +177,8 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
 
     // ── Phase: BRAKING (retro burn) ───────────────────────────────────────────
     if (phase === 'braking') {
+      spotlightRef.current.intensity = 100000;
+      scrapperForwardFiring.current = true;
       speedRef.current = Math.max(0, speedRef.current - SCRAPPER_BRAKE_DECEL * delta);
 
       if (speedRef.current > 0) {
@@ -168,20 +190,37 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
       }
     }
 
+    // ── Phase: STOPPED ────────────────────────────────────────────────────────
+    if (phase === 'stopped') {
+      spotlightRef.current.intensity = 0;
+    }
+
     // ── Publish world transform every frame ───────────────────────────────────
     scrapperWorldPos.copy(groupRef.current.position);
     groupRef.current.getWorldQuaternion(scrapperWorldQuat);
   });
 
   return (
-    <group
-      ref={groupRef}
-      position={position}
-      scale={scale}
-      rotation-y={SCRAPPER_INITIAL_ROTATION_Y}
-    >
-      <primitive object={scene} />
-      <ScrapperThrusterFX />
-    </group>
+    <>
+      <group
+        ref={groupRef}
+        position={position}
+        scale={scale}
+        rotation-y={SCRAPPER_INITIAL_ROTATION_Y}
+      >
+        <primitive object={scene} />
+        <group position={[-34, -1, 0]}>
+          <group position={[-10, 0, 0]}>
+            <pointLight ref={spotlightRef} color="#6699ff" />
+          </group>
+          <group position={[0, 0, -8]}>
+            <ScrapperThrusterFX />
+          </group>
+          <group position={[0, 0, 8]}>
+            <ScrapperThrusterFX />
+          </group>
+        </group>
+      </group>
+    </>
   );
 }

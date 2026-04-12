@@ -11,52 +11,79 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { scrapperWorldPos, scrapperWorldQuat, scrapperRetroFiring } from '../../context/CinematicState';
-import { SCRAPPER_EMITTER_A, SCRAPPER_EMITTER_B } from '../../config/scrapperConfig';
+import { scrapperWorldQuat, scrapperForwardFiring } from '../../context/CinematicState';
 
 // ── Particle pool config ──────────────────────────────────────────────────────
 const POOL_SIZE = 800;
-const EMIT_RATE = 400;        // particles/second per nozzle
-const BASE_SPEED = 120;
-const BASE_LIFETIME = 0.07;
+const EMIT_RATE = 400; // particles/second per nozzle
+const BASE_SPEED = 400;
+const BASE_LIFETIME = 0.1;
 const TAPER_STRENGTH = 10;
+const PARTICLE_SIZE = 10;
 
-// Emit direction: +X (forward) in local space because after the 180° flip the
-// model's original forward (+X) now faces away from Venus — which is where the
-// exhaust should go.
+// Retro-burn emit direction: +X — after the 180° flip, +X faces away from Venus.
 const EMIT_DIR = new THREE.Vector3(1, 0, 0);
+// Forward (cruise) emit direction: -X — exhausts trail behind the ship.
+const EMIT_DIR_FWD = new THREE.Vector3(-1, 0, 0);
 
 const _worldPos = new THREE.Vector3();
+const _emitDir = new THREE.Vector3();
+const _localPos = new THREE.Vector3();
+const _invWorld = new THREE.Matrix4();
 
 type Particle = {
   active: boolean;
   age: number;
   maxAge: number;
-  px: number; py: number; pz: number;
-  vx: number; vy: number; vz: number;
-  ox: number; oy: number; oz: number;
+  px: number;
+  py: number;
+  pz: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  ox: number;
+  oy: number;
+  oz: number;
+  dx: number; // world-space emit direction (for taper)
+  dy: number;
+  dz: number;
 };
 
 function makePool(): Particle[] {
   return Array.from({ length: POOL_SIZE }, () => ({
-    active: false, age: 0, maxAge: 0,
-    px: 0, py: 0, pz: 0,
-    vx: 0, vy: 0, vz: 0,
-    ox: 0, oy: 0, oz: 0,
+    active: false,
+    age: 0,
+    maxAge: 0,
+    px: 0,
+    py: 0,
+    pz: 0,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    ox: 0,
+    oy: 0,
+    oz: 0,
+    dx: 0,
+    dy: 0,
+    dz: 0,
   }));
 }
 
 function spawn(
   pool: Particle[],
   slotRef: { current: number },
-  localPos: [number, number, number],
+  spawnWorldPos: THREE.Vector3,
+  dir: THREE.Vector3 = EMIT_DIR
 ) {
-  const jx = EMIT_DIR.x + (Math.random() - 0.5) * 0.15;
-  const jy = EMIT_DIR.y + (Math.random() - 0.5) * 0.15;
-  const jz = EMIT_DIR.z + (Math.random() - 0.5) * 0.15;
+  // Rotate emit direction from local → world space using current ship orientation
+  _emitDir.copy(dir).applyQuaternion(scrapperWorldQuat);
+
+  const jx = _emitDir.x + (Math.random() - 0.5) * 0.15;
+  const jy = _emitDir.y + (Math.random() - 0.5) * 0.15;
+  const jz = _emitDir.z + (Math.random() - 0.5) * 0.15;
   const jLen = Math.sqrt(jx * jx + jy * jy + jz * jz);
   const speed = BASE_SPEED * (0.7 + Math.random() * 0.6);
-  const lifetime = BASE_LIFETIME * (0.7 + Math.random() * 0.6);
+  const lifetime = BASE_LIFETIME * (1.7 + Math.random() * 0.6);
 
   const idx = slotRef.current;
   slotRef.current = (idx + 1) % POOL_SIZE;
@@ -64,23 +91,29 @@ function spawn(
   p.active = true;
   p.age = 0;
   p.maxAge = lifetime;
-  p.px = p.ox = localPos[0];
-  p.py = p.oy = localPos[1];
-  p.pz = p.oz = localPos[2];
+  // Spawn at the emitter's actual world position (accounts for parent group offsets).
+  p.px = p.ox = spawnWorldPos.x;
+  p.py = p.oy = spawnWorldPos.y;
+  p.pz = p.oz = spawnWorldPos.z;
+  // Store world-space emit direction for per-particle taper
+  p.dx = _emitDir.x;
+  p.dy = _emitDir.y;
+  p.dz = _emitDir.z;
+  // Velocities are already in world space (direction was rotated above)
   p.vx = (jx / jLen) * speed;
   p.vy = (jy / jLen) * speed;
   p.vz = (jz / jLen) * speed;
 }
 
 export default function ScrapperThrusterFX() {
-  const geoRef = useRef<THREE.BufferGeometry>(null!);
-  const matRef = useRef<THREE.PointsMaterial>(null!);
-  const positions = useMemo(() => new Float32Array(POOL_SIZE * 3), []);
-  const colors = useMemo(() => new Float32Array(POOL_SIZE * 3), []);
-  const pool = useRef<Particle[]>(makePool());
-  const slotRef = useRef(0);
-  const accumA = useRef(0);
-  const accumB = useRef(0);
+  // Forward-thrust pool
+  const fwdPointsRef = useRef<THREE.Points>(null!);
+  const fwdGeoRef = useRef<THREE.BufferGeometry>(null!);
+  const fwdPositionsB = useMemo(() => new Float32Array(POOL_SIZE * 3), []);
+  const fwdColors = useMemo(() => new Float32Array(POOL_SIZE * 3), []);
+  const fwdPool = useRef<Particle[]>(makePool());
+  const fwdSlotRef = useRef(0);
+  const fwdAccumB = useRef(0);
 
   const spriteTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
@@ -100,96 +133,120 @@ export default function ScrapperThrusterFX() {
     return tex;
   }, []);
 
-  useFrame((_, delta) => {
-    // ── Emit ──────────────────────────────────────────────────────────────────
-    if (scrapperRetroFiring.current) {
-      accumA.current += EMIT_RATE * delta;
-      const countA = Math.floor(accumA.current);
-      accumA.current -= countA;
-      for (let i = 0; i < countA; i++) spawn(pool.current, slotRef, SCRAPPER_EMITTER_A);
-
-      accumB.current += EMIT_RATE * delta;
-      const countB = Math.floor(accumB.current);
-      accumB.current -= countB;
-      for (let i = 0; i < countB; i++) spawn(pool.current, slotRef, SCRAPPER_EMITTER_B);
-    } else {
-      accumA.current = 0;
-      accumB.current = 0;
+  const tickPool = (
+    particles: Particle[],
+    pos: Float32Array,
+    col: Float32Array,
+    pointsRefLocal: { current: THREE.Points | null },
+    geoRefLocal: { current: THREE.BufferGeometry | null },
+    delta: number
+  ) => {
+    // Compute world → local matrix once per frame so particle positions are
+    // written in parent-group space (not double-transformed world space).
+    const pts = pointsRefLocal.current;
+    if (pts) {
+      pts.updateWorldMatrix(true, false);
+      _invWorld.copy(pts.matrixWorld).invert();
     }
 
-    // ── Tick ──────────────────────────────────────────────────────────────────
     for (let i = 0; i < POOL_SIZE; i++) {
-      const p = pool.current[i];
+      const p = particles[i];
       if (!p.active) {
-        colors[i * 3] = colors[i * 3 + 1] = colors[i * 3 + 2] = 0;
-        positions[i * 3] = positions[i * 3 + 1] = positions[i * 3 + 2] = 0;
+        col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = 0;
+        pos[i * 3] = pos[i * 3 + 1] = pos[i * 3 + 2] = 0;
         continue;
       }
       p.age += delta;
       if (p.age >= p.maxAge) {
         p.active = false;
-        colors[i * 3] = colors[i * 3 + 1] = colors[i * 3 + 2] = 0;
-        positions[i * 3] = positions[i * 3 + 1] = positions[i * 3 + 2] = 0;
+        col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = 0;
+        pos[i * 3] = pos[i * 3 + 1] = pos[i * 3 + 2] = 0;
         continue;
       }
 
+      // Advance in world space
       p.px += p.vx * delta;
       p.py += p.vy * delta;
       p.pz += p.vz * delta;
 
-      // Taper toward emit axis
+      // Taper toward world-space emit axis (stored per-particle at spawn time)
       const t = p.age / p.maxAge;
-      const relX = p.px - p.ox, relY = p.py - p.oy, relZ = p.pz - p.oz;
-      const axDot = relX * EMIT_DIR.x + relY * EMIT_DIR.y + relZ * EMIT_DIR.z;
+      const relX = p.px - p.ox,
+        relY = p.py - p.oy,
+        relZ = p.pz - p.oz;
+      const axDot = relX * p.dx + relY * p.dy + relZ * p.dz;
       const pull = TAPER_STRENGTH * t * delta;
-      p.px -= (relX - EMIT_DIR.x * axDot) * pull;
-      p.py -= (relY - EMIT_DIR.y * axDot) * pull;
-      p.pz -= (relZ - EMIT_DIR.z * axDot) * pull;
+      p.px -= (relX - p.dx * axDot) * pull;
+      p.py -= (relY - p.dy * axDot) * pull;
+      p.pz -= (relZ - p.dz * axDot) * pull;
 
-      // Local → world
-      _worldPos.set(p.px, p.py, p.pz).applyQuaternion(scrapperWorldQuat).add(scrapperWorldPos);
-      positions[i * 3] = _worldPos.x;
-      positions[i * 3 + 1] = _worldPos.y;
-      positions[i * 3 + 2] = _worldPos.z;
+      // Convert world-space position to local (parent-group) space so the
+      // points mesh — which is a child of the scrapper group — renders correctly.
+      if (pts) {
+        _localPos.set(p.px, p.py, p.pz).applyMatrix4(_invWorld);
+        pos[i * 3] = _localPos.x;
+        pos[i * 3 + 1] = _localPos.y;
+        pos[i * 3 + 2] = _localPos.z;
+      } else {
+        pos[i * 3] = p.px;
+        pos[i * 3 + 1] = p.py;
+        pos[i * 3 + 2] = p.pz;
+      }
 
       // Color: white-hot → blue → purple
       const brightness = Math.pow(1 - t, 0.7);
       let r = brightness * Math.max(0, 1 - t * 2.5);
       let g = brightness * Math.max(0.45, 1 - t * 0.9);
       let b = brightness;
-      if (t > 0.65) {
-        const u = (t - 0.65) / 0.35;
-        r = THREE.MathUtils.lerp(r, brightness * 0.7, u);
-        g = THREE.MathUtils.lerp(g, brightness * 0.1, u);
-        b = THREE.MathUtils.lerp(b, brightness, u);
-      }
-      colors[i * 3] = r;
-      colors[i * 3 + 1] = g;
-      colors[i * 3 + 2] = b;
+
+      col[i * 3] = r;
+      col[i * 3 + 1] = g;
+      col[i * 3 + 2] = b;
     }
 
-    if (!geoRef.current) return;
-    (geoRef.current.attributes.position as THREE.BufferAttribute).needsUpdate = true;
-    (geoRef.current.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+    if (!geoRefLocal.current) return;
+    (geoRefLocal.current.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    (geoRefLocal.current.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+  };
+
+  useFrame((_, delta) => {
+    // ── Forward-thrust emit ───────────────────────────────────────────────────
+    if (scrapperForwardFiring.current) {
+      fwdAccumB.current += EMIT_RATE * delta;
+      const countB = Math.floor(fwdAccumB.current);
+      fwdAccumB.current -= countB;
+      if (countB > 0 && fwdPointsRef.current) {
+        // Read world position from the <points> object — inherits the parent
+        // group's [0,0,±80] offset so no manual offset math is needed.
+        fwdPointsRef.current.getWorldPosition(_worldPos);
+        for (let i = 0; i < countB; i++)
+          spawn(fwdPool.current, fwdSlotRef, _worldPos, EMIT_DIR_FWD);
+      }
+    } else {
+      fwdAccumB.current = 0;
+    }
+
+    tickPool(fwdPool.current, fwdPositionsB, fwdColors, fwdPointsRef, fwdGeoRef, delta);
   });
 
   return (
-    <points frustumCulled={false}>
-      <bufferGeometry ref={geoRef}>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        ref={matRef}
-        size={2.2}
-        map={spriteTexture}
-        alphaMap={spriteTexture}
-        vertexColors
-        blending={THREE.AdditiveBlending}
-        transparent
-        depthWrite={false}
-        sizeAttenuation
-      />
-    </points>
+    <>
+      <points ref={fwdPointsRef} frustumCulled={false}>
+        <bufferGeometry ref={fwdGeoRef}>
+          <bufferAttribute attach="attributes-position" args={[fwdPositionsB, 3]} />
+          <bufferAttribute attach="attributes-color" args={[fwdColors, 3]} />
+        </bufferGeometry>
+        <pointsMaterial
+          size={PARTICLE_SIZE}
+          map={spriteTexture}
+          alphaMap={spriteTexture}
+          vertexColors
+          blending={THREE.AdditiveBlending}
+          transparent
+          depthWrite={false}
+          sizeAttenuation
+        />
+      </points>
+    </>
   );
 }

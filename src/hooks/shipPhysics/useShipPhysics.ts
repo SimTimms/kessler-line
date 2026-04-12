@@ -30,7 +30,11 @@ import {
   scrapperWorldQuat,
 } from '../../context/CinematicState';
 import { shipPosRef } from '../../context/ShipPos';
-import { SCRAPPER_PLAYER_OFFSET_X, SCRAPPER_PLAYER_OFFSET_Z } from '../../config/scrapperConfig';
+import {
+  SCRAPPER_PLAYER_OFFSET_X,
+  SCRAPPER_PLAYER_OFFSET_Y,
+  SCRAPPER_PLAYER_OFFSET_Z,
+} from '../../config/scrapperConfig';
 import { DEBUG_DISABLE_GRAVITY, DEBUG_FREEZE_COLLISIONS } from '../../config/debugConfig';
 import { useInputListeners } from './inputListeners';
 import { checkShipDestruction } from './destruction';

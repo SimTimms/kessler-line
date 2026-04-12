@@ -3,7 +3,12 @@ import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { thrustMultiplier, shipAcceleration } from '../context/ShipState';
 import { hudShakeOffset } from '../context/HudShake';
-import { shipInstructionMessage, scrapperIntroActive } from '../context/CinematicState';
+import {
+  shipInstructionMessage,
+  scrapperIntroActive,
+  scrapperWorldPos,
+  scrapperWorldQuat,
+} from '../context/CinematicState';
 import {
   CAMERA_MOUSE_SENSITIVITY,
   CAMERA_WHEEL_SENSITIVITY,
@@ -12,12 +17,17 @@ import {
   CAMERA_SHAKE_AMP_MAX,
   CAMERA_SHAKE_FREQUENCIES,
 } from '../config/visualConfig';
-import { SCRAPPER_INTRO_CAMERA_RADIUS } from '../config/scrapperConfig';
+import {
+  SCRAPPER_INTRO_CAMERA_BEHIND_DIST,
+  SCRAPPER_INTRO_CAMERA_HEIGHT,
+} from '../config/scrapperConfig';
+import { KEY_TOGGLE_CAMERA_DECOUPLE } from '../config/keybindings';
 
 // Scratch vectors — avoid allocating on every frame
 const _offset = new THREE.Vector3();
 const _target = new THREE.Vector3();
 const _attachOffset = new THREE.Vector3(0, 14, -40);
+const _scrapperOffset = new THREE.Vector3();
 
 interface OrbitCameraProps {
   followTarget?: { current: THREE.Vector3 };
@@ -33,9 +43,16 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
   const didInitSpherical = useRef(false);
   const shakeTime = useRef(0);
   const [decoupled, setDecoupled] = useState(false);
+  const [scrapperMode, setScrapperMode] = useState(scrapperIntroActive.current);
 
   useEffect(() => {
-    if (decoupled) {
+    const onIntroEnded = () => setScrapperMode(false);
+    window.addEventListener('ScrapperIntroEnded', onIntroEnded);
+    return () => window.removeEventListener('ScrapperIntroEnded', onIntroEnded);
+  }, []);
+
+  useEffect(() => {
+    if (scrapperMode || decoupled) {
       scene.add(camera);
       return;
     }
@@ -45,11 +62,11 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     return () => {
       scene.add(camera);
     };
-  }, [attachTo, camera, scene, decoupled]);
+  }, [attachTo, camera, scene, decoupled, scrapperMode]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'KeyC') {
+      if (e.code === KEY_TOGGLE_CAMERA_DECOUPLE) {
         setDecoupled((prev) => {
           const next = !prev;
           shipInstructionMessage.current = next ? 'CAMERA: FREE LOOK' : 'CAMERA: COUPLED';
@@ -146,8 +163,13 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
       hudShakeOffset.y = 0;
     }
 
-    if (scrapperIntroActive.current) {
-      spherical.current.radius = SCRAPPER_INTRO_CAMERA_RADIUS;
+    if (scrapperMode) {
+      // Fixed behind the scrapper: -X is behind (scrapper's +X is forward)
+      _scrapperOffset.set(-SCRAPPER_INTRO_CAMERA_BEHIND_DIST, SCRAPPER_INTRO_CAMERA_HEIGHT, 0);
+      _scrapperOffset.applyQuaternion(scrapperWorldQuat);
+      camera.position.copy(scrapperWorldPos).add(_scrapperOffset);
+      camera.lookAt(scrapperWorldPos);
+      return;
     }
 
     if (attachTo?.current && !decoupled) {

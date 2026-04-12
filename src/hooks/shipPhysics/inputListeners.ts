@@ -9,6 +9,17 @@ import {
 } from '../../context/ShipState';
 import { playImpactSoundOverlap, playRailgunHit } from '../../sound/SoundManager';
 import { RAILGUN_DAMAGE_MIN, RAILGUN_DAMAGE_MAX } from '../../config/damageConfig';
+import {
+  KEY_THRUST_FORWARD,
+  KEY_THRUST_REVERSE,
+  KEY_YAW_LEFT,
+  KEY_YAW_RIGHT,
+  KEY_STRAFE_LEFT,
+  KEY_STRAFE_RIGHT,
+  KEY_RADIAL_OUT,
+  KEY_RADIAL_IN,
+  KEY_UNDOCK_CARGO,
+} from '../../config/keybindings';
 
 export interface InputListenersResult {
   thrustForward: React.MutableRefObject<boolean>;
@@ -44,15 +55,15 @@ export function useInputListeners({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'KeyW') thrustForward.current = true;
-      if (e.code === 'KeyS') thrustReverse.current = true;
-      if (e.code === 'KeyA') thrustLeft.current = true;
-      if (e.code === 'KeyD') thrustRight.current = true;
-      if (e.code === 'KeyE') thrustStrafeLeft.current = true;
-      if (e.code === 'KeyQ') thrustStrafeRight.current = true;
-      if (e.code === 'KeyR') thrustRadialOut.current = true;
-      if (e.code === 'KeyF') thrustRadialIn.current = true;
-      if (e.code === 'Space') {
+      if (e.code === KEY_THRUST_FORWARD) thrustForward.current = true;
+      if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = true;
+      if (e.code === KEY_YAW_LEFT) thrustLeft.current = true;
+      if (e.code === KEY_YAW_RIGHT) thrustRight.current = true;
+      if (e.code === KEY_STRAFE_RIGHT) thrustStrafeLeft.current = true;
+      if (e.code === KEY_STRAFE_LEFT) thrustStrafeRight.current = true;
+      if (e.code === KEY_RADIAL_OUT) thrustRadialOut.current = true;
+      if (e.code === KEY_RADIAL_IN) thrustRadialIn.current = true;
+      if (e.code === KEY_UNDOCK_CARGO) {
         if (dockedTo.current) {
           dockedTo.current = null;
           window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -67,14 +78,14 @@ export function useInputListeners({
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'KeyW') thrustForward.current = false;
-      if (e.code === 'KeyS') thrustReverse.current = false;
-      if (e.code === 'KeyA') thrustLeft.current = false;
-      if (e.code === 'KeyD') thrustRight.current = false;
-      if (e.code === 'KeyE') thrustStrafeLeft.current = false;
-      if (e.code === 'KeyQ') thrustStrafeRight.current = false;
-      if (e.code === 'KeyR') thrustRadialOut.current = false;
-      if (e.code === 'KeyF') thrustRadialIn.current = false;
+      if (e.code === KEY_THRUST_FORWARD) thrustForward.current = false;
+      if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = false;
+      if (e.code === KEY_YAW_LEFT) thrustLeft.current = false;
+      if (e.code === KEY_YAW_RIGHT) thrustRight.current = false;
+      if (e.code === KEY_STRAFE_RIGHT) thrustStrafeLeft.current = false;
+      if (e.code === KEY_STRAFE_LEFT) thrustStrafeRight.current = false;
+      if (e.code === KEY_RADIAL_OUT) thrustRadialOut.current = false;
+      if (e.code === KEY_RADIAL_IN) thrustRadialIn.current = false;
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
