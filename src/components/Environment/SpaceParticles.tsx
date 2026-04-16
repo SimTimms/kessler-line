@@ -1,8 +1,9 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { STARFIELD_COUNT as COUNT, STARFIELD_HALF as HALF } from '../../config/particleConfig';
+import { STARFIELD_HALF as HALF } from '../../config/particleConfig';
 import { shipPosRef } from '../../context/ShipPos';
+import { getGraphicsSettings } from '../../context/GraphicsState';
 
 function makeParticleTexture(): THREE.Texture {
   const size = 64;
@@ -22,7 +23,8 @@ function makeParticleTexture(): THREE.Texture {
 export default function SpaceParticles() {
   const geoRef = useRef<THREE.BufferGeometry>(null!);
 
-  const { positions, texture } = useMemo(() => {
+  const { positions, texture, count } = useMemo(() => {
+    const COUNT = getGraphicsSettings().starfieldCount;
     const { x: sx, y: sy, z: sz } = shipPosRef.current;
     const positions = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
@@ -30,7 +32,7 @@ export default function SpaceParticles() {
       positions[i * 3 + 1] = sy + (Math.random() - 0.5) * HALF * 2;
       positions[i * 3 + 2] = sz + (Math.random() - 0.5) * HALF * 2;
     }
-    return { positions, texture: makeParticleTexture() };
+    return { positions, texture: makeParticleTexture(), count: COUNT };
   }, []);
 
   useFrame(() => {
@@ -39,7 +41,7 @@ export default function SpaceParticles() {
     const posAttr = geoRef.current.attributes.position as THREE.BufferAttribute;
     const arr = posAttr.array as Float32Array;
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const b = i * 3;
       // Wrap each axis — keeps the field centred on the ship as it moves
       const sx = ship.x,

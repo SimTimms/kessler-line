@@ -4,12 +4,12 @@ import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
 import {
-  ASTEROID_BELT_COUNT_PER_TYPE as COUNT_PER_TYPE,
   ASTEROID_BELT_COLLIDER_Y_MIN as COLLIDER_Y_MIN,
   ASTEROID_BELT_COLLIDER_Y_MAX as COLLIDER_Y_MAX,
   ASTEROID_SIZE_MIN,
   ASTEROID_SIZE_MAX,
 } from '../../config/particleConfig';
+import { getGraphicsSettings } from '../../context/GraphicsState';
 
 const GROUP_Y = 0; // matches the <group position={[0, 5000, 0]}> offset below
 
@@ -50,9 +50,13 @@ interface AsteroidData {
 }
 
 export default function AsteroidBelt() {
+  // Read quality settings once at mount; HeavyEnvironment remounts on quality change
+  const { asteroidBeltCountPerType: COUNT_PER_TYPE, asteroidBeltSkipFrames: SKIP_FRAMES } = useMemo(() => getGraphicsSettings(), []);
+
   const icosRef = useRef<THREE.InstancedMesh>(null!);
   const octaRef = useRef<THREE.InstancedMesh>(null!);
   const dodeRef = useRef<THREE.InstancedMesh>(null!);
+  const frameCountRef = useRef(0);
 
   const asteroidData = useMemo<AsteroidData[][]>(() => {
     const rng = mulberry32(7331);
@@ -167,6 +171,9 @@ export default function AsteroidBelt() {
   }, [asteroidData, dummy]);
 
   useFrame(() => {
+    frameCountRef.current++;
+    if (SKIP_FRAMES > 0 && frameCountRef.current % (SKIP_FRAMES + 1) !== 0) return;
+
     const refs = [icosRef, octaRef, dodeRef];
     refs.forEach((ref, typeIdx) => {
       if (!ref.current) return;
@@ -221,8 +228,9 @@ export default function AsteroidBelt() {
     ctx.fillStyle = '#555';
     ctx.fillRect(0, 0, size, size);
 
-    // Grainy surface noise
-    for (let i = 0; i < 116000; i++) {
+    // Grainy surface noise — reduce iterations on lower quality tiers
+    const noiseIterations = COUNT_PER_TYPE <= 80 ? 20000 : COUNT_PER_TYPE <= 250 ? 60000 : 116000;
+    for (let i = 0; i < noiseIterations; i++) {
       const x = rng() * size;
       const y = rng() * size;
       const s = 1 + rng() * 3;

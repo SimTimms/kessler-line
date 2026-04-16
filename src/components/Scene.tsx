@@ -1,5 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
+import { useGraphicsQuality } from '../hooks/useGraphicsQuality';
+import { getGraphicsSettings } from '../context/GraphicsState';
 import * as THREE from 'three';
 import { useSaveSystem } from '../hooks/useSaveSystem';
 import { useShipInit } from '../hooks/useShipInit';
@@ -40,7 +42,6 @@ import { RadioBeacons } from './RadioBeacons';
 import CinematicController from '../components/Cinematic/CinematicController';
 import { SPACE_STATION_DEF, ASTEROID_DOCK_DEF } from '../config/worldConfig';
 import { START_ZONE_CENTER } from '../config/spawnConfig';
-import CollisionDebug from './Debug/CollisionDebug';
 import {
   FOG_COLOR,
   FOG_DENSITY,
@@ -77,7 +78,24 @@ function SaveSystemBridge() {
   return null;
 }
 
+// Heavy environment components that remount when graphics quality changes.
+// Grouped under a single key so InstancedMesh counts reset correctly.
+function HeavyEnvironment() {
+  const settings = getGraphicsSettings();
+  return (
+    <>
+      <SkySphere />
+      <AsteroidBelt />
+      <EarthAsteroidRing />
+      <ParticleLayer />
+      {settings.nebulaEnabled && <NebulaClouds center={START_ZONE_CENTER} />}
+    </>
+  );
+}
+
 export default function Scene() {
+  const quality = useGraphicsQuality();
+  const settings = getGraphicsSettings();
   const { shipInitPos, shipInitRot, fuelStationOrbitRadius, fuelStationOrbitSpeed } = useShipInit();
 
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
@@ -112,7 +130,6 @@ export default function Scene() {
       />
       <CameraCapture />
       <SaveSystemBridge />
-      <SkySphere />
       <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
 
       {/* Asteroid Dock — placeholder cube until GLB model is ready */}
@@ -141,7 +158,6 @@ export default function Scene() {
         stationGroupRef={stationGroupRef}
       />
       <RadioBeacons beaconGroupRef={beaconGroupRef} />
-      <ParticleLayer />
       <LaserRay
         shipGroupRef={spaceshipGroupRef}
         stationGroupRef={stationGroupRef}
@@ -151,13 +167,10 @@ export default function Scene() {
       <MarsSystem />
       <NeptuneNoFlyRing />
       <NeptuneDustRing />
-      <EarthAsteroidRing />
       <BrokenVenusMoon />
       <RadiationZones />
       <SunGravity />
-      <AsteroidBelt />
       <StartZoneAsteroidCluster center={START_ZONE_CENTER} />
-      <NebulaClouds center={START_ZONE_CENTER} />
       <SpaceDebris />
       <CargoContainerField />
       <ScrapperCargoContainer />
@@ -168,7 +181,9 @@ export default function Scene() {
       <AIScrapper url="/large_ship.glb" />
       <GhostFleet />
       <DistressBeaconField />
-      <ShipDepthOfField />
+      {/* Heavy environment — remounts on quality change to reset instance counts */}
+      <HeavyEnvironment key={quality} />
+      {settings.postProcessingEnabled && <ShipDepthOfField key={quality} />}
       <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
       <CinematicController />
       <AutopilotController />

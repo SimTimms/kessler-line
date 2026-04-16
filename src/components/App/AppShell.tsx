@@ -13,6 +13,7 @@ import ShipTitleCard from './ShipTitleCard';
 import BackgroundHum from './BackgroundHum';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 import DebugCascadePanel from './DebugCascadePanel';
+import GraphicsSettings from './GraphicsSettings';
 import type { MissionId } from '../../hooks/useMissionState';
 
 interface AppShellProps {
@@ -124,6 +125,7 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
       {showShipTitle && <ShipTitleCard onDone={onShipTitleDone} />}
       <DeathOverlay />
       <DebugCascadePanel />
+      <GraphicsSettings />
       <AppStyles />
     </AppContainer>
   );

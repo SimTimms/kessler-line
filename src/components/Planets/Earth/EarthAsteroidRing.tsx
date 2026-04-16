@@ -4,10 +4,9 @@ import * as THREE from 'three';
 import { solarPlanetPositions } from '../../../context/SolarSystemMinimap';
 import { shipPosRef } from '../../../context/ShipPos';
 import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { getGraphicsSettings } from '../../../context/GraphicsState';
 
-const COUNT = 1400;
 const ORBIT_SPEED = 0.22;
-const EXPLOSION_COUNT = 24;
 const EXPLOSION_MIN_INTERVAL = 0.25;
 const EXPLOSION_MAX_INTERVAL = 0.8;
 const EXPLOSION_MIN_DURATION = 0.25;
@@ -15,7 +14,6 @@ const EXPLOSION_MAX_DURATION = 0.6;
 const EXPLOSION_INTENSITY = 6.0;
 const EXPLOSION_BASE_MIN = 18;
 const EXPLOSION_BASE_MAX = 45;
-const IMPACT_COUNT = 80;
 const IMPACT_MIN_INTERVAL = 0.05;
 const IMPACT_MAX_INTERVAL = 0.2;
 const IMPACT_MIN_DURATION = 0.15;
@@ -62,11 +60,15 @@ interface ImpactInstance {
 }
 
 export default function EarthAsteroidRing() {
+  // Read quality settings once at mount; HeavyEnvironment remounts on quality change
+  const { earthRingCount: COUNT, earthRingExplosionCount: EXPLOSION_COUNT, earthRingImpactCount: IMPACT_COUNT, earthRingSkipFrames: SKIP_FRAMES } = useMemo(() => getGraphicsSettings(), []);
+
   const ringRef = useRef<THREE.Group>(null!);
   const chaosRef = useRef<THREE.Group>(null!);
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const chaosMeshRef = useRef<THREE.InstancedMesh>(null!);
   const rngRef = useRef(mulberry32(62191));
+  const frameCountRef = useRef(0);
   const explosionPositionsRef = useRef<Float32Array>(new Float32Array(EXPLOSION_COUNT * 3));
   const explosionColorsRef = useRef<Float32Array>(new Float32Array(EXPLOSION_COUNT * 3));
   const explosionPositionAttrRef = useRef<THREE.BufferAttribute | null>(null);
@@ -233,6 +235,9 @@ export default function EarthAsteroidRing() {
   }, []);
 
   useFrame(({ clock }, delta) => {
+    frameCountRef.current++;
+    const shouldUpdateRotations = SKIP_FRAMES === 0 || frameCountRef.current % (SKIP_FRAMES + 1) === 0;
+
     const earthPos = solarPlanetPositions.Earth;
     if (earthPos) {
       const x = earthPos.x * SOLAR_SYSTEM_SCALE;
@@ -249,7 +254,7 @@ export default function EarthAsteroidRing() {
       }
     }
 
-    if (meshRef.current) {
+    if (shouldUpdateRotations && meshRef.current) {
       asteroidData.main.forEach((data, i) => {
         data.rotation.x += data.rotSpeed.x;
         data.rotation.y += data.rotSpeed.y;
@@ -263,7 +268,7 @@ export default function EarthAsteroidRing() {
       meshRef.current.instanceMatrix.needsUpdate = true;
     }
 
-    if (chaosMeshRef.current) {
+    if (shouldUpdateRotations && chaosMeshRef.current) {
       asteroidData.chaos.forEach((data, i) => {
         data.rotation.x += data.rotSpeed.x * 1.4;
         data.rotation.y += data.rotSpeed.y * 1.4;
@@ -276,6 +281,8 @@ export default function EarthAsteroidRing() {
       });
       chaosMeshRef.current.instanceMatrix.needsUpdate = true;
     }
+
+    if (EXPLOSION_COUNT === 0 && IMPACT_COUNT === 0) return;
 
     const explosionPositions = explosionPositionsRef.current;
     const explosionColors = explosionColorsRef.current;

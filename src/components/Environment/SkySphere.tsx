@@ -2,12 +2,11 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipPosRef } from '../../context/ShipPos';
+import { getGraphicsSettings } from '../../context/GraphicsState';
 
 const RADIUS = 50_000_000;
 
-function makeStarfieldTexture(): THREE.CanvasTexture {
-  const width = 4096;
-  const height = 2048;
+function makeStarfieldTexture(width: number, height: number, starCount: number): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -16,8 +15,7 @@ function makeStarfieldTexture(): THREE.CanvasTexture {
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, width, height);
 
-  // 8000 stars — varied sizes, occasional colour tints
-  for (let i = 0; i < 8000; i++) {
+  for (let i = 0; i < starCount; i++) {
     const x = Math.random() * width;
     const y = Math.random() * height;
     const size = Math.random() < 0.03 ? Math.random() * 2 + 1.5 : Math.random() * 1.0 + 0.3;
@@ -75,7 +73,10 @@ function makeStarfieldTexture(): THREE.CanvasTexture {
 
 export default function SkySphere() {
   const meshRef = useRef<THREE.Mesh>(null!);
-  const texture = useMemo(() => makeStarfieldTexture(), []);
+  const texture = useMemo(() => {
+    const { skyTextureWidth, skyTextureHeight, skyStarCount } = getGraphicsSettings();
+    return makeStarfieldTexture(skyTextureWidth, skyTextureHeight, skyStarCount);
+  }, []);
 
   // Follow the ship so the stars always appear infinitely far away
   useFrame(() => {

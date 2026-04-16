@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import {
-  NEBULA_COUNT as COUNT,
   NEBULA_SPREAD as SPREAD,
-  NEBULA_LARGE_COUNT,
   NEBULA_HUE_MIN,
   NEBULA_HUE_MAX,
 } from '../../config/particleConfig';
+import { getGraphicsSettings } from '../../context/GraphicsState';
 
 function mulberry32(seed: number): () => number {
   let a = seed;
@@ -49,6 +48,8 @@ export default function NebulaClouds({ center }: NebulaCloudProps) {
   }, []);
 
   const puffs = useMemo<PuffData[]>(() => {
+    const COUNT = getGraphicsSettings().nebulaCount;
+    const largePuffCount = Math.round(COUNT / 3);
     const rng = mulberry32(77431);
     const result: PuffData[] = [];
 
@@ -69,11 +70,11 @@ export default function NebulaClouds({ center }: NebulaCloudProps) {
       const color = new THREE.Color().setHSL(hue, sat, lit);
 
       // Vary size: large atmospheric puffs + smaller denser ones
-      const scale = i < NEBULA_LARGE_COUNT
+      const scale = i < largePuffCount
         ? 1800 + rng() * 3500   // large background puffs
         : 300 + rng() * 1200;   // smaller foreground ones
 
-      const opacity = i < NEBULA_LARGE_COUNT
+      const opacity = i < largePuffCount
         ? 0.025 + rng() * 0.055  // large puffs — very subtle
         : 0.04 + rng() * 0.09;   // smaller puffs — slightly denser
 
