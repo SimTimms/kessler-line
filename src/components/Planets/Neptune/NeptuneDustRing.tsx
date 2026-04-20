@@ -24,8 +24,8 @@ function makeParticleTexture(): THREE.Texture {
   const ctx = canvas.getContext('2d')!;
   const c = size / 2;
   const gradient = ctx.createRadialGradient(c, c, 0, c, c, c);
-  gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  gradient.addColorStop(0, 'rgba(255,165,0,1)');
+  gradient.addColorStop(1, 'rgba(225,128,255,0)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, size, size);
   return new THREE.CanvasTexture(canvas);
