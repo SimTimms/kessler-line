@@ -1,18 +1,4 @@
 // ── AIScrapper intro sequence config ──────────────────────────────────────────
-import { KEY_THRUST_REVERSE } from './keybindings';
-
-/** Derive a human-readable key label from a KeyboardEvent.code string.
- *  e.g. 'KeyS' → 'S', 'Space' → 'SPACE' */
-function codeToLabel(code: string): string {
-  return code.startsWith('Key') ? code.slice(3) : code.toUpperCase();
-}
-
-/** Hint message shown the moment the player gains control. */
-export const SCRAPPER_THRUST_HINT = `PRESS ${codeToLabel(KEY_THRUST_REVERSE)} FOR THRUST`;
-
-/** How long (ms) the thrust hint stays on screen before auto-clearing. */
-export const SCRAPPER_THRUST_HINT_DURATION = 5000;
-
 
 /** Scale applied to the AIScrapper group — must match the scale prop in AIScrapper. */
 export const SCRAPPER_SCALE = 3;
@@ -60,7 +46,6 @@ export const SCRAPPER_FORWARD_EMITTER_B: [number, number, number] = [0, 0, 0];
 /** Ordered dialogue clips played ~2 s after the cargo-release event. */
 export const SCRAPPER_INTRO_DIALOGUE_URLS = [
   'https://kessler-audio.s3.eu-west-2.amazonaws.com/retro-thrust.mp3',
-  'https://kessler-audio.s3.eu-west-2.amazonaws.com/metal.mp3',
   'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-000.mp3',
   'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-005.mp3',
   'https://kessler-audio.s3.eu-west-2.amazonaws.com/intro-006.mp3',

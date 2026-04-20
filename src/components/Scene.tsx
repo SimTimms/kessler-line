@@ -24,6 +24,8 @@ import { sceneCamera } from '../context/CameraRef';
 import AIShip from './NPCs/AIShip';
 import AIScrapper from './NPCs/AIScrapper';
 import ScrapperCargoContainer from './NPCs/ScrapperCargoContainer';
+import ScrapperRailgunFX from './NPCs/ScrapperRailgunFX';
+import ScrapperExplosion from './NPCs/ScrapperExplosion';
 import SolarSystem from './Planets/SolarSystem';
 import { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
 import SunGravity from './Environment/SunGravity';
@@ -35,6 +37,7 @@ import RailgunWarning from './Combat/RailgunWarning';
 import NebulaClouds from './Environment/NebulaClouds';
 import StartZoneAsteroidCluster from './Environment/StartZoneAsteroidCluster';
 import GhostFleet from './NPCs/GhostFleet';
+import SupportDroneFleet from './NPCs/SupportDroneFleet';
 import DistressBeaconField from './DistressBeacon/DistressBeaconField';
 import MarsSystem from './Planets/MarsSystem';
 import SkySphere from './Environment/SkySphere';
@@ -112,6 +115,11 @@ export default function Scene() {
         toneMappingExposure: TONE_MAPPING_EXPOSURE,
       }}
     >
+      {/* Baseline ambient light — ensures the ship is always visible regardless of
+          post-processing. On High quality the Bloom also brightens the scene, but
+          removing the EffectComposer (Low quality) would otherwise leave the ship
+          completely dark with only the distant sun point-light. */}
+      <ambientLight intensity={0.18} />
       <Spaceship
         url="/untitled.gltf"
         shipGroupRef={spaceshipGroupRef}
@@ -174,12 +182,15 @@ export default function Scene() {
       <SpaceDebris />
       <CargoContainerField />
       <ScrapperCargoContainer />
+      <ScrapperRailgunFX />
+      <ScrapperExplosion />
       <EjectedCargo />
       <ProximityHighlight />
       <RailgunWarning shipGroupRef={spaceshipGroupRef} />
       <AIShip id="0" url="/untitled.gltf" scale={1} position={[-401000, 0, 0]} />
       <AIScrapper url="/large_ship.glb" />
       <GhostFleet />
+      <SupportDroneFleet />
       <DistressBeaconField />
       {/* Heavy environment — remounts on quality change to reset instance counts */}
       <HeavyEnvironment key={quality} />

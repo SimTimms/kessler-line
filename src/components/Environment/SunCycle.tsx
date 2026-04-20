@@ -6,8 +6,7 @@ import { useGameTime } from '../../context/TimeProvider';
 export function SunCycle() {
   const { t } = useGameTime(); // <-- global normalized time (0–1)
 
-  const sunRef =
-    useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>>(null);
+  const sunRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>>(null);
   const ambientRef = useRef<THREE.AmbientLight>(null);
   const directionalRef = useRef<THREE.DirectionalLight>(null);
 

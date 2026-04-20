@@ -4,6 +4,13 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
+import {
+  selectTarget,
+  selectedTargetKey,
+  selectedTargetVelocity,
+  selectedTargetPosition,
+  flashTarget,
+} from '../../context/TargetSelection';
 import { shipPosRef } from '../../context/ShipPos';
 import {
   CONTAINER_COUNT,
@@ -174,6 +181,12 @@ function ContainerInstance({ entry, scene, halfExtents }: ContainerInstanceProps
       return;
     }
 
+    // ── Keep target velocity + position in sync ───────────────────────────────
+    if (selectedTargetKey === entry.id) {
+      selectedTargetVelocity.copy(velRef.current);
+      selectedTargetPosition.copy(posRef.current);
+    }
+
     // ── Velocity integration (only runs when container is moving) ────────────
     if (velRef.current.lengthSq() > 1e-6) {
       posRef.current.addScaledVector(velRef.current, delta);
@@ -206,6 +219,11 @@ function ContainerInstance({ entry, scene, halfExtents }: ContainerInstanceProps
       position={entry.initPosition}
       quaternion={entry.initQuaternion}
       scale={CONTAINER_SCALE}
+      onClick={(e) => {
+        e.stopPropagation();
+        selectTarget('Cargo Container', velRef.current, posRef.current, entry.id);
+        flashTarget();
+      }}
     >
       <primitive object={clonedScene} />
     </group>

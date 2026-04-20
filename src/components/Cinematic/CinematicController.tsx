@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { cinematicThrustReverse, shipControlDisabledUntil } from '../../context/ShipState';
+import { cinematicThrustReverse } from '../../context/ShipState';
 import {
   cinematicAutopilotActive,
   neptuneNoFlyZoneActive,
@@ -9,17 +9,8 @@ import {
   shipInstructionMessage,
   chatterState,
   setCascadePhase,
-  scrapperIntroActive,
 } from '../../context/CinematicState';
-import {
-  SCRAPPER_BRAKE_EVENT_DELAY,
-  SCRAPPER_CAPTAIN_CUE_DELAY,
-  SCRAPPER_CONTROLS_ENABLE_DELAY,
-  SCRAPPER_INTRO_DIALOGUE_URLS,
-  SCRAPPER_DIALOGUE_START_OFFSET,
-  SCRAPPER_THRUST_HINT,
-  SCRAPPER_THRUST_HINT_DURATION,
-} from '../../config/scrapperConfig';
+import { useContainerRendezvousTutorial } from '../../tutorials/container-rendezvous-tutorial';
 import { addMessage } from '../../context/MessageStore';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
@@ -42,62 +33,11 @@ export default function CinematicController() {
   const noFlyTriggered = useRef(false);
   const neptuneWorld = useRef(new THREE.Vector3());
   const employerRecallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dialogueAudio = useRef<HTMLAudioElement | null>(null);
 
-  const playDialogueSequence = (urls: string[], index = 0) => {
-    if (index >= urls.length) return;
-    const audio = new Audio(urls[index]);
-    dialogueAudio.current = audio;
-    audio.onended = () => playDialogueSequence(urls, index + 1);
-    audio.play().catch(() => {});
-  };
+  // Container rendezvous timeline/hints live in tutorials/.
+  useContainerRendezvousTutorial({ enabled: true });
 
   useEffect(() => {
-    // ── Scrapper intro: lock controls until captain's cue ─────────────────────
-    scrapperIntroActive.current = true;
-    shipControlDisabledUntil.current = Infinity;
-
-    const brakingChatterLines = [
-      "Captain, we're losing the cargo pod—",
-      'Braking thrusters are nominal. How far did it drift?',
-      "It's heading for atmosphere. Someone needs to go get it.",
-      'Pilot — your ship is in Bay 2. You know what to do.',
-    ];
-
-    let brakingTimers: ReturnType<typeof setTimeout>[] = [];
-
-    const onBrakingStarted = () => {
-      // Crewmate chatter
-      chatterState.lines = brakingChatterLines;
-      chatterState.index = 0;
-
-      const releaseTimer = window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('ScrapperCargoRelease'));
-      }, SCRAPPER_BRAKE_EVENT_DELAY);
-
-      const captainTimer = window.setTimeout(() => {
-        shipInstructionMessage.current = 'CAPTAIN: LAUNCH AND RETRIEVE THE CARGO';
-      }, SCRAPPER_CAPTAIN_CUE_DELAY);
-
-      const enableTimer = window.setTimeout(() => {
-        scrapperIntroActive.current = false;
-        window.dispatchEvent(new CustomEvent('ScrapperIntroEnded'));
-        shipControlDisabledUntil.current = 0;
-        shipInstructionMessage.current = SCRAPPER_THRUST_HINT;
-        window.setTimeout(() => {
-          shipInstructionMessage.current = '';
-        }, SCRAPPER_THRUST_HINT_DURATION);
-      }, SCRAPPER_CONTROLS_ENABLE_DELAY);
-
-      const dialogueTimer = window.setTimeout(() => {
-        playDialogueSequence(SCRAPPER_INTRO_DIALOGUE_URLS);
-      }, SCRAPPER_BRAKE_EVENT_DELAY + SCRAPPER_DIALOGUE_START_OFFSET);
-
-      brakingTimers = [releaseTimer, captainTimer, enableTimer, dialogueTimer];
-    };
-
-    window.addEventListener('ScrapperBrakingStarted', onBrakingStarted);
-
     cinematicAutopilotActive.current = false;
     cinematicThrustReverse.current = false;
     chatterState.lines = RADIO_CHATTER_LINES;
@@ -131,22 +71,13 @@ export default function CinematicController() {
       window.clearTimeout(familyMessageTimer);
       window.clearTimeout(cascadeTimer);
       if (employerRecallTimer.current) window.clearTimeout(employerRecallTimer.current);
-      brakingTimers.forEach((t) => window.clearTimeout(t));
-      window.removeEventListener('ScrapperBrakingStarted', onBrakingStarted);
-      if (dialogueAudio.current) {
-        dialogueAudio.current.pause();
-        dialogueAudio.current.onended = null;
-        dialogueAudio.current = null;
-      }
       cinematicAutopilotActive.current = false;
       cinematicThrustReverse.current = false;
-      scrapperIntroActive.current = false;
-      window.dispatchEvent(new CustomEvent('ScrapperIntroEnded'));
-      shipControlDisabledUntil.current = 0;
     };
   }, []);
 
   useFrame(() => {
+    // ── Neptune no-fly zone ───────────────────────────────────────────────────
     const planetPos = solarPlanetPositions.Neptune;
     if (!planetPos) return;
 

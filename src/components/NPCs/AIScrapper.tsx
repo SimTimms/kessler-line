@@ -9,6 +9,7 @@ import {
   registerDriveSignature,
   unregisterDriveSignature,
 } from '../../context/DriveSignatureRegistry';
+import { selectTarget, flashTarget } from '../../context/TargetSelection';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import {
@@ -35,7 +36,7 @@ interface AIScrapperProps {
 
 type ScrapperPhase = 'cruising' | 'turning' | 'braking' | 'stopped';
 
-const _venusWorld = new THREE.Vector3();
+const _targetWorld = new THREE.Vector3();
 const _forward = new THREE.Vector3();
 const _halfExtents = new THREE.Vector3(...SCRAPPER_COLLIDER_HALF_EXTENTS);
 
@@ -60,6 +61,8 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
   const phaseRef = useRef<ScrapperPhase>('cruising');
   const speedRef = useRef(SCRAPPER_CRUISE_SPEED);
   const brakingFiredRef = useRef(false);
+  const destroyedRef = useRef(false);
+  const damagedRef = useRef(false);
 
   // Turning state
   const turnStartQuat = useRef(new THREE.Quaternion());
@@ -82,27 +85,45 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
       shape: { type: 'box', halfExtents: _halfExtents },
       getObject3D: () => groupRef.current,
     });
+    const onScrapperHit = () => {
+      damagedRef.current = true;
+    };
+    const onScrapperDestroyed = () => {
+      destroyedRef.current = true;
+      scrapperForwardFiring.current = false;
+      scrapperRetroFiring.current = false;
+      setScrapperEngineHiss(false);
+      unregisterDriveSignature(id);
+      unregisterCollidable(id);
+      if (groupRef.current) groupRef.current.visible = false;
+    };
+    window.addEventListener('ScrapperHit', onScrapperHit);
+    window.addEventListener('ScrapperDestroyed', onScrapperDestroyed);
+
     return () => {
       unregisterDriveSignature(id);
       unregisterCollidable(id);
       scrapperForwardFiring.current = false;
       scrapperRetroFiring.current = false;
       setScrapperEngineHiss(false);
+      window.removeEventListener('ScrapperHit', onScrapperHit);
+      window.removeEventListener('ScrapperDestroyed', onScrapperDestroyed);
     };
   }, [id]);
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
+    if (destroyedRef.current) return;
 
     const phase = phaseRef.current;
 
-    // ── Get Venus world position ──────────────────────────────────────────────
-    const venusPlanetPos = solarPlanetPositions['Venus'];
-    if (venusPlanetPos) {
-      _venusWorld.set(
-        venusPlanetPos.x * SOLAR_SYSTEM_SCALE,
+    // ── Get Neptune world position ────────────────────────────────────────────
+    const neptunePlanetPos = solarPlanetPositions['Neptune'];
+    if (neptunePlanetPos) {
+      _targetWorld.set(
+        neptunePlanetPos.x * SOLAR_SYSTEM_SCALE,
         0,
-        venusPlanetPos.z * SOLAR_SYSTEM_SCALE
+        neptunePlanetPos.z * SOLAR_SYSTEM_SCALE
       );
     }
 
@@ -115,11 +136,11 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
 
     // ── Phase: CRUISING ───────────────────────────────────────────────────────
     if (phase === 'cruising') {
-      spotlightRef.current.intensity = 100000;
+      spotlightRef.current.intensity = damagedRef.current ? 0 : 100000;
 
-      const distToVenus = _venusWorld.distanceTo(groupRef.current.position);
+      const distToNeptune = _targetWorld.distanceTo(groupRef.current.position);
 
-      if (distToVenus < SCRAPPER_BRAKE_TRIGGER_DIST) {
+      if (distToNeptune < SCRAPPER_BRAKE_TRIGGER_DIST) {
         // Begin 180° flip maneuver
         phaseRef.current = 'turning';
         turnProgressRef.current = 0;
@@ -134,7 +155,7 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
         }
       } else {
         // Move toward Venus
-        _forward.subVectors(_venusWorld, groupRef.current.position).normalize();
+        _forward.subVectors(_targetWorld, groupRef.current.position).normalize();
         groupRef.current.position.addScaledVector(_forward, speedRef.current * delta);
 
         // Orient model toward Venus (+X is forward for this model)
@@ -154,7 +175,7 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
 
       scrapperForwardFiring.current = false;
       // Keep drifting at cruise speed while turning
-      _forward.subVectors(_venusWorld, groupRef.current.position).normalize();
+      _forward.subVectors(_targetWorld, groupRef.current.position).normalize();
       groupRef.current.position.addScaledVector(_forward, speedRef.current * delta);
 
       // Advance rotation
@@ -182,7 +203,7 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
       speedRef.current = Math.max(0, speedRef.current - SCRAPPER_BRAKE_DECEL * delta);
 
       if (speedRef.current > 0) {
-        _forward.subVectors(_venusWorld, groupRef.current.position).normalize();
+        _forward.subVectors(_targetWorld, groupRef.current.position).normalize();
         groupRef.current.position.addScaledVector(_forward, speedRef.current * delta);
       } else {
         phaseRef.current = 'stopped';
@@ -192,7 +213,7 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
 
     // ── Phase: STOPPED ────────────────────────────────────────────────────────
     if (phase === 'stopped') {
-      spotlightRef.current.intensity = 0;
+      spotlightRef.current.intensity = damagedRef.current ? 0 : 50000;
     }
 
     // ── Publish world transform every frame ───────────────────────────────────
@@ -207,6 +228,12 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
         position={position}
         scale={scale}
         rotation-y={SCRAPPER_INITIAL_ROTATION_Y}
+        onClick={(e) => {
+          e.stopPropagation();
+          selectTarget('AIS Roebuck', new THREE.Vector3(), scrapperWorldPos);
+          flashTarget();
+          window.dispatchEvent(new CustomEvent('ScrapperTargeted'));
+        }}
       >
         <primitive object={scene} />
         <group position={[-34, -1, 0]}>

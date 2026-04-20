@@ -4,6 +4,13 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
+import {
+  selectTarget,
+  selectedTargetKey,
+  selectedTargetVelocity,
+  selectedTargetPosition,
+  flashTarget,
+} from '../../context/TargetSelection';
 import { shipPosRef } from '../../context/ShipPos';
 import {
   shipVelocity,
@@ -23,14 +30,23 @@ import {
   CONTAINER_DOCK_OFFSET_Y,
   CONTAINER_DOCK_OFFSET_Z,
 } from '../../config/containerConfig';
+import {
+  SCRAPPER_PLAYER_OFFSET_X,
+  SCRAPPER_PLAYER_OFFSET_Y,
+  SCRAPPER_PLAYER_OFFSET_Z,
+} from '../../config/scrapperConfig';
+import { CONTAINER_RONDE_VIEW_BAY_CAPTURE_RADIUS } from '../../tutorials/container-rendezvous-tutorial';
 
 const SCRAPPER_CONTAINER_ID = 'scrapper-cargo-container';
 /** Speed at which the container drifts toward Venus after breaking free (units/s). */
-const RELEASE_DRIFT_SPEED = 30;
+const RELEASE_DRIFT_SPEED = 80;
+/** How long (ms) after spawning before the player can capture the container. */
+const SPAWN_CAPTURE_COOLDOWN_MS = 8000;
 
 const _portPos = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
 const _toVenus = new THREE.Vector3();
+const _bayWorldPos = new THREE.Vector3();
 
 export default function ScrapperCargoContainer() {
   const { scene } = useGLTF('/container.glb') as { scene: THREE.Group };
@@ -43,6 +59,8 @@ export default function ScrapperCargoContainer() {
   const activeRef = useRef(false);
   const capturedRef = useRef(false);
   const releaseCooldownUntil = useRef(0);
+  const releasedByPlayerRef = useRef(false);
+  const dockedToScrapperRef = useRef(false);
 
   const halfExtents = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -73,6 +91,7 @@ export default function ScrapperCargoContainer() {
     const onRelease = () => {
       if (!capturedRef.current) return;
       capturedRef.current = false;
+      releasedByPlayerRef.current = true;
       releaseCooldownUntil.current = performance.now() + 3000;
       const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(shipQuaternion);
       velRef.current.copy(shipVelocity).addScaledVector(forward, CONTAINER_RELEASE_IMPULSE);
@@ -81,6 +100,14 @@ export default function ScrapperCargoContainer() {
       );
     };
     window.addEventListener('CargoRelease', onRelease);
+
+    const onBayCapture = () => {
+      dockedToScrapperRef.current = true;
+      capturedRef.current = false;
+      unregisterCollidable(SCRAPPER_CONTAINER_ID);
+      unregisterMagnetic(SCRAPPER_CONTAINER_ID);
+    };
+    window.addEventListener('CargoBayCapture', onBayCapture);
 
     const onCargoRelease = () => {
       // Position the container at the scrapper's current world position + side offset
@@ -98,6 +125,8 @@ export default function ScrapperCargoContainer() {
         velRef.current.copy(_toVenus).multiplyScalar(RELEASE_DRIFT_SPEED);
       }
 
+      // Block capture for a few seconds so the container has time to clear the ship
+      releaseCooldownUntil.current = performance.now() + SPAWN_CAPTURE_COOLDOWN_MS;
       activeRef.current = true;
       if (groupRef.current) {
         groupRef.current.position.copy(posRef.current);
@@ -110,6 +139,7 @@ export default function ScrapperCargoContainer() {
       unregisterCollidable(SCRAPPER_CONTAINER_ID);
       unregisterMagnetic(SCRAPPER_CONTAINER_ID);
       window.removeEventListener('CargoRelease', onRelease);
+      window.removeEventListener('CargoBayCapture', onBayCapture);
       window.removeEventListener('ScrapperCargoRelease', onCargoRelease);
     };
     // halfExtents is stable — intentionally omitted
@@ -122,6 +152,18 @@ export default function ScrapperCargoContainer() {
     if (!activeRef.current) {
       // Hide before the intro fires
       groupRef.current.visible = false;
+      return;
+    }
+
+    // ── Docked to scrapper bay: pin to bay offset ─────────────────────────────
+    if (dockedToScrapperRef.current) {
+      _bayWorldPos
+        .set(SCRAPPER_PLAYER_OFFSET_X, SCRAPPER_PLAYER_OFFSET_Y, SCRAPPER_PLAYER_OFFSET_Z)
+        .applyQuaternion(scrapperWorldQuat)
+        .add(scrapperWorldPos);
+      posRef.current.copy(_bayWorldPos);
+      groupRef.current.position.copy(_bayWorldPos);
+      groupRef.current.quaternion.copy(scrapperWorldQuat);
       return;
     }
 
@@ -139,6 +181,12 @@ export default function ScrapperCargoContainer() {
       groupRef.current.position.copy(_portPos);
       groupRef.current.quaternion.copy(shipQuaternion);
       return;
+    }
+
+    // ── Keep target velocity + position in sync ───────────────────────────────
+    if (selectedTargetKey === SCRAPPER_CONTAINER_ID) {
+      selectedTargetVelocity.copy(velRef.current);
+      selectedTargetPosition.copy(posRef.current);
     }
 
     // ── Drift physics ─────────────────────────────────────────────────────────
@@ -159,6 +207,7 @@ export default function ScrapperCargoContainer() {
         const relSpeed = _relVel.copy(shipVelocity).sub(velRef.current).length();
         if (relSpeed < CONTAINER_CAPTURE_SPEED) {
           capturedRef.current = true;
+          releasedByPlayerRef.current = false;
           velRef.current.set(0, 0, 0);
           window.dispatchEvent(
             new CustomEvent('CargoContained', { detail: { id: SCRAPPER_CONTAINER_ID } })
@@ -166,10 +215,33 @@ export default function ScrapperCargoContainer() {
         }
       }
     }
+
+    // ── Bay proximity check (after player releases near parent vessel) ────────
+    if (releasedByPlayerRef.current) {
+      _bayWorldPos
+        .set(SCRAPPER_PLAYER_OFFSET_X, SCRAPPER_PLAYER_OFFSET_Y, SCRAPPER_PLAYER_OFFSET_Z)
+        .applyQuaternion(scrapperWorldQuat)
+        .add(scrapperWorldPos);
+      if (posRef.current.distanceTo(_bayWorldPos) < CONTAINER_RONDE_VIEW_BAY_CAPTURE_RADIUS) {
+        releasedByPlayerRef.current = false;
+        velRef.current.set(0, 0, 0);
+        window.dispatchEvent(new CustomEvent('CargoBayCapture'));
+      }
+    }
   });
 
   return (
-    <group ref={groupRef} scale={CONTAINER_SCALE} visible={false}>
+    <group
+      ref={groupRef}
+      scale={CONTAINER_SCALE}
+      visible={false}
+      onClick={(e) => {
+        e.stopPropagation();
+        selectTarget('Cargo Pod', velRef.current, posRef.current, SCRAPPER_CONTAINER_ID);
+        flashTarget();
+        window.dispatchEvent(new CustomEvent('CargoPodTargeted'));
+      }}
+    >
       <primitive object={clonedScene} />
     </group>
   );

@@ -15,4 +15,4 @@ export const FUEL_STATION_ORBIT_SPEED = -0.00005;
 
 export const PLANETS = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
 //export const START_PLANET = PLANETS[Math.floor(Math.random() * PLANETS.length)];
-export const START_PLANET = 'Venus';
+export const START_PLANET = 'Neptune';
