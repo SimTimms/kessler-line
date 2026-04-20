@@ -1,5 +1,6 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { ScanLine, ChevronUp, ChevronDown } from 'lucide-react';
 import { hudShakeOffset } from '../../context/HudShake';
 import PowerHUD from '../PowerHUD/PowerHUD';
 import MagneticHUD from '../MagneticHUD';
@@ -45,6 +46,7 @@ const HudLayer = memo(function HudLayer({
   setRadioOn,
   showMinimap,
 }: HudLayerProps) {
+  const [showHUD, setShowHUD] = useState(true);
   useEffect(() => {
     let raf: number;
     const tick = () => {
@@ -69,23 +71,39 @@ const HudLayer = memo(function HudLayer({
       <RadiationHUD />
       {showMinimap && <MiniMap />}
 
-      <HUD
-        spotlightOn={spotlightOn}
-        setSpotlightOn={setSpotlightOn}
-        spotlightOnRef={spotlightOnRef}
-        magneticOn={magneticOn}
-        setMagneticOn={setMagneticOn}
-        magneticOnRef={magneticOnRef}
-        driveSignatureOn={driveSignatureOn}
-        setDriveSignatureOn={setDriveSignatureOn}
-        driveSignatureOnRef={driveSignatureOnRef}
-        proximity={proximity}
-        setProximity={setProximity}
-        proximityScanOnRef={proximityScanOnRef}
-        radioOn={radioOn}
-        setRadioOn={setRadioOn}
-        radioOnRef={radioOnRef}
-      />
+      <button
+        type="button"
+        className={`hud-scanner-toggle${showHUD ? ' hud-scanner-toggle--active' : ''}`}
+        onClick={() => setShowHUD((v) => !v)}
+      >
+        <ScanLine size={12} strokeWidth={1.5} />
+        POWER ALLOCATION
+        {showHUD ? (
+          <ChevronDown size={10} strokeWidth={2} />
+        ) : (
+          <ChevronUp size={10} strokeWidth={2} />
+        )}
+      </button>
+      <div className={`hud-scanner-wrap${showHUD ? '' : ' hud-scanner-wrap--hidden'}`}>
+        <HUD
+          spotlightOn={spotlightOn}
+          setSpotlightOn={setSpotlightOn}
+          spotlightOnRef={spotlightOnRef}
+          magneticOn={magneticOn}
+          setMagneticOn={setMagneticOn}
+          magneticOnRef={magneticOnRef}
+          driveSignatureOn={driveSignatureOn}
+          setDriveSignatureOn={setDriveSignatureOn}
+          driveSignatureOnRef={driveSignatureOnRef}
+          proximity={proximity}
+          setProximity={setProximity}
+          proximityScanOnRef={proximityScanOnRef}
+          radioOn={radioOn}
+          setRadioOn={setRadioOn}
+          radioOnRef={radioOnRef}
+        />
+      </div>
+
       <NavHUD />
       <ContactsHUD />
       <RadioChatterStream />

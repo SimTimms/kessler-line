@@ -81,7 +81,7 @@ body {
 .cinematic-overlay {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -90,6 +90,9 @@ body {
   font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.12em;
+  backdrop-filter: blur(10px);
+  height: 60px;
+  top: 80px;
 }
 
 .cinematic-chatter {
@@ -111,11 +114,8 @@ body {
 
 .cinematic-instruction {
   color: #ffffff;
-  font-size: clamp(0.85rem, 2vw, 1.1rem);
+  font-size: 16px;
   font-weight: 300;
-  text-shadow:
-    0 1px 4px rgba(0,0,0,0.9),
-    0 0 16px rgba(0,0,0,0.7);
 }
 
 @keyframes kessler-asteroid {
@@ -238,10 +238,22 @@ body {
 
 /* ── Ship title card (shown after Kessler fades) ────────────────────────────── */
 @keyframes ship-title-show {
-  0%   { opacity: 0; transform: translateY(10px); }
-  20%  { opacity: 1; transform: translateY(0); }
-  80%  { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-8px); }
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 .ship-title-card {
@@ -340,13 +352,20 @@ body {
   inset: 1px;
   border-radius: 50%;
   background: #ff2828;
-  box-shadow: 0 0 5px #ff2828, 0 0 10px rgba(255, 40, 40, 0.5);
+  box-shadow:
+    0 0 5px #ff2828,
+    0 0 10px rgba(255, 40, 40, 0.5);
   animation: db-pulse 1.4s ease-in-out infinite;
 }
 
 @keyframes db-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 /* Expanding sonar rings */

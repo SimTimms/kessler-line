@@ -124,7 +124,7 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
       {showStartOverlay ? <StartOverlay onStart={onStart} /> : <BackgroundHum />}
       {showShipTitle && <ShipTitleCard onDone={onShipTitleDone} />}
       <DeathOverlay />
-      <DebugCascadePanel />
+      {/* <DebugCascadePanel /> */}
       <GraphicsSettings />
       <AppStyles />
     </AppContainer>

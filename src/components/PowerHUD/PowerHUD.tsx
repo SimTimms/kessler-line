@@ -19,13 +19,19 @@ import {
   getShipSpeedMps,
   shipVelocity,
 } from '../Ship/Spaceship';
-import { selectedTargetName, selectedTargetVelocity, selectedTargetPosition, targetFlashUntil } from '../../context/TargetSelection';
+import {
+  selectedTargetName,
+  selectedTargetVelocity,
+  selectedTargetPosition,
+  targetFlashUntil,
+} from '../../context/TargetSelection';
 import { shipPosRef } from '../../context/ShipPos';
 import { cargo, type CargoItem, reduceCargoItem } from '../../context/Inventory';
 import { triggerEject } from '../../context/EjectEvent';
 import './PowerHUD.css';
 
 import * as THREE from 'three';
+import Cargo from './Cargo/Cargo';
 
 const _toTarget = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
@@ -73,7 +79,7 @@ function WarningBadge({ level }: { level: WarnLevel }) {
   );
 }
 
-interface EjectState {
+export interface EjectState {
   item: CargoItem;
   step: 'confirm' | 'quantity';
   amount: number;
@@ -216,69 +222,12 @@ export default function PowerHUD() {
       </div>
 
       {ejectState && (
-        <div className="power-dialog">
-          {ejectState.step === 'confirm' && (
-            <>
-              <p className="power-dialog-title">CARGO MANAGEMENT</p>
-              <p className="power-dialog-body">
-                Eject {ejectState.item.quantity}x {ejectState.item.name.toUpperCase()} into space?
-              </p>
-              <div className="power-dialog-actions">
-                <button
-                  type="button"
-                  className="power-btn power-btn-cancel"
-                  onClick={() => setEjectState(null)}
-                >
-                  NO
-                </button>
-                <button
-                  type="button"
-                  className="power-btn power-btn-danger"
-                  onClick={() => setEjectState({ ...ejectState, step: 'quantity' })}
-                >
-                  YES
-                </button>
-              </div>
-            </>
-          )}
-
-          {ejectState.step === 'quantity' && (
-            <>
-              <p className="power-dialog-title">SELECT QUANTITY TO EJECT</p>
-              <p className="power-dialog-amount">
-                {ejectState.amount}x {ejectState.item.name.toUpperCase()}
-              </p>
-              <input
-                className="power-dialog-range"
-                type="range"
-                min={1}
-                max={ejectState.item.quantity}
-                value={ejectState.amount}
-                onChange={(e) => setEjectState({ ...ejectState, amount: parseInt(e.target.value) })}
-              />
-              <div className="power-dialog-actions">
-                <button
-                  type="button"
-                  className="power-btn power-btn-cancel"
-                  onClick={() => setEjectState(null)}
-                >
-                  CANCEL
-                </button>
-                <button
-                  type="button"
-                  className="power-btn power-btn-danger"
-                  onClick={() => {
-                    triggerEject(ejectState.amount);
-                    reduceCargoItem(ejectState.item.name, ejectState.amount);
-                    setEjectState(null);
-                  }}
-                >
-                  CONFIRM EJECT
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <Cargo
+          ejectState={ejectState}
+          setEjectState={setEjectState}
+          triggerEject={triggerEject}
+          reduceCargoItem={reduceCargoItem}
+        />
       )}
     </>
   );

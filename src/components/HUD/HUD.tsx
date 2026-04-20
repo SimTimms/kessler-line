@@ -65,6 +65,18 @@ export const HUD = ({
   // ── Background music ──────────────────────────────────────────────────────
   const [musicOn, setMusicOn] = useState(false);
   const [radiationOn, setRadiationOn] = useState(false);
+  const [highlightMagnet, setHighlightMagnet] = useState(false);
+
+  useEffect(() => {
+    const onStart = () => setHighlightMagnet(true);
+    const onStop = () => setHighlightMagnet(false);
+    window.addEventListener('MagnetHighlightStart', onStart);
+    window.addEventListener('MagnetHighlightStop', onStop);
+    return () => {
+      window.removeEventListener('MagnetHighlightStart', onStart);
+      window.removeEventListener('MagnetHighlightStop', onStop);
+    };
+  }, []);
   const audio1Ref = useRef<HTMLAudioElement | null>(null);
   const audio2Ref = useRef<HTMLAudioElement | null>(null);
   const audio3Ref = useRef<HTMLAudioElement | null>(null);
@@ -134,7 +146,7 @@ export const HUD = ({
     {
       id: 'spotlight',
       icon: Flashlight,
-      initialPower: 3,
+      initialPower: 1,
       isActive: spotlightOn,
       onSideEffect: (on) => {
         spotlightOnRef.current = on;
@@ -144,18 +156,19 @@ export const HUD = ({
     {
       id: 'magnet',
       icon: Magnet,
-      initialPower: 2,
+      initialPower: 1,
       isActive: magneticOn,
       onSideEffect: (on, level) => {
         magneticOnRef.current = on;
         magneticScanRangeRef.current = MAGNETIC_RANGES[level - 1];
         setMagneticOn(on);
+        if (level === 5) window.dispatchEvent(new CustomEvent('MagnetScannerMaxed'));
       },
     },
     {
       id: 'drive',
       icon: HardDrive,
-      initialPower: 3,
+      initialPower: 1,
       isActive: driveSignatureOn,
       onSideEffect: (on, level) => {
         driveSignatureOnRef.current = on;
@@ -166,7 +179,7 @@ export const HUD = ({
     {
       id: 'proximity',
       icon: Radar,
-      initialPower: 2,
+      initialPower: 1,
       isActive: proximity,
       onSideEffect: (on, level) => {
         proximityScanOnRef.current = on;
@@ -177,7 +190,7 @@ export const HUD = ({
     {
       id: 'radio',
       icon: AudioLines,
-      initialPower: 3,
+      initialPower: 1,
       isActive: radioOn,
       onSideEffect: (on, level) => {
         radioOnRef.current = on;
@@ -238,8 +251,10 @@ export const HUD = ({
           <HudButton
             key={id}
             icon={icon}
+            name={id.toUpperCase()}
             isActive={isActive}
             power={powers[id]}
+            highlight={highlightMagnet && id === 'magnet'}
             onClickEvent={() =>
               handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id], onSideEffect)
             }

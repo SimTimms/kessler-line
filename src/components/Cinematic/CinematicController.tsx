@@ -5,7 +5,6 @@ import { cinematicThrustReverse } from '../../context/ShipState';
 import {
   cinematicAutopilotActive,
   neptuneNoFlyZoneActive,
-  neptuneNoFlyZoneMessage,
   shipInstructionMessage,
   chatterState,
   setCascadePhase,
@@ -87,8 +86,7 @@ export default function CinematicController() {
     if (!noFlyTriggered.current && distance <= NO_FLY_ZONE_DISTANCE) {
       noFlyTriggered.current = true;
       neptuneNoFlyZoneActive.current = true;
-      neptuneNoFlyZoneMessage.current = 'NEPTUNE NO-FLY ZONE';
-      shipInstructionMessage.current = 'AUTOPILOT: RETRO-BURN IMMEDIATELY';
+      shipInstructionMessage.current = '';
       setCascadePhase('during');
       chatterState.lines = RADIO_CHATTER_CASCADE_LINES;
       chatterState.index = 0;

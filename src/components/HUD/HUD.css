@@ -1,9 +1,61 @@
 .button-panel {
-  position: fixed;
-  left: 16px;
-  bottom: 110px;
   font-family: monospace;
   font-size: 14px;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Scanner panel slide wrapper ─────────────────────────────────────────── */
+.hud-scanner-wrap {
+  position: fixed;
+  left: 16px;
+  bottom: 50px;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(14px);
+}
+
+.hud-scanner-wrap--hidden {
+  transform: translateY(500px);
+  pointer-events: none;
+}
+
+/* ── Scanner toggle button ───────────────────────────────────────────────── */
+.hud-scanner-toggle {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 8, 18, 0.7);
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  border-radius: 0px;
+  padding: 5px 11px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(0, 200, 255, 0.5);
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.hud-scanner-toggle:hover {
+  border-color: rgba(0, 200, 255, 0.55);
+  color: #00cfff;
+  box-shadow: 0 0 12px rgba(0, 200, 255, 0.15);
+}
+
+.hud-scanner-toggle--active {
+  border-color: rgba(0, 200, 255, 0.45);
+  color: rgba(0, 200, 255, 0.85);
+  box-shadow: 0 0 8px rgba(0, 200, 255, 0.1);
 }

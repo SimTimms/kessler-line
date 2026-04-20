@@ -1,6 +1,14 @@
 import { memo } from 'react';
 
 const APP_STYLES = `
+  @keyframes hudBtnHighlight {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 14px rgba(0, 200, 255, 0.75), 0 0 28px rgba(0, 200, 255, 0.3); }
+  }
+  .hud-btn-highlight {
+    animation: hudBtnHighlight 0.7s ease-in-out infinite;
+    border-radius: 3px;
+  }
   @keyframes beaconPulse {
     0%, 100% { box-shadow: 0 0 6px rgba(0,255,136,0.4); }
     50%       { box-shadow: 0 0 18px rgba(0,255,136,0.9); }

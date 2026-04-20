@@ -17,6 +17,10 @@ export const KEY_STRAFE_RIGHT       = 'KeyE';   // starboard (E)
 export const KEY_RADIAL_OUT         = 'KeyR';   // away from planet
 export const KEY_RADIAL_IN          = 'KeyF';   // toward planet
 export const KEY_UNDOCK_CARGO       = 'Space';  // undock when docked; cargo release otherwise
+export const KEY_THRUST_INCREASE    = 'Equal';  // + / = key (increase thrust multiplier)
+export const KEY_THRUST_INCREASE_NP = 'NumpadAdd';       // numpad +
+export const KEY_THRUST_DECREASE    = 'Minus';  // - key (decrease thrust multiplier)
+export const KEY_THRUST_DECREASE_NP = 'NumpadSubtract';  // numpad -
 
 // ─── HUD toggles (use e.code) ────────────────────────────────────────────────
 export const KEY_TOGGLE_MINIMAP     = 'KeyM';

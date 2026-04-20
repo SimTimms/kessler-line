@@ -19,8 +19,6 @@ import {
   DOCKING_PORT_RADIUS,
 } from '../../context/ShipState';
 import { scrapperWorldPos, scrapperWorldQuat } from '../../context/CinematicState';
-import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
-import { SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
 import {
   CONTAINER_SCALE,
   CONTAINER_IMPULSE_SCALE,
@@ -35,17 +33,17 @@ import {
   SCRAPPER_PLAYER_OFFSET_Y,
   SCRAPPER_PLAYER_OFFSET_Z,
 } from '../../config/scrapperConfig';
-import { CONTAINER_RONDE_VIEW_BAY_CAPTURE_RADIUS } from '../../tutorials/container-rendezvous-tutorial';
+import { CONTAINER_RENDEZVOUZ_BAY_CAPTURE_RADIUS } from '../../tutorials/container-rendezvous-tutorial';
 
 const SCRAPPER_CONTAINER_ID = 'scrapper-cargo-container';
 /** Speed at which the container drifts toward Venus after breaking free (units/s). */
-const RELEASE_DRIFT_SPEED = 80;
+const RELEASE_DRIFT_SPEED = 30;
 /** How long (ms) after spawning before the player can capture the container. */
 const SPAWN_CAPTURE_COOLDOWN_MS = 8000;
 
 const _portPos = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
-const _toVenus = new THREE.Vector3();
+const _forward = new THREE.Vector3();
 const _bayWorldPos = new THREE.Vector3();
 
 export default function ScrapperCargoContainer() {
@@ -110,20 +108,14 @@ export default function ScrapperCargoContainer() {
     window.addEventListener('CargoBayCapture', onBayCapture);
 
     const onCargoRelease = () => {
-      // Position the container at the scrapper's current world position + side offset
-      posRef.current.copy(scrapperWorldPos);
-      posRef.current.x -= 60; // slight offset so it's not exactly centred
+      // Scrapper local -X is behind/opposite — rotate into world space
+      _forward.set(-1, 0, 0).applyQuaternion(scrapperWorldQuat);
+      // Spawn 30 units in that direction
+      posRef.current.copy(scrapperWorldPos).addScaledVector(_forward, 30);
       quatRef.current.copy(scrapperWorldQuat);
 
-      // Give it a velocity toward Venus
-      const venusPlanetPos = solarPlanetPositions['Venus'];
-      if (venusPlanetPos) {
-        _toVenus
-          .set(venusPlanetPos.x * SOLAR_SYSTEM_SCALE, 0, venusPlanetPos.z * SOLAR_SYSTEM_SCALE)
-          .sub(posRef.current)
-          .normalize();
-        velRef.current.copy(_toVenus).multiplyScalar(RELEASE_DRIFT_SPEED);
-      }
+      // Eject at drift speed in the same direction
+      velRef.current.copy(_forward).multiplyScalar(RELEASE_DRIFT_SPEED);
 
       // Block capture for a few seconds so the container has time to clear the ship
       releaseCooldownUntil.current = performance.now() + SPAWN_CAPTURE_COOLDOWN_MS;
@@ -222,7 +214,7 @@ export default function ScrapperCargoContainer() {
         .set(SCRAPPER_PLAYER_OFFSET_X, SCRAPPER_PLAYER_OFFSET_Y, SCRAPPER_PLAYER_OFFSET_Z)
         .applyQuaternion(scrapperWorldQuat)
         .add(scrapperWorldPos);
-      if (posRef.current.distanceTo(_bayWorldPos) < CONTAINER_RONDE_VIEW_BAY_CAPTURE_RADIUS) {
+      if (posRef.current.distanceTo(_bayWorldPos) < CONTAINER_RENDEZVOUZ_BAY_CAPTURE_RADIUS) {
         releasedByPlayerRef.current = false;
         velRef.current.set(0, 0, 0);
         window.dispatchEvent(new CustomEvent('CargoBayCapture'));
@@ -237,7 +229,7 @@ export default function ScrapperCargoContainer() {
       visible={false}
       onClick={(e) => {
         e.stopPropagation();
-        selectTarget('Cargo Pod', velRef.current, posRef.current, SCRAPPER_CONTAINER_ID);
+        selectTarget('Cargo Pod', velRef.current, posRef.current, SCRAPPER_CONTAINER_ID, 'magnetic');
         flashTarget();
         window.dispatchEvent(new CustomEvent('CargoPodTargeted'));
       }}

@@ -1,14 +1,43 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { thrustMultiplier, MAX_THRUST_MULTIPLIER } from '../../context/ShipState';
+import {
+  KEY_THRUST_INCREASE,
+  KEY_THRUST_INCREASE_NP,
+  KEY_THRUST_DECREASE,
+  KEY_THRUST_DECREASE_NP,
+} from '../../config/keybindings';
 
 interface ThrustPanelProps {
   thrustLevel: number;
   setThrustLevel: Dispatch<SetStateAction<number>>;
 }
 
+const THRUST_STEP = 0.5;
+const THRUST_MIN = 0.5;
+
 const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: ThrustPanelProps) {
   const isDanger = thrustLevel >= 2;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === KEY_THRUST_INCREASE || e.code === KEY_THRUST_INCREASE_NP) {
+        setThrustLevel((prev) => {
+          const next = Math.min(MAX_THRUST_MULTIPLIER, parseFloat((prev + THRUST_STEP).toFixed(1)));
+          thrustMultiplier.current = next;
+          return next;
+        });
+      } else if (e.code === KEY_THRUST_DECREASE || e.code === KEY_THRUST_DECREASE_NP) {
+        setThrustLevel((prev) => {
+          const next = Math.max(THRUST_MIN, parseFloat((prev - THRUST_STEP).toFixed(1)));
+          thrustMultiplier.current = next;
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setThrustLevel]);
 
   return (
     <div
@@ -43,9 +72,9 @@ const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: T
       </div>
       <input
         type="range"
-        min={0.5}
+        min={THRUST_MIN}
         max={MAX_THRUST_MULTIPLIER}
-        step={0.5}
+        step={THRUST_STEP}
         value={thrustLevel}
         className={isDanger ? 'thrust-slider danger' : 'thrust-slider'}
         onChange={(e) => {
@@ -64,7 +93,7 @@ const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: T
           fontSize: 10,
         }}
       >
-        <span>0.5×</span>
+        <span>{THRUST_MIN}×</span>
         <span>{MAX_THRUST_MULTIPLIER}×</span>
       </div>
     </div>

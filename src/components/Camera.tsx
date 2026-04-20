@@ -20,7 +20,14 @@ import {
 import {
   SCRAPPER_INTRO_CAMERA_BEHIND_DIST,
   SCRAPPER_INTRO_CAMERA_HEIGHT,
+  SCRAPPER_INTRO_CAMERA_BEHIND_OFFSET,
+  SCRAPPER_LAUNCH_CAMERA_BEHIND_DIST,
+  SCRAPPER_LAUNCH_CAMERA_HEIGHT,
+  SCRAPPER_LAUNCH_CAMERA_Z_OFFSET,
+  SCRAPPER_LAUNCH_CAMERA_Y_ROTATION,
+  SCRAPPER_LAUNCH_CAMERA_EXIT_DISTANCE,
 } from '../config/scrapperConfig';
+import { shipPosRef } from '../context/ShipPos';
 import { KEY_TOGGLE_CAMERA_DECOUPLE } from '../config/keybindings';
 
 // Scratch vectors — avoid allocating on every frame
@@ -28,6 +35,13 @@ const _offset = new THREE.Vector3();
 const _target = new THREE.Vector3();
 const _attachOffset = new THREE.Vector3(0, 14, -40);
 const _scrapperOffset = new THREE.Vector3();
+const _launchOffset = new THREE.Vector3();
+const _launchComposedQuat = new THREE.Quaternion();
+// Computed once from config — Y rotation that swings the launch camera sideways
+const _launchYRotQuat = new THREE.Quaternion().setFromAxisAngle(
+  new THREE.Vector3(0, 1, 0),
+  SCRAPPER_LAUNCH_CAMERA_Y_ROTATION
+);
 
 interface OrbitCameraProps {
   followTarget?: { current: THREE.Vector3 };
@@ -44,15 +58,29 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
   const shakeTime = useRef(0);
   const [decoupled, setDecoupled] = useState(false);
   const [scrapperMode, setScrapperMode] = useState(scrapperIntroActive.current);
+  const [launchMode, setLaunchMode] = useState(false);
+  const launchEndedFiredRef = useRef(false);
 
+  // Intro → launch: controls just enabled, hold the cinematic camera on the scrapper
   useEffect(() => {
-    const onIntroEnded = () => setScrapperMode(false);
+    const onIntroEnded = () => {
+      setScrapperMode(false);
+      setLaunchMode(true);
+      launchEndedFiredRef.current = false;
+    };
     window.addEventListener('ScrapperIntroEnded', onIntroEnded);
     return () => window.removeEventListener('ScrapperIntroEnded', onIntroEnded);
   }, []);
 
+  // Launch → player: fired from useFrame when ship exceeds exit distance
   useEffect(() => {
-    if (scrapperMode || decoupled) {
+    const onLaunchEnded = () => setLaunchMode(false);
+    window.addEventListener('ScrapperLaunchEnded', onLaunchEnded);
+    return () => window.removeEventListener('ScrapperLaunchEnded', onLaunchEnded);
+  }, []);
+
+  useEffect(() => {
+    if (scrapperMode || launchMode || decoupled) {
       scene.add(camera);
       return;
     }
@@ -62,7 +90,7 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     return () => {
       scene.add(camera);
     };
-  }, [attachTo, camera, scene, decoupled, scrapperMode]);
+  }, [attachTo, camera, scene, decoupled, scrapperMode, launchMode]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -165,10 +193,36 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
 
     if (scrapperMode) {
       // Fixed behind the scrapper: -X is behind (scrapper's +X is forward)
-      _scrapperOffset.set(-SCRAPPER_INTRO_CAMERA_BEHIND_DIST, SCRAPPER_INTRO_CAMERA_HEIGHT, 0);
+      _scrapperOffset.set(
+        -SCRAPPER_INTRO_CAMERA_BEHIND_DIST,
+        SCRAPPER_INTRO_CAMERA_HEIGHT,
+        SCRAPPER_INTRO_CAMERA_BEHIND_OFFSET
+      );
       _scrapperOffset.applyQuaternion(scrapperWorldQuat);
       camera.position.copy(scrapperWorldPos).add(_scrapperOffset);
       camera.lookAt(scrapperWorldPos);
+      return;
+    }
+
+    if (launchMode) {
+      // Cinematic camera follows the ship using a fixed offset derived from the
+      // scrapper's orientation + configured Y rotation — so the angle stays
+      // consistent as the player flies away, and the ship stays in frame.
+      _launchComposedQuat.copy(scrapperWorldQuat).multiply(_launchYRotQuat);
+      _launchOffset.set(
+        -SCRAPPER_LAUNCH_CAMERA_BEHIND_DIST,
+        SCRAPPER_LAUNCH_CAMERA_HEIGHT,
+        SCRAPPER_LAUNCH_CAMERA_Z_OFFSET
+      );
+      _launchOffset.applyQuaternion(_launchComposedQuat);
+      camera.position.copy(shipPosRef.current).add(_launchOffset);
+      camera.lookAt(shipPosRef.current);
+      // Check exit distance; fire event once — state update happens next render
+      const dist = shipPosRef.current.distanceTo(scrapperWorldPos);
+      if (dist > SCRAPPER_LAUNCH_CAMERA_EXIT_DISTANCE && !launchEndedFiredRef.current) {
+        launchEndedFiredRef.current = true;
+        window.dispatchEvent(new CustomEvent('ScrapperLaunchEnded'));
+      }
       return;
     }
 

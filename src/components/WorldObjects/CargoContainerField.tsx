@@ -221,7 +221,7 @@ function ContainerInstance({ entry, scene, halfExtents }: ContainerInstanceProps
       scale={CONTAINER_SCALE}
       onClick={(e) => {
         e.stopPropagation();
-        selectTarget('Cargo Container', velRef.current, posRef.current, entry.id);
+        selectTarget('Cargo Container', velRef.current, posRef.current, entry.id, 'magnetic');
         flashTarget();
       }}
     >

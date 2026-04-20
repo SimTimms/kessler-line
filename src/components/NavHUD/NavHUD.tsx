@@ -4,6 +4,7 @@ import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { shipPosRef } from '../../context/ShipPos';
 import { orbitStatusRef } from '../../context/ShipState';
+import { clearSelectedTarget } from '../../context/TargetSelection';
 import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
 import {
   autopilotActive,
@@ -21,6 +22,7 @@ export const NavHUD = () => {
   const [targetId, setTargetId] = useState(navTargetIdRef.current);
   const [targetLabel, setTargetLabel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedObjName, setSelectedObjName] = useState<string | null>(null);
 
   // Coords display — mutated directly to avoid re-renders
   const coordsRef = useRef<HTMLSpanElement>(null!);
@@ -131,14 +133,26 @@ export const NavHUD = () => {
     return () => window.removeEventListener('NavTargetSet', onNavTargetSet);
   }, []);
 
+  // Listen for clicked world objects (cargo pods, ships, stations, etc.)
+  useEffect(() => {
+    const onSelectedTargetChanged = (e: Event) => {
+      const { name } = (e as CustomEvent<{ name: string | null; type: string | null }>).detail;
+      setSelectedObjName(name);
+    };
+    window.addEventListener('SelectedTargetChanged', onSelectedTargetChanged);
+    return () => window.removeEventListener('SelectedTargetChanged', onSelectedTargetChanged);
+  }, []);
+
   const currentTarget = NAV_TARGETS.find((t) => t.id === targetId);
-  const displayLabel = currentTarget?.label ?? (targetLabel || '—');
+  const displayLabel = selectedObjName ?? (currentTarget?.label ?? (targetLabel || '—'));
 
   const handleSelect = (id: string) => {
     const def = NAV_TARGETS.find((t) => t.id === id);
     if (!def) return;
     setTargetId(id);
     setTargetLabel('');
+    setSelectedObjName(null);
+    clearSelectedTarget();
     navTargetIdRef.current = id;
     if (def.orbit) {
       // Moon/satellite — navigate to the live position of the parent planet

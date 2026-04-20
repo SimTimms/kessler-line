@@ -40,6 +40,7 @@ export type ContainerRondeViewHintPhase =
   | 'idle'
   | 'thrust'
   | 'hold'
+  | 'scanner'
   | 'approach'
   | 'docking'
   | 'drifting'
@@ -50,72 +51,76 @@ export type ContainerRondeViewHintPhase =
   | 'return_approach'
   | 'done';
 
+export const targetMPS = 20;
 /** Hint 1 — shown the moment the player gains control. */
-export const CONTAINER_RONDE_VIEW_THRUST_HINT = `HOLD ${codeToLabel(KEY_THRUST_REVERSE)} FOR THRUST`;
+export const CONTAINER_RENDEZVOUZ_THRUST_HINT = `HOLD ${codeToLabel(KEY_THRUST_REVERSE)} FOR FORWARD THRUST`;
 
 /** Hint 2 — shown after the player first presses the thrust key. */
-export const CONTAINER_RONDE_VIEW_HOLD_HINT = `HOLD ${codeToLabel(KEY_THRUST_REVERSE)} TO INCREASE VELOCITY TO 20 M/S`;
+export const CONTAINER_RENDEZVOUZ_HOLD_HINT = `INCREASE VELOCITY TO ${targetMPS.toFixed(1)} M/S`;
 
 /** Hint 3 — shown once speed reaches the velocity threshold. */
-export const CONTAINER_RONDE_VIEW_APPROACH_HINT = `RELEASE ${codeToLabel(KEY_THRUST_REVERSE)} - CLICK CARGO POD`;
+export const CONTAINER_RENDEZVOUZ_SCANNER_HINT = 'ENABLE MAGNET SCANNER — SET TO MAX POWER';
+
+/** Hint 4 — shown once the magnet scanner is at max power. */
+export const CONTAINER_RENDEZVOUZ_APPROACH_HINT = `RELEASE ${codeToLabel(KEY_THRUST_REVERSE)} - CLICK CARGO POD`;
 
 /** How long (ms) hint 3 stays on screen as a safety fallback. */
-export const CONTAINER_RONDE_VIEW_APPROACH_HINT_DURATION = 15000;
+export const CONTAINER_RENDEZVOUZ_APPROACH_HINT_DURATION = 15000;
 
 /** Speed (m/s) that triggers the transition from hint 2 -> hint 3. */
-export const CONTAINER_RONDE_VIEW_VELOCITY_THRESHOLD = 20;
+export const CONTAINER_RENDEZVOUZ_VELOCITY_THRESHOLD = 20;
 
 /** Closing speed (m/s) that transitions hint 4 -> hint 5. */
-export const CONTAINER_RONDE_VIEW_DOCKING_REL_SPEED_THRESHOLD = 10;
+export const CONTAINER_RENDEZVOUZ_DOCKING_REL_SPEED_THRESHOLD = 10;
 
 /** Hint 4 — shown after the player clicks the cargo pod. */
-export const CONTAINER_RONDE_VIEW_DOCKING_HINT =
-  `THRUST ${codeToLabel(KEY_THRUST_FORWARD)} TOWARD CARGO POD — BUILD APPROACH SPEED TO ${CONTAINER_RONDE_VIEW_DOCKING_REL_SPEED_THRESHOLD} M/S`;
+export const CONTAINER_RENDEZVOUZ_DOCKING_HINT = `THRUST ${codeToLabel(KEY_THRUST_FORWARD)} TOWARD CARGO POD — BUILD APPROACH SPEED TO ${CONTAINER_RENDEZVOUZ_DOCKING_REL_SPEED_THRESHOLD} M/S`;
 
 /** Distance (world units / metres) that triggers the final prompt. */
-export const CONTAINER_RONDE_VIEW_FINAL_APPROACH_DISTANCE = 150;
+export const CONTAINER_RENDEZVOUZ_FINAL_APPROACH_DISTANCE = 150;
 
 /** Hint 5 — shown once the player is approaching the pod. */
-export const CONTAINER_RONDE_VIEW_DRIFT_HINT = `DRIFT CLOSER UNTIL THE CARGO POD IS ${CONTAINER_RONDE_VIEW_FINAL_APPROACH_DISTANCE}M AWAY`;
+export const CONTAINER_RENDEZVOUZ_DRIFT_HINT = `DRIFT CLOSER UNTIL THE CARGO POD IS ${CONTAINER_RENDEZVOUZ_FINAL_APPROACH_DISTANCE}M AWAY`;
 
 /** Hint 6 — shown once the player is within final approach distance of the cargo pod. */
-export const CONTAINER_RONDE_VIEW_FINAL_APPROACH_HINT = `SLOW TO 7 M/S - PRESS ${codeToLabel(
+export const CONTAINER_RENDEZVOUZ_FINAL_APPROACH_HINT = `SLOW TO 7 M/S - PRESS ${codeToLabel(
   KEY_THRUST_FORWARD
 )} TO REDUCE VELOCITY - MAKE CONTACT WITH CARGO POD TO ENGAGE MAG CLAMPS`;
 
 /** Hint 7 — shown once the cargo pod is magnetically clamped to the ship. */
-export const CONTAINER_RONDE_VIEW_CAPTURED_HINT = `ROTATE USING ${codeToLabel(KEY_YAW_LEFT)} OR ${codeToLabel(KEY_YAW_RIGHT)} AND RETURN THE CARGO POD TO YOUR PARENT VESSEL`;
+export const CONTAINER_RENDEZVOUZ_CAPTURED_HINT = `ROTATE USING ${codeToLabel(KEY_YAW_LEFT)} OR ${codeToLabel(KEY_YAW_RIGHT)} AND RETURN THE CARGO POD TO YOUR PARENT VESSEL`;
 
 /** Hint 8 — shown after capture, prompting the player to target the parent vessel. */
-export const CONTAINER_RONDE_VIEW_TARGET_PARENT_HINT = 'CLICK ON THE PARENT SHIP TO TARGET IT';
+export const CONTAINER_RENDEZVOUZ_TARGET_PARENT_HINT = 'CLICK ON THE PARENT SHIP TO TARGET IT';
 
 /** Hint 9 — shown once the player starts moving toward the parent vessel. */
-export const CONTAINER_RONDE_VIEW_RETURNING_HINT =
+export const CONTAINER_RENDEZVOUZ_RETURNING_HINT =
   `AIM AT PARENT VESSEL — ${codeToLabel(KEY_THRUST_FORWARD)} TO THRUST — ` +
   `USE ${codeToLabel(KEY_STRAFE_LEFT)}/${codeToLabel(KEY_STRAFE_RIGHT)} TO ALIGN TRAJECTORY INDICATOR WITH VESSEL`;
 
 /** Hint 10 — shown when within close approach range of the parent vessel. */
-export const CONTAINER_RONDE_VIEW_RETURN_APPROACH_HINT =
+export const CONTAINER_RENDEZVOUZ_RETURN_APPROACH_HINT =
   `ALIGN TRAJECTORY WITH CARGO BAY — USE ${codeToLabel(KEY_STRAFE_LEFT)}/${codeToLabel(KEY_STRAFE_RIGHT)} — ` +
   `PRESS ${codeToLabel(KEY_UNDOCK_CARGO)} TO RELEASE CARGO POD`;
 
 /** Hint 11 — shown once the pod is captured inside the bay. */
-export const CONTAINER_RONDE_VIEW_RETURN_COMPLETE_HINT = 'CARGO POD DELIVERED — RENDEZVOUS TUTORIAL COMPLETE';
+export const CONTAINER_RENDEZVOUZ_RETURN_COMPLETE_HINT =
+  'CARGO POD DELIVERED — RENDEZVOUS TUTORIAL COMPLETE';
 
 /** Hint 12 — shown 5 s after tutorial complete, prompting the player to dock. */
-export const CONTAINER_RONDE_VIEW_DOCK_RETURN_HINT = 'ROTATE 180 DEGREES — ENTER THE DOCKING BAY';
+export const CONTAINER_RENDEZVOUZ_DOCK_RETURN_HINT = 'ROTATE 180 DEGREES — ENTER THE DOCKING BAY';
 
 /** Delay before evaluating drift-speed transition after target lock. */
-export const CONTAINER_RONDE_VIEW_DOCKING_GRACE_MS = 3000;
+export const CONTAINER_RENDEZVOUZ_DOCKING_GRACE_MS = 3000;
 
 /** Distance to bay centre (units) that triggers the release hint. */
-export const CONTAINER_RONDE_VIEW_RETURN_APPROACH_DISTANCE = 600;
+export const CONTAINER_RENDEZVOUZ_RETURN_APPROACH_DISTANCE = 600;
 
 /** Distance to bay (units) at which Neptune railguns attack the parent vessel. */
-export const CONTAINER_RONDE_VIEW_SCRAPPER_ATTACK_DISTANCE = 1500;
+export const CONTAINER_RENDEZVOUZ_SCRAPPER_ATTACK_DISTANCE = 1500;
 
 /** Sphere radius around bay centre (units) that counts as pod delivered. */
-export const CONTAINER_RONDE_VIEW_BAY_CAPTURE_RADIUS = 100;
+export const CONTAINER_RENDEZVOUZ_BAY_CAPTURE_RADIUS = 100;
 
 const _relVel = new THREE.Vector3();
 const _toTarget = new THREE.Vector3();
@@ -180,7 +185,7 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
 
         // ── Hint 1: prompt the player to press thrust ────────────────────────
         hintPhase.current = 'thrust';
-        shipInstructionMessage.current = CONTAINER_RONDE_VIEW_THRUST_HINT;
+        shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_THRUST_HINT;
 
         thrustListener = (e: KeyboardEvent) => {
           if (e.code !== KEY_THRUST_REVERSE) return;
@@ -190,7 +195,7 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
           }
           // ── Hint 2: encourage holding to build velocity ────────────────────
           hintPhase.current = 'hold';
-          shipInstructionMessage.current = CONTAINER_RONDE_VIEW_HOLD_HINT;
+          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_HOLD_HINT;
         };
 
         if (thrustListener) {
@@ -205,46 +210,57 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
       brakingTimers = [releaseTimer, captainTimer, enableTimer, dialogueTimer];
     };
 
+    const onMagnetMaxed = () => {
+      if (hintPhase.current !== 'scanner') return;
+      hintPhase.current = 'approach';
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_APPROACH_HINT;
+      window.dispatchEvent(new CustomEvent('MagnetHighlightStop'));
+      window.setTimeout(() => {
+        if (hintPhase.current === 'approach') {
+          shipInstructionMessage.current = '';
+          hintPhase.current = 'done';
+        }
+      }, CONTAINER_RENDEZVOUZ_APPROACH_HINT_DURATION);
+    };
+
     const onCargoPodTargeted = () => {
       hintPhase.current = 'docking';
       dockingHintShownAt.current = Date.now();
-      shipInstructionMessage.current = CONTAINER_RONDE_VIEW_DOCKING_HINT;
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_DOCKING_HINT;
     };
 
     let targetingTimer: ReturnType<typeof setTimeout> | null = null;
 
     const onCargoContained = () => {
       hintPhase.current = 'captured';
-      shipInstructionMessage.current = CONTAINER_RONDE_VIEW_CAPTURED_HINT;
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_CAPTURED_HINT;
       targetingTimer = window.setTimeout(() => {
         if (hintPhase.current === 'captured') {
           hintPhase.current = 'targeting_parent';
-          shipInstructionMessage.current = CONTAINER_RONDE_VIEW_TARGET_PARENT_HINT;
+          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_TARGET_PARENT_HINT;
         }
       }, 4000);
     };
 
     const onScrapperTargeted = () => {
-      if (
-        hintPhase.current === 'targeting_parent' ||
-        hintPhase.current === 'captured'
-      ) {
+      if (hintPhase.current === 'targeting_parent' || hintPhase.current === 'captured') {
         hintPhase.current = 'returning';
-        shipInstructionMessage.current = CONTAINER_RONDE_VIEW_RETURNING_HINT;
+        shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_RETURNING_HINT;
       }
     };
 
     const onCargoBayCapture = () => {
       hintPhase.current = 'done';
-      shipInstructionMessage.current = CONTAINER_RONDE_VIEW_RETURN_COMPLETE_HINT;
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_RETURN_COMPLETE_HINT;
       window.setTimeout(() => {
         if (hintPhase.current === 'done') {
-          shipInstructionMessage.current = CONTAINER_RONDE_VIEW_DOCK_RETURN_HINT;
+          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_DOCK_RETURN_HINT;
         }
       }, 5000);
     };
 
     window.addEventListener('ScrapperBrakingStarted', onBrakingStarted);
+    window.addEventListener('MagnetScannerMaxed', onMagnetMaxed);
     window.addEventListener('CargoPodTargeted', onCargoPodTargeted);
     window.addEventListener('CargoContained', onCargoContained);
     window.addEventListener('ScrapperTargeted', onScrapperTargeted);
@@ -253,7 +269,9 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
     return () => {
       brakingTimers.forEach((t) => window.clearTimeout(t));
       if (targetingTimer !== null) window.clearTimeout(targetingTimer);
+      window.dispatchEvent(new CustomEvent('MagnetHighlightStop'));
       window.removeEventListener('ScrapperBrakingStarted', onBrakingStarted);
+      window.removeEventListener('MagnetScannerMaxed', onMagnetMaxed);
       window.removeEventListener('CargoPodTargeted', onCargoPodTargeted);
       window.removeEventListener('CargoContained', onCargoContained);
       window.removeEventListener('ScrapperTargeted', onScrapperTargeted);
@@ -276,19 +294,14 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
   useFrame(() => {
     if (!enabled) return;
 
-    // ── Hint 2 -> 3: advance when speed threshold reached ────────────────────
+    // ── Hint 2 -> 3: advance to scanner hint when speed threshold reached ───
     if (
       hintPhase.current === 'hold' &&
-      getShipSpeedMps() >= CONTAINER_RONDE_VIEW_VELOCITY_THRESHOLD
+      getShipSpeedMps() >= CONTAINER_RENDEZVOUZ_VELOCITY_THRESHOLD
     ) {
-      hintPhase.current = 'approach';
-      shipInstructionMessage.current = CONTAINER_RONDE_VIEW_APPROACH_HINT;
-      window.setTimeout(() => {
-        if (hintPhase.current === 'approach') {
-          shipInstructionMessage.current = '';
-          hintPhase.current = 'done';
-        }
-      }, CONTAINER_RONDE_VIEW_APPROACH_HINT_DURATION);
+      hintPhase.current = 'scanner';
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_SCANNER_HINT;
+      window.dispatchEvent(new CustomEvent('MagnetHighlightStart'));
     }
 
     // ── Hints 9-10: return journey — distance-based transitions ─────────────
@@ -302,7 +315,7 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
       // Trigger Neptune railgun attack on the parent vessel as player approaches
       if (
         !scrapperAttackedRef.current &&
-        distToBay < CONTAINER_RONDE_VIEW_SCRAPPER_ATTACK_DISTANCE
+        distToBay < CONTAINER_RENDEZVOUZ_SCRAPPER_ATTACK_DISTANCE
       ) {
         scrapperAttackedRef.current = true;
         window.dispatchEvent(new CustomEvent('ScrapperUnderAttack'));
@@ -310,10 +323,10 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
 
       if (
         hintPhase.current === 'returning' &&
-        distToBay < CONTAINER_RONDE_VIEW_RETURN_APPROACH_DISTANCE
+        distToBay < CONTAINER_RENDEZVOUZ_RETURN_APPROACH_DISTANCE
       ) {
         hintPhase.current = 'return_approach';
-        shipInstructionMessage.current = CONTAINER_RONDE_VIEW_RETURN_APPROACH_HINT;
+        shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_RETURN_APPROACH_HINT;
       }
     }
 
@@ -337,20 +350,20 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
         // Hint 4 -> 5: player is approaching at >= threshold speed (after grace)
         if (
           hintPhase.current === 'docking' &&
-          Date.now() - dockingHintShownAt.current > CONTAINER_RONDE_VIEW_DOCKING_GRACE_MS &&
-          signedRelSpeed >= CONTAINER_RONDE_VIEW_DOCKING_REL_SPEED_THRESHOLD
+          Date.now() - dockingHintShownAt.current > CONTAINER_RENDEZVOUZ_DOCKING_GRACE_MS &&
+          signedRelSpeed >= CONTAINER_RENDEZVOUZ_DOCKING_REL_SPEED_THRESHOLD
         ) {
           hintPhase.current = 'drifting';
-          shipInstructionMessage.current = CONTAINER_RONDE_VIEW_DRIFT_HINT;
+          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_DRIFT_HINT;
         }
 
         // Hint 5/4 -> 6: within 100m of the pod
         if (
           (hintPhase.current === 'docking' || hintPhase.current === 'drifting') &&
-          distToTarget < CONTAINER_RONDE_VIEW_FINAL_APPROACH_DISTANCE
+          distToTarget < CONTAINER_RENDEZVOUZ_FINAL_APPROACH_DISTANCE
         ) {
           hintPhase.current = 'final_approach';
-          shipInstructionMessage.current = CONTAINER_RONDE_VIEW_FINAL_APPROACH_HINT;
+          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_FINAL_APPROACH_HINT;
         }
       }
     }

@@ -14,7 +14,7 @@ interface LaserRayProps {
 // Cylinder geometry is along the Y axis — we rotate it to align with the beam direction.
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
-export const spotlightOnRef = { current: true };
+export const spotlightOnRef = { current: false };
 // Module-level scratch objects to avoid per-frame allocations.
 const _camRaycaster = new THREE.Raycaster();
 const _shipRaycaster = new THREE.Raycaster();

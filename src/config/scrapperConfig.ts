@@ -67,14 +67,36 @@ export const SCRAPPER_DIALOGUE_START_OFFSET = 2000;
  *  π = 180° flip; adjust if the model's forward axis differs. */
 export const SCRAPPER_INITIAL_ROTATION_Y = -Math.PI;
 
-// ── Camera ────────────────────────────────────────────────────────────────────
+// ── Intro camera (player inside scrapper hold) ────────────────────────────────
 
 /** Spherical radius (zoom distance) locked while the player is in the scrapper hold.
  *  Increase to zoom out; decrease to zoom in. Released when scrapperIntroActive goes false. */
 export const SCRAPPER_INTRO_CAMERA_RADIUS = 200;
 
 /** How far behind the scrapper (along its -X axis) the intro camera sits. */
-export const SCRAPPER_INTRO_CAMERA_BEHIND_DIST = 450;
+export const SCRAPPER_INTRO_CAMERA_BEHIND_DIST = 150;
 
 /** Height above the scrapper centre the intro camera sits. */
-export const SCRAPPER_INTRO_CAMERA_HEIGHT = 230;
+export const SCRAPPER_INTRO_CAMERA_HEIGHT = 30;
+
+/** Z offset (scrapper local) for the intro camera. */
+export const SCRAPPER_INTRO_CAMERA_BEHIND_OFFSET = 70;
+
+// ── Launch camera (active after "HOLD S" hint, until player clears the parent ship) ──
+
+/** Distance behind the scrapper (local -X) for the launch cinematic camera. */
+export const SCRAPPER_LAUNCH_CAMERA_BEHIND_DIST = 200;
+
+/** Height above the scrapper centre for the launch cinematic camera. */
+export const SCRAPPER_LAUNCH_CAMERA_HEIGHT = 0;
+
+/** Z offset (scrapper local) for the launch cinematic camera. */
+export const SCRAPPER_LAUNCH_CAMERA_Z_OFFSET = 0;
+
+/** Additional Y-axis rotation (radians) applied to swing the launch camera to a
+ *  cinematic angle — 0 = directly behind the scrapper, positive = swing right. */
+export const SCRAPPER_LAUNCH_CAMERA_Y_ROTATION = Math.PI / 2; // ~36°
+
+/** Distance from the parent ship (world units) at which the launch camera
+ *  reverts to the normal player follow camera. */
+export const SCRAPPER_LAUNCH_CAMERA_EXIT_DISTANCE = 180;
