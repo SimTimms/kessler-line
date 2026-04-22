@@ -121,7 +121,7 @@ export default function Scene() {
           completely dark with only the distant sun point-light. */}
       <ambientLight intensity={0.18} />
       <Spaceship
-        url="/untitled.gltf"
+        url="/shuttle.glb"
         shipGroupRef={spaceshipGroupRef}
         initialPosition={shipInitPos}
         initialRotation={shipInitRot}

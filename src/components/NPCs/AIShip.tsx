@@ -93,6 +93,7 @@ export default function AIShip({ id, url, position, scale = 1 }: AIShipProps) {
         if (groupRef.current) groupRef.current.getWorldPosition(target);
         return target;
       },
+      getVelocity: (target) => target.copy(aiVel.current),
     });
     return () => unregisterDriveSignature(sigId);
   }, [id]);

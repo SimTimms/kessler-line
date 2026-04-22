@@ -55,7 +55,7 @@ interface SpaceshipProps {
 
 export default function Spaceship({
   url,
-  scale = 2,
+  scale = 1,
   shipGroupRef,
   initialPosition,
   initialRotation,
@@ -126,19 +126,21 @@ export default function Spaceship({
             />
           </mesh>
         </group>
+        {/* Particles are children of the ship group so buffer coords stay in local space —
+            avoids float32 precision jitter at large world coordinates. */}
+        <ThrusterParticles
+          shipGroupRef={groupRef}
+          thrustForward={thrustForward}
+          thrustReverse={thrustReverse}
+          thrustLeft={thrustLeft}
+          thrustRight={thrustRight}
+          thrustStrafeLeft={thrustStrafeLeft}
+          thrustStrafeRight={thrustStrafeRight}
+        />
       </group>
       <group position={[0, 0, 9]}>
         <DockingReleaseParticles shipGroupRef={groupRef} triggerRef={releaseParticleTrigger} />
       </group>
-      <ThrusterParticles
-        shipGroupRef={groupRef}
-        thrustForward={thrustForward}
-        thrustReverse={thrustReverse}
-        thrustLeft={thrustLeft}
-        thrustRight={thrustRight}
-        thrustStrafeLeft={thrustStrafeLeft}
-        thrustStrafeRight={thrustStrafeRight}
-      />
       <ShipParticleCloud shipGroupRef={groupRef} {...shipParticleCloudProps} />
       <RailgunDamagePainter shipGroupRef={groupRef} />
       <RailgunOxygenVents shipGroupRef={groupRef} />

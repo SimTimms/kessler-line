@@ -32,10 +32,10 @@ import {
   SCRAPPER_PLAYER_OFFSET_X,
   SCRAPPER_PLAYER_OFFSET_Y,
   SCRAPPER_PLAYER_OFFSET_Z,
+  SCRAPPER_CONTAINER_ID,
 } from '../../config/scrapperConfig';
 import { CONTAINER_RENDEZVOUZ_BAY_CAPTURE_RADIUS } from '../../tutorials/container-rendezvous-tutorial';
 
-const SCRAPPER_CONTAINER_ID = 'scrapper-cargo-container';
 /** Speed at which the container drifts toward Venus after breaking free (units/s). */
 const RELEASE_DRIFT_SPEED = 30;
 /** How long (ms) after spawning before the player can capture the container. */
@@ -84,6 +84,7 @@ export default function ScrapperCargoContainer() {
       id: SCRAPPER_CONTAINER_ID,
       label: 'Cargo Pod',
       getPosition: (target) => target.copy(posRef.current),
+      getVelocity: (target) => target.copy(velRef.current),
     });
 
     const onRelease = () => {

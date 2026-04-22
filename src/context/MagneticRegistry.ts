@@ -5,6 +5,8 @@ export interface MagneticEntry {
   label: string;
   /** Write current world position into `target` and return it. */
   getPosition: (target: THREE.Vector3) => THREE.Vector3;
+  /** Write current world velocity into `target` and return it. Optional. */
+  getVelocity?: (target: THREE.Vector3) => THREE.Vector3;
 }
 
 const registry = new Map<string, MagneticEntry>();

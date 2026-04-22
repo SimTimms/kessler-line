@@ -1,5 +1,11 @@
 // ── AIScrapper intro sequence config ──────────────────────────────────────────
 
+/** Unique ID of the cargo container released during the scrapper intro. */
+export const SCRAPPER_CONTAINER_ID = 'scrapper-cargo-container';
+
+/** Drive signature ID of the parent vessel (AIScrapper). */
+export const SCRAPPER_DRIVE_SIG_ID = 'ai-scrapper';
+
 /** Scale applied to the AIScrapper group — must match the scale prop in AIScrapper. */
 export const SCRAPPER_SCALE = 3;
 
@@ -95,7 +101,7 @@ export const SCRAPPER_LAUNCH_CAMERA_Z_OFFSET = 0;
 
 /** Additional Y-axis rotation (radians) applied to swing the launch camera to a
  *  cinematic angle — 0 = directly behind the scrapper, positive = swing right. */
-export const SCRAPPER_LAUNCH_CAMERA_Y_ROTATION = Math.PI / 2; // ~36°
+export const SCRAPPER_LAUNCH_CAMERA_Y_ROTATION = Math.PI / 3; // ~36°
 
 /** Distance from the parent ship (world units) at which the launch camera
  *  reverts to the normal player follow camera. */

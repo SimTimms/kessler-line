@@ -13,10 +13,8 @@ import {
   mobileThrustRight,
   mobileThrustStrafeLeft,
   mobileThrustStrafeRight,
-  shipQuaternion,
 } from '../../context/ShipState';
 import { autopilotThrustForward, autopilotThrustReverse } from '../../context/AutopilotState';
-import { shipPosRef } from '../../context/ShipPos';
 
 const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.04; // seconds — short, intense burn (jittered ±30%)
@@ -49,8 +47,6 @@ const RCS_EMITTERS = {
 } as const;
 type RcsKey = keyof typeof RCS_EMITTERS;
 
-// Module-level reusable vector — avoid per-frame GC
-const _worldPos = new THREE.Vector3();
 
 type Particle = {
   active: boolean;
@@ -247,12 +243,12 @@ export default function ThrusterParticles({
       p.py -= radY * pull;
       p.pz -= radZ * pull;
 
-      // Transform local → world for rendering using live renderPosition + rotation refs
-      // (avoids matrixWorld staleness from the physics smooth-render two-step)
-      _worldPos.set(p.px, p.py, p.pz).applyQuaternion(shipQuaternion).add(shipPosRef.current);
-      positions[i * 3] = _worldPos.x;
-      positions[i * 3 + 1] = _worldPos.y;
-      positions[i * 3 + 2] = _worldPos.z;
+      // Positions are in ship-local space. The <points> mesh is a child of the ship
+      // group, so the scene graph applies the world transform — keeping buffer values
+      // small and avoiding float32 precision jitter at large world coordinates.
+      positions[i * 3] = p.px;
+      positions[i * 3 + 1] = p.py;
+      positions[i * 3 + 2] = p.pz;
 
       // Color: white-hot at birth → light blue → purple in the last 35%
       const t = taper;

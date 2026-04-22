@@ -5,6 +5,8 @@ export interface DriveSignatureEntry {
   id: string;
   label: string;
   getPosition: (target: THREE.Vector3) => THREE.Vector3;
+  /** Write current world velocity into `target` and return it. Optional. */
+  getVelocity?: (target: THREE.Vector3) => THREE.Vector3;
 }
 
 const entries: DriveSignatureEntry[] = [];

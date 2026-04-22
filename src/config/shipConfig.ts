@@ -22,9 +22,9 @@ export const DOCKING_PORT_LOCAL_Z = 11;
 /** Distance threshold for a railgun hit to register on a main engine. */
 export const MAIN_ENGINE_HIT_RADIUS = 2.5;
 /** Local position of the port main engine (reverseA). XYZ in ship-local space. */
-export const MAIN_ENGINE_LOCAL_POS_A: [number, number, number] = [-3.5, 0, -11.5];
+export const MAIN_ENGINE_LOCAL_POS_A: [number, number, number] = [0, 1, -8.5];
 /** Local position of the starboard main engine (reverseB). XYZ in ship-local space. */
-export const MAIN_ENGINE_LOCAL_POS_B: [number, number, number] = [3.5, 0, -11.5];
+export const MAIN_ENGINE_LOCAL_POS_B: [number, number, number] = [0, 1, -8.5];
 
 // ── Physics step ─────────────────────────────────────────────────────────
 /** Cross-torque scale applied when one engine is disabled during reverse thrust. */

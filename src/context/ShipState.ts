@@ -105,8 +105,16 @@ export const railgunTargetEngine = {
 
 // ── Main engine damage state ───────────────────────────────────────────────
 export const MAIN_ENGINE_LOCAL_POS = {
-  reverseA: new THREE.Vector3(MAIN_ENGINE_LOCAL_POS_A[0], MAIN_ENGINE_LOCAL_POS_A[1], MAIN_ENGINE_LOCAL_POS_A[2]),
-  reverseB: new THREE.Vector3(MAIN_ENGINE_LOCAL_POS_B[0], MAIN_ENGINE_LOCAL_POS_B[1], MAIN_ENGINE_LOCAL_POS_B[2]),
+  reverseA: new THREE.Vector3(
+    MAIN_ENGINE_LOCAL_POS_A[0],
+    MAIN_ENGINE_LOCAL_POS_A[1],
+    MAIN_ENGINE_LOCAL_POS_A[2]
+  ),
+  reverseB: new THREE.Vector3(
+    MAIN_ENGINE_LOCAL_POS_B[0],
+    MAIN_ENGINE_LOCAL_POS_B[1],
+    MAIN_ENGINE_LOCAL_POS_B[2]
+  ),
 } as const;
 export const mainEngineDisabled = {
   reverseA: { current: false },

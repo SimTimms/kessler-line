@@ -1,0 +1,153 @@
+.ntd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 4, 12, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.ntd-dialog {
+  --ntd-text:               #33bb66;
+  --ntd-border:             rgba(51, 187, 102, 0.4);
+  --ntd-border-strong:      rgba(51, 187, 102, 0.7);
+  --ntd-glow:               rgba(51, 187, 102, 0.18);
+  --ntd-muted:              rgba(51, 187, 102, 0.6);
+  --ntd-dim:                rgba(51, 187, 102, 0.42);
+  --ntd-item-bg-hover:      rgba(51, 187, 102, 0.1);
+  --ntd-item-bg-active:     rgba(51, 187, 102, 0.18);
+  --ntd-item-glow-active:   rgba(51, 187, 102, 0.2);
+  --ntd-sublabel:           rgba(51, 187, 102, 0.45);
+
+  background: rgba(0, 10, 4, 0.97);
+  border: 1px solid var(--ntd-border);
+  border-radius: 4px;
+  padding: 28px 32px;
+  min-width: 320px;
+  max-width: 480px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 40px var(--ntd-glow);
+  font-family: monospace;
+}
+
+.ntd-dialog::before {
+  content: '⊕ MERIDIAN / ARESNAV';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--ntd-text);
+  opacity: 0.7;
+  text-align: right;
+  border-bottom: 1px solid var(--ntd-border);
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+}
+
+.ntd-title {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ntd-muted);
+  text-align: center;
+}
+
+.ntd-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.ntd-section-header {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--ntd-dim);
+  padding: 8px 2px 4px;
+  border-bottom: 1px solid var(--ntd-border);
+  margin-bottom: 2px;
+  margin-top: 6px;
+}
+
+section:first-child .ntd-section-header {
+  margin-top: 0;
+}
+
+.ntd-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--ntd-text);
+  font-family: monospace;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+  padding: 6px 4px;
+  width: 100%;
+  transition: background 0.1s;
+}
+
+.ntd-item:hover {
+  background: var(--ntd-item-bg-hover);
+}
+
+.ntd-item--active {
+  background: var(--ntd-item-bg-active);
+  box-shadow: 0 0 10px var(--ntd-item-glow-active);
+}
+
+.ntd-item--highlight {
+  animation: ntd-item-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes ntd-item-pulse {
+  0%, 100% { background: rgba(80, 255, 200, 0.06); color: rgba(80, 255, 200, 0.95); }
+  50%       { background: rgba(80, 255, 200, 0.18); color: rgba(80, 255, 200, 1);    }
+}
+
+.ntd-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ntd-item-sublabel {
+  font-size: 10px;
+  color: var(--ntd-sublabel);
+  letter-spacing: 0.08em;
+}
+
+.ntd-item-distance {
+  font-size: 10px;
+  color: var(--ntd-sublabel);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  text-align: right;
+  align-self: center;
+  padding-left: 12px;
+}
+
+.ntd-close {
+  align-self: center;
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid var(--ntd-border);
+  border-radius: 4px;
+  color: var(--ntd-dim);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.ntd-close:hover {
+  color: var(--ntd-muted);
+  border-color: var(--ntd-border-strong);
+}

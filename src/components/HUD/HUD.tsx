@@ -66,6 +66,7 @@ export const HUD = ({
   const [musicOn, setMusicOn] = useState(false);
   const [radiationOn, setRadiationOn] = useState(false);
   const [highlightMagnet, setHighlightMagnet] = useState(false);
+  const [highlightDrive, setHighlightDrive] = useState(false);
 
   useEffect(() => {
     const onStart = () => setHighlightMagnet(true);
@@ -75,6 +76,17 @@ export const HUD = ({
     return () => {
       window.removeEventListener('MagnetHighlightStart', onStart);
       window.removeEventListener('MagnetHighlightStop', onStop);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onStart = () => setHighlightDrive(true);
+    const onStop = () => setHighlightDrive(false);
+    window.addEventListener('DriveHighlightStart', onStart);
+    window.addEventListener('DriveHighlightStop', onStop);
+    return () => {
+      window.removeEventListener('DriveHighlightStart', onStart);
+      window.removeEventListener('DriveHighlightStop', onStop);
     };
   }, []);
   const audio1Ref = useRef<HTMLAudioElement | null>(null);
@@ -163,6 +175,7 @@ export const HUD = ({
         magneticScanRangeRef.current = MAGNETIC_RANGES[level - 1];
         setMagneticOn(on);
         if (level === 5) window.dispatchEvent(new CustomEvent('MagnetScannerMaxed'));
+        if (!on) window.dispatchEvent(new CustomEvent('MagnetScannerOff'));
       },
     },
     {
@@ -174,6 +187,7 @@ export const HUD = ({
         driveSignatureOnRef.current = on;
         driveSignatureRangeRef.current = DRIVE_SIGNATURE_RANGES[level - 1];
         setDriveSignatureOn(on);
+        if (level === 5) window.dispatchEvent(new CustomEvent('DriveSignatureAt5'));
       },
     },
     {
@@ -254,7 +268,7 @@ export const HUD = ({
             name={id.toUpperCase()}
             isActive={isActive}
             power={powers[id]}
-            highlight={highlightMagnet && id === 'magnet'}
+            highlight={(highlightMagnet && id === 'magnet') || (highlightDrive && id === 'drive')}
             onClickEvent={() =>
               handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id], onSideEffect)
             }

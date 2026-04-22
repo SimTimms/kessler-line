@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from './Ship/Spaceship';
@@ -60,6 +60,18 @@ function drawApsisLabel(ctx: CanvasRenderingContext2D, color: string, label: str
 
 export default function VelocityIndicator() {
   const shipPositionRef = shipPosRef;
+  const trajectoryHighlightRef = useRef(false);
+
+  useEffect(() => {
+    const onStart = () => { trajectoryHighlightRef.current = true; };
+    const onStop = () => { trajectoryHighlightRef.current = false; };
+    window.addEventListener('TrajectoryHighlightStart', onStart);
+    window.addEventListener('TrajectoryHighlightStop', onStop);
+    return () => {
+      window.removeEventListener('TrajectoryHighlightStart', onStart);
+      window.removeEventListener('TrajectoryHighlightStop', onStop);
+    };
+  }, []);
   const {
     line,
     sprite,
@@ -360,6 +372,9 @@ export default function VelocityIndicator() {
 
     const lineMat = line.material as THREE.LineDashedMaterial;
     lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
+    lineMat.opacity = trajectoryHighlightRef.current
+      ? 0.15 + 0.65 * (0.5 + 0.5 * Math.sin(Date.now() * 0.004))
+      : 0.15;
 
     // Speed label at the midpoint of the active trajectory
     const activeEnd = orbitClosedAt >= 0 ? orbitClosedAt : TRAJ_STEPS - 1;

@@ -1,11 +1,16 @@
-import { useState, useRef, useEffect, use } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import * as THREE from 'three';
 import { NAV_TARGET_DEFS } from '../../config/worldConfig';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { shipPosRef } from '../../context/ShipPos';
 import { orbitStatusRef } from '../../context/ShipState';
-import { clearSelectedTarget } from '../../context/TargetSelection';
-import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
+import { selectTarget, flashTarget, clearSelectedTarget, type TargetType } from '../../context/TargetSelection';
+import { getMagneticTargets } from '../../context/MagneticRegistry';
+import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
+import { getDriveSignatures } from '../../context/DriveSignatureRegistry';
+import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
+import { KM_PER_UNIT } from '../../config/commsConfig';
 import {
   autopilotActive,
   autopilotPhase,
@@ -13,16 +18,40 @@ import {
   enableAutopilot,
   disableAutopilot,
 } from '../../context/AutopilotState';
+import { NavTargetDialog, type NavTargetItem } from './NavTargetDialog';
 import './NavHUD.css';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
 const ORBIT_LABELS = new Map(NAV_TARGET_DEFS.map((p) => [p.id, p.label]));
+
+interface ScanContact {
+  id: string;
+  label: string;
+  sublabel: string;
+  type: TargetType;
+  getPosition: (v: THREE.Vector3) => THREE.Vector3;
+  getVelocity?: (v: THREE.Vector3) => THREE.Vector3;
+}
+
+function formatDist(distUnits: number): string {
+  const km = distUnits * KM_PER_UNIT;
+  if (km >= 1_000_000) return `${(km / 1_000_000).toFixed(2)} Gm`;
+  if (km >= 1_000) return `${(km / 1_000).toFixed(1)} Mm`;
+  return `${km.toFixed(0)} km`;
+}
 
 export const NavHUD = () => {
   const [targetId, setTargetId] = useState(navTargetIdRef.current);
   const [targetLabel, setTargetLabel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedObjName, setSelectedObjName] = useState<string | null>(null);
+  const [navTargetHighlight, setNavTargetHighlight] = useState(false);
+  const [highlightedContactId, setHighlightedContactId] = useState<string | undefined>();
+  const [navItems, setNavItems] = useState<NavTargetItem[]>(() =>
+    NAV_TARGETS.map((t) => ({ id: t.id, label: t.label })),
+  );
+  const [magneticContacts, setMagneticContacts] = useState<ScanContact[]>([]);
+  const [driveContacts, setDriveContacts] = useState<ScanContact[]>([]);
 
   // Coords display — mutated directly to avoid re-renders
   const coordsRef = useRef<HTMLSpanElement>(null!);
@@ -33,6 +62,13 @@ export const NavHUD = () => {
   const apsesTargetRef = useRef<HTMLSpanElement>(null!);
   const approachRef = useRef<HTMLSpanElement>(null!);
   const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
+
+  const prevNavSigRef = useRef('');
+  const prevMagSigRef = useRef('');
+  const prevDriveSigRef = useRef('');
+  const scanVec = useRef(new THREE.Vector3());
+  const navVec = useRef(new THREE.Vector3());
+  const velVec = useRef(new THREE.Vector3());
 
   useEffect(() => {
     let raf: number;
@@ -116,6 +152,88 @@ export const NavHUD = () => {
         autopilotBtnRef.current.textContent = active ? autopilotStatus.current : 'DISENGAGED';
         autopilotBtnRef.current.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
       }
+
+      // Nav target distances
+      {
+        const newNavItems: NavTargetItem[] = NAV_TARGETS.map((def) => {
+          let pos: THREE.Vector3;
+          if (def.orbit) {
+            const parentBody = gravityBodies.get(def.orbit.planetName);
+            pos = parentBody ? parentBody.position : navVec.current.set(...def.position);
+          } else {
+            const gravBody =
+              gravityBodies.get(def.id.charAt(0).toUpperCase() + def.id.slice(1)) ||
+              gravityBodies.get(def.id);
+            pos = gravBody ? gravBody.position : navVec.current.set(...def.position);
+          }
+          const dist = pos.distanceTo(shipPosRef.current);
+          return { id: def.id, label: def.label, distance: formatDist(dist) };
+        });
+        const navSig = newNavItems.map((i) => `${i.id}:${i.distance}`).join('|');
+        if (navSig !== prevNavSigRef.current) {
+          prevNavSigRef.current = navSig;
+          setNavItems(newNavItems);
+        }
+      }
+
+      // Magnetic contacts
+      if (magneticOnRef.current) {
+        const range = magneticScanRangeRef.current;
+        const targets = getMagneticTargets();
+        const inRange: ScanContact[] = [];
+        for (const t of targets) {
+          t.getPosition(scanVec.current);
+          const dist = scanVec.current.distanceTo(shipPosRef.current);
+          if (dist <= range) {
+            inRange.push({
+              id: t.id,
+              label: t.label,
+              sublabel: `MAG · ${formatDist(dist)}`,
+              type: 'magnetic',
+              getPosition: t.getPosition,
+              getVelocity: t.getVelocity,
+            });
+          }
+        }
+        const sig = inRange.map((c) => c.id).sort().join('|');
+        if (sig !== prevMagSigRef.current) {
+          prevMagSigRef.current = sig;
+          setMagneticContacts(inRange);
+        }
+      } else if (prevMagSigRef.current !== '') {
+        prevMagSigRef.current = '';
+        setMagneticContacts([]);
+      }
+
+      // Drive signature contacts
+      if (driveSignatureOnRef.current) {
+        const range = driveSignatureRangeRef.current;
+        const sigs = getDriveSignatures();
+        const inRange: ScanContact[] = [];
+        for (const s of sigs) {
+          s.getPosition(scanVec.current);
+          const dist = scanVec.current.distanceTo(shipPosRef.current);
+          if (dist <= range) {
+            inRange.push({
+              id: s.id,
+              label: s.label,
+              sublabel: `DRIVE SIG · ${formatDist(dist)}`,
+              type: 'ship',
+              getPosition: s.getPosition,
+              getVelocity: s.getVelocity,
+            });
+          }
+        }
+        const sig = inRange.map((c) => c.id).sort().join('|');
+        if (sig !== prevDriveSigRef.current) {
+          prevDriveSigRef.current = sig;
+          setDriveContacts(inRange);
+        }
+      } else if (prevDriveSigRef.current !== '') {
+        prevDriveSigRef.current = '';
+        setDriveContacts([]);
+      }
+
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -143,38 +261,82 @@ export const NavHUD = () => {
     return () => window.removeEventListener('SelectedTargetChanged', onSelectedTargetChanged);
   }, []);
 
+  // Tutorial highlight: pulse the nav target button when requested
+  useEffect(() => {
+    const onStart = () => setNavTargetHighlight(true);
+    const onStop = () => setNavTargetHighlight(false);
+    window.addEventListener('NavTargetHighlightStart', onStart);
+    window.addEventListener('NavTargetHighlightStop', onStop);
+    return () => {
+      window.removeEventListener('NavTargetHighlightStart', onStart);
+      window.removeEventListener('NavTargetHighlightStop', onStop);
+    };
+  }, []);
+
+  // Tutorial highlight: pulse a specific contact item in the dialog
+  useEffect(() => {
+    const onStart = (e: Event) => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      setHighlightedContactId(id);
+    };
+    const onStop = () => setHighlightedContactId(undefined);
+    window.addEventListener('NavContactHighlightStart', onStart);
+    window.addEventListener('NavContactHighlightStop', onStop);
+    return () => {
+      window.removeEventListener('NavContactHighlightStart', onStart);
+      window.removeEventListener('NavContactHighlightStop', onStop);
+    };
+  }, []);
+
   const currentTarget = NAV_TARGETS.find((t) => t.id === targetId);
   const displayLabel = selectedObjName ?? (currentTarget?.label ?? (targetLabel || '—'));
 
   const handleSelect = (id: string) => {
+    // Standard nav target
     const def = NAV_TARGETS.find((t) => t.id === id);
-    if (!def) return;
-    setTargetId(id);
-    setTargetLabel('');
-    setSelectedObjName(null);
-    clearSelectedTarget();
-    navTargetIdRef.current = id;
-    if (def.orbit) {
-      // Moon/satellite — navigate to the live position of the parent planet
-      const parentBody = gravityBodies.get(def.orbit.planetName);
-      if (parentBody) {
-        navTargetPosRef.current.copy(parentBody.position);
+    if (def) {
+      setTargetId(id);
+      setTargetLabel('');
+      setSelectedObjName(null);
+      clearSelectedTarget();
+      navTargetIdRef.current = id;
+      if (def.orbit) {
+        const parentBody = gravityBodies.get(def.orbit.planetName);
+        if (parentBody) {
+          navTargetPosRef.current.copy(parentBody.position);
+        } else {
+          navTargetPosRef.current.set(...def.position);
+        }
       } else {
-        navTargetPosRef.current.set(...def.position);
+        const gravBody =
+          gravityBodies.get(id.charAt(0).toUpperCase() + id.slice(1)) || gravityBodies.get(id);
+        if (gravBody) {
+          navTargetPosRef.current.copy(gravBody.position);
+        } else {
+          navTargetPosRef.current.set(...def.position);
+        }
       }
-    } else {
-      // If planet, use live center from gravityBodies
-      const gravBody =
-        gravityBodies.get(id.charAt(0).toUpperCase() + id.slice(1)) || gravityBodies.get(id);
-      if (gravBody) {
-        navTargetPosRef.current.copy(gravBody.position);
-      } else {
-        navTargetPosRef.current.set(...def.position);
+      if (autopilotActive.current) {
+        autopilotPhase.current = 'align';
       }
+      return;
     }
-    // Re-align to new target if autopilot is already active
-    if (autopilotActive.current) {
-      autopilotPhase.current = 'align';
+
+    // Scan contact (magnetic or drive)
+    const contact =
+      magneticContacts.find((c) => c.id === id) ?? driveContacts.find((c) => c.id === id);
+    if (contact) {
+      setTargetId(id);
+      setTargetLabel(contact.label);
+      navTargetIdRef.current = id;
+      contact.getPosition(navTargetPosRef.current);
+      const vel = contact.getVelocity ? contact.getVelocity(velVec.current) : undefined;
+      selectTarget(contact.label, vel, navTargetPosRef.current, id, contact.type);
+      flashTarget();
+      if (autopilotActive.current) {
+        autopilotPhase.current = 'align';
+      }
+      window.dispatchEvent(new CustomEvent('NavScanContactSelected', { detail: { id } }));
     }
   };
 
@@ -187,6 +349,17 @@ export const NavHUD = () => {
       window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: true } }));
     }
   };
+
+  const magneticItems: NavTargetItem[] = magneticContacts.map((c) => ({
+    id: c.id,
+    label: c.label,
+    sublabel: c.sublabel,
+  }));
+  const driveItems: NavTargetItem[] = driveContacts.map((c) => ({
+    id: c.id,
+    label: c.label,
+    sublabel: c.sublabel,
+  }));
 
   return (
     <>
@@ -202,7 +375,10 @@ export const NavHUD = () => {
         */}
           <div className="nav-target-group">
             <div className="nav-target-label">Nav Target</div>
-            <button className="nav-target-btn" onClick={() => setDialogOpen(true)}>
+            <button
+              className={`nav-target-btn${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
+              onClick={() => setDialogOpen(true)}
+            >
               {displayLabel}
             </button>
           </div>
@@ -250,10 +426,12 @@ export const NavHUD = () => {
       </div>
 
       {dialogOpen && (
-        <SelectionDialog
-          title="SELECT NAV TARGET"
-          items={NAV_TARGETS.map((t) => ({ id: t.id, label: t.label }))}
+        <NavTargetDialog
+          navItems={navItems}
+          magneticItems={magneticItems}
+          driveItems={driveItems}
           selectedId={targetId}
+          highlightId={highlightedContactId}
           onSelect={handleSelect}
           onClose={() => setDialogOpen(false)}
         />

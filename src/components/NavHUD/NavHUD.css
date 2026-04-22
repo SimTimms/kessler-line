@@ -78,6 +78,21 @@
   background: rgba(0, 200, 255, 0.08);
 }
 
+.nav-target-btn--highlight {
+  color: rgba(80, 255, 200, 0.95);
+  border-color: rgba(80, 255, 200, 0.7);
+  animation: nav-target-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes nav-target-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(80, 255, 200, 0.2), 0 0 0 1px rgba(80, 255, 200, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(80, 255, 200, 0.7), 0 0 0 1px rgba(80, 255, 200, 0.5);
+  }
+}
+
 .autopilot-active {
   color: rgba(80, 255, 160, 0.95);
   font-size: 8px;

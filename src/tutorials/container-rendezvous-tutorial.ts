@@ -29,6 +29,8 @@ import {
   SCRAPPER_PLAYER_OFFSET_X,
   SCRAPPER_PLAYER_OFFSET_Y,
   SCRAPPER_PLAYER_OFFSET_Z,
+  SCRAPPER_CONTAINER_ID,
+  SCRAPPER_DRIVE_SIG_ID,
 } from '../config/scrapperConfig';
 
 /** Derive a human-readable key label from a KeyboardEvent.code string. */
@@ -46,6 +48,9 @@ export type ContainerRondeViewHintPhase =
   | 'drifting'
   | 'final_approach'
   | 'captured'
+  | 'deactivate_scanner'
+  | 'activate_drive'
+  | 'nav_to_parent'
   | 'targeting_parent'
   | 'returning'
   | 'return_approach'
@@ -62,7 +67,7 @@ export const CONTAINER_RENDEZVOUZ_HOLD_HINT = `INCREASE VELOCITY TO ${targetMPS.
 export const CONTAINER_RENDEZVOUZ_SCANNER_HINT = 'ENABLE MAGNET SCANNER — SET TO MAX POWER';
 
 /** Hint 4 — shown once the magnet scanner is at max power. */
-export const CONTAINER_RENDEZVOUZ_APPROACH_HINT = `RELEASE ${codeToLabel(KEY_THRUST_REVERSE)} - CLICK CARGO POD`;
+export const CONTAINER_RENDEZVOUZ_APPROACH_HINT = `RELEASE ${codeToLabel(KEY_THRUST_REVERSE)} — SELECT CARGO POD AS NAV TARGET`;
 
 /** How long (ms) hint 3 stays on screen as a safety fallback. */
 export const CONTAINER_RENDEZVOUZ_APPROACH_HINT_DURATION = 15000;
@@ -88,14 +93,29 @@ export const CONTAINER_RENDEZVOUZ_FINAL_APPROACH_HINT = `SLOW TO 7 M/S - PRESS $
 )} TO REDUCE VELOCITY - MAKE CONTACT WITH CARGO POD TO ENGAGE MAG CLAMPS`;
 
 /** Hint 7 — shown once the cargo pod is magnetically clamped to the ship. */
-export const CONTAINER_RENDEZVOUZ_CAPTURED_HINT = `ROTATE USING ${codeToLabel(KEY_YAW_LEFT)} OR ${codeToLabel(KEY_YAW_RIGHT)} AND RETURN THE CARGO POD TO YOUR PARENT VESSEL`;
+export const CONTAINER_RENDEZVOUZ_CAPTURED_HINT = `CARGO POD SECURED — MAG CLAMPS ENGAGED`;
+
+/** Hint 7b — shown after cargo capture, prompting to power down magnet scanner. */
+export const CONTAINER_RENDEZVOUZ_DEACTIVATE_SCANNER_HINT =
+  'POWER DOWN MAGNET SCANNER — CONSERVE ELECTRICAL CHARGE';
+
+/** Hint 7c — shown after magnet off, prompting to enable drive scanner at max. */
+export const CONTAINER_RENDEZVOUZ_ACTIVATE_DRIVE_HINT =
+  'ENABLE DRIVE SCANNER — POWER TO MAXIMUM TO DETECT PARENT VESSEL';
+
+/** Hint 7d — shown after drive at 5, prompting to select parent as nav target. */
+export const CONTAINER_RENDEZVOUZ_NAV_TO_PARENT_HINT = 'SELECT PARENT VESSEL AS NAV TARGET';
 
 /** Hint 8 — shown after capture, prompting the player to target the parent vessel. */
 export const CONTAINER_RENDEZVOUZ_TARGET_PARENT_HINT = 'CLICK ON THE PARENT SHIP TO TARGET IT';
 
+/** Hint 9b — shown 5 s into the return journey, pointing out the trajectory line. */
+export const CONTAINER_RENDEZVOUZ_TRAJECTORY_HINT =
+  'YOUR TRAJECTORY LINE SHOWS WHERE YOU ARE HEADING — USE THRUST TO AIM IT AT YOUR TARGET';
+
 /** Hint 9 — shown once the player starts moving toward the parent vessel. */
 export const CONTAINER_RENDEZVOUZ_RETURNING_HINT =
-  `AIM AT PARENT VESSEL — ${codeToLabel(KEY_THRUST_FORWARD)} TO THRUST — ` +
+  `AIM AT PARENT VESSEL — ${codeToLabel(KEY_THRUST_REVERSE)} TO THRUST — ` +
   `USE ${codeToLabel(KEY_STRAFE_LEFT)}/${codeToLabel(KEY_STRAFE_RIGHT)} TO ALIGN TRAJECTORY INDICATOR WITH VESSEL`;
 
 /** Hint 10 — shown when within close approach range of the parent vessel. */
@@ -210,48 +230,107 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
       brakingTimers = [releaseTimer, captainTimer, enableTimer, dialogueTimer];
     };
 
+    const advanceToDocking = () => {
+      if (hintPhase.current !== 'approach') return;
+      hintPhase.current = 'docking';
+      dockingHintShownAt.current = Date.now();
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_DOCKING_HINT;
+      window.dispatchEvent(new CustomEvent('NavTargetHighlightStop'));
+    };
+
     const onMagnetMaxed = () => {
       if (hintPhase.current !== 'scanner') return;
       hintPhase.current = 'approach';
       shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_APPROACH_HINT;
       window.dispatchEvent(new CustomEvent('MagnetHighlightStop'));
+      window.dispatchEvent(new CustomEvent('NavTargetHighlightStart'));
       window.setTimeout(() => {
         if (hintPhase.current === 'approach') {
           shipInstructionMessage.current = '';
           hintPhase.current = 'done';
+          window.dispatchEvent(new CustomEvent('NavTargetHighlightStop'));
         }
       }, CONTAINER_RENDEZVOUZ_APPROACH_HINT_DURATION);
     };
 
     const onCargoPodTargeted = () => {
-      hintPhase.current = 'docking';
-      dockingHintShownAt.current = Date.now();
-      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_DOCKING_HINT;
+      advanceToDocking();
+    };
+
+    const onNavScanContactSelected = (e: Event) => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      if (id === SCRAPPER_CONTAINER_ID) advanceToDocking();
+      if (id === SCRAPPER_DRIVE_SIG_ID && hintPhase.current === 'nav_to_parent') {
+        startReturningPhase();
+      }
     };
 
     let targetingTimer: ReturnType<typeof setTimeout> | null = null;
+    let trajectoryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const startReturningPhase = () => {
+      hintPhase.current = 'returning';
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_RETURNING_HINT;
+      window.dispatchEvent(new CustomEvent('NavTargetHighlightStop'));
+      window.dispatchEvent(new CustomEvent('NavContactHighlightStop'));
+      if (trajectoryTimer !== null) window.clearTimeout(trajectoryTimer);
+      trajectoryTimer = window.setTimeout(() => {
+        if (hintPhase.current === 'returning' || hintPhase.current === 'return_approach') {
+          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_TRAJECTORY_HINT;
+          window.dispatchEvent(new CustomEvent('TrajectoryHighlightStart'));
+        }
+      }, 5000);
+    };
 
     const onCargoContained = () => {
       hintPhase.current = 'captured';
       shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_CAPTURED_HINT;
       targetingTimer = window.setTimeout(() => {
         if (hintPhase.current === 'captured') {
-          hintPhase.current = 'targeting_parent';
-          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_TARGET_PARENT_HINT;
+          hintPhase.current = 'deactivate_scanner';
+          shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_DEACTIVATE_SCANNER_HINT;
+          window.dispatchEvent(new CustomEvent('MagnetHighlightStart'));
         }
       }, 4000);
     };
 
+    const onMagnetScannerOff = () => {
+      if (hintPhase.current !== 'deactivate_scanner') return;
+      hintPhase.current = 'activate_drive';
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_ACTIVATE_DRIVE_HINT;
+      window.dispatchEvent(new CustomEvent('MagnetHighlightStop'));
+      window.dispatchEvent(new CustomEvent('DriveHighlightStart'));
+    };
+
+    const onDriveAt5 = () => {
+      if (hintPhase.current !== 'activate_drive') return;
+      hintPhase.current = 'nav_to_parent';
+      shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_NAV_TO_PARENT_HINT;
+      window.dispatchEvent(new CustomEvent('DriveHighlightStop'));
+      window.dispatchEvent(new CustomEvent('NavTargetHighlightStart'));
+      window.dispatchEvent(
+        new CustomEvent('NavContactHighlightStart', { detail: { id: SCRAPPER_DRIVE_SIG_ID } })
+      );
+    };
+
     const onScrapperTargeted = () => {
-      if (hintPhase.current === 'targeting_parent' || hintPhase.current === 'captured') {
-        hintPhase.current = 'returning';
-        shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_RETURNING_HINT;
+      if (
+        hintPhase.current === 'targeting_parent' ||
+        hintPhase.current === 'nav_to_parent' ||
+        hintPhase.current === 'captured'
+      ) {
+        startReturningPhase();
       }
     };
 
     const onCargoBayCapture = () => {
       hintPhase.current = 'done';
       shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_RETURN_COMPLETE_HINT;
+      window.dispatchEvent(new CustomEvent('TrajectoryHighlightStop'));
+      if (!scrapperAttackedRef.current) {
+        scrapperAttackedRef.current = true;
+        window.dispatchEvent(new CustomEvent('ScrapperUnderAttack'));
+      }
       window.setTimeout(() => {
         if (hintPhase.current === 'done') {
           shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_DOCK_RETURN_HINT;
@@ -261,7 +340,10 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
 
     window.addEventListener('ScrapperBrakingStarted', onBrakingStarted);
     window.addEventListener('MagnetScannerMaxed', onMagnetMaxed);
+    window.addEventListener('MagnetScannerOff', onMagnetScannerOff);
+    window.addEventListener('DriveSignatureAt5', onDriveAt5);
     window.addEventListener('CargoPodTargeted', onCargoPodTargeted);
+    window.addEventListener('NavScanContactSelected', onNavScanContactSelected);
     window.addEventListener('CargoContained', onCargoContained);
     window.addEventListener('ScrapperTargeted', onScrapperTargeted);
     window.addEventListener('CargoBayCapture', onCargoBayCapture);
@@ -269,10 +351,18 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
     return () => {
       brakingTimers.forEach((t) => window.clearTimeout(t));
       if (targetingTimer !== null) window.clearTimeout(targetingTimer);
+      if (trajectoryTimer !== null) window.clearTimeout(trajectoryTimer);
       window.dispatchEvent(new CustomEvent('MagnetHighlightStop'));
+      window.dispatchEvent(new CustomEvent('DriveHighlightStop'));
+      window.dispatchEvent(new CustomEvent('NavTargetHighlightStop'));
+      window.dispatchEvent(new CustomEvent('NavContactHighlightStop'));
+      window.dispatchEvent(new CustomEvent('TrajectoryHighlightStop'));
       window.removeEventListener('ScrapperBrakingStarted', onBrakingStarted);
       window.removeEventListener('MagnetScannerMaxed', onMagnetMaxed);
+      window.removeEventListener('MagnetScannerOff', onMagnetScannerOff);
+      window.removeEventListener('DriveSignatureAt5', onDriveAt5);
       window.removeEventListener('CargoPodTargeted', onCargoPodTargeted);
+      window.removeEventListener('NavScanContactSelected', onNavScanContactSelected);
       window.removeEventListener('CargoContained', onCargoContained);
       window.removeEventListener('ScrapperTargeted', onScrapperTargeted);
       window.removeEventListener('CargoBayCapture', onCargoBayCapture);
@@ -312,21 +402,13 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
         .add(scrapperWorldPos);
       const distToBay = shipPosRef.current.distanceTo(_bayWorldPos);
 
-      // Trigger Neptune railgun attack on the parent vessel as player approaches
-      if (
-        !scrapperAttackedRef.current &&
-        distToBay < CONTAINER_RENDEZVOUZ_SCRAPPER_ATTACK_DISTANCE
-      ) {
-        scrapperAttackedRef.current = true;
-        window.dispatchEvent(new CustomEvent('ScrapperUnderAttack'));
-      }
-
       if (
         hintPhase.current === 'returning' &&
         distToBay < CONTAINER_RENDEZVOUZ_RETURN_APPROACH_DISTANCE
       ) {
         hintPhase.current = 'return_approach';
         shipInstructionMessage.current = CONTAINER_RENDEZVOUZ_RETURN_APPROACH_HINT;
+        window.dispatchEvent(new CustomEvent('TrajectoryHighlightStop'));
       }
     }
 
