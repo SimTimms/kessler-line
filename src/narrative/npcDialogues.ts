@@ -1227,6 +1227,84 @@ export const DIALOGUE_TREES: DialogueTree[] = [
       },
     },
   },
+  // ── Tree 7: Support drone ──────────────────────────────────────────────────
+  // Placeholder — autonomous drone response. Expand with faction-specific
+  // behaviour, mission status reporting, and assistance requests in future.
+  {
+    id: 'support-drone',
+    captainName: 'DRONE UNIT',
+    vesselName: 'SUPPORT DRONE',
+    openingTurnId: 'intro',
+    conditions: {
+      shipClasses: ['support-drone'],
+    },
+    turns: {
+      intro: {
+        id: 'intro',
+        npcText:
+          'DRONE UNIT RESPONDING. Comms channel open. State request.',
+        playerOptions: [
+          {
+            id: 'intro-status',
+            label: 'STATUS REPORT',
+            text: 'Request status report.',
+            nextTurnId: 'status',
+          },
+          {
+            id: 'intro-assist',
+            label: 'REQUEST ASSISTANCE',
+            text: 'I need assistance. Can you render aid?',
+            nextTurnId: 'assist',
+          },
+          {
+            id: 'intro-close',
+            label: 'DISREGARD',
+            text: 'Disregard. Closing channel.',
+            nextTurnId: 'close',
+          },
+        ],
+      },
+      status: {
+        id: 'status',
+        npcText:
+          'Unit nominal. Power cells within operating range. No active tasking. Standing by.',
+        playerOptions: [
+          {
+            id: 'status-ack',
+            label: 'ACKNOWLEDGED',
+            text: 'Copy that. Carry on.',
+            nextTurnId: null,
+          },
+        ],
+      },
+      assist: {
+        id: 'assist',
+        npcText:
+          'Assistance request logged. Unable to render aid without authorised dispatch order. Contact your nearest station for tasking assignment.',
+        playerOptions: [
+          {
+            id: 'assist-ack',
+            label: 'UNDERSTOOD',
+            text: 'Understood.',
+            nextTurnId: null,
+          },
+        ],
+      },
+      close: {
+        id: 'close',
+        npcText: 'Channel closed.',
+        playerOptions: [
+          {
+            id: 'close-ack',
+            label: 'OUT',
+            text: 'Out.',
+            nextTurnId: null,
+          },
+        ],
+      },
+    },
+  },
+
   // ── Inbox message trees (kind:'inbox' — excluded from ship assignment) ──────
   MSG_DISPATCH_INTRO,
   MSG_FAMILY_EARTH,

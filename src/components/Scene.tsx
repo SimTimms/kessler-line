@@ -1,5 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
 import { useGraphicsQuality } from '../hooks/useGraphicsQuality';
 import { getGraphicsSettings } from '../context/GraphicsState';
 import * as THREE from 'three';
@@ -33,6 +34,7 @@ import { shipPosRef } from '../context/ShipPos';
 import AutopilotController from './AutopilotController';
 import NeptuneNoFlyRing from './Planets/Neptune/NeptuneNoFlyRing';
 import NeptuneDustRing from './Planets/Neptune/NeptuneDustRing';
+import NeptuneInnerWispyRing from './Planets/Neptune/NeptuneInnerWispyRing';
 import RailgunWarning from './Combat/RailgunWarning';
 import NebulaClouds from './Environment/NebulaClouds';
 import StartZoneAsteroidCluster from './Environment/StartZoneAsteroidCluster';
@@ -59,6 +61,13 @@ import {
 } from '../config/particleConfig';
 import { OrbitingFuelStation } from './OrbitingFuelStation';
 import RadiationZones from './RadiationZones';
+import { advanceLoadStage, useLoadStage } from '../context/LoadStageStore';
+
+const STAGE_2_GLB_URLS = ['/space_station.glb', '/fuel-station.glb', '/container.glb'] as const;
+const STAGE_3_GLB_URLS = ['/untitled.gltf', '/large_ship.glb', '/supportDrone.glb'] as const;
+const STAGE_4_GLB_URLS = ['/shuttle.glb'] as const;
+
+// ── Internal helpers ──────────────────────────────────────────────────────────
 
 // Captures the R3F camera into a shared module-level ref so DOM overlays
 // (MagneticHUD) can project 3D positions to screen space without being
@@ -96,10 +105,41 @@ function HeavyEnvironment() {
   );
 }
 
+// Mounts only when its parent Suspense boundary has fully resolved.
+// Calling advanceLoadStage() here signals the loading screen to progress.
+function StageAdvancer({ toStage }: { toStage: number }) {
+  useEffect(() => {
+    advanceLoadStage(toStage);
+  }, [toStage]);
+  return null;
+}
+
+function ProgressiveAssetPreloader({ loadStage }: { loadStage: number }) {
+  // Preload stage-2 world assets as soon as the scene mounts so Stage 2 appears faster.
+  useEffect(() => {
+    STAGE_2_GLB_URLS.forEach((url) => useGLTF.preload(url));
+  }, []);
+
+  useEffect(() => {
+    if (loadStage < 1) return;
+    STAGE_3_GLB_URLS.forEach((url) => useGLTF.preload(url));
+  }, [loadStage]);
+
+  useEffect(() => {
+    if (loadStage < 2) return;
+    STAGE_4_GLB_URLS.forEach((url) => useGLTF.preload(url));
+  }, [loadStage]);
+
+  return null;
+}
+
+// ── Scene ─────────────────────────────────────────────────────────────────────
+
 export default function Scene() {
   const quality = useGraphicsQuality();
   const settings = getGraphicsSettings();
   const { shipInitPos, shipInitRot, fuelStationOrbitRadius, fuelStationOrbitSpeed } = useShipInit();
+  const loadStage = useLoadStage();
 
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const stationGroupRef = useRef<THREE.Group | null>(null);
@@ -115,89 +155,130 @@ export default function Scene() {
         toneMappingExposure: TONE_MAPPING_EXPOSURE,
       }}
     >
-      {/* Baseline ambient light — ensures the ship is always visible regardless of
-          post-processing. On High quality the Bloom also brightens the scene, but
-          removing the EffectComposer (Low quality) would otherwise leave the ship
-          completely dark with only the distant sun point-light. */}
+      {/* ── Always-on: lights, fog, physics, camera ─────────────────────── */}
       <ambientLight intensity={0.18} />
-      <Spaceship
-        url="/shuttle.glb"
-        shipGroupRef={spaceshipGroupRef}
-        initialPosition={shipInitPos}
-        initialRotation={shipInitRot}
-        enableShipExplosion
-        shipParticleCloudProps={{
-          count: SHIP_PARTICLE_COUNT,
-          enableInEarthField: true,
-          enableImpactSound: true,
-          enableSpeedGate: true,
-          speedGateMin: SHIP_PARTICLE_SPEED_MIN,
-          speedGateMax: SHIP_PARTICLE_SPEED_MAX,
-          speedGateOverridesField: true,
-        }}
-      />
+      <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
       <CameraCapture />
       <SaveSystemBridge />
-      <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
-
-      {/* Asteroid Dock — placeholder cube until GLB model is ready */}
-      <mesh position={ASTEROID_DOCK_DEF.position}>
-        <boxGeometry args={[80, 80, 80]} />
-        <meshStandardMaterial color="#ff9900" emissive="#331800" />
-      </mesh>
-
-      <group position={SPACE_STATION_DEF.position}>
-        <SpaceStation
-          url="/space_station.glb"
-          scale={0.004}
-          collisionRadius={25}
-          stationGroupRef={stationGroupRef}
-        />
-        <DockingBay
-          stationId="space-station"
-          dimensions={new THREE.Vector3(40, 1, 10)}
-          rotation={[0, 0, 0]}
-        />
-        <RadioBeacon />
-      </group>
-      <OrbitingFuelStation
-        orbitRadius={fuelStationOrbitRadius}
-        orbitSpeed={fuelStationOrbitSpeed}
-        stationGroupRef={stationGroupRef}
-      />
-      <RadioBeacons beaconGroupRef={beaconGroupRef} />
-      <LaserRay
-        shipGroupRef={spaceshipGroupRef}
-        stationGroupRef={stationGroupRef}
-        beaconGroupRef={beaconGroupRef}
-      />
-      <SolarSystem scale={SOLAR_SYSTEM_SCALE} />
-      <MarsSystem />
-      <NeptuneNoFlyRing />
-      <NeptuneDustRing />
-      <BrokenVenusMoon />
-      <RadiationZones />
+      <ProgressiveAssetPreloader loadStage={loadStage} />
       <SunGravity />
-      <StartZoneAsteroidCluster center={START_ZONE_CENTER} />
-      <SpaceDebris />
-      <CargoContainerField />
-      <ScrapperCargoContainer />
-      <ScrapperRailgunFX />
-      <ScrapperExplosion />
-      <EjectedCargo />
-      <ProximityHighlight />
-      <RailgunWarning shipGroupRef={spaceshipGroupRef} />
-      <AIShip id="0" url="/untitled.gltf" scale={1} position={[-401000, 0, 0]} />
-      <AIScrapper url="/large_ship.glb" />
-      <GhostFleet />
-      <SupportDroneFleet />
-      <DistressBeaconField />
-      {/* Heavy environment — remounts on quality change to reset instance counts */}
-      <HeavyEnvironment key={quality} />
-      {settings.postProcessingEnabled && <ShipDepthOfField key={quality} />}
-      <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
-      <CinematicController />
       <AutopilotController />
+      {/* Camera follows shipPosRef (set by useShipInit before ship mounts) */}
+      <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
+
+      {/* ── Stage 1: Solar system + heavy environment ────────────────────── */}
+      {/* SolarSystem suspends on planet textures (earth.jpg, neptune.jpg…).  */}
+      {/* StageAdvancer mounts only after all siblings resolve → stage → 1.  */}
+      <Suspense fallback={null}>
+        <SolarSystem scale={SOLAR_SYSTEM_SCALE} />
+        <HeavyEnvironment key={quality} />
+        <StageAdvancer toStage={1} />
+      </Suspense>
+
+      {/* ── Stage 2: Static world objects (no player interaction needed yet) */}
+      {loadStage >= 1 && (
+        <>
+          {/* Non-suspending world geometry — render immediately at stage 1 */}
+          <MarsSystem />
+          <NeptuneNoFlyRing />
+          <NeptuneDustRing />
+          <NeptuneInnerWispyRing />
+          <BrokenVenusMoon />
+          <RadiationZones />
+          <StartZoneAsteroidCluster center={START_ZONE_CENTER} />
+          <SpaceDebris />
+          <DistressBeaconField />
+          <RadioBeacons beaconGroupRef={beaconGroupRef} />
+          {/* Asteroid Dock placeholder cube */}
+          <mesh position={ASTEROID_DOCK_DEF.position}>
+            <boxGeometry args={[80, 80, 80]} />
+            <meshStandardMaterial color="#ff9900" emissive="#331800" />
+          </mesh>
+
+          {/* GLB-based world objects — suspend until models load → stage → 2 */}
+          <Suspense fallback={null}>
+            <group position={SPACE_STATION_DEF.position}>
+              <SpaceStation
+                url="/space_station.glb"
+                scale={0.004}
+                collisionRadius={25}
+                stationGroupRef={stationGroupRef}
+              />
+              <DockingBay
+                stationId="space-station"
+                dimensions={new THREE.Vector3(40, 1, 10)}
+                rotation={[0, 0, 0]}
+              />
+              <RadioBeacon />
+            </group>
+            <OrbitingFuelStation
+              orbitRadius={fuelStationOrbitRadius}
+              orbitSpeed={fuelStationOrbitSpeed}
+              stationGroupRef={stationGroupRef}
+            />
+            <CargoContainerField />
+            <StageAdvancer toStage={2} />
+          </Suspense>
+        </>
+      )}
+
+      {/* ── Stage 3: NPC vessels ─────────────────────────────────────────── */}
+      {/* By the time stage 2 completes, SolarSystem has run at least one     */}
+      {/* useFrame tick, so solarPlanetPositions['Neptune'] is populated.      */}
+      {/* The scrapper's initial orientation fix (slerp guard) is also active. */}
+      {loadStage >= 2 && (
+        <>
+          {/* Non-suspending NPC components */}
+          <GhostFleet />
+          <ScrapperRailgunFX />
+          <ScrapperExplosion />
+
+          {/* GLB-based NPC models → stage → 3 */}
+          <Suspense fallback={null}>
+            <AIShip id="0" url="/untitled.gltf" scale={1} position={[-401000, 0, 0]} />
+            <AIScrapper url="/large_ship.glb" />
+            <ScrapperCargoContainer />
+            <SupportDroneFleet />
+            <StageAdvancer toStage={3} />
+          </Suspense>
+        </>
+      )}
+
+      {/* ── Stage 4: Player ship + combat systems ────────────────────────── */}
+      {loadStage >= 3 && (
+        <Suspense fallback={null}>
+          <Spaceship
+            url="/shuttle.glb"
+            shipGroupRef={spaceshipGroupRef}
+            initialPosition={shipInitPos}
+            initialRotation={shipInitRot}
+            enableShipExplosion
+            shipParticleCloudProps={{
+              count: SHIP_PARTICLE_COUNT,
+              enableInEarthField: true,
+              enableImpactSound: true,
+              enableSpeedGate: true,
+              speedGateMin: SHIP_PARTICLE_SPEED_MIN,
+              speedGateMax: SHIP_PARTICLE_SPEED_MAX,
+              speedGateOverridesField: true,
+            }}
+          />
+          <EjectedCargo />
+          <LaserRay
+            shipGroupRef={spaceshipGroupRef}
+            stationGroupRef={stationGroupRef}
+            beaconGroupRef={beaconGroupRef}
+          />
+          <RailgunWarning shipGroupRef={spaceshipGroupRef} />
+          <ProximityHighlight />
+          {/* CinematicController starts its intro timers on mount — fire only
+              once the player ship is in the scene and the world is fully set up */}
+          <CinematicController />
+          {settings.postProcessingEnabled && <ShipDepthOfField key={quality} />}
+          <StageAdvancer toStage={4} />
+        </Suspense>
+      )}
+
       {/*<CollisionDebug />*/}
     </Canvas>
   );

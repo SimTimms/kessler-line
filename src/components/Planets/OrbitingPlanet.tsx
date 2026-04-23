@@ -303,8 +303,7 @@ function buildNeptuneBumpMap(): THREE.CanvasTexture {
     ctx.beginPath();
     ctx.moveTo(0, cy);
     for (let x = 0; x < W; x += 8) {
-      const wave =
-        Math.sin(x * 0.006 + rand() * 6) * 18 + Math.sin(x * 0.013 + rand() * 4) * 9;
+      const wave = Math.sin(x * 0.006 + rand() * 6) * 18 + Math.sin(x * 0.013 + rand() * 4) * 9;
       ctx.lineTo(x, cy + wave);
     }
     const v = rand() > 0.5 ? 150 : 105;
@@ -444,6 +443,8 @@ export default function OrbitingPlanet({
   const spinRef = useRef<THREE.Group>(null);
   const planetCenterRef = useRef<THREE.Group>(null);
   const meshVisRef = useRef<THREE.Group>(null);
+  const planetMeshRef = useRef<THREE.Mesh>(null);
+  const glowSpriteRef = useRef<THREE.Sprite>(null);
   const prevWorldPosRef = useRef(new THREE.Vector3());
   const hasPrevWorldPosRef = useRef(false);
   const texture = useTexture(
@@ -487,6 +488,46 @@ export default function OrbitingPlanet({
     if (planetName === 'Neptune') return buildNeptuneBumpMap();
     return buildMarsBumpMap();
   }, [useBumpMap, planetName]);
+
+  const isNeptune = planetName === 'Neptune';
+  const materialColor = isNeptune ? '#84c8ff' : color;
+  const materialEmissive = showColonies ? '#ffb050' : isNeptune ? '#123d8a' : emissive;
+  const materialEmissiveIntensity = showColonies ? 1.5 : isNeptune ? 1.15 : 1.0;
+  const materialRoughness = isNeptune ? 0.62 : 0.8;
+  const materialBumpScale = useBumpMap ? (isNeptune ? -0.35 : -0.6) : 0;
+  const glowOpacity = isNeptune ? 0.028 : 0.01;
+  const neptuneRimMaterial = useMemo(() => {
+    if (!isNeptune) return null;
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color('#46f4ff') },
+        uIntensity: { value: 1.8 },
+      },
+      vertexShader: `
+        varying vec3 vNormalW;
+        void main() {
+          vNormalW = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vNormalW;
+        uniform vec3 uColor;
+        uniform float uIntensity;
+        void main() {
+          float lit = max(dot(normalize(vNormalW), vec3(-1.0, 0.0, 0.0)), 0.0);
+          float band = smoothstep(0.05, 0.95, lit);
+          float alpha = pow(band, 2.2) * 0.55;
+          gl_FragColor = vec4(uColor * band * uIntensity, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.FrontSide,
+      fog: false,
+    });
+  }, [isNeptune]);
 
   const glowTexture = useMemo(() => {
     const size = 256;
@@ -537,6 +578,12 @@ export default function OrbitingPlanet({
     gravityOrbitAltitude,
   ]);
 
+  useEffect(() => {
+    return () => {
+      neptuneRimMaterial?.dispose();
+    };
+  }, [neptuneRimMaterial]);
+
   useFrame(({ camera }, delta) => {
     if (orbitRef.current) {
       orbitRef.current.rotation.y += orbitalSpeed * delta;
@@ -571,7 +618,8 @@ export default function OrbitingPlanet({
         planetCenterRef.current.getWorldPosition(_planetWorldPos);
       }
       camera.getWorldPosition(_camPos);
-      meshVisRef.current.visible = _camPos.distanceTo(_planetWorldPos) < VISIBILITY_DIST;
+      const visibilityDist = isNeptune ? Number.POSITIVE_INFINITY : VISIBILITY_DIST;
+      meshVisRef.current.visible = _camPos.distanceTo(_planetWorldPos) < visibilityDist;
     }
   });
 
@@ -579,14 +627,14 @@ export default function OrbitingPlanet({
     <group ref={orbitRef}>
       <group ref={planetCenterRef} position={[orbitRadius, 0, 0]}>
         {/* Background glow billboard — always faces camera, additive blending, never culled */}
-        <sprite scale={[radius * 65, radius * 65, 1]} frustumCulled={false}>
+        <sprite ref={glowSpriteRef} scale={[radius * 65, radius * 65, 1]} frustumCulled={false}>
           <spriteMaterial
             map={glowTexture}
             color={glowColor ?? color}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             transparent
-            opacity={0.01}
+            opacity={glowOpacity}
             fog={false}
           />
         </sprite>
@@ -595,20 +643,26 @@ export default function OrbitingPlanet({
           {/* Axial tilt applied once; spin group rotates around the tilted axis */}
           <group rotation-x={axialTilt}>
             <group ref={spinRef}>
-              <mesh>
+              <mesh ref={planetMeshRef}>
                 <sphereGeometry args={[radius, 64, 64]} />
                 <meshStandardMaterial
-                  color={color}
-                  emissive={showColonies ? '#ffb050' : emissive}
+                  color={materialColor}
+                  emissive={materialEmissive}
                   emissiveMap={coloniesTexture}
-                  emissiveIntensity={showColonies ? 1.5 : 1.0}
-                  roughness={0.8}
+                  emissiveIntensity={materialEmissiveIntensity}
+                  roughness={materialRoughness}
                   map={textureUrl ? texture : null}
                   bumpMap={bumpTexture}
-                  bumpScale={useBumpMap ? -0.6 : 0}
+                  bumpScale={materialBumpScale}
                   fog={false}
                 />
               </mesh>
+              {isNeptune && neptuneRimMaterial && (
+                <mesh scale={[1.018, 1.018, 1.018]}>
+                  <sphereGeometry args={[radius, 64, 64]} />
+                  <primitive object={neptuneRimMaterial} attach="material" />
+                </mesh>
+              )}
 
               {rings && (
                 <mesh rotation-x={Math.PI / 2}>

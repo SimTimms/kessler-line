@@ -37,7 +37,8 @@ export type ShipClass =
   | 'tug'
   | 'utility'
   | 'maintenance'
-  | 'independent-trader';
+  | 'independent-trader'
+  | 'support-drone';
 
 export type ShipRegion =
   | 'Neptune System'
@@ -167,6 +168,7 @@ const CLASS_AGENDAS: Record<ShipClass, ShipAgenda[]> = {
   tug: ['transiting', 'repairing', 'drifting'],
   utility: ['repairing', 'transiting', 'loitering'],
   maintenance: ['repairing', 'loitering', 'transiting'],
+  'support-drone': ['loitering', 'patrolling', 'transiting'],
 };
 
 const CLASS_WILLINGNESS: Record<ShipClass, ShipWillingness[]> = {
@@ -184,6 +186,7 @@ const CLASS_WILLINGNESS: Record<ShipClass, ShipWillingness[]> = {
   tug: ['brief', 'talkative', 'silent'],
   utility: ['talkative', 'brief', 'silent'],
   maintenance: ['brief', 'silent', 'talkative'],
+  'support-drone': ['brief', 'brief', 'silent'],
 };
 
 // Agendas that imply the ship is going somewhere
@@ -235,6 +238,7 @@ export function formatShipClass(c: ShipClass): string {
     tug: 'TUG',
     utility: 'UTILITY',
     maintenance: 'MAINTENANCE',
+    'support-drone': 'SUPPORT DRONE',
   };
   return map[c];
 }
@@ -260,7 +264,9 @@ export function formatAgenda(a: ShipAgenda): string {
 // ── Profile generation ─────────────────────────────────────────────────────────
 
 function generateRecord(shipId: string, vesselName: string): ShipRecord {
-  const shipClass = weightedRandom(CLASS_POOL);
+  const shipClass: ShipClass = shipId.startsWith('support-drone-')
+    ? 'support-drone'
+    : weightedRandom(CLASS_POOL);
   const faction = weightedRandom(FACTION_POOL);
   const agenda = pick(CLASS_AGENDAS[shipClass]);
   const willingness = pick(CLASS_WILLINGNESS[shipClass]);

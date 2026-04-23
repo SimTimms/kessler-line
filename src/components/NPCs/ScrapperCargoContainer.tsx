@@ -40,11 +40,18 @@ import { CONTAINER_RENDEZVOUZ_BAY_CAPTURE_RADIUS } from '../../tutorials/contain
 const RELEASE_DRIFT_SPEED = 30;
 /** How long (ms) after spawning before the player can capture the container. */
 const SPAWN_CAPTURE_COOLDOWN_MS = 8000;
+/** Base tumble rates (rad/s) for the ejected cargo pod. */
+const TUMBLE_RATE_X = 0.9;
+const TUMBLE_RATE_Y = 1.3;
+const TUMBLE_RATE_Z = 0.7;
+/** Random variation per axis applied on each release event (0.25 = +/-25%). */
+const TUMBLE_VARIANCE = 0.25;
 
 const _portPos = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
 const _forward = new THREE.Vector3();
 const _bayWorldPos = new THREE.Vector3();
+const _deltaSpinQuat = new THREE.Quaternion();
 
 export default function ScrapperCargoContainer() {
   const { scene } = useGLTF('/container.glb') as { scene: THREE.Group };
@@ -54,6 +61,7 @@ export default function ScrapperCargoContainer() {
   const posRef = useRef(new THREE.Vector3());
   const velRef = useRef(new THREE.Vector3());
   const quatRef = useRef(new THREE.Quaternion());
+  const spinRateRef = useRef(new THREE.Vector3(TUMBLE_RATE_X, TUMBLE_RATE_Y, TUMBLE_RATE_Z));
   const activeRef = useRef(false);
   const capturedRef = useRef(false);
   const releaseCooldownUntil = useRef(0);
@@ -94,6 +102,7 @@ export default function ScrapperCargoContainer() {
       releaseCooldownUntil.current = performance.now() + 3000;
       const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(shipQuaternion);
       velRef.current.copy(shipVelocity).addScaledVector(forward, CONTAINER_RELEASE_IMPULSE);
+      spinRateRef.current.set(TUMBLE_RATE_X, TUMBLE_RATE_Y, TUMBLE_RATE_Z);
       window.dispatchEvent(
         new CustomEvent('CargoReleased', { detail: { id: SCRAPPER_CONTAINER_ID } })
       );
@@ -114,6 +123,11 @@ export default function ScrapperCargoContainer() {
       // Spawn 30 units in that direction
       posRef.current.copy(scrapperWorldPos).addScaledVector(_forward, 30);
       quatRef.current.copy(scrapperWorldQuat);
+      spinRateRef.current.set(
+        TUMBLE_RATE_X * (1 + (Math.random() * 2 - 1) * TUMBLE_VARIANCE),
+        TUMBLE_RATE_Y * (1 + (Math.random() * 2 - 1) * TUMBLE_VARIANCE),
+        TUMBLE_RATE_Z * (1 + (Math.random() * 2 - 1) * TUMBLE_VARIANCE)
+      );
 
       // Eject at drift speed in the same direction
       velRef.current.copy(_forward).multiplyScalar(RELEASE_DRIFT_SPEED);
@@ -157,6 +171,7 @@ export default function ScrapperCargoContainer() {
       posRef.current.copy(_bayWorldPos);
       groupRef.current.position.copy(_bayWorldPos);
       groupRef.current.quaternion.copy(scrapperWorldQuat);
+      quatRef.current.copy(scrapperWorldQuat);
       return;
     }
 
@@ -173,6 +188,7 @@ export default function ScrapperCargoContainer() {
       posRef.current.copy(_portPos);
       groupRef.current.position.copy(_portPos);
       groupRef.current.quaternion.copy(shipQuaternion);
+      quatRef.current.copy(shipQuaternion);
       return;
     }
 
@@ -187,6 +203,15 @@ export default function ScrapperCargoContainer() {
       posRef.current.addScaledVector(velRef.current, delta);
       groupRef.current.position.copy(posRef.current);
     }
+    _deltaSpinQuat.setFromEuler(
+      new THREE.Euler(
+        spinRateRef.current.x * delta,
+        spinRateRef.current.y * delta,
+        spinRateRef.current.z * delta
+      )
+    );
+    quatRef.current.multiply(_deltaSpinQuat).normalize();
+    groupRef.current.quaternion.copy(quatRef.current);
 
     // ── Docking-port capture check ────────────────────────────────────────────
     _portPos

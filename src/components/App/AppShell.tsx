@@ -10,6 +10,7 @@ import AudioLayer from './AudioLayer';
 import ControlLayer from './ControlLayer';
 import StartOverlay from './StartOverlay';
 import ShipTitleCard from './ShipTitleCard';
+import { LoadingScreen } from './LoadingScreen';
 import BackgroundHum from './BackgroundHum';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 import DebugCascadePanel from './DebugCascadePanel';
@@ -124,6 +125,8 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
       {showStartOverlay ? <StartOverlay onStart={onStart} /> : <BackgroundHum />}
       {showShipTitle && <ShipTitleCard onDone={onShipTitleDone} />}
       <DeathOverlay />
+      {/* Loading screen sits above everything; self-removes when all stages complete */}
+      <LoadingScreen />
       {/* <DebugCascadePanel /> */}
       <GraphicsSettings />
       <AppStyles />

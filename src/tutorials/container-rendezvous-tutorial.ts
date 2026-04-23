@@ -159,6 +159,7 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
   const dockingHintShownAt = useRef(0);
   const scrapperAttackedRef = useRef(false);
   const dialogueAudio = useRef<HTMLAudioElement | null>(null);
+  const introEndedByTimer = useRef(false);
 
   const playDialogueSequence = (urls: string[], index = 0) => {
     if (index >= urls.length) return;
@@ -170,6 +171,7 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
 
   useEffect(() => {
     if (!enabled) return;
+    introEndedByTimer.current = false;
 
     // ── Scrapper intro: lock controls until captain's cue ─────────────────────
     scrapperIntroActive.current = true;
@@ -199,6 +201,7 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
       }, SCRAPPER_CAPTAIN_CUE_DELAY);
 
       const enableTimer = window.setTimeout(() => {
+        introEndedByTimer.current = true;
         scrapperIntroActive.current = false;
         window.dispatchEvent(new CustomEvent('ScrapperIntroEnded'));
         shipControlDisabledUntil.current = 0;
@@ -374,8 +377,12 @@ export function useContainerRendezvousTutorial({ enabled }: UseContainerRendezvo
         dialogueAudio.current.onended = null;
         dialogueAudio.current = null;
       }
-      scrapperIntroActive.current = false;
-      window.dispatchEvent(new CustomEvent('ScrapperIntroEnded'));
+      // Do not synthesize ScrapperIntroEnded from cleanup; in React Strict Mode
+      // cleanup runs during development remount checks and would incorrectly
+      // jump the camera straight to launch mode.
+      if (!introEndedByTimer.current) {
+        scrapperIntroActive.current = true;
+      }
       shipControlDisabledUntil.current = 0;
       hintPhase.current = 'done';
     };

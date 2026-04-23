@@ -158,8 +158,11 @@ export default function AIScrapper({ url, scale = 3 }: AIScrapperProps) {
         _forward.subVectors(_targetWorld, groupRef.current.position).normalize();
         groupRef.current.position.addScaledVector(_forward, speedRef.current * delta);
 
-        // Orient model toward Venus (+X is forward for this model)
-        if (_forward.lengthSq() > 0.001) {
+        // Orient model toward Neptune (+X is forward for this model).
+        // Guard with neptunePlanetPos: on the first frame the solar system hasn't
+        // written its position yet, and slerping toward (0,0,0) would visibly
+        // snap the model ~67° off before it corrects back.
+        if (neptunePlanetPos && _forward.lengthSq() > 0.001) {
           const targetQuat = new THREE.Quaternion().setFromUnitVectors(
             new THREE.Vector3(1, 0, 0),
             _forward
