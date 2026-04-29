@@ -16,7 +16,7 @@ export const SHIP_IMPACT_PULSE_MS = 1200;
 /** Detection sphere radius at the nose docking port (world units). */
 export const DOCKING_PORT_RADIUS = 2;
 /** Local +Z distance from ship center to the nose docking port. */
-export const DOCKING_PORT_LOCAL_Z = 11;
+export const DOCKING_PORT_LOCAL_Z = 18;
 
 // ── Main engine positions ─────────────────────────────────────────────────
 /** Distance threshold for a railgun hit to register on a main engine. */

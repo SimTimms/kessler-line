@@ -15,7 +15,10 @@ export function applyRadiationDamage(shipPos: THREE.Vector3, dt: number) {
 
     if (zone.planetName) {
       const body = gravityBodies.get(zone.planetName);
-      if (body) _zonePos[i].copy(body.position);
+      // Without a registered body, zone position would stay at (0,0,0) — wrong for
+      // sandboxes (e.g. tutorial) where only some bodies exist.
+      if (!body) continue;
+      _zonePos[i].copy(body.position);
     }
 
     const dx = shipPos.x - _zonePos[i].x;

@@ -26,6 +26,29 @@ const _orbitPos = new THREE.Vector3();
 const _orbitVel = new THREE.Vector3();
 const _orbitDir = new THREE.Vector3();
 const _noseFwd = new THREE.Vector3();
+const _apsisScaleWorld = new THREE.Vector3();
+
+/** Target on-screen height for Pe/Ap sprites (px). World scale is derived from camera each frame. */
+const APSIS_MARKER_SCREEN_PX = 20;
+
+function getApsisMarkerScale(
+  camera: THREE.Camera,
+  canvasHeight: number,
+  worldX: number,
+  worldZ: number,
+): [number, number] {
+  _apsisScaleWorld.set(worldX, 0, worldZ);
+  if (camera instanceof THREE.PerspectiveCamera) {
+    const dist = camera.position.distanceTo(_apsisScaleWorld);
+    const vFov = (camera.fov * Math.PI) / 180;
+    const frustumHeight = 2 * Math.tan(vFov / 2) * Math.max(dist, 1e-6);
+    const h = (APSIS_MARKER_SCREEN_PX / canvasHeight) * frustumHeight;
+    const w = h * 3.2;
+    return [w, h];
+  }
+  const h = 10;
+  return [h * 3.2, h];
+}
 
 function makeApsisSprite(color: string) {
   const canvas = document.createElement('canvas');
@@ -43,19 +66,19 @@ function makeApsisSprite(color: string) {
 function drawApsisLabel(ctx: CanvasRenderingContext2D, color: string, label: string, alt: number) {
   ctx.clearRect(0, 0, 256, 80);
   ctx.fillStyle = color;
-  // Diamond
+  // Diamond (compact — matches small screen-space scale)
   ctx.beginPath();
-  ctx.moveTo(128, 4);
-  ctx.lineTo(142, 18);
-  ctx.lineTo(128, 32);
-  ctx.lineTo(114, 18);
+  ctx.moveTo(128, 8);
+  ctx.lineTo(136, 16);
+  ctx.lineTo(128, 24);
+  ctx.lineTo(120, 16);
   ctx.closePath();
   ctx.fill();
   // Label and altitude
-  ctx.font = 'bold 13px monospace';
+  ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`${label}  ${alt}`, 128, 60);
+  ctx.fillText(`${label}  ${alt}`, 128, 56);
 }
 
 export default function VelocityIndicator() {
@@ -165,7 +188,7 @@ export default function VelocityIndicator() {
     };
   }, []);
 
-  useFrame(() => {
+  useFrame(({ camera, size }) => {
     const speed = shipVelocity.length();
     line.visible = speed > MIN_SPEED;
     sprite.visible = speed > MIN_SPEED;
@@ -395,13 +418,7 @@ export default function VelocityIndicator() {
     (sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
 
     // ── Apsis markers ────────────────────────────────────────────────────────
-    // Scale markers proportionally to orbital distance so they're always legible.
-    // Canvas is 256×80 → aspect 3.2, so width = height * 3.2.
-    const orbitDist = primaryBody
-      ? Math.sqrt((ship.x - primaryBody.position.x) ** 2 + (ship.z - primaryBody.position.z) ** 2)
-      : 0;
-    const mH = Math.max(orbitDist * 0.006, 60);
-    const mW = mH * 3.2;
+    // Fixed ~screen-pixel size so they stay small and readable at any zoom / orbit radius.
 
     if (primaryIsPlanet && primaryBody && periStep >= 0) {
       const px = posArr[periStep * 3] + sx;
@@ -409,6 +426,7 @@ export default function VelocityIndicator() {
       const alt = Math.round(Math.max(0, periDist - primaryBody.surfaceRadius));
       periMarker.sprite.visible = true;
       periMarker.sprite.position.set(px, 0, pz);
+      const [mW, mH] = getApsisMarkerScale(camera, size.height, px, pz);
       periMarker.sprite.scale.set(mW, mH, 1);
       drawApsisLabel(periMarker.ctx, periMarker.color, 'Pe', alt);
       (periMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
@@ -423,7 +441,8 @@ export default function VelocityIndicator() {
       const alt = Math.round(Math.max(0, apoDist - primaryBody.surfaceRadius));
       apoMarker.sprite.visible = true;
       apoMarker.sprite.position.set(ax, 0, az);
-      apoMarker.sprite.scale.set(mW, mH, 1);
+      const [aW, aH] = getApsisMarkerScale(camera, size.height, ax, az);
+      apoMarker.sprite.scale.set(aW, aH, 1);
       drawApsisLabel(apoMarker.ctx, apoMarker.color, 'Ap', alt);
       (apoMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
     } else {

@@ -47,6 +47,7 @@ interface AppShellProps {
   setThrustLevel: Dispatch<SetStateAction<number>>;
   showStartOverlay: boolean;
   onStart: () => void;
+  onTutorial: () => void;
   showShipTitle: boolean;
   onShipTitleDone: () => void;
 }
@@ -82,6 +83,7 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
     setThrustLevel,
     showStartOverlay,
     onStart,
+    onTutorial,
     showShipTitle,
     onShipTitleDone,
   } = props;
@@ -122,7 +124,7 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
         activeAudioRef={activeAudioRef}
       />
       <ControlLayer thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
-      {showStartOverlay ? <StartOverlay onStart={onStart} /> : <BackgroundHum />}
+      {showStartOverlay ? <StartOverlay onStart={onStart} onTutorial={onTutorial} /> : <BackgroundHum />}
       {showShipTitle && <ShipTitleCard onDone={onShipTitleDone} />}
       <DeathOverlay />
       {/* Loading screen sits above everything; self-removes when all stages complete */}

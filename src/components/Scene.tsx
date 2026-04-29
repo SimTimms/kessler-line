@@ -29,7 +29,6 @@ import ScrapperRailgunFX from './NPCs/ScrapperRailgunFX';
 import ScrapperExplosion from './NPCs/ScrapperExplosion';
 import SolarSystem from './Planets/SolarSystem';
 import { SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
-import SunGravity from './Environment/SunGravity';
 import { shipPosRef } from '../context/ShipPos';
 import AutopilotController from './AutopilotController';
 import NeptuneNoFlyRing from './Planets/Neptune/NeptuneNoFlyRing';
@@ -47,13 +46,7 @@ import { RadioBeacons } from './RadioBeacons';
 import CinematicController from '../components/Cinematic/CinematicController';
 import { SPACE_STATION_DEF, ASTEROID_DOCK_DEF } from '../config/worldConfig';
 import { START_ZONE_CENTER } from '../config/spawnConfig';
-import {
-  FOG_COLOR,
-  FOG_DENSITY,
-  CANVAS_NEAR,
-  CANVAS_FAR,
-  TONE_MAPPING_EXPOSURE,
-} from '../config/visualConfig';
+import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../config/visualConfig';
 import {
   SHIP_PARTICLE_COUNT,
   SHIP_PARTICLE_SPEED_MIN,
@@ -62,6 +55,8 @@ import {
 import { OrbitingFuelStation } from './OrbitingFuelStation';
 import RadiationZones from './RadiationZones';
 import { advanceLoadStage, useLoadStage } from '../context/LoadStageStore';
+import DefaultEnvironment from './Environment';
+import { defaultConfig } from '../components/Planets/Neptune/NeptuneInnerWispyRing';
 
 const STAGE_2_GLB_URLS = ['/space_station.glb', '/fuel-station.glb', '/container.glb'] as const;
 const STAGE_3_GLB_URLS = ['/untitled.gltf', '/large_ship.glb', '/supportDrone.glb'] as const;
@@ -155,20 +150,13 @@ export default function Scene() {
         toneMappingExposure: TONE_MAPPING_EXPOSURE,
       }}
     >
-      {/* ── Always-on: lights, fog, physics, camera ─────────────────────── */}
-      <ambientLight intensity={0.18} />
-      <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
       <CameraCapture />
+      <DefaultEnvironment />
       <SaveSystemBridge />
-      <ProgressiveAssetPreloader loadStage={loadStage} />
-      <SunGravity />
-      <AutopilotController />
-      {/* Camera follows shipPosRef (set by useShipInit before ship mounts) */}
       <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
+      <ProgressiveAssetPreloader loadStage={loadStage} />
+      <AutopilotController />
 
-      {/* ── Stage 1: Solar system + heavy environment ────────────────────── */}
-      {/* SolarSystem suspends on planet textures (earth.jpg, neptune.jpg…).  */}
-      {/* StageAdvancer mounts only after all siblings resolve → stage → 1.  */}
       <Suspense fallback={null}>
         <SolarSystem scale={SOLAR_SYSTEM_SCALE} />
         <HeavyEnvironment key={quality} />
@@ -182,7 +170,7 @@ export default function Scene() {
           <MarsSystem />
           <NeptuneNoFlyRing />
           <NeptuneDustRing />
-          <NeptuneInnerWispyRing />
+          <NeptuneInnerWispyRing config={defaultConfig} />
           <BrokenVenusMoon />
           <RadiationZones />
           <StartZoneAsteroidCluster center={START_ZONE_CENTER} />

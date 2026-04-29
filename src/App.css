@@ -195,26 +195,17 @@ body {
 }
 
 @keyframes kessler-letter-fade {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 @keyframes start-overlay-fade {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 .kessler-letter {
   display: inline-block;
-  animation: kessler-letter-fade 1.2s forwards;
 }
 
 .start-overlay {
@@ -227,13 +218,24 @@ body {
   background: rgb(3, 5, 10);
   font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
   color: #e8f2ff;
-  animation: start-overlay-fade 3s ease-in 6s forwards;
   pointer-events: auto;
 }
 
-.start-overlay.fading {
+/* Triggered on button click — fades letters first, then the whole overlay */
+.start-overlay.dismissing {
   pointer-events: none;
+  animation: start-overlay-fade 0.5s ease-in 0.9s forwards;
 }
+.start-overlay.dismissing .kessler-letter {
+  animation: kessler-letter-fade 0.7s forwards;
+}
+.start-overlay.dismissing .kessler-letter:nth-child(1) { animation-delay: 0s; }
+.start-overlay.dismissing .kessler-letter:nth-child(2) { animation-delay: 0.08s; }
+.start-overlay.dismissing .kessler-letter:nth-child(3) { animation-delay: 0.16s; }
+.start-overlay.dismissing .kessler-letter:nth-child(4) { animation-delay: 0.24s; }
+.start-overlay.dismissing .kessler-letter:nth-child(5) { animation-delay: 0.32s; }
+.start-overlay.dismissing .kessler-letter:nth-child(6) { animation-delay: 0.40s; }
+.start-overlay.dismissing .kessler-letter:nth-child(7) { animation-delay: 0.48s; }
 
 .start-panel {
   text-align: center;

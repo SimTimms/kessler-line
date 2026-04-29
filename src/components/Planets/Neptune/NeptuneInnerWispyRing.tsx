@@ -25,6 +25,22 @@ const WISP_COLORS = [
   new THREE.Color('#036bfc'),
 ];
 
+export type NeptuneInnerWispyRingConfig = {
+  scale?: number;
+  rotation?: [number, number, number];
+  wispParticles?: number;
+  visibilityBoost?: number;
+  innerRadiusMultiplier?: number;
+  wispRadiusMultiplier?: number;
+  wispRadiusSpread?: number;
+  wispHeightSpread?: number;
+  coreRotSpeed?: number;
+  wispRotSpeed?: number;
+  ringTiltX?: number;
+  ringTiltZ?: number;
+  wispColors?: THREE.Color[];
+};
+
 const _tmpColor = new THREE.Color();
 
 function makeParticleTexture(): THREE.Texture {
@@ -78,8 +94,25 @@ function buildRingParticles(
 
   return { positions, colors };
 }
-
-export default function NeptuneInnerWispyRing() {
+export const defaultConfig: NeptuneInnerWispyRingConfig = {
+  scale: 1,
+  wispParticles: WISP_PARTICLES,
+  visibilityBoost: VISIBILITY_BOOST,
+  innerRadiusMultiplier: INNER_RADIUS_MULTIPLIER,
+  wispRadiusMultiplier: WISP_RADIUS_MULTIPLIER,
+  wispRadiusSpread: WISP_RADIUS_SPREAD,
+  wispHeightSpread: WISP_HEIGHT_SPREAD,
+  coreRotSpeed: CORE_ROT_SPEED,
+  wispRotSpeed: WISP_ROT_SPEED,
+  ringTiltX: RING_TILT_X,
+  ringTiltZ: RING_TILT_Z,
+  wispColors: WISP_COLORS,
+};
+export default function NeptuneInnerWispyRing({
+  config = defaultConfig,
+}: {
+  config: NeptuneInnerWispyRingConfig;
+}) {
   const groupRef = useRef<THREE.Group>(null!);
   const coreGroupRef = useRef<THREE.Group>(null!);
   const wispGroupRef = useRef<THREE.Group>(null!);
@@ -91,16 +124,16 @@ export default function NeptuneInnerWispyRing() {
 
   const neptune = PLANETS.find((planet) => planet.name === 'Neptune');
   const planetRadius = (neptune?.radius ?? 150) * SOLAR_SYSTEM_SCALE;
-  const coreRadius = planetRadius * INNER_RADIUS_MULTIPLIER;
-  const wispRadius = planetRadius * WISP_RADIUS_MULTIPLIER;
+  const coreRadius = planetRadius * INNER_RADIUS_MULTIPLIER * (config.scale ?? 1);
+  const wispRadius = planetRadius * WISP_RADIUS_MULTIPLIER * (config.scale ?? 1);
 
   const { wisps, texture } = useMemo(() => {
     const wisps = buildRingParticles(
-      WISP_PARTICLES,
+      config.wispParticles ?? WISP_PARTICLES,
       wispRadius,
       WISP_RADIUS_SPREAD,
       WISP_HEIGHT_SPREAD,
-      WISP_COLORS,
+      config.wispColors ?? WISP_COLORS,
       1200
     );
     return { wisps, texture: makeParticleTexture() };
@@ -115,8 +148,8 @@ export default function NeptuneInnerWispyRing() {
       0,
       planetPos.z * SOLAR_SYSTEM_SCALE
     );
-    groupRef.current.rotation.x = RING_TILT_X;
-    groupRef.current.rotation.z = RING_TILT_Z;
+    groupRef.current.rotation.x = RING_TILT_X + (config.ringTiltX ?? 0);
+    groupRef.current.rotation.z = RING_TILT_Z + (config.ringTiltZ ?? 0);
 
     coreAngleRef.current += CORE_ROT_SPEED * delta;
     wispAngleRef.current += WISP_ROT_SPEED * delta;

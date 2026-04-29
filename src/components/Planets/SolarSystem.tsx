@@ -39,8 +39,25 @@ const sv = (earthDays: number) => 0.04 / earthDays;
 // ─── Planet configs ────────────────────────────────────────────────────────────
 // Orbital order is preserved so consumers can index by position (e.g. PLANETS[7]
 // is Neptune, PLANETS[2] is Earth).
+export type PlanetType = {
+  name: string;
+  radius: number;
+  orbitRadius: number;
+  orbitalSpeed: number;
+  spinSpeed: number;
+  axialTilt: number;
+  initialAngle: number;
+  color: string;
+  emissive: string;
+  rings?: boolean;
+  factionControl?: {
+    name: string;
+    influenceRadius: number;
+    color: string;
+  };
+};
 
-export const PLANETS = [
+export const PLANETS: PlanetType[] = [
   {
     // 0 — Mercury
     name: 'Mercury',
@@ -171,21 +188,28 @@ const gravParams = (localRadius: number) => {
 interface SolarSystemProps {
   position?: [number, number, number];
   scale?: number;
+  planets?: PlanetType[];
 }
 
-export default function SolarSystem({ position = [0, 0, 0], scale = 1 }: SolarSystemProps) {
+export default function SolarSystem({
+  position = [0, 0, 0],
+  scale = 1,
+  planets = PLANETS,
+}: SolarSystemProps) {
   return (
     <group position={position} scale={scale}>
       <Sun radius={SUN_RADIUS * SUN_SCALE_MULTIPLIER} />
 
-      {PLANETS.map((p) => (
+      {planets.map((p) => (
         <OrbitingPlanet
           key={p.name}
           planetName={p.name}
           orbitRadius={p.orbitRadius}
           radius={p.radius}
           color={
-            p.name === 'Earth' || p.name === 'Mars' || p.name === 'Neptune' || p.name === 'Venus' ? '#ffffff' : p.color
+            p.name === 'Earth' || p.name === 'Mars' || p.name === 'Neptune' || p.name === 'Venus'
+              ? '#ffffff'
+              : p.color
           }
           glowColor={p.color}
           textureUrl={

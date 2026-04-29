@@ -1,20 +1,9 @@
 import { useState } from 'react';
-import {
-  cascadePhase,
-  setCascadePhase,
-  chatterState,
-  radioChatterMessage,
-  type CascadePhase,
-} from '../../context/CinematicState';
-import {
-  RADIO_CHATTER_LINES,
-  RADIO_CHATTER_CASCADE_LINES,
-  RADIO_CHATTER_POST_CASCADE_LINES,
-} from '../../narrative';
+import { cascadePhase, chatterState, radioChatterMessage, type CascadePhase } from '../../context/CinematicState';
+import { setRadioChatterPhase } from '../../radio/radioChatterPhase';
 
 const PHASES: CascadePhase[] = ['pre', 'during', 'post'];
 const LABELS = ['PRE', 'CASCADE', 'POST'];
-const CHATTER_ARRAYS = [RADIO_CHATTER_LINES, RADIO_CHATTER_CASCADE_LINES, RADIO_CHATTER_POST_CASCADE_LINES];
 
 export default function DebugCascadePanel() {
   const [value, setValue] = useState<number>(() => PHASES.indexOf(cascadePhase.current));
@@ -22,10 +11,8 @@ export default function DebugCascadePanel() {
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const idx = Number(e.target.value);
     setValue(idx);
-    setCascadePhase(PHASES[idx]);
-    chatterState.lines = CHATTER_ARRAYS[idx];
-    chatterState.index = 0;
-    radioChatterMessage.current = CHATTER_ARRAYS[idx][0];
+    setRadioChatterPhase(PHASES[idx]);
+    radioChatterMessage.current = chatterState.lines[0] ?? '';
   }
 
   return (

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { thrustMultiplier, shipAcceleration } from '../context/ShipState';
+import { thrustMultiplier, shipAcceleration, shipQuaternion } from '../context/ShipState';
 import { hudShakeOffset } from '../context/HudShake';
 import {
   shipInstructionMessage,
@@ -16,6 +16,7 @@ import {
   CAMERA_ZOOM_MAX,
   CAMERA_SHAKE_AMP_MAX,
   CAMERA_SHAKE_FREQUENCIES,
+  CAMERA_ATTACH_OFFSET,
 } from '../config/visualConfig';
 import {
   SCRAPPER_INTRO_CAMERA_BEHIND_DIST,
@@ -35,13 +36,22 @@ import { KEY_TOGGLE_CAMERA_DECOUPLE } from '../config/keybindings';
 
 // Scratch vectors — avoid allocating on every frame
 const _offset = new THREE.Vector3();
+const _worldOffset = new THREE.Vector3();
+const _attachQuat = new THREE.Quaternion();
 const _target = new THREE.Vector3();
-const _attachOffset = new THREE.Vector3(0, 14, -40);
 const _scrapperOffset = new THREE.Vector3();
 const _launchOffset = new THREE.Vector3();
 const _launchComposedQuat = new THREE.Quaternion();
 const _desiredPos = new THREE.Vector3();
 const _desiredLookAt = new THREE.Vector3();
+const _boundsBox = new THREE.Box3();
+const _boundsSphere = new THREE.Sphere();
+const _localBoundsCenter = new THREE.Vector3();
+const _worldBoundsCenter = new THREE.Vector3();
+const _viewProj = new THREE.Matrix4();
+const _frustum = new THREE.Frustum();
+const _camDir = new THREE.Vector3();
+const _toShip = new THREE.Vector3();
 // Computed once from config — Y rotation that swings the launch camera sideways
 const _launchYRotQuat = new THREE.Quaternion().setFromAxisAngle(
   new THREE.Vector3(0, 1, 0),
@@ -59,10 +69,38 @@ function smoothstep(t: number): number {
 interface OrbitCameraProps {
   followTarget?: { current: THREE.Vector3 };
   attachTo?: { current: THREE.Object3D | null };
+  disableCinematics?: boolean;
+  followOffset?: [number, number, number];
+  onDebugSample?: (sample: OrbitCameraDebugSample) => void;
 }
 
-export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
+export interface OrbitCameraDebugSample {
+  mode: 'tutorial-follow' | 'scrapper' | 'launch' | 'transition' | 'attached' | 'free';
+  disableCinematics: boolean;
+  decoupled: boolean;
+  hasAttachTo: boolean;
+  hasFollowTarget: boolean;
+  cameraParentType: string;
+  cameraPosition: [number, number, number];
+  shipPosition: [number, number, number];
+  shipQuatLength: number;
+  followQuatLength: number;
+  shipInFrustum: boolean;
+  targetInFrustum: boolean;
+  facingDot: number;
+  spherical: { radius: number; phi: number; theta: number };
+}
+
+export function OrbitCamera({
+  followTarget,
+  attachTo,
+  disableCinematics = false,
+  followOffset,
+  onDebugSample,
+}: OrbitCameraProps) {
   const { camera, gl, scene } = useThree();
+  const enableVerboseLogs = disableCinematics;
+  const followOffsetRef = useRef(new THREE.Vector3(...(followOffset ?? CAMERA_ATTACH_OFFSET)));
 
   const isPointerDown = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
@@ -70,9 +108,17 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
   const didInitSpherical = useRef(false);
   const shakeTime = useRef(0);
   const [decoupled, setDecoupled] = useState(false);
-  const [scrapperMode, setScrapperMode] = useState(scrapperIntroActive.current);
+  const [scrapperMode, setScrapperMode] = useState(
+    disableCinematics ? false : scrapperIntroActive.current
+  );
   const [launchMode, setLaunchMode] = useState(false);
   const launchEndedFiredRef = useRef(false);
+  const debugSampleCooldown = useRef(0);
+  const consoleLogCooldown = useRef(0);
+  const lastLoggedMode = useRef<OrbitCameraDebugSample['mode'] | null>(null);
+  const safeMinRadiusRef = useRef<number>(CAMERA_ZOOM_MIN);
+  const didComputeBoundsRef = useRef(false);
+  const hasBoundsCenterRef = useRef(false);
 
   // Camera blend state — transitioningState drives the useEffect parenting;
   // transitioningRef is read each frame so changes are immediate.
@@ -85,6 +131,59 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     fromPos: new THREE.Vector3(),
     fromLookAt: new THREE.Vector3(),
   });
+
+  useEffect(() => {
+    if (!enableVerboseLogs) return;
+    console.info('[OrbitCamera] mounted', {
+      disableCinematics,
+      hasAttachTo: !!attachTo?.current,
+      hasFollowTarget: !!followTarget,
+      attachOffset: followOffsetRef.current.toArray(),
+    });
+    return () => {
+      console.info('[OrbitCamera] unmounted');
+    };
+  }, [enableVerboseLogs, disableCinematics, attachTo, followTarget]);
+
+  useEffect(() => {
+    followOffsetRef.current.set(...(followOffset ?? CAMERA_ATTACH_OFFSET));
+    // Re-seed camera orbit when follow offset changes so runtime logs reflect
+    // the new requested tutorial offset immediately.
+    spherical.current.setFromVector3(followOffsetRef.current);
+    didInitSpherical.current = true;
+    if (enableVerboseLogs) {
+      console.info('[OrbitCamera] followOffset applied', {
+        followOffset: followOffsetRef.current.toArray(),
+        spherical: {
+          radius: spherical.current.radius,
+          phi: spherical.current.phi,
+          theta: spherical.current.theta,
+        },
+      });
+    }
+  }, [followOffset, enableVerboseLogs]);
+
+  useEffect(() => {
+    if (!attachTo?.current || didComputeBoundsRef.current) return;
+    _boundsBox.setFromObject(attachTo.current);
+    _boundsBox.getCenter(_worldBoundsCenter);
+    attachTo.current.worldToLocal(_localBoundsCenter.copy(_worldBoundsCenter));
+    hasBoundsCenterRef.current = true;
+    _boundsBox.getBoundingSphere(_boundsSphere);
+    if (Number.isFinite(_boundsSphere.radius) && _boundsSphere.radius > 0) {
+      // Keep follow camera outside the model envelope with some margin.
+      safeMinRadiusRef.current = Math.max(CAMERA_ZOOM_MIN, _boundsSphere.radius * 1.6);
+      spherical.current.radius = Math.max(spherical.current.radius, safeMinRadiusRef.current);
+      if (enableVerboseLogs) {
+        console.info('[OrbitCamera] ship bounds sampled', {
+          radius: _boundsSphere.radius,
+          safeMinRadius: safeMinRadiusRef.current,
+          sphericalRadius: spherical.current.radius,
+        });
+      }
+      didComputeBoundsRef.current = true;
+    }
+  }, [attachTo, enableVerboseLogs]);
 
   // Stable callback to start a camera blend from the current position.
   const startTransition = useCallback(
@@ -101,6 +200,7 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
 
   // Intro → launch: controls just enabled, hold the cinematic camera on the scrapper
   useEffect(() => {
+    if (disableCinematics) return;
     const onIntroEnded = () => {
       if (!scrapperMode) return;
       if (scrapperIntroActive.current) return;
@@ -112,10 +212,11 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     };
     window.addEventListener('ScrapperIntroEnded', onIntroEnded);
     return () => window.removeEventListener('ScrapperIntroEnded', onIntroEnded);
-  }, [scrapperMode, startTransition]);
+  }, [disableCinematics, scrapperMode, startTransition]);
 
   // Launch → player: fired from useFrame when ship exceeds exit distance
   useEffect(() => {
+    if (disableCinematics) return;
     const onLaunchEnded = () => {
       // Blend from launch cinematic to normal player-follow camera.
       // Camera stays in scene space (transitioningState keeps it out of the ship group)
@@ -127,9 +228,13 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     };
     window.addEventListener('ScrapperLaunchEnded', onLaunchEnded);
     return () => window.removeEventListener('ScrapperLaunchEnded', onLaunchEnded);
-  }, [startTransition]);
+  }, [disableCinematics, startTransition]);
 
   useEffect(() => {
+    if (disableCinematics) {
+      scene.add(camera);
+      return;
+    }
     if (scrapperMode || launchMode || decoupled || transitioningState) {
       scene.add(camera);
       return;
@@ -141,7 +246,7 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     return () => {
       scene.attach(camera);
     };
-  }, [attachTo, camera, scene, decoupled, scrapperMode, launchMode, transitioningState]);
+  }, [attachTo, camera, scene, decoupled, scrapperMode, launchMode, transitioningState, disableCinematics]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -192,9 +297,15 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
 
     const onWheel = (e: WheelEvent) => {
       spherical.current.radius *= 1 + e.deltaY * CAMERA_WHEEL_SENSITIVITY;
+      // Keep coupled camera outside the ship hull; tiny radii can place the
+      // camera inside geometry and produce an all-black view.
+      const minRadius =
+        attachTo?.current && !decoupled
+          ? Math.max(safeMinRadiusRef.current, followOffsetRef.current.length() * 0.6)
+          : CAMERA_ZOOM_MIN;
       spherical.current.radius = THREE.MathUtils.clamp(
         spherical.current.radius,
-        CAMERA_ZOOM_MIN,
+        minRadius,
         CAMERA_ZOOM_MAX
       );
     };
@@ -210,11 +321,11 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('wheel', onWheel);
     };
-  }, [camera, gl]);
+  }, [attachTo, camera, decoupled, gl]);
 
   useFrame((_, delta) => {
     if (!didInitSpherical.current) {
-      spherical.current.setFromVector3(_attachOffset);
+      spherical.current.setFromVector3(followOffsetRef.current);
       didInitSpherical.current = true;
     }
 
@@ -243,6 +354,116 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     }
 
     const tr = transitionRef.current;
+    const emitDebugSample = (mode: OrbitCameraDebugSample['mode']) => {
+      if (!onDebugSample) return;
+      debugSampleCooldown.current += delta;
+      if (debugSampleCooldown.current < 0.2) return;
+      debugSampleCooldown.current = 0;
+      onDebugSample({
+        mode,
+        disableCinematics,
+        decoupled,
+        hasAttachTo: !!attachTo?.current,
+        hasFollowTarget: !!followTarget,
+        cameraParentType: camera.parent?.type ?? 'none',
+        cameraPosition: [camera.position.x, camera.position.y, camera.position.z],
+        shipPosition: [shipPosRef.current.x, shipPosRef.current.y, shipPosRef.current.z],
+        shipQuatLength: shipQuaternion.length(),
+        followQuatLength: _attachQuat.length(),
+        shipInFrustum: _frustum.containsPoint(shipPosRef.current),
+        targetInFrustum: _frustum.containsPoint(_target),
+        facingDot: _camDir.dot(_toShip),
+        spherical: {
+          radius: spherical.current.radius,
+          phi: spherical.current.phi,
+          theta: spherical.current.theta,
+        },
+      });
+    };
+    const emitConsoleDebug = (mode: OrbitCameraDebugSample['mode']) => {
+      if (!enableVerboseLogs) return;
+      consoleLogCooldown.current += delta;
+      const modeChanged = lastLoggedMode.current !== mode;
+      if (!modeChanged && consoleLogCooldown.current < 0.5) return;
+      consoleLogCooldown.current = 0;
+      lastLoggedMode.current = mode;
+
+      const follow = followTarget?.current;
+      const parent = attachTo?.current;
+      const followDist = camera.position.distanceTo(shipPosRef.current);
+      const hasBadCamera =
+        !Number.isFinite(camera.position.x) ||
+        !Number.isFinite(camera.position.y) ||
+        !Number.isFinite(camera.position.z);
+      if (hasBadCamera) {
+        console.warn('[OrbitCamera] invalid camera position', {
+          mode,
+          camera: camera.position.toArray(),
+          ship: shipPosRef.current.toArray(),
+        });
+      }
+
+      console.debug('[OrbitCamera] sample', {
+        mode,
+        parentType: camera.parent?.type ?? 'none',
+        hasAttachTo: !!parent,
+        hasFollowTarget: !!follow,
+        decoupled,
+        scrapperMode,
+        launchMode,
+        transitioning: transitioningRef.current,
+        spherical: {
+          radius: spherical.current.radius,
+          phi: spherical.current.phi,
+          theta: spherical.current.theta,
+        },
+        cameraPos: camera.position.toArray(),
+        shipPos: shipPosRef.current.toArray(),
+        followPos: follow ? [follow.x, follow.y, follow.z] : null,
+        attachPos: parent ? parent.getWorldPosition(new THREE.Vector3()).toArray() : null,
+        shipQuatLength: shipQuaternion.length(),
+        followQuatLength: _attachQuat.length(),
+        cameraToShipDistance: followDist,
+        shipInFrustum: _frustum.containsPoint(shipPosRef.current),
+        targetInFrustum: _frustum.containsPoint(_target),
+        facingDot: _camDir.dot(_toShip),
+      });
+    };
+
+    // In tutorial mode we avoid camera re-parenting and compute the follow pose
+    // directly in world space from the ship transform + configured offset.
+    if (disableCinematics && !decoupled) {
+      _offset.setFromSpherical(spherical.current);
+      if (attachTo?.current) {
+        attachTo.current.getWorldQuaternion(_attachQuat);
+      } else {
+        _attachQuat.copy(shipQuaternion);
+      }
+      _attachQuat.normalize();
+      _worldOffset.copy(_offset).applyQuaternion(_attachQuat);
+      if (attachTo?.current && hasBoundsCenterRef.current) {
+        _target.copy(_localBoundsCenter);
+        attachTo.current.localToWorld(_target);
+      } else if (followTarget) {
+        _target.copy(followTarget.current);
+      } else if (attachTo?.current) {
+        attachTo.current.getWorldPosition(_target);
+      } else {
+        _target.set(0, 0, 0);
+      }
+      camera.position.copy(_target).add(_worldOffset);
+      camera.position.x += shakeX;
+      camera.position.y += shakeY;
+      camera.lookAt(_target);
+      camera.updateMatrixWorld();
+      _viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      _frustum.setFromProjectionMatrix(_viewProj);
+      camera.getWorldDirection(_camDir);
+      _toShip.copy(shipPosRef.current).sub(camera.position).normalize();
+      emitDebugSample('tutorial-follow');
+      emitConsoleDebug('tutorial-follow');
+      return;
+    }
 
     if (scrapperMode) {
       // Fixed behind the scrapper: -X is behind (scrapper's +X is forward)
@@ -261,6 +482,8 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
         camera.position.copy(_desiredPos);
       }
       camera.lookAt(scrapperWorldPos);
+      emitDebugSample('scrapper');
+      emitConsoleDebug('scrapper');
       return;
     }
 
@@ -293,6 +516,8 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
         launchEndedFiredRef.current = true;
         window.dispatchEvent(new CustomEvent('ScrapperLaunchEnded'));
       }
+      emitDebugSample('launch');
+      emitConsoleDebug('launch');
       return;
     }
 
@@ -327,6 +552,8 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
           camera.position.copy(_desiredPos);
         }
         camera.lookAt(_desiredLookAt);
+        emitDebugSample('transition');
+        emitConsoleDebug('transition');
         return;
       }
     }
@@ -337,6 +564,8 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
       camera.position.x += shakeX;
       camera.position.y += shakeY;
       camera.lookAt(attachTo.current.getWorldPosition(_target));
+      emitDebugSample('attached');
+      emitConsoleDebug('attached');
       return;
     }
 
@@ -346,6 +575,8 @@ export function OrbitCamera({ followTarget, attachTo }: OrbitCameraProps) {
     camera.position.x += shakeX;
     camera.position.y += shakeY;
     camera.lookAt(target);
+    emitDebugSample('free');
+    emitConsoleDebug('free');
   }, 1);
 
   return null;

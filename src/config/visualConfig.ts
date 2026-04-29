@@ -11,6 +11,8 @@ export const CAMERA_ZOOM_MAX = 10500;
 export const CAMERA_SHAKE_AMP_MAX = 1.0;
 /** Frequencies (Hz) composited to produce the thrust camera shake. */
 export const CAMERA_SHAKE_FREQUENCIES = [23.7, 11.3, 17.9, 8.1] as const;
+/** Default camera follow offset from ship [x, y, z] in local ship space. */
+export const CAMERA_ATTACH_OFFSET: [number, number, number] = [0, 14, -40];
 
 // ── Scene rendering ──────────────────────────────────────────────────────
 /** Exponential fog color (hex). */

@@ -6,16 +6,14 @@ import {
   cinematicAutopilotActive,
   neptuneNoFlyZoneActive,
   shipInstructionMessage,
-  chatterState,
-  setCascadePhase,
 } from '../../context/CinematicState';
+import { setRadioChatterPhase } from '../../radio/radioChatterPhase';
 import { useContainerRendezvousTutorial } from '../../tutorials/container-rendezvous-tutorial';
 import { addMessage } from '../../context/MessageStore';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
 import { NO_FLY_ZONE_DISTANCE, EMPLOYER_RECALL_DELAY } from '../../config/neptuneConfig';
 import { shipPosRef } from '../../context/ShipPos';
-import { RADIO_CHATTER_LINES, RADIO_CHATTER_CASCADE_LINES } from '../../narrative';
 import {
   MSG_DISPATCH_INTRO,
   MSG_FAMILY_EARTH,
@@ -39,8 +37,7 @@ export default function CinematicController() {
   useEffect(() => {
     cinematicAutopilotActive.current = false;
     cinematicThrustReverse.current = false;
-    chatterState.lines = RADIO_CHATTER_LINES;
-    chatterState.index = 0;
+    setRadioChatterPhase('pre');
     noFlyTriggered.current = false;
 
     const autopilotTimer = window.setTimeout(() => {
@@ -58,9 +55,7 @@ export default function CinematicController() {
 
     const cascadeTimer = window.setTimeout(() => {
       if (!noFlyTriggered.current) {
-        setCascadePhase('during');
-        chatterState.lines = RADIO_CHATTER_CASCADE_LINES;
-        chatterState.index = 0;
+        setRadioChatterPhase('during');
       }
     }, CASCADE_TRIGGER_DELAY);
 
@@ -87,9 +82,7 @@ export default function CinematicController() {
       noFlyTriggered.current = true;
       neptuneNoFlyZoneActive.current = true;
       shipInstructionMessage.current = '';
-      setCascadePhase('during');
-      chatterState.lines = RADIO_CHATTER_CASCADE_LINES;
-      chatterState.index = 0;
+      setRadioChatterPhase('during');
       addMessage(treeToInboxMessage(MSG_NEPTUNE_CONTROL), 'neptune-control');
 
       employerRecallTimer.current = window.setTimeout(() => {

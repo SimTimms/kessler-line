@@ -1,21 +1,80 @@
 import './App.css';
 import { AppShell } from './components/App';
+import AppContainer from './components/App/AppContainer';
+import AppStyles from './components/App/AppStyles';
+import StartOverlay from './components/App/StartOverlay';
 import { useAppLifecycle, useAppState } from './hooks';
 import { resumeAudioContext } from './sound/SoundManager';
 import { useCallback, useState } from 'react';
+import TutorialShell from './components/Tutorial/TutorialShell';
+import { tutorialStepRef } from './context/TutorialState';
+import {
+  shipVelocity,
+  setHullIntegrity,
+  setFuel,
+  setO2,
+  shipDestroyed,
+  mainEngineDisabled,
+} from './context/ShipState';
+import { shipPosRef } from './context/ShipPos';
+
+type AppMode = 'start' | 'tutorial' | 'game';
+
+// Full reset of module-level ship state so the tutorial always starts clean,
+// regardless of what happened in the main game (destroyed ship, engine damage, etc.)
+function resetShipState() {
+  shipVelocity.set(0, 0, 0);
+  shipPosRef.current.set(0, 0, 0);
+  setHullIntegrity(100);
+  setFuel(100);
+  setO2(100);
+  shipDestroyed.current = false;
+  mainEngineDisabled.reverseA.current = false;
+  mainEngineDisabled.reverseB.current = false;
+}
+
 function App() {
   useAppLifecycle();
   const { hud, docking, beacon, mission, thrust } = useAppState();
-  const [hasStarted, setHasStarted] = useState(false);
+  const [mode, setMode] = useState<AppMode>('start');
   const [showShipTitle, setShowShipTitle] = useState(false);
+
   const handleStart = useCallback(() => {
     resumeAudioContext();
-    setHasStarted(true);
+    setMode('game');
     setShowShipTitle(true);
   }, []);
+
+  const handleTutorial = useCallback(() => {
+    resumeAudioContext();
+    resetShipState();
+    tutorialStepRef.current = 0;
+    setMode('tutorial');
+  }, []);
+
+  const handleTutorialComplete = useCallback(() => {
+    resetShipState();
+    tutorialStepRef.current = 0;
+    setMode('game');
+    setShowShipTitle(true);
+  }, []);
+
   const handleShipTitleDone = useCallback(() => {
     setShowShipTitle(false);
   }, []);
+
+  if (mode === 'start') {
+    return (
+      <AppContainer>
+        <StartOverlay onStart={handleStart} onTutorial={handleTutorial} />
+        <AppStyles />
+      </AppContainer>
+    );
+  }
+
+  if (mode === 'tutorial') {
+    return <TutorialShell onComplete={handleTutorialComplete} />;
+  }
 
   return (
     <AppShell
@@ -46,8 +105,9 @@ function App() {
       activeAudioRef={beacon.activeAudioRef}
       thrustLevel={thrust.thrustLevel}
       setThrustLevel={thrust.setThrustLevel}
-      showStartOverlay={!hasStarted}
+      showStartOverlay={false}
       onStart={handleStart}
+      onTutorial={handleTutorial}
       showShipTitle={showShipTitle}
       onShipTitleDone={handleShipTitleDone}
     />
