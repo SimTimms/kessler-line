@@ -11,19 +11,28 @@ import {
 import { shipPosRef } from '../../context/ShipPos';
 import { shipVelocity } from '../../context/ShipState';
 import { magneticOnRef } from '../../context/MagneticScan';
+import { navTargetIdRef } from '../../context/NavTarget';
 import { selectedTargetPosition, selectedTargetVelocity } from '../../context/TargetSelection';
 
 interface Props {
   onStepAdvance: () => void;
+  onStepSet?: (step: number) => void;
   waypointRef: RefObject<THREE.Object3D | null>;
 }
 
 const _waypointWorld = new THREE.Vector3();
 const _toTargetDir = new THREE.Vector3();
 const WAYPOINT_REACHED_DISTANCE = 120;
+const WAYPOINT_CLOSE_DISTANCE = 100;
+const RENDEZVOUS_DISTANCE_THRESHOLD = 400;
 const WAYPOINT_MAGNETIC_ID = 'tutorial-waypoint-drone';
+const DAEDALUS_NAV_TARGET_ID = 'tutorial-daedalus';
 
-export default function TutorialDockingStepWatcher({ onStepAdvance, waypointRef }: Props) {
+export default function TutorialDockingStepWatcher({
+  onStepAdvance,
+  onStepSet,
+  waypointRef,
+}: Props) {
   const lastStep = useRef(-1);
   const advancedRef = useRef(false);
   const undockedRef = useRef(false);
@@ -36,8 +45,10 @@ export default function TutorialDockingStepWatcher({ onStepAdvance, waypointRef 
     const onKeyDown = (e: KeyboardEvent) => {
       const id = TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id;
       if (id === 'docking-undock' && e.code === KEY_UNDOCK_CARGO) undockedRef.current = true;
-      if (id === 'docking-navhud-toggle' && e.code === KEY_TOGGLE_NAV_HUD) navHudToggleRef.current = true;
-      if (id === 'docking-navview' && e.code === KEY_TOGGLE_CAMERA_DECOUPLE) navViewRef.current = true;
+      if (id === 'docking-navhud-toggle' && e.code === KEY_TOGGLE_NAV_HUD)
+        navHudToggleRef.current = true;
+      if (id === 'docking-navview' && e.code === KEY_TOGGLE_CAMERA_DECOUPLE)
+        navViewRef.current = true;
     };
     const onUndocked = () => {
       if (TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id === 'docking-undock') {
@@ -47,7 +58,8 @@ export default function TutorialDockingStepWatcher({ onStepAdvance, waypointRef 
     const onDocked = (event: Event) => {
       const detail = (event as CustomEvent<{ stationId?: string | null }>).detail;
       if (TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id !== 'docking-redock') return;
-      if (!detail?.stationId || detail.stationId === 'tutorial-space-station') redockedRef.current = true;
+      if (!detail?.stationId || detail.stationId === 'tutorial-space-station')
+        redockedRef.current = true;
     };
     const onNavScanContactSelected = (event: Event) => {
       const id = TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id;
@@ -83,6 +95,22 @@ export default function TutorialDockingStepWatcher({ onStepAdvance, waypointRef 
     if (advancedRef.current) return;
 
     const id = TUTORIAL_DOCKING_STEPS[step].id;
+    const relativeDistanceStepIndex = TUTORIAL_DOCKING_STEPS.findIndex(
+      (s) => s.id === 'docking-relative-distance'
+    );
+    const distanceToSelectedTarget = selectedTargetPosition.distanceTo(shipPosRef.current);
+
+    // If the pilot drifts too far out after entering the close-approach segment, rewind.
+    if (
+      id === 'docking-relative-slow' &&
+      relativeDistanceStepIndex >= 0 &&
+      distanceToSelectedTarget > RENDEZVOUS_DISTANCE_THRESHOLD
+    ) {
+      tutorialStepRef.current = relativeDistanceStepIndex;
+      onStepSet?.(relativeDistanceStepIndex);
+      return;
+    }
+
     let met = false;
     if (id === 'docking-undock') {
       met = undockedRef.current;
@@ -112,6 +140,16 @@ export default function TutorialDockingStepWatcher({ onStepAdvance, waypointRef 
         // Advance as soon as we are closing in on the target.
         met = relVel > 0;
       }
+    } else if (id === 'docking-relative-distance') {
+      met = distanceToSelectedTarget <= RENDEZVOUS_DISTANCE_THRESHOLD;
+    } else if (id === 'docking-waypoint-final-approach') {
+      const waypointObj = waypointRef.current;
+      if (waypointObj) {
+        waypointObj.getWorldPosition(_waypointWorld);
+        met = shipPosRef.current.distanceTo(_waypointWorld) <= WAYPOINT_CLOSE_DISTANCE;
+      }
+    } else if (id === 'docking-return-daedalus') {
+      met = navTargetIdRef.current === DAEDALUS_NAV_TARGET_ID;
     } else if (id === 'docking-redock') {
       met = redockedRef.current;
     }

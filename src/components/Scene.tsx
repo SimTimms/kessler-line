@@ -56,6 +56,7 @@ import { OrbitingFuelStation } from './OrbitingFuelStation';
 import RadiationZones from './RadiationZones';
 import { advanceLoadStage, useLoadStage } from '../context/LoadStageStore';
 import DefaultEnvironment from './Environment';
+import SunGravity from './Environment/SunGravity';
 import { defaultConfig } from '../components/Planets/Neptune/NeptuneInnerWispyRing';
 
 const STAGE_2_GLB_URLS = ['/space_station.glb', '/fuel-station.glb', '/container.glb'] as const;
@@ -152,6 +153,8 @@ export default function Scene() {
     >
       <CameraCapture />
       <DefaultEnvironment />
+      <SunGravity />
+
       <SaveSystemBridge />
       <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
       <ProgressiveAssetPreloader loadStage={loadStage} />

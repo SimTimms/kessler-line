@@ -77,6 +77,10 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
     tutorialStepRef.current += 1;
     setCurrentStep((s) => s + 1);
   }, []);
+  const handleStepSet = useCallback((step: number) => {
+    tutorialStepRef.current = step;
+    setCurrentStep(step);
+  }, []);
 
   const steps: TutorialStep[] =
     tutorialMode === 'general-movement'
@@ -86,7 +90,6 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
             ? { ...step, prompt: relativeVelocityPrompt }
             : step
         );
-  const dockingWaypointStepIndex = TUTORIAL_DOCKING_STEPS.findIndex((s) => s.id === 'docking-waypoint');
   const dockingMagneticStepIndex = TUTORIAL_DOCKING_STEPS.findIndex(
     (s) => s.id === 'docking-magnetic-scan'
   );
@@ -96,6 +99,9 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
   const dockingTargetLockedStepIndex = TUTORIAL_DOCKING_STEPS.findIndex(
     (s) => s.id === 'docking-target-locked'
   );
+  const dockingReturnDaedalusStepIndex = TUTORIAL_DOCKING_STEPS.findIndex(
+    (s) => s.id === 'docking-return-daedalus'
+  );
   const dockingRelativeVelocityIntroStepIndex = TUTORIAL_DOCKING_STEPS.findIndex(
     (s) => s.id === 'docking-relative-velocity-intro'
   );
@@ -103,13 +109,20 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
   const showDockingNavTargetControl =
     tutorialMode === 'docking' &&
     currentStep >=
-      (dockingScannerTargetStepIndex >= 0 ? dockingScannerTargetStepIndex : Number.POSITIVE_INFINITY);
+      (dockingScannerTargetStepIndex >= 0
+        ? dockingScannerTargetStepIndex
+        : Number.POSITIVE_INFINITY);
   const showDockingScannerHud =
     tutorialMode === 'docking' &&
-    currentStep >= (dockingMagneticStepIndex >= 0 ? dockingMagneticStepIndex : Number.POSITIVE_INFINITY) &&
-    currentStep < (dockingRelativeVelocityIntroStepIndex >= 0 ? dockingRelativeVelocityIntroStepIndex : Number.POSITIVE_INFINITY);
+    currentStep >=
+      (dockingMagneticStepIndex >= 0 ? dockingMagneticStepIndex : Number.POSITIVE_INFINITY) &&
+    currentStep <
+      (dockingRelativeVelocityIntroStepIndex >= 0
+        ? dockingRelativeVelocityIntroStepIndex
+        : Number.POSITIVE_INFINITY);
   const isDockingMagneticStepActive =
-    tutorialMode === 'docking' && TUTORIAL_DOCKING_STEPS[currentStep]?.id === 'docking-magnetic-scan';
+    tutorialMode === 'docking' &&
+    TUTORIAL_DOCKING_STEPS[currentStep]?.id === 'docking-magnetic-scan';
   const isDockingRelativeStateStepActive =
     tutorialMode === 'docking' &&
     TUTORIAL_DOCKING_STEPS[currentStep]?.id === 'docking-relative-velocity-state';
@@ -141,7 +154,11 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
         id: 'tutorial-luna',
         label: 'Luna',
         getPosition: (target: THREE.Vector3) =>
-          target.set(TUTORIAL_MOON_POSITION[0], TUTORIAL_MOON_POSITION[1], TUTORIAL_MOON_POSITION[2]),
+          target.set(
+            TUTORIAL_MOON_POSITION[0],
+            TUTORIAL_MOON_POSITION[1],
+            TUTORIAL_MOON_POSITION[2]
+          ),
       },
     ],
     []
@@ -184,6 +201,13 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
     // Keep nav guides off until we explicitly reveal targeting after magnetic scan.
     setNavHudEnabled(showDockingNavTargetControl);
   }, [tutorialMode, showDockingNavTargetControl]);
+
+  useEffect(() => {
+    if (tutorialMode !== 'docking') return;
+    if (TUTORIAL_DOCKING_STEPS[currentStep]?.id === 'docking-return-daedalus') {
+      setNavTargetClicked(false);
+    }
+  }, [tutorialMode, currentStep]);
   const completionConfig =
     tutorialMode === 'general-movement'
       ? {
@@ -196,7 +220,8 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
       : {
           completionKicker: 'Docking Drill Complete',
           completionTitle: 'Pilot Certified',
-          completionCopy: 'You completed the full onboarding loop.\nYou are cleared for live operations.',
+          completionCopy:
+            'You completed the full onboarding loop.\nYou are cleared for live operations.',
           completeButtonLabel: 'Begin Mission',
         };
   return (
@@ -204,7 +229,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
       {tutorialMode === 'general-movement' ? (
         <TutorialScene onStepAdvance={handleStepAdvance} />
       ) : (
-        <TutorialDockingScene onStepAdvance={handleStepAdvance} />
+        <TutorialDockingScene onStepAdvance={handleStepAdvance} onStepSet={handleStepSet} />
       )}
       <TutorialOverlay
         steps={steps}
@@ -224,7 +249,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
       )}
       {showDockingNavHudBar && (
         <NavHUD
-          showNavTarget={showDockingNavTargetControl && !isDockingRelativeVelocityPhase}
+          showNavTarget={showDockingNavTargetControl}
           showAutopilot={false}
           showMetrics={false}
           forceNavTargetFlash={showDockingNavTargetControl && !navTargetClicked}
@@ -233,14 +258,20 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
           customPlanetaryTargets={tutorialMode === 'docking' ? tutorialPlanetaryTargets : undefined}
           showDriveContacts={tutorialMode !== 'docking'}
           forcedHighlightContactId={
-            (isDockingScannerStepActive ||
-              (tutorialMode === 'docking' &&
-                currentStep ===
-                  (dockingTargetLockedStepIndex >= 0
-                    ? dockingTargetLockedStepIndex
-                    : Number.NEGATIVE_INFINITY)))
+            isDockingScannerStepActive ||
+            (tutorialMode === 'docking' &&
+              currentStep ===
+                (dockingTargetLockedStepIndex >= 0
+                  ? dockingTargetLockedStepIndex
+                  : Number.NEGATIVE_INFINITY))
               ? 'tutorial-waypoint-drone'
-              : undefined
+              : tutorialMode === 'docking' &&
+                  currentStep ===
+                    (dockingReturnDaedalusStepIndex >= 0
+                      ? dockingReturnDaedalusStepIndex
+                      : Number.NEGATIVE_INFINITY)
+                ? 'tutorial-daedalus'
+                : undefined
           }
         />
       )}

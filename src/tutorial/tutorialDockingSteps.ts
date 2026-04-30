@@ -143,18 +143,15 @@ export const TUTORIAL_DOCKING_STEPS: TutorialStep[] = [
   {
     id: 'docking-relative-velocity-curve',
     title: 'Trajectory Curve',
-    prompt: `As you can see, your trajectory isn't a straight line. The gravitational pull of nearby planetary bodies and the Sun all have an effect on your trajectory.
-
-Try increasing your relative velocity to between 10 and 20 meters per second. ${K(KEY_THRUST_REVERSE)}`,
+    prompt: `Your trajectory is currently a straight line. The gravitational pull of nearby planetary bodies and the Sun will have an effect on your trajectory but we'll get to that later. Try increasing your relative velocity to between 10 and 20 meters per second. ${K(KEY_THRUST_REVERSE)}`,
     keys: [K(KEY_THRUST_REVERSE)],
     requiresContinue: true,
     continueLabel: 'Continue',
   },
   {
-    id: 'docking-relative-velocity-curve',
+    id: 'docking-relative-distance',
     title: 'Trajectory Alignment',
-    prompt: `Continue to make adjustments to your trajectory until you're within around 200 meters from your object. Once you're close, you can start to slow down`,
-    requiresContinue: true,
+    prompt: `Continue to make adjustments to your trajectory until you're within around 400m from your target. Switch out of NavView using ${K(KEY_TOGGLE_CAMERA_DECOUPLE)} as you approach the object.`,
     keys: [],
     continueLabel: 'Continue',
   },
@@ -165,6 +162,27 @@ Try increasing your relative velocity to between 10 and 20 meters per second. ${
     keys: [K(KEY_THRUST_FORWARD)],
     requiresContinue: true,
     continueLabel: 'Continue',
+  },
+  {
+    id: 'docking-waypoint-final-approach',
+    title: 'Final Approach',
+    prompt: 'Bring the ship within 100 meters of the waypoint drone.',
+    keys: [],
+  },
+  {
+    id: 'docking-waypoint-reached',
+    title: 'Waypoint Reached',
+    prompt: 'Congratulations — waypoint reached.',
+    keys: [],
+    requiresContinue: true,
+    continueLabel: 'Continue',
+  },
+  {
+    id: 'docking-return-daedalus',
+    title: 'Return To Daedalus',
+    prompt:
+      "Let's return to Daedalus. I don't have enough fuel for the both of us. Open Nav Target and select Daedalus the same way you did with the waypoint drone.",
+    keys: [],
   },
   {
     id: 'docking-redock',

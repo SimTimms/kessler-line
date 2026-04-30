@@ -5,10 +5,8 @@ import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
 import { shipPosRef } from '../../context/ShipPos';
 import { scrapperIntroActive } from '../../context/CinematicState';
-import SunGravity from '../Environment/SunGravity';
 import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import TutorialFollowCamera from './TutorialFollowCamera';
-import Moon from '../Planets/Moon';
 import { SpaceStation } from '../SpaceStation';
 import DefaultEnvironment from '../Environment';
 import StationDrones from './StationDrones';
@@ -18,6 +16,7 @@ import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegi
 
 interface Props {
   onStepAdvance: () => void;
+  onStepSet?: (step: number) => void;
 }
 
 const TUTORIAL_STATION_ORBIT_ALTITUDE = 10000;
@@ -25,7 +24,7 @@ const TUTORIAL_STATION_ORBIT_RADIUS = TUTORIAL_MOON_RADIUS + TUTORIAL_STATION_OR
 const TUTORIAL_STATION_ORBIT_SPEED = 0.00045;
 const TUTORIAL_STATION_ORBIT_PHASE = Math.PI * 0.15;
 const TUTORIAL_STATION_CLUSTER_OFFSET: [number, number, number] = [0, -50, 0];
-const WAYPOINT_LOCAL_POS: [number, number, number] = [220, -20, 170];
+const WAYPOINT_LOCAL_POS: [number, number, number] = [220, 50, 170];
 const WAYPOINT_DRONE_MAGNETIC_ID = 'tutorial-waypoint-drone';
 const WAYPOINT_DRONE_LABEL = 'Waypoint Drone';
 const WAYPOINT_DRONE_SCALE = 1.45;
@@ -102,7 +101,7 @@ function OrbitingDockingStationCluster({
   );
 }
 
-export default function TutorialDockingScene({ onStepAdvance }: Props) {
+export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props) {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const waypointRef = useRef<THREE.Group | null>(null);
 
@@ -121,9 +120,12 @@ export default function TutorialDockingScene({ onStepAdvance }: Props) {
       }}
     >
       <DefaultEnvironment />
-      <SunGravity />
       <TutorialFollowCamera followTarget={shipPosRef} followOffset={[0, 10, -30]} />
-      <TutorialDockingStepWatcher onStepAdvance={onStepAdvance} waypointRef={waypointRef} />
+      <TutorialDockingStepWatcher
+        onStepAdvance={onStepAdvance}
+        onStepSet={onStepSet}
+        waypointRef={waypointRef}
+      />
       <Suspense fallback={null}>
         <OrbitingDockingStationCluster waypointRef={waypointRef} />
         <Spaceship

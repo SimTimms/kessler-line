@@ -116,24 +116,6 @@ const TutorialOverlay = memo(function TutorialOverlay({
         </div>
       )}
 
-      {/* ── Progress dots ───────────────────────────────────────────── */}
-      {!isDone && (
-        <div className="tutorial-overlay__progress-dots">
-          {steps.map((_, i) => (
-            <div
-              key={i}
-              className={`tutorial-overlay__progress-dot${
-                i < currentStep
-                  ? ' tutorial-overlay__progress-dot--done'
-                  : i === currentStep
-                    ? ' tutorial-overlay__progress-dot--current'
-                    : ''
-              }`}
-            />
-          ))}
-        </div>
-      )}
-
       {/* ── Skip button ─────────────────────────────────────────────── */}
       {!isDone && (
         <button type="button" onClick={handleSkip} className="tutorial-overlay__skip-btn">

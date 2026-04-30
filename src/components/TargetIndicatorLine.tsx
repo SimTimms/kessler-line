@@ -15,6 +15,13 @@ import { DOCKING_PORT_LOCAL_Z } from '../config/shipConfig';
 import { navHudEnabledRef } from '../context/NavHud';
 import { getMagneticTargets } from '../context/MagneticRegistry';
 import { getDriveSignatures } from '../context/DriveSignatureRegistry';
+import { getCollidables } from '../context/CollisionRegistry';
+import { gravityBodies } from '../context/GravityRegistry';
+import { MOON_BODY_ID } from '../config/moonConfig';
+
+const TUTORIAL_NAV_DAEDALUS_ID = 'tutorial-daedalus';
+const TUTORIAL_NAV_LUNA_ID = 'tutorial-luna';
+const TUTORIAL_DOCKING_BAY_COLLIDER_ID = 'docking-bay-tutorial-space-station';
 
 // Scratch vectors — avoid allocating on every frame
 const _dir = new THREE.Vector3();
@@ -98,7 +105,26 @@ export default function TargetIndicatorLine({
         tgt.copy(selectedTargetPosition);
       }
     } else {
-      tgt.copy(navTargetPosRef.current);
+      const nid = navTargetIdRef.current;
+      if (nid === TUTORIAL_NAV_DAEDALUS_ID) {
+        const bay = getCollidables().find((c) => c.id === TUTORIAL_DOCKING_BAY_COLLIDER_ID);
+        if (bay) {
+          bay.getWorldPosition(tgt);
+          navTargetPosRef.current.copy(tgt);
+        } else {
+          tgt.copy(navTargetPosRef.current);
+        }
+      } else if (nid === TUTORIAL_NAV_LUNA_ID) {
+        const moonBody = gravityBodies.get(MOON_BODY_ID);
+        if (moonBody) {
+          tgt.copy(moonBody.position);
+          navTargetPosRef.current.copy(tgt);
+        } else {
+          tgt.copy(navTargetPosRef.current);
+        }
+      } else {
+        tgt.copy(navTargetPosRef.current);
+      }
     }
 
     // Update line color
