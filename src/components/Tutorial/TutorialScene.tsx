@@ -43,12 +43,18 @@ export default function TutorialScene({ onStepAdvance }: Props) {
         <Suspense fallback={null}>
           <Moon />
           <group position={[0, -50, 0]}>
-            <SpaceStation />
+            <SpaceStation
+              followTargetRef={shipPosRef}
+              enableTrackingSpotlight
+              spotlightLocalOrigin={[26, 53, -6.8]}
+              dockingBayWorldY={0}
+            />
           </group>
           <Spaceship
             url="/shuttle.glb"
             shipGroupRef={spaceshipGroupRef}
             initialPosition={[0, 0, 0]}
+            initialDockedTo="docking-bay-tutorial-space-station"
             scale={0.5}
           />
         </Suspense>

@@ -69,7 +69,10 @@ export function useInputListeners({
           window.dispatchEvent(new CustomEvent('ShipUndocked'));
           if (groupRef.current) {
             const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
-            velocity.current.copy(forward.multiplyScalar(4)); // 4 m/s release velocity
+            const releaseDir = forward.multiplyScalar(-1);
+            groupRef.current.position.addScaledVector(releaseDir, 1); // ensure clear separation from bay
+            // Push away from the docking bay, not toward it.
+            velocity.current.copy(releaseDir.multiplyScalar(8)); // 8 m/s release velocity
           }
           releaseParticleTrigger.current = true;
         } else {

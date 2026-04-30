@@ -47,6 +47,7 @@ const _scrapperOffset = new THREE.Vector3();
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
   dockingPortRef: React.RefObject<THREE.Group>;
+  initialDockedTo?: string | null;
 }
 
 export interface UseShipPhysicsResult {
@@ -65,6 +66,7 @@ export interface UseShipPhysicsResult {
 export function useShipPhysics({
   groupRef,
   dockingPortRef,
+  initialDockedTo = null,
 }: UseShipPhysicsParams): UseShipPhysicsResult {
   const velocity = useRef(new THREE.Vector3());
   const physicsPosition = useRef(new THREE.Vector3());
@@ -74,7 +76,7 @@ export function useShipPhysics({
   const angularVelocity3 = useRef(new THREE.Vector3());
   const destroyedFired = useRef(false);
   const destroyedSpinSet = useRef(false);
-  const dockedTo = useRef<string | null>(null); // collision ID of the docked bay, or null
+  const dockedTo = useRef<string | null>(initialDockedTo); // collision ID of the docked bay, or null
   const primaryGravityId = useRef<string | null>(null);
   const primaryGravityVelocity = useRef(new THREE.Vector3());
 
@@ -120,6 +122,11 @@ export function useShipPhysics({
         rawDelta,
       })
     ) {
+      // Keep authoritative refs synced while docked so follow camera and
+      // undock handoff use the actual docked transform (no snap to stale spawn).
+      physicsPosition.current.copy(groupRef.current.position);
+      shipPosRef.current.copy(physicsPosition.current);
+      minimapShipPosition.copy(physicsPosition.current);
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
       return;
     }

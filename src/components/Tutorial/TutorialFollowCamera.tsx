@@ -19,6 +19,11 @@ const _offset = new THREE.Vector3();
 const _worldOffset = new THREE.Vector3();
 const _target = new THREE.Vector3();
 const _followQuat = new THREE.Quaternion();
+const _desiredCameraPos = new THREE.Vector3();
+const _smoothedLookAt = new THREE.Vector3();
+
+const CAMERA_POSITION_LERP_SPEED = 8;
+const CAMERA_LOOKAT_LERP_SPEED = 10;
 
 export default function TutorialFollowCamera({
   followTarget,
@@ -27,6 +32,7 @@ export default function TutorialFollowCamera({
   const { camera, gl, scene } = useThree();
   const spherical = useRef(new THREE.Spherical(10, Math.PI / 2, Math.PI));
   const didInit = useRef(false);
+  const didInitCameraPose = useRef(false);
   const isPointerDown = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
 
@@ -85,7 +91,7 @@ export default function TutorialFollowCamera({
     };
   }, [followOffset, gl]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!didInit.current) {
       _offset.set(...followOffset);
       spherical.current.setFromVector3(_offset);
@@ -96,8 +102,20 @@ export default function TutorialFollowCamera({
     _followQuat.copy(shipQuaternion).normalize();
     _offset.setFromSpherical(spherical.current);
     _worldOffset.copy(_offset).applyQuaternion(_followQuat);
-    camera.position.copy(_target).add(_worldOffset);
-    camera.lookAt(_target);
+    _desiredCameraPos.copy(_target).add(_worldOffset);
+
+    if (!didInitCameraPose.current) {
+      camera.position.copy(_desiredCameraPos);
+      _smoothedLookAt.copy(_target);
+      didInitCameraPose.current = true;
+    } else {
+      const posAlpha = 1 - Math.exp(-CAMERA_POSITION_LERP_SPEED * delta);
+      const lookAlpha = 1 - Math.exp(-CAMERA_LOOKAT_LERP_SPEED * delta);
+      camera.position.lerp(_desiredCameraPos, posAlpha);
+      _smoothedLookAt.lerp(_target, lookAlpha);
+    }
+
+    camera.lookAt(_smoothedLookAt);
   });
 
   return null;

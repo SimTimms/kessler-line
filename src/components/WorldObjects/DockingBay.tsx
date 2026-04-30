@@ -101,14 +101,7 @@ export default function DockingBay({
       >
         <mesh>
           <boxGeometry args={[dimensions.x, dimensions.y, dimensions.z]} />
-          <meshBasicMaterial
-            color="#00ff88"
-            transparent
-            opacity={0.06}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
+          <meshStandardMaterial color="#ffffff" side={THREE.DoubleSide} emissive="#ffffff" />
         </mesh>
       </group>
     </>

@@ -1,0 +1,248 @@
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  font-family: var(--hud-font, 'Space Grotesk', sans-serif);
+}
+
+.tutorial-overlay__step-card {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  backdrop-filter: blur(3px);
+  padding: 18px 28px;
+  min-width: 560px;
+  max-width: 700px;
+  text-align: left;
+}
+
+.tutorial-overlay__portrait-slot {
+  position: relative;
+  width: 96px;
+  aspect-ratio: 3 / 4;
+  border: 1px solid rgba(0, 200, 255, 0.6);
+  overflow: hidden;
+  background: rgba(0, 200, 255, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(0, 200, 255, 0.18);
+}
+
+.tutorial-overlay__portrait-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: grayscale(0.55) contrast(1.08) brightness(1.02) sepia(0.82) hue-rotate(162deg)
+    saturate(1.45);
+}
+
+.tutorial-overlay__portrait-slot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 220, 255, 0.12), rgba(0, 80, 130, 0.18));
+  pointer-events: none;
+}
+
+.tutorial-overlay__portrait-slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(170, 235, 255, 0.16) 0px,
+    rgba(170, 235, 255, 0.16) 1px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0) 3px
+  );
+  opacity: 0.75;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.tutorial-overlay__step-content {
+  min-width: 0;
+}
+
+.tutorial-overlay__contact-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(160, 225, 255, 0.62);
+}
+
+.tutorial-overlay__contact-name {
+  color: rgba(188, 240, 255, 0.86);
+}
+
+.tutorial-overlay__contact-role {
+  color: rgba(120, 210, 255, 0.7);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tutorial-overlay__contact-divider {
+  height: 1px;
+  margin: 0 0 10px;
+  background: rgba(130, 210, 255, 0.22);
+}
+
+.tutorial-overlay__step-count {
+  font-size: 11px;
+  color: rgba(0, 200, 255, 0.5);
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.tutorial-overlay__step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #00cfff;
+  margin-bottom: 8px;
+  letter-spacing: 0.03em;
+}
+
+.tutorial-overlay__step-prompt {
+  font-size: 13px;
+  color: rgba(200, 230, 255, 0.85);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+
+.tutorial-overlay__step-prompt--no-keys {
+  margin-bottom: 0;
+}
+
+.tutorial-overlay__keys {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.tutorial-overlay__key-badge {
+  display: inline-block;
+  background: rgba(0, 200, 255, 0.12);
+  border: 1px solid rgba(0, 200, 255, 0.45);
+  border-radius: 5px;
+  padding: 4px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #00cfff;
+  font-family: monospace;
+  letter-spacing: 0.04em;
+}
+
+.tutorial-overlay__step-detail {
+  font-size: 11px;
+  color: rgba(0, 200, 255, 0.45);
+  margin-top: 10px;
+  letter-spacing: 0.03em;
+}
+
+.tutorial-overlay__progress-dots {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.tutorial-overlay__progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0, 200, 255, 0.15);
+  border: 2px solid rgba(0, 200, 255, 0.25);
+  transition:
+    background 0.3s,
+    border 0.3s;
+}
+
+.tutorial-overlay__progress-dot--done {
+  background: #00cfff;
+}
+
+.tutorial-overlay__progress-dot--current {
+  background: rgba(0, 200, 255, 0.7);
+  border: 2px solid rgba(0, 200, 255, 0.9);
+}
+
+.tutorial-overlay__skip-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  pointer-events: all;
+  background: transparent;
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 5px;
+  color: rgba(0, 200, 255, 0.5);
+  font-size: 11px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tutorial-overlay__complete-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 8, 18, 0.92);
+  border: 1px solid rgba(0, 200, 255, 0.45);
+  border-radius: 10px;
+  padding: 40px 52px;
+  text-align: center;
+  pointer-events: all;
+}
+
+.tutorial-overlay__complete-kicker {
+  font-size: 11px;
+  color: rgba(0, 255, 136, 0.7);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.tutorial-overlay__complete-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #00cfff;
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+
+.tutorial-overlay__complete-copy {
+  font-size: 13px;
+  color: rgba(200, 230, 255, 0.75);
+  line-height: 1.65;
+  margin-bottom: 30px;
+}
+
+.tutorial-overlay__begin-btn {
+  background: rgba(0, 200, 255, 0.08);
+  border: 1px solid rgba(0, 200, 255, 0.65);
+  border-radius: 6px;
+  color: #00cfff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 11px 32px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}

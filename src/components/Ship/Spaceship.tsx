@@ -49,6 +49,7 @@ interface SpaceshipProps {
   shipGroupRef?: { current: THREE.Group | null };
   initialPosition?: [number, number, number];
   initialRotation?: [number, number, number];
+  initialDockedTo?: string | null;
   enableShipExplosion?: boolean;
   shipParticleCloudProps?: Partial<ShipParticleCloudProps>;
 }
@@ -59,6 +60,7 @@ export default function Spaceship({
   shipGroupRef,
   initialPosition,
   initialRotation,
+  initialDockedTo,
   enableShipExplosion = false,
   shipParticleCloudProps,
 }: SpaceshipProps) {
@@ -95,7 +97,7 @@ export default function Spaceship({
     thrustStrafeRight,
     releaseParticleTrigger,
     thrusterLightRef,
-  } = useShipPhysics({ groupRef, dockingPortRef });
+  } = useShipPhysics({ groupRef, dockingPortRef, initialDockedTo });
 
   return (
     <>
@@ -114,14 +116,15 @@ export default function Spaceship({
           decay={THRUSTER_LIGHT_DECAY}
         />
         {/* Docking port at ship nose — local +Z = forward direction of port */}
-        <group ref={dockingPortRef} position={[0, 0, DOCKING_PORT_LOCAL_Z]}>
+        <group ref={dockingPortRef} position={[0, -0.025, DOCKING_PORT_LOCAL_Z - 0.1]}>
           <mesh>
-            <boxGeometry args={[2, 2, 2]} />
-            <meshBasicMaterial
+            <boxGeometry args={[1, 0.05, 0.4]} />
+            <meshStandardMaterial
               color="#ffffff"
-              transparent
-              opacity={0.004}
-              blending={THREE.AdditiveBlending}
+              emissive="#ffffff"
+              emissiveIntensity={2.4}
+              metalness={0.15}
+              roughness={0.35}
               depthWrite={false}
             />
           </mesh>
