@@ -10,9 +10,13 @@ export interface NavTargetItem {
 }
 
 interface NavTargetDialogProps {
+  generalItems?: NavTargetItem[];
+  generalSectionLabel?: string;
   navItems: NavTargetItem[];
+  navSectionLabel?: string;
   magneticItems: NavTargetItem[];
   driveItems: NavTargetItem[];
+  showDriveItems?: boolean;
   selectedId?: string;
   highlightId?: string;
   onSelect: (id: string) => void;
@@ -20,9 +24,13 @@ interface NavTargetDialogProps {
 }
 
 export function NavTargetDialog({
+  generalItems = [],
+  generalSectionLabel = 'GENERAL CONTACTS',
   navItems,
+  navSectionLabel = 'NAV TARGETS',
   magneticItems,
   driveItems,
+  showDriveItems = true,
   selectedId,
   highlightId,
   onSelect,
@@ -62,9 +70,15 @@ export function NavTargetDialog({
       <div className="ntd-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="ntd-title">SELECT NAV TARGET</div>
         <div className="ntd-list">
+          {generalItems.length > 0 && (
+            <section>
+              <div className="ntd-section-header">{generalSectionLabel}</div>
+              {generalItems.map(renderItem)}
+            </section>
+          )}
           {navItems.length > 0 && (
             <section>
-              <div className="ntd-section-header">NAV TARGETS</div>
+              <div className="ntd-section-header">{navSectionLabel}</div>
               {navItems.map(renderItem)}
             </section>
           )}
@@ -74,7 +88,7 @@ export function NavTargetDialog({
               {magneticItems.map(renderItem)}
             </section>
           )}
-          {driveItems.length > 0 && (
+          {showDriveItems && driveItems.length > 0 && (
             <section>
               <div className="ntd-section-header">DRIVE CONTACTS</div>
               {driveItems.map(renderItem)}

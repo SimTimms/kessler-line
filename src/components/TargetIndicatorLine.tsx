@@ -3,35 +3,45 @@ import type React from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { navTargetPosRef } from '../context/NavTarget';
+import { navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
 import { shipQuaternion } from '../context/ShipState';
-import { selectedTargetName, selectedTargetPosition, selectedTargetType } from '../context/TargetSelection';
+import {
+  selectedTargetKey,
+  selectedTargetName,
+  selectedTargetPosition,
+  selectedTargetType,
+} from '../context/TargetSelection';
 import { DOCKING_PORT_LOCAL_Z } from '../config/shipConfig';
+import { navHudEnabledRef } from '../context/NavHud';
+import { getMagneticTargets } from '../context/MagneticRegistry';
+import { getDriveSignatures } from '../context/DriveSignatureRegistry';
 
 // Scratch vectors — avoid allocating on every frame
 const _dir = new THREE.Vector3();
 const _labelPos = new THREE.Vector3();
+const _tgtWorld = new THREE.Vector3();
 const _shipWorld = new THREE.Vector3();
 const _nose = new THREE.Vector3();
 const _fwd = new THREE.Vector3(0, 0, 1);
 
-const COLOR_DEFAULT = new THREE.Color('rgba(255, 255, 255, 0.5)');
+const COLOR_DEFAULT = new THREE.Color('#9fdfff');
 const COLOR_MAGNETIC = new THREE.Color('#ffaa00');
+const TARGET_LINE_OPACITY = 0.34;
 
 export default function TargetIndicatorLine({
   shipGroupRef,
 }: {
   shipGroupRef: React.RefObject<THREE.Group>;
 }) {
-  const opacity = 0.05;
+  const opacity = TARGET_LINE_OPACITY;
   const { line, mat } = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(6); // 2 points × 3 components
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const m = new THREE.LineDashedMaterial({
       color: COLOR_DEFAULT,
-      dashSize: 80,
-      gapSize: 60,
+      dashSize: 24,
+      gapSize: 10,
       transparent: true,
       opacity: opacity,
       depthTest: false,
@@ -46,14 +56,50 @@ export default function TargetIndicatorLine({
   const textRef = useRef<HTMLDivElement>(null!);
 
   useFrame(() => {
+    if (!navHudEnabledRef.current) {
+      line.visible = false;
+      if (labelGroupRef.current) labelGroupRef.current.visible = false;
+      return;
+    }
     if (!shipGroupRef.current) return;
     shipGroupRef.current.updateWorldMatrix(true, false);
     shipGroupRef.current.getWorldPosition(_shipWorld);
 
-    // Use selected target position when available, otherwise fall back to nav target
+    // Show line only when an explicit target exists (selected contact or nav target id).
     const isMagnetic = selectedTargetType === 'magnetic';
     const hasSelectedPos = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
-    const tgt = hasSelectedPos ? selectedTargetPosition : navTargetPosRef.current;
+    const hasNavTarget = navTargetIdRef.current.trim().length > 0;
+    if (!hasSelectedPos && !hasNavTarget) {
+      line.visible = false;
+      if (labelGroupRef.current) labelGroupRef.current.visible = false;
+      return;
+    }
+    line.visible = true;
+    if (labelGroupRef.current) labelGroupRef.current.visible = true;
+    const tgt = _tgtWorld;
+    if (hasSelectedPos && selectedTargetKey) {
+      if (selectedTargetType === 'magnetic') {
+        const liveMag = getMagneticTargets().find((m) => m.id === selectedTargetKey);
+        if (liveMag) {
+          liveMag.getPosition(tgt);
+          selectedTargetPosition.copy(tgt);
+        } else {
+          tgt.copy(selectedTargetPosition);
+        }
+      } else if (selectedTargetType === 'ship') {
+        const liveDrive = getDriveSignatures().find((d) => d.id === selectedTargetKey);
+        if (liveDrive) {
+          liveDrive.getPosition(tgt);
+          selectedTargetPosition.copy(tgt);
+        } else {
+          tgt.copy(selectedTargetPosition);
+        }
+      } else {
+        tgt.copy(selectedTargetPosition);
+      }
+    } else {
+      tgt.copy(navTargetPosRef.current);
+    }
 
     // Update line color
     mat.color.copy(isMagnetic && hasSelectedPos ? COLOR_MAGNETIC : COLOR_DEFAULT);

@@ -10,6 +10,9 @@ export const HudButton = ({
   power,
   highlight,
   onPowerChange,
+  disabled = false,
+  flashingPipLevel,
+  flashingPipOn = false,
 }: {
   name: string;
   isActive: boolean;
@@ -18,6 +21,9 @@ export const HudButton = ({
   power: number;
   highlight?: boolean;
   onPowerChange: (level: number) => void;
+  disabled?: boolean;
+  flashingPipLevel?: number;
+  flashingPipOn?: boolean;
 }) => (
   <div
     className={highlight ? 'hud-btn-highlight' : undefined}
@@ -27,15 +33,18 @@ export const HudButton = ({
       alignItems: 'center',
       gap: 4,
       width: 100,
+      opacity: disabled ? 0.3 : 1,
+      pointerEvents: disabled ? 'none' : 'auto',
     }}
   >
     <button
       className="hud-btn"
+      disabled={disabled}
       onClick={onClickEvent}
       style={{
         background: isActive ? 'rgba(0,200,255,0.0)' : 'rgba(60,60,60,0)',
         color: isActive ? '#00cfff' : '#888',
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
         userSelect: 'none',
         outline: 'none !important',
         padding: 1,
@@ -46,16 +55,22 @@ export const HudButton = ({
     <div style={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
       {LEVELS.map((d) => {
         const lit = d <= power && power > 1;
+        const flashing = flashingPipLevel === d && flashingPipOn;
         return (
           <div
             key={d}
-            onClick={() => onPowerChange(d)}
+            onClick={() => {
+              if (!disabled) onPowerChange(d);
+            }}
             style={{
               width: 7,
               height: 7,
-              background: lit ? '#00cfff' : '#1e1e1e',
-              cursor: 'pointer',
-              border: `1px solid ${lit ? 'rgba(0,207,255,0.55)' : 'rgba(100,100,100,0.35)'}`,
+              background: lit || flashing ? '#00cfff' : '#1e1e1e',
+              cursor: disabled ? 'default' : 'pointer',
+              border: `1px solid ${
+                lit || flashing ? 'rgba(0,207,255,0.85)' : 'rgba(100,100,100,0.35)'
+              }`,
+              boxShadow: flashing ? '0 0 8px rgba(0, 200, 255, 0.65)' : 'none',
               transition: 'background 0.12s, border-color 0.12s',
             }}
           />

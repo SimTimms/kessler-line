@@ -43,6 +43,11 @@ import { applyRadiationDamage } from './radiation';
 
 const _spinEuler = new THREE.Vector3();
 const _scrapperOffset = new THREE.Vector3();
+const _assistForward = new THREE.Vector3();
+const _assistRight = new THREE.Vector3();
+
+const CANCEL_LINEAR_EPS = 1.1; // units/s deadzone
+const CANCEL_YAW_EPS = 0.03; // rad/s deadzone
 
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
@@ -127,6 +132,8 @@ export function useShipPhysics({
       physicsPosition.current.copy(groupRef.current.position);
       shipPosRef.current.copy(physicsPosition.current);
       minimapShipPosition.copy(physicsPosition.current);
+      groupRef.current.getWorldQuaternion(shipQuaternion);
+      shipAngularVelocity.current = 0;
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
       return;
     }
@@ -177,6 +184,63 @@ export function useShipPhysics({
       strR = false;
       radOut = false;
       radIn = false;
+    }
+
+    // Opposite-key cancel assist:
+    // - W+S (fwd+rev): cancel longitudinal velocity
+    // - A+D (yawLeft+yawRight): cancel yaw rate
+    // - Q+E (strL+strR): cancel lateral/strafe velocity
+    if (fwd && rev) {
+      _assistForward.set(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
+      const vForward = velocity.current.dot(_assistForward);
+      if (Math.abs(vForward) <= CANCEL_LINEAR_EPS) {
+        // Snap longitudinal component to zero so assist does not re-pulse.
+        velocity.current.addScaledVector(_assistForward, -vForward);
+        fwd = false;
+        rev = false;
+      } else if (vForward > 0) {
+        // Moving +forward → apply opposite acceleration (-forward)
+        fwd = true;
+        rev = false;
+      } else {
+        fwd = false;
+        rev = true;
+      }
+    }
+
+    if (yawLeft && yawRight) {
+      const yawRate = angularVelocity.current;
+      if (Math.abs(yawRate) <= CANCEL_YAW_EPS) {
+        // Clamp residual angular drift at threshold.
+        angularVelocity.current = 0;
+        yawLeft = false;
+        yawRight = false;
+      } else if (yawRate > 0) {
+        // Positive yaw rate → apply yaw-left torque
+        yawLeft = true;
+        yawRight = false;
+      } else {
+        yawLeft = false;
+        yawRight = true;
+      }
+    }
+
+    if (strL && strR) {
+      _assistRight.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
+      const vRight = velocity.current.dot(_assistRight);
+      if (Math.abs(vRight) <= CANCEL_LINEAR_EPS) {
+        // Snap lateral component to zero so assist does not re-pulse.
+        velocity.current.addScaledVector(_assistRight, -vRight);
+        strL = false;
+        strR = false;
+      } else if (vRight > 0) {
+        // Moving +right → apply strafe-left
+        strL = true;
+        strR = false;
+      } else {
+        strL = false;
+        strR = true;
+      }
     }
 
     const manualInput = getManualInput({

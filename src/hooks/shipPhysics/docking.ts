@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import type { RefObject } from 'react';
 import { getCollidables } from '../../context/CollisionRegistry';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
-import { shipPosRef } from '../../context/ShipPos';
 import {
   DOCKING_PORT_LOCAL_Z,
   DOCKING_PORT_RADIUS,
@@ -26,6 +25,11 @@ const _localForward = new THREE.Vector3();
 const _portWorldPos = new THREE.Vector3();
 const _dockVel = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
+const _desiredDockPos = new THREE.Vector3();
+const _desiredDockQuat = new THREE.Quaternion();
+
+const DOCK_POS_SMOOTH_SPEED = 24;
+const DOCK_ROT_SMOOTH_SPEED = 28;
 
 interface DockedStateParams {
   group: THREE.Group;
@@ -49,10 +53,18 @@ export function applyDockedState({
     dockerEntry.getWorldPosition(_collidablePos);
     if (dockerEntry.getWorldQuaternion) {
       dockerEntry.getWorldQuaternion(_boxQuat);
-      group.quaternion.copy(_boxQuat);
+      _desiredDockQuat.copy(_boxQuat);
+    } else {
+      _desiredDockQuat.copy(group.quaternion);
     }
     _localForward.set(0, 0, DOCKING_PORT_LOCAL_Z).applyQuaternion(_boxQuat);
-    group.position.copy(_collidablePos).sub(_localForward);
+    _desiredDockPos.copy(_collidablePos).sub(_localForward);
+
+    // Damped dock attach: avoids visible micro-jitter at large world coordinates.
+    const posAlpha = 1 - Math.exp(-DOCK_POS_SMOOTH_SPEED * rawDelta);
+    const rotAlpha = 1 - Math.exp(-DOCK_ROT_SMOOTH_SPEED * rawDelta);
+    group.position.lerp(_desiredDockPos, posAlpha);
+    group.quaternion.slerp(_desiredDockQuat, rotAlpha);
   }
 
   shipVelocity.set(0, 0, 0);

@@ -6,6 +6,7 @@ import { gravityBodies } from '../context/GravityRegistry';
 import { orbitStatusRef, trajectoryApsisRef, shipQuaternion } from '../context/ShipState';
 import { shipPosRef } from '../context/ShipPos';
 import { DOCKING_PORT_LOCAL_Z } from '../config/shipConfig';
+import { navHudEnabledRef } from '../context/NavHud';
 
 const MIN_SPEED = 0.05;
 const TRAJ_STEPS = 400;
@@ -18,6 +19,9 @@ const ORBIT_AWAY_DIST = 500;
 const HUD_BLUE = 0x00c8ff;
 const VELOCITY_ORANGE = 0x00ffff;
 const VELOCITY_X_OFFSET = 0;
+const TRAJECTORY_OPACITY_BASE = 0.42;
+const TRAJECTORY_OPACITY_HIGHLIGHT_MIN = 0.5;
+const TRAJECTORY_OPACITY_HIGHLIGHT_RANGE = 0.4;
 
 // Module-level scratch — no GC per frame
 const _simPos = new THREE.Vector3();
@@ -113,11 +117,12 @@ export default function VelocityIndicator() {
 
     const mat = new THREE.LineDashedMaterial({
       color: VELOCITY_ORANGE,
-      dashSize: 3,
-      gapSize: 2,
-      opacity: 0.15,
+      dashSize: 5,
+      gapSize: 1.2,
+      opacity: TRAJECTORY_OPACITY_BASE,
       transparent: true,
       depthTest: false,
+      blending: THREE.AdditiveBlending,
     });
 
     const l = new THREE.Line(geo, mat);
@@ -189,6 +194,15 @@ export default function VelocityIndicator() {
   }, []);
 
   useFrame(({ camera, size }) => {
+    if (!navHudEnabledRef.current) {
+      line.visible = false;
+      sprite.visible = false;
+      orbitLine.visible = false;
+      orbitSprite.visible = false;
+      periMarker.sprite.visible = false;
+      apoMarker.sprite.visible = false;
+      return;
+    }
     const speed = shipVelocity.length();
     line.visible = speed > MIN_SPEED;
     sprite.visible = speed > MIN_SPEED;
@@ -396,8 +410,9 @@ export default function VelocityIndicator() {
     const lineMat = line.material as THREE.LineDashedMaterial;
     lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
     lineMat.opacity = trajectoryHighlightRef.current
-      ? 0.15 + 0.65 * (0.5 + 0.5 * Math.sin(Date.now() * 0.004))
-      : 0.15;
+      ? TRAJECTORY_OPACITY_HIGHLIGHT_MIN +
+        TRAJECTORY_OPACITY_HIGHLIGHT_RANGE * (0.5 + 0.5 * Math.sin(Date.now() * 0.004))
+      : TRAJECTORY_OPACITY_BASE;
 
     // Speed label at the midpoint of the active trajectory
     const activeEnd = orbitClosedAt >= 0 ? orbitClosedAt : TRAJ_STEPS - 1;

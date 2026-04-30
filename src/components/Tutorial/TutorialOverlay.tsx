@@ -1,16 +1,68 @@
-import { memo } from 'react';
-import { TUTORIAL_STEPS } from '../../tutorial/tutorialSteps';
+import { memo, useEffect, useState } from 'react';
+import type { TutorialStep } from '../../tutorial/tutorialSteps';
+import { displayLabelForKeyCode } from '../../config/keybindings';
 import './TutorialOverlay.css';
 import tutorialPortrait from '../../assets/administrator.jpg';
 
 interface Props {
+  steps: TutorialStep[];
   currentStep: number;
   onComplete: () => void;
+  onSkip?: () => void;
+  onContinueStep: () => void;
+  completionKicker?: string;
+  completionTitle?: string;
+  completionCopy?: string;
+  completeButtonLabel?: string;
 }
 
-const TutorialOverlay = memo(function TutorialOverlay({ currentStep, onComplete }: Props) {
-  const isDone = currentStep >= TUTORIAL_STEPS.length;
-  const step = !isDone ? TUTORIAL_STEPS[currentStep] : null;
+const TutorialOverlay = memo(function TutorialOverlay({
+  steps,
+  currentStep,
+  onComplete,
+  onSkip,
+  onContinueStep,
+  completionKicker = 'Systems Check Complete',
+  completionTitle = 'Pilot Ready',
+  completionCopy = 'You have command of your vessel.\nThe outer system awaits.',
+  completeButtonLabel = 'Begin Mission',
+}: Props) {
+  const isDone = currentStep >= steps.length;
+  const step = !isDone ? steps[currentStep] : null;
+  const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const label = displayLabelForKeyCode(e.code);
+      setPressedKeys((prev) => {
+        if (prev.has(label)) return prev;
+        const next = new Set(prev);
+        next.add(label);
+        return next;
+      });
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      const label = displayLabelForKeyCode(e.code);
+      setPressedKeys((prev) => {
+        if (!prev.has(label)) return prev;
+        const next = new Set(prev);
+        next.delete(label);
+        return next;
+      });
+    };
+    const onBlur = () => setPressedKeys(new Set());
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
+
+  const handleSkip = onSkip ?? onComplete;
 
   return (
     <div className="tutorial-overlay">
@@ -39,13 +91,27 @@ const TutorialOverlay = memo(function TutorialOverlay({ currentStep, onComplete 
             {step.keys.length > 0 && (
               <div className="tutorial-overlay__keys">
                 {step.keys.map((k) => (
-                  <span key={k} className="tutorial-overlay__key-badge">
+                  <span
+                    key={k}
+                    className={`tutorial-overlay__key-badge${
+                      pressedKeys.has(k) ? ' tutorial-overlay__key-badge--active' : ''
+                    }`}
+                  >
                     {k}
                   </span>
                 ))}
               </div>
             )}
             {step.detail && <div className="tutorial-overlay__step-detail">{step.detail}</div>}
+            {step.requiresContinue && (
+              <button
+                type="button"
+                onClick={onContinueStep}
+                className="tutorial-overlay__continue-btn"
+              >
+                {step.continueLabel ?? 'Continue'}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -53,7 +119,7 @@ const TutorialOverlay = memo(function TutorialOverlay({ currentStep, onComplete 
       {/* ── Progress dots ───────────────────────────────────────────── */}
       {!isDone && (
         <div className="tutorial-overlay__progress-dots">
-          {TUTORIAL_STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <div
               key={i}
               className={`tutorial-overlay__progress-dot${
@@ -70,7 +136,7 @@ const TutorialOverlay = memo(function TutorialOverlay({ currentStep, onComplete 
 
       {/* ── Skip button ─────────────────────────────────────────────── */}
       {!isDone && (
-        <button type="button" onClick={onComplete} className="tutorial-overlay__skip-btn">
+        <button type="button" onClick={handleSkip} className="tutorial-overlay__skip-btn">
           Skip Tutorial
         </button>
       )}
@@ -78,15 +144,11 @@ const TutorialOverlay = memo(function TutorialOverlay({ currentStep, onComplete 
       {/* ── Completion screen ───────────────────────────────────────── */}
       {isDone && (
         <div className="tutorial-overlay__complete-card">
-          <div className="tutorial-overlay__complete-kicker">Systems Check Complete</div>
-          <div className="tutorial-overlay__complete-title">Pilot Ready</div>
-          <div className="tutorial-overlay__complete-copy">
-            You have command of your vessel.
-            <br />
-            The outer system awaits.
-          </div>
+          <div className="tutorial-overlay__complete-kicker">{completionKicker}</div>
+          <div className="tutorial-overlay__complete-title">{completionTitle}</div>
+          <div className="tutorial-overlay__complete-copy">{completionCopy}</div>
           <button type="button" onClick={onComplete} className="tutorial-overlay__begin-btn">
-            Begin Mission
+            {completeButtonLabel}
           </button>
         </div>
       )}

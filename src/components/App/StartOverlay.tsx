@@ -1,9 +1,11 @@
 import { memo, useCallback, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
 
+export type TutorialMenuSelection = 'general-movement' | 'docking';
+
 interface StartOverlayProps {
   onStart: () => void;
-  onTutorial: () => void;
+  onTutorialSelect: (selection: TutorialMenuSelection) => void;
 }
 
 // Deterministic pseudo-random (sin-hash) so the field is stable across renders.
@@ -34,8 +36,22 @@ const ASTEROID_DATA = Array.from({ length: 500 }, (_, i) => {
 // overlay fades at 0.9s delay + 0.5s = 1.4s. Navigate after 1.5s.
 const DISMISS_DELAY_MS = 1500;
 
-const StartOverlay = memo(function StartOverlay({ onStart, onTutorial }: StartOverlayProps) {
+const TUTORIAL_MENU_ITEMS: Array<{
+  id: string;
+  label: string;
+  selection?: TutorialMenuSelection;
+  placeholder?: boolean;
+}> = [
+  { id: 'general-movement', label: 'General Movement', selection: 'general-movement' },
+  { id: 'docking', label: 'Docking', selection: 'docking' },
+  { id: 'scanner-sweep', label: 'Scanner Sweep (Soon)', placeholder: true },
+  { id: 'combat-intro', label: 'Combat Intro (Soon)', placeholder: true },
+  { id: 'navigation-ops', label: 'Navigation Ops (Soon)', placeholder: true },
+];
+
+const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {
   const [dismissing, setDismissing] = useState(false);
+  const [showTutorialMenu, setShowTutorialMenu] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismiss = useCallback((action: () => void) => {
@@ -54,24 +70,51 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorial }: StartOv
             </span>
           ))}
         </div>
-        <button type="button" className="start-button" onClick={() => dismiss(onStart)}>
-          Start Game
-        </button>
-        <button
-          type="button"
-          className="start-button"
-          onClick={() => dismiss(onTutorial)}
-          style={{ opacity: 0.75 }}
-        >
-          Tutorial
-        </button>
-        <button
-          type="button"
-          className="start-button restart-button"
-          onClick={() => dismiss(() => { clearAllSaves(); window.location.reload(); })}
-        >
-          Restart
-        </button>
+        <div className={`start-menu-slider${showTutorialMenu ? ' is-tutorial-menu' : ''}`}>
+          <div className="start-menu-page start-menu-page--root">
+            <button type="button" className="start-button" onClick={() => dismiss(onStart)}>
+              Start Game
+            </button>
+            <button
+              type="button"
+              className="start-button"
+              onClick={() => setShowTutorialMenu(true)}
+              style={{ opacity: 0.75 }}
+            >
+              Tutorial
+            </button>
+            <button
+              type="button"
+              className="start-button restart-button"
+              onClick={() => dismiss(() => { clearAllSaves(); window.location.reload(); })}
+            >
+              Restart
+            </button>
+          </div>
+          <div className="start-menu-page start-menu-page--tutorials">
+            <button
+              type="button"
+              className="start-button start-button--back"
+              onClick={() => setShowTutorialMenu(false)}
+            >
+              ← Back
+            </button>
+            {TUTORIAL_MENU_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`start-button${item.placeholder ? ' start-button--placeholder' : ''}`}
+                disabled={item.placeholder}
+                onClick={() => {
+                  if (!item.selection) return;
+                  dismiss(() => onTutorialSelect(item.selection));
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="start-asteroids" aria-hidden="true">
         {ASTEROID_DATA.map((style, i) => (

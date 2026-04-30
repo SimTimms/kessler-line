@@ -34,6 +34,7 @@ interface HUDProps {
   radioOn: boolean;
   setRadioOn: (on: boolean) => void;
   radioOnRef: React.RefObject<boolean>;
+  tutorialMagneticFocus?: boolean;
 }
 
 interface ButtonDef {
@@ -61,12 +62,25 @@ export const HUD = ({
   radioOn,
   setRadioOn,
   radioOnRef,
+  tutorialMagneticFocus = false,
 }: HUDProps) => {
   // ── Background music ──────────────────────────────────────────────────────
   const [musicOn, setMusicOn] = useState(false);
   const [radiationOn, setRadiationOn] = useState(false);
   const [highlightMagnet, setHighlightMagnet] = useState(false);
   const [highlightDrive, setHighlightDrive] = useState(false);
+  const [tutorialFlashOn, setTutorialFlashOn] = useState(false);
+
+  useEffect(() => {
+    if (!tutorialMagneticFocus) {
+      setTutorialFlashOn(false);
+      return;
+    }
+    const id = window.setInterval(() => {
+      setTutorialFlashOn((v) => !v);
+    }, 420);
+    return () => window.clearInterval(id);
+  }, [tutorialMagneticFocus]);
 
   useEffect(() => {
     const onStart = () => setHighlightMagnet(true);
@@ -269,6 +283,9 @@ export const HUD = ({
             isActive={isActive}
             power={powers[id]}
             highlight={(highlightMagnet && id === 'magnet') || (highlightDrive && id === 'drive')}
+            disabled={tutorialMagneticFocus && id !== 'magnet'}
+            flashingPipLevel={tutorialMagneticFocus && id === 'magnet' ? 5 : undefined}
+            flashingPipOn={tutorialMagneticFocus && id === 'magnet' ? tutorialFlashOn : false}
             onClickEvent={() =>
               handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id], onSideEffect)
             }

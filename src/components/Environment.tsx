@@ -7,7 +7,7 @@ export default function DefaultEnvironment() {
   return (
     <group>
       <directionalLight intensity={0.2} position={[500, 0, 500]} color="#ffffff" />
-      <ambientLight intensity={0.09} />
+      <ambientLight intensity={0.9} />
       <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
       <SunGravity />
       <SkySphere />

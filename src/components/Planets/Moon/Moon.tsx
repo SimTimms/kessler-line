@@ -3,6 +3,9 @@ import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { gravityBodies } from '../../../context/GravityRegistry';
+import { registerCollidable, unregisterCollidable } from '../../../context/CollisionRegistry';
+import { SHIP_RADIUS, setHullIntegrity, shipDestroyed } from '../../../context/ShipState';
+import { shipPosRef } from '../../../context/ShipPos';
 import {
   MOON_BODY_ID,
   MOON_BUMP_MAP_URL,
@@ -16,6 +19,7 @@ import { ORBIT_ALTITUDE_MULTIPLIER } from '../../../config/solarConfig';
 
 // ~27.3 Earth days per lunar day; same reference spin as SolarSystem Earth (0.04 rad/s = 1 game day).
 const MOON_SPIN_SPEED = 0.04 / 27.3;
+const MOON_COLLISION_ID = 'tutorial-moon-surface';
 
 const _worldPos = new THREE.Vector3();
 
@@ -52,9 +56,19 @@ export default function Moon({
       surfaceRadius: radius,
       orbitAltitude,
     });
+    registerCollidable({
+      id: MOON_COLLISION_ID,
+      getWorldPosition: (target) => {
+        if (rootRef.current) rootRef.current.getWorldPosition(target);
+        return target;
+      },
+      shape: { type: 'sphere', radius },
+      getObject3D: () => rootRef.current,
+    });
     hasPrevWorldPosRef.current = false;
     return () => {
       gravityBodies.delete(MOON_BODY_ID);
+      unregisterCollidable(MOON_COLLISION_ID);
     };
   }, [mu, orbitAltitude, radius, soiRadius]);
 
@@ -73,6 +87,15 @@ export default function Moon({
     prevWorldPosRef.current.copy(_worldPos);
     hasPrevWorldPosRef.current = true;
     body.position.copy(_worldPos);
+
+    // Hard-fail on moon contact: any hull intersection means destruction.
+    if (!shipDestroyed.current) {
+      const shipDist = _worldPos.distanceToSquared(shipPosRef.current);
+      const minDist = radius + SHIP_RADIUS;
+      if (shipDist <= minDist * minDist) {
+        setHullIntegrity(0);
+      }
+    }
   });
 
   return (

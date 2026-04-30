@@ -278,8 +278,58 @@ body {
   transition: color 0.15s;
 }
 
+.start-menu-slider {
+  position: relative;
+  width: 280px;
+  min-height: 220px;
+  overflow: hidden;
+}
+
+.start-menu-page {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  transition: transform 320ms ease;
+}
+
+.start-menu-page--root {
+  left: 0;
+  transform: translateX(0);
+}
+
+.start-menu-page--tutorials {
+  left: 0;
+  transform: translateX(100%);
+}
+
+.start-menu-slider.is-tutorial-menu .start-menu-page--root {
+  transform: translateX(-100%);
+}
+
+.start-menu-slider.is-tutorial-menu .start-menu-page--tutorials {
+  transform: translateX(0);
+}
+
+.start-button--back {
+  margin-bottom: 10px;
+  color: rgba(170, 200, 230, 0.78);
+}
+
+.start-button--placeholder {
+  color: rgba(140, 165, 188, 0.4);
+  cursor: default;
+}
+
 .start-button:hover {
   color: rgba(200, 225, 255, 1);
+}
+
+.start-button--placeholder:hover {
+  color: rgba(140, 165, 188, 0.4);
 }
 
 .restart-button {

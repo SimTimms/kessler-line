@@ -10,18 +10,18 @@
 }
 
 .ntd-dialog {
-  --ntd-text:               #33bb66;
-  --ntd-border:             rgba(51, 187, 102, 0.4);
-  --ntd-border-strong:      rgba(51, 187, 102, 0.7);
-  --ntd-glow:               rgba(51, 187, 102, 0.18);
-  --ntd-muted:              rgba(51, 187, 102, 0.6);
-  --ntd-dim:                rgba(51, 187, 102, 0.42);
-  --ntd-item-bg-hover:      rgba(51, 187, 102, 0.1);
-  --ntd-item-bg-active:     rgba(51, 187, 102, 0.18);
-  --ntd-item-glow-active:   rgba(51, 187, 102, 0.2);
-  --ntd-sublabel:           rgba(51, 187, 102, 0.45);
+  --ntd-text:               #00cfff;
+  --ntd-border:             rgba(0, 207, 255, 0.38);
+  --ntd-border-strong:      rgba(0, 207, 255, 0.72);
+  --ntd-glow:               rgba(0, 180, 255, 0.2);
+  --ntd-muted:              rgba(140, 225, 255, 0.78);
+  --ntd-dim:                rgba(120, 205, 255, 0.56);
+  --ntd-item-bg-hover:      rgba(0, 170, 255, 0.12);
+  --ntd-item-bg-active:     rgba(0, 195, 255, 0.2);
+  --ntd-item-glow-active:   rgba(0, 170, 255, 0.35);
+  --ntd-sublabel:           rgba(120, 205, 255, 0.66);
 
-  background: rgba(0, 10, 4, 0.97);
+  background: rgba(0, 7, 20, 0.97);
   border: 1px solid var(--ntd-border);
   border-radius: 4px;
   padding: 28px 32px;
@@ -106,8 +106,8 @@ section:first-child .ntd-section-header {
 }
 
 @keyframes ntd-item-pulse {
-  0%, 100% { background: rgba(80, 255, 200, 0.06); color: rgba(80, 255, 200, 0.95); }
-  50%       { background: rgba(80, 255, 200, 0.18); color: rgba(80, 255, 200, 1);    }
+  0%, 100% { background: rgba(0, 170, 255, 0.08); color: rgba(130, 225, 255, 0.96); }
+  50%       { background: rgba(0, 170, 255, 0.22); color: rgba(170, 238, 255, 1);    }
 }
 
 .ntd-item-content {

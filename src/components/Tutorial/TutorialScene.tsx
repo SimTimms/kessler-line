@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
 import TutorialStepWatcher from './TutorialStepWatcher';
@@ -11,9 +11,44 @@ import TutorialFollowCamera from './TutorialFollowCamera';
 import Moon from '../Planets/Moon';
 import { SpaceStation } from '../SpaceStation';
 import DefaultEnvironment from '../Environment';
+import StationDrones from './StationDrones';
+import { TUTORIAL_MOON_POSITION, TUTORIAL_MOON_RADIUS } from '../../config/moonConfig';
 
 interface Props {
   onStepAdvance: () => void;
+}
+
+const TUTORIAL_STATION_ORBIT_ALTITUDE = 10000;
+const TUTORIAL_STATION_ORBIT_RADIUS = TUTORIAL_MOON_RADIUS + TUTORIAL_STATION_ORBIT_ALTITUDE;
+// Keep tutorial docking stable/readable: slow orbit to reduce perceived dock jitter.
+const TUTORIAL_STATION_ORBIT_SPEED = 0.00045;
+const TUTORIAL_STATION_ORBIT_PHASE = Math.PI * 0.15;
+const TUTORIAL_STATION_CLUSTER_OFFSET: [number, number, number] = [0, -50, 0];
+
+function OrbitingTutorialStationCluster() {
+  const orbitRef = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!orbitRef.current) return;
+    const angle = TUTORIAL_STATION_ORBIT_PHASE + clock.getElapsedTime() * TUTORIAL_STATION_ORBIT_SPEED;
+    orbitRef.current.position.set(
+      TUTORIAL_MOON_POSITION[0] + Math.cos(angle) * TUTORIAL_STATION_ORBIT_RADIUS,
+      0,
+      TUTORIAL_MOON_POSITION[2] + Math.sin(angle) * TUTORIAL_STATION_ORBIT_RADIUS
+    );
+  });
+
+  return (
+    <group ref={orbitRef}>
+      <group position={TUTORIAL_STATION_CLUSTER_OFFSET}>
+        <SpaceStation
+          followTargetRef={shipPosRef}
+          enableTrackingSpotlight
+          spotlightLocalOrigin={[26, 53, -6.8]}
+        />
+        <StationDrones center={[26, 20, -6.8]} />
+      </group>
+    </group>
+  );
 }
 
 export default function TutorialScene({ onStepAdvance }: Props) {
@@ -42,14 +77,7 @@ export default function TutorialScene({ onStepAdvance }: Props) {
         <TutorialStepWatcher onStepAdvance={onStepAdvance} />
         <Suspense fallback={null}>
           <Moon />
-          <group position={[0, -50, 0]}>
-            <SpaceStation
-              followTargetRef={shipPosRef}
-              enableTrackingSpotlight
-              spotlightLocalOrigin={[26, 53, -6.8]}
-              dockingBayWorldY={0}
-            />
-          </group>
+          <OrbitingTutorialStationCluster />
           <Spaceship
             url="/shuttle.glb"
             shipGroupRef={spaceshipGroupRef}

@@ -24,6 +24,7 @@ export const KEY_THRUST_DECREASE_NP = 'NumpadSubtract'; // numpad -
 
 // ─── HUD toggles (use e.code) ────────────────────────────────────────────────
 export const KEY_TOGGLE_MINIMAP = 'KeyM';
+export const KEY_TOGGLE_NAV_HUD = 'KeyN';
 
 // ─── Camera (use e.code) ─────────────────────────────────────────────────────
 export const KEY_TOGGLE_CAMERA_DECOUPLE = 'KeyC';

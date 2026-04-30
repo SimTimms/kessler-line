@@ -4,8 +4,16 @@ import { NAV_TARGET_DEFS } from '../../config/worldConfig';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { shipPosRef } from '../../context/ShipPos';
-import { orbitStatusRef } from '../../context/ShipState';
-import { selectTarget, flashTarget, clearSelectedTarget, type TargetType } from '../../context/TargetSelection';
+import { orbitStatusRef, shipVelocity } from '../../context/ShipState';
+import {
+  selectTarget,
+  flashTarget,
+  clearSelectedTarget,
+  selectedTargetName,
+  selectedTargetPosition,
+  selectedTargetVelocity,
+  type TargetType,
+} from '../../context/TargetSelection';
 import { getMagneticTargets } from '../../context/MagneticRegistry';
 import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
 import { getDriveSignatures } from '../../context/DriveSignatureRegistry';
@@ -23,12 +31,21 @@ import './NavHUD.css';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
 const ORBIT_LABELS = new Map(NAV_TARGET_DEFS.map((p) => [p.id, p.label]));
+const _toTargetDir = new THREE.Vector3();
 
 interface ScanContact {
   id: string;
   label: string;
   sublabel: string;
+  distance: string;
   type: TargetType;
+  getPosition: (v: THREE.Vector3) => THREE.Vector3;
+  getVelocity?: (v: THREE.Vector3) => THREE.Vector3;
+}
+
+interface TutorialTargetDef {
+  id: string;
+  label: string;
   getPosition: (v: THREE.Vector3) => THREE.Vector3;
   getVelocity?: (v: THREE.Vector3) => THREE.Vector3;
 }
@@ -40,7 +57,31 @@ function formatDist(distUnits: number): string {
   return `${km.toFixed(0)} km`;
 }
 
-export const NavHUD = () => {
+interface NavHUDProps {
+  showNavTarget?: boolean;
+  showAutopilot?: boolean;
+  showMetrics?: boolean;
+  showRelativeVelocityOnly?: boolean;
+  forceNavTargetFlash?: boolean;
+  onNavTargetClick?: () => void;
+  customGeneralTargets?: TutorialTargetDef[];
+  customPlanetaryTargets?: TutorialTargetDef[];
+  showDriveContacts?: boolean;
+  forcedHighlightContactId?: string;
+}
+
+export const NavHUD = ({
+  showNavTarget = true,
+  showAutopilot = true,
+  showMetrics = true,
+  showRelativeVelocityOnly = false,
+  forceNavTargetFlash = false,
+  onNavTargetClick,
+  customGeneralTargets,
+  customPlanetaryTargets,
+  showDriveContacts = true,
+  forcedHighlightContactId,
+}: NavHUDProps = {}) => {
   const [targetId, setTargetId] = useState(navTargetIdRef.current);
   const [targetLabel, setTargetLabel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -50,6 +91,7 @@ export const NavHUD = () => {
   const [navItems, setNavItems] = useState<NavTargetItem[]>(() =>
     NAV_TARGETS.map((t) => ({ id: t.id, label: t.label })),
   );
+  const [generalItems, setGeneralItems] = useState<NavTargetItem[]>([]);
   const [magneticContacts, setMagneticContacts] = useState<ScanContact[]>([]);
   const [driveContacts, setDriveContacts] = useState<ScanContact[]>([]);
 
@@ -61,9 +103,11 @@ export const NavHUD = () => {
   const apoapsisRef = useRef<HTMLSpanElement>(null!);
   const apsesTargetRef = useRef<HTMLSpanElement>(null!);
   const approachRef = useRef<HTMLSpanElement>(null!);
+  const relativeVelRef = useRef<HTMLSpanElement>(null!);
   const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
 
   const prevNavSigRef = useRef('');
+  const prevGeneralSigRef = useRef('');
   const prevMagSigRef = useRef('');
   const prevDriveSigRef = useRef('');
   const scanVec = useRef(new THREE.Vector3());
@@ -147,6 +191,23 @@ export const NavHUD = () => {
           approachRef.current.textContent = '—';
         }
       }
+      if (relativeVelRef.current) {
+        const hasSelected = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
+        const targetPos = hasSelected ? selectedTargetPosition : navTargetPosRef.current;
+        const targetVel = hasSelected ? selectedTargetVelocity : _toTargetDir.set(0, 0, 0);
+        _toTargetDir.subVectors(targetPos, shipPosRef.current);
+        const dist = _toTargetDir.length();
+        if (dist < 1e-5) {
+          relativeVelRef.current.textContent = '0 m/s';
+        } else {
+          _toTargetDir.multiplyScalar(1 / dist);
+          const relVel =
+            (shipVelocity.x - targetVel.x) * _toTargetDir.x +
+            (shipVelocity.y - targetVel.y) * _toTargetDir.y +
+            (shipVelocity.z - targetVel.z) * _toTargetDir.z;
+          relativeVelRef.current.textContent = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
+        }
+      }
       if (autopilotBtnRef.current) {
         const active = autopilotActive.current;
         autopilotBtnRef.current.textContent = active ? autopilotStatus.current : 'DISENGAGED';
@@ -155,25 +216,46 @@ export const NavHUD = () => {
 
       // Nav target distances
       {
-        const newNavItems: NavTargetItem[] = NAV_TARGETS.map((def) => {
-          let pos: THREE.Vector3;
-          if (def.orbit) {
-            const parentBody = gravityBodies.get(def.orbit.planetName);
-            pos = parentBody ? parentBody.position : navVec.current.set(...def.position);
-          } else {
-            const gravBody =
-              gravityBodies.get(def.id.charAt(0).toUpperCase() + def.id.slice(1)) ||
-              gravityBodies.get(def.id);
-            pos = gravBody ? gravBody.position : navVec.current.set(...def.position);
-          }
-          const dist = pos.distanceTo(shipPosRef.current);
-          return { id: def.id, label: def.label, distance: formatDist(dist) };
-        });
+        const newNavItems: NavTargetItem[] = customPlanetaryTargets
+          ? customPlanetaryTargets.map((def) => {
+              const pos = def.getPosition(navVec.current);
+              const dist = pos.distanceTo(shipPosRef.current);
+              return { id: def.id, label: def.label, distance: formatDist(dist) };
+            })
+          : NAV_TARGETS.map((def) => {
+              let pos: THREE.Vector3;
+              if (def.orbit) {
+                const parentBody = gravityBodies.get(def.orbit.planetName);
+                pos = parentBody ? parentBody.position : navVec.current.set(...def.position);
+              } else {
+                const gravBody =
+                  gravityBodies.get(def.id.charAt(0).toUpperCase() + def.id.slice(1)) ||
+                  gravityBodies.get(def.id);
+                pos = gravBody ? gravBody.position : navVec.current.set(...def.position);
+              }
+              const dist = pos.distanceTo(shipPosRef.current);
+              return { id: def.id, label: def.label, distance: formatDist(dist) };
+            });
         const navSig = newNavItems.map((i) => `${i.id}:${i.distance}`).join('|');
         if (navSig !== prevNavSigRef.current) {
           prevNavSigRef.current = navSig;
           setNavItems(newNavItems);
         }
+      }
+      if (customGeneralTargets) {
+        const newGeneralItems: NavTargetItem[] = customGeneralTargets.map((def) => {
+          const pos = def.getPosition(navVec.current);
+          const dist = pos.distanceTo(shipPosRef.current);
+          return { id: def.id, label: def.label, distance: formatDist(dist) };
+        });
+        const generalSig = newGeneralItems.map((i) => `${i.id}:${i.distance}`).join('|');
+        if (generalSig !== prevGeneralSigRef.current) {
+          prevGeneralSigRef.current = generalSig;
+          setGeneralItems(newGeneralItems);
+        }
+      } else if (prevGeneralSigRef.current !== '') {
+        prevGeneralSigRef.current = '';
+        setGeneralItems([]);
       }
 
       // Magnetic contacts
@@ -188,14 +270,15 @@ export const NavHUD = () => {
             inRange.push({
               id: t.id,
               label: t.label,
-              sublabel: `MAG · ${formatDist(dist)}`,
+              sublabel: 'MAGNETIC',
+              distance: formatDist(dist),
               type: 'magnetic',
               getPosition: t.getPosition,
               getVelocity: t.getVelocity,
             });
           }
         }
-        const sig = inRange.map((c) => c.id).sort().join('|');
+        const sig = inRange.map((c) => `${c.id}:${c.distance}`).sort().join('|');
         if (sig !== prevMagSigRef.current) {
           prevMagSigRef.current = sig;
           setMagneticContacts(inRange);
@@ -217,7 +300,8 @@ export const NavHUD = () => {
             inRange.push({
               id: s.id,
               label: s.label,
-              sublabel: `DRIVE SIG · ${formatDist(dist)}`,
+              sublabel: 'DRIVE SIGNATURE',
+              distance: formatDist(dist),
               type: 'ship',
               getPosition: s.getPosition,
               getVelocity: s.getVelocity,
@@ -273,6 +357,10 @@ export const NavHUD = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (forceNavTargetFlash) setNavTargetHighlight(true);
+  }, [forceNavTargetFlash]);
+
   // Tutorial highlight: pulse a specific contact item in the dialog
   useEffect(() => {
     const onStart = (e: Event) => {
@@ -288,11 +376,42 @@ export const NavHUD = () => {
     };
   }, []);
 
-  const currentTarget = NAV_TARGETS.find((t) => t.id === targetId);
-  const displayLabel = selectedObjName ?? (currentTarget?.label ?? (targetLabel || '—'));
+  const customGeneralMatch = customGeneralTargets?.find((t) => t.id === targetId);
+  const customPlanetaryMatch = customPlanetaryTargets?.find((t) => t.id === targetId);
+  const navMatch = NAV_TARGETS.find((t) => t.id === targetId);
+  const magneticMatch = magneticContacts.find((c) => c.id === targetId);
+  const driveMatch = driveContacts.find((c) => c.id === targetId);
+  const resolvedTargetLabel = customGeneralMatch?.label
+    ?? customPlanetaryMatch?.label
+    ?? magneticMatch?.label
+    ?? driveMatch?.label
+    ?? (customGeneralTargets || customPlanetaryTargets ? undefined : navMatch?.label)
+    ?? targetLabel;
+  const displayLabel = selectedObjName ?? (resolvedTargetLabel || 'select a target.');
 
   const handleSelect = (id: string) => {
     // Standard nav target
+    const customGeneralDef = customGeneralTargets?.find((t) => t.id === id);
+    if (customGeneralDef) {
+      setTargetId(id);
+      setTargetLabel(customGeneralDef.label);
+      setSelectedObjName(null);
+      clearSelectedTarget();
+      navTargetIdRef.current = id;
+      customGeneralDef.getPosition(navTargetPosRef.current);
+      return;
+    }
+    const customPlanetaryDef = customPlanetaryTargets?.find((t) => t.id === id);
+    if (customPlanetaryDef) {
+      setTargetId(id);
+      setTargetLabel(customPlanetaryDef.label);
+      setSelectedObjName(null);
+      clearSelectedTarget();
+      navTargetIdRef.current = id;
+      customPlanetaryDef.getPosition(navTargetPosRef.current);
+      return;
+    }
+
     const def = NAV_TARGETS.find((t) => t.id === id);
     if (def) {
       setTargetId(id);
@@ -354,11 +473,13 @@ export const NavHUD = () => {
     id: c.id,
     label: c.label,
     sublabel: c.sublabel,
+    distance: c.distance,
   }));
   const driveItems: NavTargetItem[] = driveContacts.map((c) => ({
     id: c.id,
     label: c.label,
     sublabel: c.sublabel,
+    distance: c.distance,
   }));
 
   return (
@@ -373,65 +494,87 @@ export const NavHUD = () => {
           </div>
         </div>
         */}
-          <div className="nav-target-group">
-            <div className="nav-target-label">Nav Target</div>
-            <button
-              className={`nav-target-btn${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
-              onClick={() => setDialogOpen(true)}
-            >
-              {displayLabel}
-            </button>
-          </div>
-          <div className="nav-target-group">
-            <div className="nav-target-label">Autopilot</div>
-            <button ref={autopilotBtnRef} className="autopilot-btn" onClick={handleAutopilot}>
-              AUTOPILOT
-            </button>
-          </div>
-          <div className="hud-divider" />
+          {showNavTarget && (
+            <div className="nav-target-group">
+              <div className="nav-target-label">Nav Target</div>
+              <button
+                className={`nav-target-btn${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
+                onClick={() => {
+                  setDialogOpen(true);
+                  setNavTargetHighlight(false);
+                  onNavTargetClick?.();
+                }}
+              >
+                {displayLabel}
+              </button>
+            </div>
+          )}
+          {showAutopilot && (
+            <div className="nav-target-group">
+              <div className="nav-target-label">Autopilot</div>
+              <button ref={autopilotBtnRef} className="autopilot-btn" onClick={handleAutopilot}>
+                AUTOPILOT
+              </button>
+            </div>
+          )}
+          {(showNavTarget || showAutopilot) && showMetrics && <div className="hud-divider" />}
 
-          <div className="hud-metrics nav-metrics">
-            <div className="hud-metric">
-              <div className="hud-label">
-                {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
+          {showMetrics && (
+            <div className="hud-metrics nav-metrics">
+              {!showRelativeVelocityOnly && (
+                <>
+                  <div className="hud-metric">
+                    <div className="hud-label">
+                      {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
+                    </div>
+                    <span ref={orbitRef} className="hud-value nav-orbit" />
+                  </div>
+                  <div className="hud-divider" />
+                  <div className="hud-metric" style={{ minWidth: '50px' }}>
+                    <div className="hud-label">Altitude</div>
+                    <span ref={altRef} className="hud-value nav-alt" />
+                    <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
+                  </div>
+                  <div className="hud-divider" />
+                  <div className="hud-metric">
+                    <div className="hud-label">Apsis</div>
+                    <div className="hud-metric-inline">
+                      <div className="hud-label">Per</div>
+                      <span ref={periapsisRef} className="hud-value nav-periapsis" />
+                    </div>
+                    <div className="hud-metric-inline">
+                      <div className="hud-label">Apo</div>
+                      <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
+                    </div>
+                  </div>
+                  <div className="hud-divider" />
+                  <div className="hud-metric">
+                    <div className="hud-label">Approach</div>
+                    <span ref={approachRef} className="hud-value nav-approach" />
+                  </div>
+                  <div className="hud-divider" />
+                </>
+              )}
+              <div className="hud-metric">
+                <div className="hud-label">Rel Vel</div>
+                <span ref={relativeVelRef} className="hud-value nav-relative-velocity" />
               </div>
-              <span ref={orbitRef} className="hud-value nav-orbit" />
             </div>
-            <div className="hud-divider" />
-            <div className="hud-metric" style={{ minWidth: '50px' }}>
-              <div className="hud-label">Altitude</div>
-              <span ref={altRef} className="hud-value nav-alt" />
-              <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
-            </div>
-            <div className="hud-divider" />
-            <div className="hud-metric">
-              <div className="hud-label">Apsis</div>
-              <div className="hud-metric-inline">
-                <div className="hud-label">Per</div>
-                <span ref={periapsisRef} className="hud-value nav-periapsis" />
-              </div>
-              <div className="hud-metric-inline">
-                <div className="hud-label">Apo</div>
-                <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
-              </div>
-            </div>
-
-            <div className="hud-divider" />
-            <div className="hud-metric">
-              <div className="hud-label">Approach</div>
-              <span ref={approachRef} className="hud-value nav-approach" />
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
       {dialogOpen && (
         <NavTargetDialog
+          generalItems={generalItems}
+          generalSectionLabel="GENERAL CONTACTS"
           navItems={navItems}
+          navSectionLabel="PLANETARY CONTACTS"
           magneticItems={magneticItems}
           driveItems={driveItems}
+          showDriveItems={showDriveContacts}
           selectedId={targetId}
-          highlightId={highlightedContactId}
+          highlightId={forcedHighlightContactId ?? highlightedContactId}
           onSelect={handleSelect}
           onClose={() => setDialogOpen(false)}
         />
