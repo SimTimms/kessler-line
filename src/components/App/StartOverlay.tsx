@@ -1,7 +1,11 @@
 import { memo, useCallback, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
 
-export type TutorialMenuSelection = 'general-movement' | 'docking';
+export type TutorialMenuSelection =
+  | 'general-movement'
+  | 'navigation'
+  | 'orbital-mechanics'
+  | 'docking';
 
 interface StartOverlayProps {
   onStart: () => void;
@@ -42,7 +46,9 @@ const TUTORIAL_MENU_ITEMS: Array<{
   selection?: TutorialMenuSelection;
   placeholder?: boolean;
 }> = [
-  { id: 'general-movement', label: 'General Movement', selection: 'general-movement' },
+  { id: 'general-movement', label: 'Basic Movement', selection: 'general-movement' },
+  { id: 'navigation', label: 'Navigation', selection: 'navigation' },
+  { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: 'orbital-mechanics' },
   { id: 'docking', label: 'Docking', selection: 'docking' },
   { id: 'scanner-sweep', label: 'Scanner Sweep (Soon)', placeholder: true },
   { id: 'combat-intro', label: 'Combat Intro (Soon)', placeholder: true },
@@ -86,7 +92,12 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: S
             <button
               type="button"
               className="start-button restart-button"
-              onClick={() => dismiss(() => { clearAllSaves(); window.location.reload(); })}
+              onClick={() =>
+                dismiss(() => {
+                  clearAllSaves();
+                  window.location.reload();
+                })
+              }
             >
               Restart
             </button>
@@ -107,7 +118,7 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: S
                 disabled={item.placeholder}
                 onClick={() => {
                   if (!item.selection) return;
-                  dismiss(() => onTutorialSelect(item.selection));
+                  dismiss(() => onTutorialSelect(item.selection as TutorialMenuSelection));
                 }}
               >
                 {item.label}

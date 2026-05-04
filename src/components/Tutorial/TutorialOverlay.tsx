@@ -1,6 +1,7 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { TutorialStep } from '../../tutorial/tutorialSteps';
 import { displayLabelForKeyCode } from '../../config/keybindings';
+import TutorialKeyHints from './TutorialKeyHints';
 import './TutorialOverlay.css';
 import tutorialPortrait from '../../assets/administrator.jpg';
 
@@ -30,6 +31,11 @@ const TutorialOverlay = memo(function TutorialOverlay({
   const isDone = currentStep >= steps.length;
   const step = !isDone ? steps[currentStep] : null;
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
+  const [mouseLeftHeld, setMouseLeftHeld] = useState(false);
+  const [mouseOrbiting, setMouseOrbiting] = useState(false);
+  const [scrollActive, setScrollActive] = useState(false);
+  const mouseOrbitTimer = useRef(0);
+  const scrollFlashTimer = useRef(0);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -62,7 +68,46 @@ const TutorialOverlay = memo(function TutorialOverlay({
     };
   }, []);
 
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (e.button === 0) setMouseLeftHeld(true);
+    };
+    const onUp = (e: MouseEvent) => {
+      if (e.button === 0) {
+        setMouseLeftHeld(false);
+        setMouseOrbiting(false);
+      }
+    };
+    const onMove = (e: MouseEvent) => {
+      if (e.buttons & 1 && (e.movementX || e.movementY)) {
+        setMouseOrbiting(true);
+        window.clearTimeout(mouseOrbitTimer.current);
+        mouseOrbitTimer.current = window.setTimeout(() => setMouseOrbiting(false), 120);
+      }
+    };
+    const onWheel = () => {
+      setScrollActive(true);
+      window.clearTimeout(scrollFlashTimer.current);
+      scrollFlashTimer.current = window.setTimeout(() => setScrollActive(false), 220);
+    };
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('wheel', onWheel);
+      window.clearTimeout(mouseOrbitTimer.current);
+      window.clearTimeout(scrollFlashTimer.current);
+    };
+  }, []);
+
   const handleSkip = onSkip ?? onComplete;
+
+  const hasKeyStrip =
+    !!step && ((step.keyHints?.length ?? 0) > 0 || step.keys.length > 0);
 
   return (
     <div className="tutorial-overlay">
@@ -84,26 +129,38 @@ const TutorialOverlay = memo(function TutorialOverlay({
             <div className="tutorial-overlay__contact-divider" />
             <div className="tutorial-overlay__step-title">{step.title}</div>
             <div
-              className={`tutorial-overlay__step-prompt${step.keys.length > 0 ? '' : ' tutorial-overlay__step-prompt--no-keys'}`}
+              className={`tutorial-overlay__step-prompt${
+                hasKeyStrip ? '' : ' tutorial-overlay__step-prompt--no-keys'
+              }`}
             >
               {step.prompt}
             </div>
-            {step.keys.length > 0 && (
-              <div className="tutorial-overlay__keys">
-                {step.keys.map((k) => (
-                  <span
-                    key={k}
-                    className={`tutorial-overlay__key-badge${
-                      pressedKeys.has(k) ? ' tutorial-overlay__key-badge--active' : ''
-                    }`}
-                  >
-                    {k}
-                  </span>
-                ))}
-              </div>
+            {step.keyHints && step.keyHints.length > 0 ? (
+              <TutorialKeyHints
+                hints={step.keyHints}
+                pressedKeyLabels={pressedKeys}
+                mouseLeftHeld={mouseLeftHeld}
+                mouseOrbiting={mouseOrbiting}
+                scrollActive={scrollActive}
+              />
+            ) : (
+              step.keys.length > 0 && (
+                <div className="tutorial-overlay__keys">
+                  {step.keys.map((k) => (
+                    <span
+                      key={k}
+                      className={`tutorial-overlay__key-badge${
+                        pressedKeys.has(k) ? ' tutorial-overlay__key-badge--active' : ''
+                      }`}
+                    >
+                      {k}
+                    </span>
+                  ))}
+                </div>
+              )
             )}
             {step.detail && <div className="tutorial-overlay__step-detail">{step.detail}</div>}
-            {step.requiresContinue && (
+            {(step.requiresContinue || step.completionCriteria?.type === 'continue') && (
               <button
                 type="button"
                 onClick={onContinueStep}

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, memo, useEffect, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
@@ -17,6 +17,10 @@ import { TUTORIAL_MOON_POSITION, TUTORIAL_MOON_RADIUS } from '../../config/moonC
 interface Props {
   onStepAdvance: () => void;
 }
+
+// Stable reference — defined outside the component so TutorialFollowCamera's
+// useEffect([followOffset]) does not re-fire on step-driven re-renders.
+const TUTORIAL_FOLLOW_OFFSET: [number, number, number] = [0, 10, -30];
 
 const TUTORIAL_STATION_ORBIT_ALTITUDE = 10000;
 const TUTORIAL_STATION_ORBIT_RADIUS = TUTORIAL_MOON_RADIUS + TUTORIAL_STATION_ORBIT_ALTITUDE;
@@ -51,7 +55,7 @@ function OrbitingTutorialStationCluster() {
   );
 }
 
-export default function TutorialScene({ onStepAdvance }: Props) {
+export default memo(function TutorialScene({ onStepAdvance }: Props) {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
@@ -73,7 +77,7 @@ export default function TutorialScene({ onStepAdvance }: Props) {
       >
         <DefaultEnvironment />
         <SunGravity />
-        <TutorialFollowCamera followTarget={shipPosRef} followOffset={[0, 10, -30]} />
+        <TutorialFollowCamera followTarget={shipPosRef} followOffset={TUTORIAL_FOLLOW_OFFSET} />
         <TutorialStepWatcher onStepAdvance={onStepAdvance} />
         <Suspense fallback={null}>
           <Moon />
@@ -89,4 +93,4 @@ export default function TutorialScene({ onStepAdvance }: Props) {
       </Canvas>
     </>
   );
-}
+});

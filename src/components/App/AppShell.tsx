@@ -8,6 +8,7 @@ import HudLayer from './HudLayer';
 import DialogLayer from './DialogLayer';
 import AudioLayer from './AudioLayer';
 import ControlLayer from './ControlLayer';
+import NavHudKeyBinding from './NavHudKeyBinding';
 import StartOverlay from './StartOverlay';
 import ShipTitleCard from './ShipTitleCard';
 import { LoadingScreen } from './LoadingScreen';
@@ -90,6 +91,7 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
 
   return (
     <AppContainer>
+      <NavHudKeyBinding />
       <SceneLayer />
       <OverlayLayer />
       <HudLayer

@@ -12,6 +12,13 @@ import {
 import { KEY_TOGGLE_CAMERA_DECOUPLE } from '../../config/keybindings';
 import { sceneCamera } from '../../context/CameraRef';
 
+/**
+ * Persists across React remounts so nav view is not lost when the general-movement
+ * tutorial auto-advances after entering nav camera. Reset when switching tutorial mode
+ * in TutorialShell.
+ */
+export const tutorialNavViewModeRef = { current: false };
+
 interface TutorialFollowCameraProps {
   followTarget: { current: THREE.Vector3 };
   followOffset?: [number, number, number];
@@ -44,7 +51,6 @@ export default function TutorialFollowCamera({
   const didInitCameraPose = useRef(false);
   const isPointerDown = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
-  const navViewMode = useRef(false);
 
   useEffect(() => {
     sceneCamera.current = camera;
@@ -80,7 +86,7 @@ export default function TutorialFollowCamera({
       const dy = e.clientY - lastPointer.current.y;
       lastPointer.current = { x: e.clientX, y: e.clientY };
 
-      if (navViewMode.current) {
+      if (tutorialNavViewModeRef.current) {
         navSpherical.current.theta -= dx * CAMERA_MOUSE_SENSITIVITY;
       } else {
         followSpherical.current.theta -= dx * CAMERA_MOUSE_SENSITIVITY;
@@ -98,7 +104,7 @@ export default function TutorialFollowCamera({
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (navViewMode.current) {
+      if (tutorialNavViewModeRef.current) {
         navSpherical.current.radius *= 1 + e.deltaY * CAMERA_WHEEL_SENSITIVITY;
         navSpherical.current.radius = THREE.MathUtils.clamp(
           navSpherical.current.radius,
@@ -120,9 +126,10 @@ export default function TutorialFollowCamera({
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== KEY_TOGGLE_CAMERA_DECOUPLE) return;
-      if (e.repeat) return; // toggle once per physical press
-      navViewMode.current = !navViewMode.current;
-      if (navViewMode.current) {
+      if (e.repeat) return; // avoid repeat toggling follow ↔ nav in one held press
+      const wasNav = tutorialNavViewModeRef.current;
+      tutorialNavViewModeRef.current = !tutorialNavViewModeRef.current;
+      if (tutorialNavViewModeRef.current) {
         // Lock navview to top-down while preserving its own stored yaw/zoom.
         navSpherical.current.phi = NAVVIEW_TOPDOWN_PHI;
         navSpherical.current.radius = THREE.MathUtils.clamp(
@@ -130,6 +137,12 @@ export default function TutorialFollowCamera({
           NAVVIEW_MIN_HEIGHT,
           NAVVIEW_MAX_HEIGHT
         );
+      }
+      if (!wasNav && tutorialNavViewModeRef.current) {
+        window.dispatchEvent(new CustomEvent('TutorialNavCameraEntered'));
+      }
+      if (wasNav && !tutorialNavViewModeRef.current) {
+        window.dispatchEvent(new CustomEvent('TutorialFollowCameraEntered'));
       }
     };
 
@@ -157,7 +170,7 @@ export default function TutorialFollowCamera({
     }
 
     _target.copy(followTarget.current);
-    if (navViewMode.current) {
+    if (tutorialNavViewModeRef.current) {
       // Yaw-only in navview: keep camera top-down to avoid X/Z axis tilt.
       navSpherical.current.phi = NAVVIEW_TOPDOWN_PHI;
       _offset.setFromSpherical(navSpherical.current);
@@ -177,12 +190,15 @@ export default function TutorialFollowCamera({
       const posAlpha =
         1 -
         Math.exp(
-          -(navViewMode.current ? NAVVIEW_POSITION_LERP_SPEED : CAMERA_POSITION_LERP_SPEED) * delta
+          -(tutorialNavViewModeRef.current
+            ? NAVVIEW_POSITION_LERP_SPEED
+            : CAMERA_POSITION_LERP_SPEED) * delta
         );
       const lookAlpha =
         1 -
         Math.exp(
-          -(navViewMode.current ? NAVVIEW_LOOKAT_LERP_SPEED : CAMERA_LOOKAT_LERP_SPEED) * delta
+          -(tutorialNavViewModeRef.current ? NAVVIEW_LOOKAT_LERP_SPEED : CAMERA_LOOKAT_LERP_SPEED) *
+            delta
         );
       camera.position.lerp(_desiredCameraPos, posAlpha);
       _smoothedLookAt.lerp(_target, lookAlpha);

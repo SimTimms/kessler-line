@@ -19,7 +19,14 @@ import {
   KEY_RADIAL_OUT,
   KEY_RADIAL_IN,
   KEY_UNDOCK_CARGO,
+  EVENT_REQUEST_UNDOCK,
 } from '../../config/keybindings';
+import {
+  DOCKING_TUTORIAL_ALL_FLIGHT_KEYS,
+  EVENT_DOCKING_TUTORIAL_INPUT_RESET,
+  isDockingTutorialShipKeyAllowed,
+  isDockingTutorialUndockAllowed,
+} from '../../tutorial/tutorialDockingInputGate';
 
 export interface InputListenersResult {
   thrustForward: React.MutableRefObject<boolean>;
@@ -54,7 +61,26 @@ export function useInputListeners({
   const lastRailgunTarget = useRef<'reverseA' | 'reverseB' | null>(null);
 
   useEffect(() => {
+    const performShipUndock = (): boolean => {
+      if (!dockedTo.current) return false;
+      dockedTo.current = null;
+      window.dispatchEvent(new CustomEvent('ShipUndocked'));
+      if (groupRef.current) {
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
+        const releaseDir = forward.multiplyScalar(-1);
+        groupRef.current.position.addScaledVector(releaseDir, 1); // ensure clear separation from bay
+        // Push away from the docking bay, not toward it.
+        velocity.current.copy(releaseDir.multiplyScalar(8)); // 8 m/s release velocity
+      }
+      releaseParticleTrigger.current = true;
+      return true;
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
+      if (DOCKING_TUTORIAL_ALL_FLIGHT_KEYS.has(e.code) && !isDockingTutorialShipKeyAllowed(e.code)) {
+        e.preventDefault();
+        return;
+      }
       if (e.code === KEY_THRUST_FORWARD) thrustForward.current = true;
       if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = true;
       if (e.code === KEY_YAW_LEFT) thrustLeft.current = true;
@@ -64,21 +90,26 @@ export function useInputListeners({
       if (e.code === KEY_RADIAL_OUT) thrustRadialOut.current = true;
       if (e.code === KEY_RADIAL_IN) thrustRadialIn.current = true;
       if (e.code === KEY_UNDOCK_CARGO) {
-        if (dockedTo.current) {
-          dockedTo.current = null;
-          window.dispatchEvent(new CustomEvent('ShipUndocked'));
-          if (groupRef.current) {
-            const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
-            const releaseDir = forward.multiplyScalar(-1);
-            groupRef.current.position.addScaledVector(releaseDir, 1); // ensure clear separation from bay
-            // Push away from the docking bay, not toward it.
-            velocity.current.copy(releaseDir.multiplyScalar(8)); // 8 m/s release velocity
-          }
-          releaseParticleTrigger.current = true;
-        } else {
+        if (!performShipUndock()) {
           window.dispatchEvent(new CustomEvent('CargoRelease'));
         }
       }
+    };
+
+    const onRequestUndock = () => {
+      if (!isDockingTutorialUndockAllowed()) return;
+      performShipUndock();
+    };
+
+    const onDockingTutorialInputReset = () => {
+      thrustForward.current = false;
+      thrustReverse.current = false;
+      thrustLeft.current = false;
+      thrustRight.current = false;
+      thrustStrafeLeft.current = false;
+      thrustStrafeRight.current = false;
+      thrustRadialOut.current = false;
+      thrustRadialIn.current = false;
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === KEY_THRUST_FORWARD) thrustForward.current = false;
@@ -92,6 +123,8 @@ export function useInputListeners({
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
+    window.addEventListener(EVENT_DOCKING_TUTORIAL_INPUT_RESET, onDockingTutorialInputReset);
 
     const onRailgunHit = (event: Event) => {
       const detail = (event as CustomEvent<{ targetEngine?: 'reverseA' | 'reverseB' | null }>)
@@ -144,6 +177,8 @@ export function useInputListeners({
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
+      window.removeEventListener(EVENT_DOCKING_TUTORIAL_INPUT_RESET, onDockingTutorialInputReset);
       window.removeEventListener('RailgunHit', onRailgunHit);
       window.removeEventListener('RailgunDamagePoints', onDamagePoints);
     };

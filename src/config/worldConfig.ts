@@ -52,6 +52,19 @@ export const FUEL_STATION_DEF: WorldObjectDef = {
   contactable: true,
 };
 
+/** Labels for the top nav HUD when docked (`ShipDocked` detail.stationId). */
+const DOCKED_STATION_DISPLAY: Record<string, string> = {
+  [SPACE_STATION_DEF.id]: 'Daedalus',
+  'tutorial-space-station': 'Daedalus',
+  [FUEL_STATION_DEF.id]: FUEL_STATION_DEF.label,
+  [ASTEROID_DOCK_DEF.id]: ASTEROID_DOCK_DEF.label,
+};
+
+export function displayNameForDockedStation(stationId: string | null): string {
+  if (!stationId) return 'Unknown';
+  return DOCKED_STATION_DISPLAY[stationId] ?? stationId.replace(/-/g, ' ');
+}
+
 export const NEPTUNE_DEF: WorldObjectDef = {
   id: 'neptune',
   label: 'Neptune',

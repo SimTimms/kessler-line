@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
@@ -19,6 +19,7 @@ import { applyDockedState, checkDockingPort } from './docking';
 import { applyPhysicsStep } from './step';
 import { applyResourceDrain } from './resourceDrain';
 import { getCombinedInputs, getManualInput } from './inputs';
+import { updateAutopilotThrustOutputs } from './simpleAutopilot';
 import { PHYSICS_MAX_DELTA, PHYSICS_MAX_STEP } from './constants';
 import { updateEngineAudio } from './engineAudio';
 import { updateThrusterLight } from './thrusterLight';
@@ -40,6 +41,7 @@ import { useInputListeners } from './inputListeners';
 import { checkShipDestruction } from './destruction';
 import { getActiveMainEngines, applyEngineAsymmetryTorque } from './engineDamage';
 import { applyRadiationDamage } from './radiation';
+import { getCollidables } from '../../context/CollisionRegistry';
 
 const _spinEuler = new THREE.Vector3();
 const _scrapperOffset = new THREE.Vector3();
@@ -100,6 +102,26 @@ export function useShipPhysics({
     releaseParticleTrigger,
   } = useInputListeners({ dockedTo, velocity, groupRef });
 
+  // Spawn already docked (e.g. docking tutorial): physics sets dockedTo before any bay overlap,
+  // so we must sync HUD / useDockingState with the same ShipDocked path as live docking.
+  // Defer past sibling useEffects (NavHUD registers listeners after this ship mounts).
+  useEffect(() => {
+    if (!initialDockedTo) return;
+    let cancelled = false;
+    const bay = getCollidables().find((c) => c.id === initialDockedTo);
+    const m = initialDockedTo.match(/^docking-bay-(.+)$/);
+    const fallbackStationId = m ? m[1]! : null;
+    const stationId = bay?.stationId ?? fallbackStationId;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        window.dispatchEvent(new CustomEvent('ShipDocked', { detail: { stationId } }));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDockedTo]);
+
   useFrame((_, delta) => {
     const rawDelta = delta;
 
@@ -152,6 +174,12 @@ export function useShipPhysics({
       return;
     }
 
+    const controlsLocked = performance.now() < shipControlDisabledUntil.current;
+    updateAutopilotThrustOutputs(groupRef.current, velocity.current, {
+      controlsLocked,
+      shipDestroyed: shipDestroyed.current,
+    });
+
     let { yawLeft, yawRight, fwd, rev, strL, strR, radOut, radIn } = getCombinedInputs({
       thrustForward,
       thrustReverse,
@@ -174,7 +202,6 @@ export function useShipPhysics({
       radIn = false;
     }
 
-    const controlsLocked = performance.now() < shipControlDisabledUntil.current;
     if (controlsLocked) {
       yawLeft = false;
       yawRight = false;

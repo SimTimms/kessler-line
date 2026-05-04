@@ -12,6 +12,9 @@ import type { TutorialStep } from './tutorialSteps';
 
 const K = displayLabelForKeyCode;
 
+/** Pass `docking-relative-velocity-state` when relative closing speed (m/s) is greater than this. */
+export const DOCKING_RELATIVE_VELOCITY_CHECK_TARGET_MPS = 10;
+
 export const TUTORIAL_DOCKING_STEPS: TutorialStep[] = [
   {
     id: 'docking-brief',
@@ -25,8 +28,8 @@ export const TUTORIAL_DOCKING_STEPS: TutorialStep[] = [
   {
     id: 'docking-undock',
     title: 'Undock',
-    prompt: `Press ${K(KEY_UNDOCK_CARGO)} to release from Daedalus and clear the bay.`,
-    keys: [K(KEY_UNDOCK_CARGO)],
+    prompt: `Press ${K(KEY_UNDOCK_CARGO)} or tap the flashing Undock button in the top bar to release from Daedalus and clear the bay.`,
+    keys: [K(KEY_UNDOCK_CARGO), 'Undock (top bar)'],
   },
   {
     id: 'docking-navhud-toggle',
@@ -88,7 +91,7 @@ export const TUTORIAL_DOCKING_STEPS: TutorialStep[] = [
     id: 'docking-relative-velocity-intro',
     title: 'Relative Velocity',
     prompt:
-      "This is your relative velocity to your target.\n\n A minus velocity means you're moving away from the target. A positive velocity means you're moving towards the target. Zero? Well, you can work that out. ",
+      "Notice your relative velocity to the target.\n\n A minus velocity means you're moving away from the target. A positive velocity means you're moving towards the target. Zero? Well, you can work that out. ",
     keys: [],
     requiresContinue: true,
     continueLabel: 'Continue',
@@ -181,14 +184,14 @@ export const TUTORIAL_DOCKING_STEPS: TutorialStep[] = [
     id: 'docking-return-daedalus',
     title: 'Return To Daedalus',
     prompt:
-      "Let's return to Daedalus. I don't have enough fuel for the both of us. Open Nav Target and select Daedalus the same way you did with the waypoint drone.",
+      "Let's return to Daedalus. Open Nav Target and select Daedalus the same way you did with the waypoint drone.",
     keys: [],
   },
   {
     id: 'docking-redock',
     title: 'Return And Dock',
     prompt:
-      'Return to Daedalus and dock again. Keep relative speed low and line up before final approach.',
+      'Return to Daedalus and dock again. Use the autopilot to simplify the procedure. Keep relative speed low and line up before final approach.',
     keys: [],
   },
 ];

@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { KEY_TOGGLE_NAV_HUD, displayLabelForKeyCode } from '../../config/keybindings';
-import { navHudEnabledRef, setNavHudEnabled } from '../../context/NavHud';
+import {
+  EVENT_NAV_HUD_ENABLED_CHANGED,
+  navHudEnabledRef,
+  setNavHudEnabled,
+} from '../../context/NavHud';
 
 interface Props {
   flashing: boolean;
@@ -10,14 +14,12 @@ export default function TutorialNavHudToggle({ flashing }: Props) {
   const [enabled, setEnabled] = useState(navHudEnabledRef.current);
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== KEY_TOGGLE_NAV_HUD) return;
-      const next = !navHudEnabledRef.current;
-      setNavHudEnabled(next);
-      setEnabled(next);
+    const onHudChanged = (e: Event) => {
+      const d = (e as CustomEvent<{ enabled: boolean }>).detail;
+      setEnabled(d?.enabled ?? navHudEnabledRef.current);
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener(EVENT_NAV_HUD_ENABLED_CHANGED, onHudChanged);
+    return () => window.removeEventListener(EVENT_NAV_HUD_ENABLED_CHANGED, onHudChanged);
   }, []);
 
   const onClick = () => {

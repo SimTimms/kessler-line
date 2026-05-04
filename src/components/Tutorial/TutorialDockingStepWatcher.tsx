@@ -1,13 +1,13 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { tutorialStepRef } from '../../context/TutorialState';
-import { TUTORIAL_DOCKING_STEPS } from '../../tutorial/tutorialDockingSteps';
+import { dockingTutorialActiveRef, tutorialStepRef } from '../../context/TutorialState';
+import { EVENT_DOCKING_TUTORIAL_INPUT_RESET } from '../../tutorial/tutorialDockingInputGate';
 import {
-  KEY_TOGGLE_CAMERA_DECOUPLE,
-  KEY_TOGGLE_NAV_HUD,
-  KEY_UNDOCK_CARGO,
-} from '../../config/keybindings';
+  DOCKING_RELATIVE_VELOCITY_CHECK_TARGET_MPS,
+  TUTORIAL_DOCKING_STEPS,
+} from '../../tutorial/tutorialDockingSteps';
+import { KEY_TOGGLE_CAMERA_DECOUPLE, KEY_TOGGLE_NAV_HUD } from '../../config/keybindings';
 import { shipPosRef } from '../../context/ShipPos';
 import { shipVelocity } from '../../context/ShipState';
 import { magneticOnRef } from '../../context/MagneticScan';
@@ -44,7 +44,6 @@ export default function TutorialDockingStepWatcher({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const id = TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id;
-      if (id === 'docking-undock' && e.code === KEY_UNDOCK_CARGO) undockedRef.current = true;
       if (id === 'docking-navhud-toggle' && e.code === KEY_TOGGLE_NAV_HUD)
         navHudToggleRef.current = true;
       if (id === 'docking-navview' && e.code === KEY_TOGGLE_CAMERA_DECOUPLE)
@@ -84,6 +83,9 @@ export default function TutorialDockingStepWatcher({
     if (step >= TUTORIAL_DOCKING_STEPS.length) return;
 
     if (lastStep.current !== step) {
+      if (dockingTutorialActiveRef.current && lastStep.current >= 0) {
+        window.dispatchEvent(new CustomEvent(EVENT_DOCKING_TUTORIAL_INPUT_RESET));
+      }
       lastStep.current = step;
       advancedRef.current = false;
       undockedRef.current = false;
@@ -137,8 +139,7 @@ export default function TutorialDockingStepWatcher({
           (shipVelocity.x - selectedTargetVelocity.x) * _toTargetDir.x +
           (shipVelocity.y - selectedTargetVelocity.y) * _toTargetDir.y +
           (shipVelocity.z - selectedTargetVelocity.z) * _toTargetDir.z;
-        // Advance as soon as we are closing in on the target.
-        met = relVel > 0;
+        met = relVel > DOCKING_RELATIVE_VELOCITY_CHECK_TARGET_MPS;
       }
     } else if (id === 'docking-relative-distance') {
       met = distanceToSelectedTarget <= RENDEZVOUS_DISTANCE_THRESHOLD;

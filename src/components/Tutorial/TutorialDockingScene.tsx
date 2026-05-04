@@ -93,6 +93,9 @@ function OrbitingDockingStationCluster({
           followTargetRef={shipPosRef}
           enableTrackingSpotlight
           spotlightLocalOrigin={[26, 53, -6.8]}
+          // Orbit runs in world XZ at Y=0; cluster uses a local Y offset for layout. Pin the bay
+          // so the port stays in that plane — avoids a vertical snap when undocking along ship forward.
+          dockingBayWorldY={0}
         />
         <StationDrones center={[26, 20, -6.8]} />
         <WaypointDrone waypointRef={waypointRef} />

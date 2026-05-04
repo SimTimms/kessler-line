@@ -17,6 +17,9 @@ export const KEY_STRAFE_RIGHT = 'KeyE'; // starboard (E)
 export const KEY_RADIAL_OUT = 'KeyR'; // away from planet
 export const KEY_RADIAL_IN = 'KeyF'; // toward planet
 export const KEY_UNDOCK_CARGO = 'Space'; // undock when docked; cargo release otherwise
+
+/** Dispatched by the Undock HUD control; handled in useInputListeners (same effect as Space when docked). */
+export const EVENT_REQUEST_UNDOCK = 'RequestUndock';
 export const KEY_THRUST_INCREASE = 'Equal'; // + / = key (increase thrust multiplier)
 export const KEY_THRUST_INCREASE_NP = 'NumpadAdd'; // numpad +
 export const KEY_THRUST_DECREASE = 'Minus'; // - key (decrease thrust multiplier)
@@ -24,9 +27,11 @@ export const KEY_THRUST_DECREASE_NP = 'NumpadSubtract'; // numpad -
 
 // ─── HUD toggles (use e.code) ────────────────────────────────────────────────
 export const KEY_TOGGLE_MINIMAP = 'KeyM';
+/** Nav HUD: target line, orbit arcs, approach readouts (see `navHudEnabledRef`). */
 export const KEY_TOGGLE_NAV_HUD = 'KeyN';
 
 // ─── Camera (use e.code) ─────────────────────────────────────────────────────
+/** Free / Nav camera vs ship-follow (main `Camera` + tutorial follow camera). */
 export const KEY_TOGGLE_CAMERA_DECOUPLE = 'KeyC';
 
 // ─── Save / Load (use e.key) ─────────────────────────────────────────────────

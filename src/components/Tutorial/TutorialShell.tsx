@@ -6,14 +6,20 @@ import TutorialScene from './TutorialScene';
 import TutorialDockingScene from './TutorialDockingScene';
 import TutorialOverlay from './TutorialOverlay';
 import RadioChatterStream from '../Radio/RadioChatterStream';
-import { tutorialStepRef } from '../../context/TutorialState';
+import { dockingTutorialActiveRef, tutorialStepRef } from '../../context/TutorialState';
 import { applyRadioChatterPool, setRadioChatterPhase } from '../../radio/radioChatterPhase';
 import { TUTORIAL_RADIO_CHATTER_LINES } from '../../tutorial/tutorialRadioChatter';
 import { TUTORIAL_STEPS } from '../../tutorial/tutorialSteps';
-import { TUTORIAL_DOCKING_STEPS } from '../../tutorial/tutorialDockingSteps';
+import {
+  DOCKING_RELATIVE_VELOCITY_CHECK_TARGET_MPS,
+  TUTORIAL_DOCKING_STEPS,
+} from '../../tutorial/tutorialDockingSteps';
+import { KEY_THRUST_REVERSE, displayLabelForKeyCode } from '../../config/keybindings';
 import type { TutorialStep } from '../../tutorial/tutorialSteps';
 import type { TutorialMenuSelection } from '../App/StartOverlay';
+import NavHudKeyBinding from '../App/NavHudKeyBinding';
 import TutorialNavHudToggle from './TutorialNavHudToggle';
+import { tutorialNavViewModeRef } from './TutorialFollowCamera';
 import { setNavHudEnabled } from '../../context/NavHud';
 import { NavHUD } from '../NavHUD/NavHUD';
 import { HUD } from '../HUD/HUD';
@@ -53,6 +59,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
   const [relativeVelocityPrompt, setRelativeVelocityPrompt] = useState(
     "You're currently moving away from the waypoint drone. You need to increase your velocity past zero to start closing the distance."
   );
+  const [relVelCheckThrustPressed, setRelVelCheckThrustPressed] = useState(false);
 
   useEffect(() => {
     applyRadioChatterPool(TUTORIAL_RADIO_CHATTER_LINES);
@@ -60,6 +67,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
     clearSelectedTarget();
     navTargetIdRef.current = '';
     return () => {
+      dockingTutorialActiveRef.current = false;
       setRadioChatterPhase('pre');
       setNavHudEnabled(true);
       navTargetIdRef.current = FUEL_STATION_DEF.id;
@@ -68,9 +76,17 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
   }, []);
 
   useEffect(() => {
+    dockingTutorialActiveRef.current = tutorialMode === 'docking';
+    return () => {
+      dockingTutorialActiveRef.current = false;
+    };
+  }, [tutorialMode]);
+
+  useEffect(() => {
     tutorialStepRef.current = 0;
     setCurrentStep(0);
     setNavTargetClicked(false);
+    tutorialNavViewModeRef.current = false;
   }, [tutorialMode]);
 
   const handleStepAdvance = useCallback(() => {
@@ -112,14 +128,12 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
       (dockingScannerTargetStepIndex >= 0
         ? dockingScannerTargetStepIndex
         : Number.POSITIVE_INFINITY);
+  // Once magnetic scan is introduced, keep scanner HUD + power rail mounted for the whole drill
+  // so waypoint brackets and nav context stay visible after target lock.
   const showDockingScannerHud =
     tutorialMode === 'docking' &&
     currentStep >=
-      (dockingMagneticStepIndex >= 0 ? dockingMagneticStepIndex : Number.POSITIVE_INFINITY) &&
-    currentStep <
-      (dockingRelativeVelocityIntroStepIndex >= 0
-        ? dockingRelativeVelocityIntroStepIndex
-        : Number.POSITIVE_INFINITY);
+      (dockingMagneticStepIndex >= 0 ? dockingMagneticStepIndex : Number.POSITIVE_INFINITY);
   const isDockingMagneticStepActive =
     tutorialMode === 'docking' &&
     TUTORIAL_DOCKING_STEPS[currentStep]?.id === 'docking-magnetic-scan';
@@ -134,6 +148,8 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
       (dockingRelativeVelocityIntroStepIndex >= 0
         ? dockingRelativeVelocityIntroStepIndex
         : Number.POSITIVE_INFINITY);
+  const showDockingAutopilot =
+    tutorialMode === 'docking' && TUTORIAL_DOCKING_STEPS[currentStep]?.id === 'docking-redock';
   const tutorialGeneralTargets = useMemo(
     () => [
       {
@@ -165,7 +181,33 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
   );
 
   useEffect(() => {
+    if (!isDockingRelativeStateStepActive) {
+      setRelVelCheckThrustPressed(false);
+      return;
+    }
+    const onThrustKey = (e: KeyboardEvent) => {
+      if (e.code === KEY_THRUST_REVERSE) setRelVelCheckThrustPressed(true);
+    };
+    window.addEventListener('keydown', onThrustKey);
+    return () => window.removeEventListener('keydown', onThrustKey);
+  }, [isDockingRelativeStateStepActive]);
+
+  useEffect(() => {
     if (!isDockingRelativeStateStepActive) return;
+
+    const thrustKey = displayLabelForKeyCode(KEY_THRUST_REVERSE);
+    const targetMpsLabel =
+      DOCKING_RELATIVE_VELOCITY_CHECK_TARGET_MPS <= 0
+        ? 'more than 0 m/s'
+        : `at least ${DOCKING_RELATIVE_VELOCITY_CHECK_TARGET_MPS} m/s`;
+
+    if (relVelCheckThrustPressed) {
+      setRelativeVelocityPrompt(
+        `Hold down ${thrustKey} until you reach ${targetMpsLabel} relative closing speed toward the waypoint drone.`
+      );
+      return;
+    }
+
     const hasSelected = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
     const targetPos = hasSelected ? selectedTargetPosition : null;
     if (!targetPos) return;
@@ -181,7 +223,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
 
     toTarget.multiplyScalar(1 / dist);
     const relVel = shipVelocity.clone().sub(selectedTargetVelocity).dot(toTarget);
-    if (relVel > 0) {
+    if (relVel > DOCKING_RELATIVE_VELOCITY_CHECK_TARGET_MPS) {
       setRelativeVelocityPrompt(
         'You are moving towards the drone, maintain a positive velocity. Wait for further instructions.'
       );
@@ -194,7 +236,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
         "You're currently stationary relative to the waypoint drone. Increase your velocity past zero to start closing the distance."
       );
     }
-  }, [isDockingRelativeStateStepActive]);
+  }, [isDockingRelativeStateStepActive, relVelCheckThrustPressed]);
 
   useEffect(() => {
     if (tutorialMode !== 'docking') return;
@@ -226,6 +268,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
         };
   return (
     <AppContainer>
+      <NavHudKeyBinding />
       {tutorialMode === 'general-movement' ? (
         <TutorialScene onStepAdvance={handleStepAdvance} />
       ) : (
@@ -250,7 +293,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
       {showDockingNavHudBar && (
         <NavHUD
           showNavTarget={showDockingNavTargetControl}
-          showAutopilot={false}
+          showAutopilot={showDockingAutopilot}
           showMetrics={false}
           forceNavTargetFlash={showDockingNavTargetControl && !navTargetClicked}
           onNavTargetClick={() => setNavTargetClicked(true)}

@@ -4,6 +4,7 @@ import { sceneCamera } from '../context/CameraRef';
 import { magneticOnRef, magneticScanRangeRef } from '../context/MagneticScan';
 import { getMagneticTargets } from '../context/MagneticRegistry';
 import { minimapShipPosition } from '../context/MinimapShipPosition';
+import { shipVelocity } from '../context/ShipState';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
 const MAX_MARKERS = 200; // pre-allocated pool — supports up to this many simultaneous targets
@@ -15,6 +16,8 @@ function createMarker(container: HTMLElement) {
     position: absolute;
     pointer-events: none;
     display: none;
+    flex-direction: column;
+    align-items: center;
   `;
 
   const box = document.createElement('div');
@@ -26,9 +29,12 @@ function createMarker(container: HTMLElement) {
     font-family: monospace;
     font-size: 10px;
     color: #ffaa00;
-    white-space: nowrap;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.25;
     text-shadow: 0 0 4px rgba(255,170,0,0.8);
-    margin-top: 3px;
+    margin-top: 4px;
+    max-width: min(220px, 40vw);
   `;
 
   root.appendChild(box);
@@ -75,6 +81,9 @@ export default function MagneticHUD() {
     );
 
     const _vec = new THREE.Vector3();
+    const _worldPos = new THREE.Vector3();
+    const _toTgt = new THREE.Vector3();
+    const _targetVel = new THREE.Vector3();
 
     let rafId: number;
     const update = () => {
@@ -101,16 +110,31 @@ export default function MagneticHUD() {
           continue;
         }
 
-        target.getPosition(_vec);
-        const dist = minimapShipPosition.distanceTo(_vec);
+        target.getPosition(_worldPos);
+        const dist = minimapShipPosition.distanceTo(_worldPos);
 
         if (dist > magneticScanRangeRef.current) {
           marker.root.style.display = 'none';
           continue;
         }
 
+        _toTgt.subVectors(_worldPos, minimapShipPosition);
+        const len = _toTgt.length();
+        let relVelStr = '—';
+        if (len > 1e-5) {
+          const inv = 1 / len;
+          if (target.getVelocity) target.getVelocity(_targetVel);
+          else _targetVel.set(0, 0, 0);
+          const rel =
+            ((shipVelocity.x - _targetVel.x) * _toTgt.x +
+              (shipVelocity.y - _targetVel.y) * _toTgt.y +
+              (shipVelocity.z - _targetVel.z) * _toTgt.z) *
+            inv;
+          relVelStr = `${rel >= 0 ? '+' : ''}${rel.toFixed(1)} m/s`;
+        }
+
         // Project to normalised device coords
-        _vec.project(camera);
+        _vec.copy(_worldPos).project(camera);
 
         const isBehind = _vec.z > 1;
         let sx = (_vec.x * 0.5 + 0.5) * W;
@@ -122,16 +146,17 @@ export default function MagneticHUD() {
           sy > EDGE_PAD && sy < H - EDGE_PAD;
 
         const distText =
-          dist >= 1000 ? `${(dist / 1000).toFixed(1)}km` : `${Math.round(dist)}m`;
+          dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
 
-        marker.root.style.display = 'block';
-        marker.label.textContent = `${target.label} [${distText}]`;
+        marker.root.style.display = 'flex';
+        marker.label.textContent = `${target.label}\n${distText}\n${relVelStr}`;
 
         if (onScreen) {
           const SIZE = 28;
           styleOnScreen(marker, SIZE);
-          marker.root.style.left = `${sx - SIZE * 0.5}px`;
-          marker.root.style.top  = `${sy - SIZE * 0.5}px`;
+          marker.root.style.left = `${sx}px`;
+          marker.root.style.top = `${sy}px`;
+          marker.root.style.transform = 'translate(-50%, -50%)';
         } else {
           if (isBehind) { sx = W - sx; sy = H - sy; }
 
@@ -145,8 +170,9 @@ export default function MagneticHUD() {
           const ey = scale < 1 ? cy + dy * scale : sy;
 
           styleOffScreen(marker);
-          marker.root.style.left = `${ex - 7}px`;
-          marker.root.style.top  = `${ey - 7}px`;
+          marker.root.style.left = `${ex}px`;
+          marker.root.style.top = `${ey}px`;
+          marker.root.style.transform = 'translate(-50%, -50%)';
         }
       }
     };

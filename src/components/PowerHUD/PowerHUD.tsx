@@ -1,15 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Zap,
-  Shield,
-  Droplets,
-  Wind,
-  Gauge,
-  Activity,
-  Crosshair,
-  ArrowLeftRight,
-  AlertTriangle,
-} from 'lucide-react';
+import { Zap, Shield, Droplets, Wind, Gauge, Activity, AlertTriangle } from 'lucide-react';
 import {
   power,
   hullIntegrity,
@@ -17,34 +7,12 @@ import {
   o2,
   shipAcceleration,
   getShipSpeedMps,
-  shipVelocity,
 } from '../Ship/Spaceship';
-import {
-  selectedTargetName,
-  selectedTargetVelocity,
-  selectedTargetPosition,
-  targetFlashUntil,
-} from '../../context/TargetSelection';
-import { shipPosRef } from '../../context/ShipPos';
 import { cargo, type CargoItem, reduceCargoItem } from '../../context/Inventory';
 import { triggerEject } from '../../context/EjectEvent';
 import './PowerHUD.css';
 
-import * as THREE from 'three';
 import Cargo from './Cargo/Cargo';
-
-const _toTarget = new THREE.Vector3();
-const _relVel = new THREE.Vector3();
-
-/** Signed closing speed: negative = approaching, positive = receding. */
-function getSignedRelSpeed(): number {
-  _toTarget.copy(selectedTargetPosition).sub(shipPosRef.current);
-  const dist = _toTarget.length();
-  if (dist < 0.01) return 0;
-  _toTarget.divideScalar(dist);
-  _relVel.copy(shipVelocity).sub(selectedTargetVelocity);
-  return _relVel.dot(_toTarget); // positive = moving away, negative = closing in
-}
 
 type WarnLevel = 'orange' | 'red' | null;
 
@@ -92,9 +60,6 @@ export default function PowerHUD() {
   const [displayO2, setDisplayO2] = useState(100);
   const [displayGForce, setDisplayGForce] = useState(0);
   const [displayVelocity, setDisplayVelocity] = useState(0);
-  const [targetName, setTargetName] = useState<string | null>(null);
-  const [relSpeed, setRelSpeed] = useState(0);
-  const [relSpeedFlash, setRelSpeedFlash] = useState(false);
   const [displayCargo, setDisplayCargo] = useState<CargoItem[]>([]);
   const [ejectState, setEjectState] = useState<EjectState | null>(null);
 
@@ -105,11 +70,8 @@ export default function PowerHUD() {
       setDisplayHull(Math.floor(hullIntegrity));
       setDisplayFuel(Math.floor(fuel));
       setDisplayO2(Math.floor(o2));
-      setTargetName(selectedTargetName);
       setDisplayGForce((shipAcceleration.current * 10) / 9.81);
       setDisplayVelocity(getShipSpeedMps());
-      setRelSpeed(selectedTargetName ? getSignedRelSpeed() : 0);
-      setRelSpeedFlash(Date.now() < targetFlashUntil);
       setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
       rafId = requestAnimationFrame(update);
     };
@@ -202,21 +164,6 @@ export default function PowerHUD() {
                 {item.quantity}x {item.name.toUpperCase()}
               </button>
             ))}
-          </>
-        )}
-        {targetName && (
-          <>
-            <div className="power-hud-target">
-              <Crosshair size={13} strokeWidth={1.5} />
-              {targetName}
-            </div>
-            <div className={`power-hud-target${relSpeedFlash ? ' power-hud-target--flash' : ''}`}>
-              <ArrowLeftRight size={13} strokeWidth={1.5} />
-              {relSpeed.toFixed(1)} m/s
-              {targetName === 'Docking Bay' && Math.abs(relSpeed) < 4 && (
-                <span className="power-hud-hint">[docking velocity]</span>
-              )}
-            </div>
           </>
         )}
       </div>

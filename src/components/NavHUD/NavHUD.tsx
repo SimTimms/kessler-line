@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { NAV_TARGET_DEFS } from '../../config/worldConfig';
+import { NAV_TARGET_DEFS, displayNameForDockedStation } from '../../config/worldConfig';
+import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
+import { isDockingTutorialUndockAllowed } from '../../tutorial/tutorialDockingInputGate';
+import { dockingTutorialActiveRef, tutorialStepRef } from '../../context/TutorialState';
+import { TUTORIAL_DOCKING_STEPS } from '../../tutorial/tutorialDockingSteps';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { shipPosRef } from '../../context/ShipPos';
@@ -12,6 +16,7 @@ import {
   selectedTargetName,
   selectedTargetPosition,
   selectedTargetVelocity,
+  targetFlashUntil,
   type TargetType,
 } from '../../context/TargetSelection';
 import { getMagneticTargets } from '../../context/MagneticRegistry';
@@ -61,7 +66,6 @@ interface NavHUDProps {
   showNavTarget?: boolean;
   showAutopilot?: boolean;
   showMetrics?: boolean;
-  showRelativeVelocityOnly?: boolean;
   forceNavTargetFlash?: boolean;
   onNavTargetClick?: () => void;
   customGeneralTargets?: TutorialTargetDef[];
@@ -74,7 +78,6 @@ export const NavHUD = ({
   showNavTarget = true,
   showAutopilot = true,
   showMetrics = true,
-  showRelativeVelocityOnly = false,
   forceNavTargetFlash = false,
   onNavTargetClick,
   customGeneralTargets,
@@ -94,6 +97,10 @@ export const NavHUD = ({
   const [generalItems, setGeneralItems] = useState<NavTargetItem[]>([]);
   const [magneticContacts, setMagneticContacts] = useState<ScanContact[]>([]);
   const [driveContacts, setDriveContacts] = useState<ScanContact[]>([]);
+  const [isDocked, setIsDocked] = useState(false);
+  const [dockedStationId, setDockedStationId] = useState<string | null>(null);
+  const isDockedRef = useRef(false);
+  const undockBtnRef = useRef<HTMLButtonElement>(null);
 
   // Coords display — mutated directly to avoid re-renders
   const coordsRef = useRef<HTMLSpanElement>(null!);
@@ -104,6 +111,7 @@ export const NavHUD = ({
   const apsesTargetRef = useRef<HTMLSpanElement>(null!);
   const approachRef = useRef<HTMLSpanElement>(null!);
   const relativeVelRef = useRef<HTMLSpanElement>(null!);
+  const dockingHintRef = useRef<HTMLSpanElement>(null!);
   const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
 
   const prevNavSigRef = useRef('');
@@ -113,6 +121,27 @@ export const NavHUD = ({
   const scanVec = useRef(new THREE.Vector3());
   const navVec = useRef(new THREE.Vector3());
   const velVec = useRef(new THREE.Vector3());
+  const selectedObjNameRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const onDocked = (e: Event) => {
+      const detail = (e as CustomEvent<{ stationId: string | null }>).detail;
+      isDockedRef.current = true;
+      setIsDocked(true);
+      setDockedStationId(detail?.stationId ?? null);
+    };
+    const onUndocked = () => {
+      isDockedRef.current = false;
+      setIsDocked(false);
+      setDockedStationId(null);
+    };
+    window.addEventListener('ShipDocked', onDocked);
+    window.addEventListener('ShipUndocked', onUndocked);
+    return () => {
+      window.removeEventListener('ShipDocked', onDocked);
+      window.removeEventListener('ShipUndocked', onUndocked);
+    };
+  }, []);
 
   useEffect(() => {
     let raf: number;
@@ -193,19 +222,46 @@ export const NavHUD = ({
       }
       if (relativeVelRef.current) {
         const hasSelected = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
-        const targetPos = hasSelected ? selectedTargetPosition : navTargetPosRef.current;
-        const targetVel = hasSelected ? selectedTargetVelocity : _toTargetDir.set(0, 0, 0);
-        _toTargetDir.subVectors(targetPos, shipPosRef.current);
-        const dist = _toTargetDir.length();
-        if (dist < 1e-5) {
-          relativeVelRef.current.textContent = '0 m/s';
+        const hasNavId = navTargetIdRef.current.trim().length > 0;
+        const hasTarget = hasSelected || hasNavId;
+        let relVelNum = 0;
+        if (!hasTarget) {
+          relativeVelRef.current.textContent = '—';
+          relativeVelRef.current.className = 'hud-value nav-relative-velocity';
         } else {
-          _toTargetDir.multiplyScalar(1 / dist);
-          const relVel =
-            (shipVelocity.x - targetVel.x) * _toTargetDir.x +
-            (shipVelocity.y - targetVel.y) * _toTargetDir.y +
-            (shipVelocity.z - targetVel.z) * _toTargetDir.z;
-          relativeVelRef.current.textContent = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
+          const targetPos = hasSelected ? selectedTargetPosition : navTargetPosRef.current;
+          const targetVel = hasSelected ? selectedTargetVelocity : _toTargetDir.set(0, 0, 0);
+          _toTargetDir.subVectors(targetPos, shipPosRef.current);
+          const dist = _toTargetDir.length();
+          if (dist < 1e-5) {
+            relativeVelRef.current.textContent = '0 m/s';
+            relVelNum = 0;
+          } else {
+            _toTargetDir.multiplyScalar(1 / dist);
+            const relVel =
+              (shipVelocity.x - targetVel.x) * _toTargetDir.x +
+              (shipVelocity.y - targetVel.y) * _toTargetDir.y +
+              (shipVelocity.z - targetVel.z) * _toTargetDir.z;
+            relVelNum = relVel;
+            relativeVelRef.current.textContent = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
+          }
+          const flash = Date.now() < targetFlashUntil;
+          relativeVelRef.current.className = `hud-value nav-relative-velocity${flash ? ' nav-relative-velocity--flash' : ''}`;
+        }
+        if (dockingHintRef.current) {
+          if (!hasTarget) {
+            dockingHintRef.current.textContent = '';
+            dockingHintRef.current.style.display = 'none';
+          } else {
+            const contactName = selectedObjNameRef.current ?? selectedTargetName;
+            if (contactName === 'Docking Bay' && Math.abs(relVelNum) < 4) {
+              dockingHintRef.current.textContent = '[docking velocity]';
+              dockingHintRef.current.style.display = '';
+            } else {
+              dockingHintRef.current.textContent = '';
+              dockingHintRef.current.style.display = 'none';
+            }
+          }
         }
       }
       if (autopilotBtnRef.current) {
@@ -318,6 +374,14 @@ export const NavHUD = ({
         setDriveContacts([]);
       }
 
+      if (undockBtnRef.current) {
+        const undockTutorialStep =
+          dockingTutorialActiveRef.current &&
+          TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id === 'docking-undock';
+        const pulse = undockTutorialStep && isDockedRef.current;
+        undockBtnRef.current.classList.toggle('nav-undock-btn--tutorial-pulse', pulse);
+      }
+
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -339,6 +403,7 @@ export const NavHUD = ({
   useEffect(() => {
     const onSelectedTargetChanged = (e: Event) => {
       const { name } = (e as CustomEvent<{ name: string | null; type: string | null }>).detail;
+      selectedObjNameRef.current = name;
       setSelectedObjName(name);
     };
     window.addEventListener('SelectedTargetChanged', onSelectedTargetChanged);
@@ -482,10 +547,38 @@ export const NavHUD = ({
     distance: c.distance,
   }));
 
+  const requestUndock = () => {
+    if (!isDockingTutorialUndockAllowed()) return;
+    window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK));
+  };
+
+  const showNavBar =
+    isDocked || showNavTarget || showAutopilot || showMetrics;
+
   return (
     <>
+      {showNavBar && (
       <div className="hud-bar-wrapper ">
         <div className="hud-bar">
+          {isDocked ? (
+            <div className="nav-target-group nav-docked-group">
+              <div className="nav-target-label">Docked with</div>
+              <div className="nav-docked-cluster">
+                <span className="nav-docked-station-name">
+                  {displayNameForDockedStation(dockedStationId)}
+                </span>
+                <button
+                  ref={undockBtnRef}
+                  type="button"
+                  className="nav-target-btn nav-undock-btn"
+                  onClick={requestUndock}
+                >
+                  Undock
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
           {/*
         <div className="hud-metrics nav-metrics">
           <div className="hud-metric">
@@ -497,16 +590,31 @@ export const NavHUD = ({
           {showNavTarget && (
             <div className="nav-target-group">
               <div className="nav-target-label">Nav Target</div>
-              <button
-                className={`nav-target-btn${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
-                onClick={() => {
-                  setDialogOpen(true);
-                  setNavTargetHighlight(false);
-                  onNavTargetClick?.();
-                }}
-              >
-                {displayLabel}
-              </button>
+              <div className="nav-target-cluster">
+                <button
+                  type="button"
+                  className={`nav-target-btn nav-target-btn--open${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
+                  onClick={() => {
+                    setDialogOpen(true);
+                    setNavTargetHighlight(false);
+                    onNavTargetClick?.();
+                  }}
+                >
+                  Open
+                </button>
+                <div className="nav-target-readouts">
+                  <span
+                    className={`nav-target-current-name${displayLabel === 'select a target.' ? ' nav-target-current-name--empty' : ''}`}
+                  >
+                    {displayLabel}
+                  </span>
+                  <div className="nav-target-rel-line">
+                    <span className="nav-target-rel-label">Rel Vel</span>
+                    <span ref={relativeVelRef} className="hud-value nav-relative-velocity" />
+                    <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           {showAutopilot && (
@@ -521,48 +629,42 @@ export const NavHUD = ({
 
           {showMetrics && (
             <div className="hud-metrics nav-metrics">
-              {!showRelativeVelocityOnly && (
-                <>
-                  <div className="hud-metric">
-                    <div className="hud-label">
-                      {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
-                    </div>
-                    <span ref={orbitRef} className="hud-value nav-orbit" />
-                  </div>
-                  <div className="hud-divider" />
-                  <div className="hud-metric" style={{ minWidth: '50px' }}>
-                    <div className="hud-label">Altitude</div>
-                    <span ref={altRef} className="hud-value nav-alt" />
-                    <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
-                  </div>
-                  <div className="hud-divider" />
-                  <div className="hud-metric">
-                    <div className="hud-label">Apsis</div>
-                    <div className="hud-metric-inline">
-                      <div className="hud-label">Per</div>
-                      <span ref={periapsisRef} className="hud-value nav-periapsis" />
-                    </div>
-                    <div className="hud-metric-inline">
-                      <div className="hud-label">Apo</div>
-                      <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
-                    </div>
-                  </div>
-                  <div className="hud-divider" />
-                  <div className="hud-metric">
-                    <div className="hud-label">Approach</div>
-                    <span ref={approachRef} className="hud-value nav-approach" />
-                  </div>
-                  <div className="hud-divider" />
-                </>
-              )}
               <div className="hud-metric">
-                <div className="hud-label">Rel Vel</div>
-                <span ref={relativeVelRef} className="hud-value nav-relative-velocity" />
+                <div className="hud-label">
+                  {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
+                </div>
+                <span ref={orbitRef} className="hud-value nav-orbit" />
+              </div>
+              <div className="hud-divider" />
+              <div className="hud-metric" style={{ minWidth: '50px' }}>
+                <div className="hud-label">Altitude</div>
+                <span ref={altRef} className="hud-value nav-alt" />
+                <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
+              </div>
+              <div className="hud-divider" />
+              <div className="hud-metric">
+                <div className="hud-label">Apsis</div>
+                <div className="hud-metric-inline">
+                  <div className="hud-label">Per</div>
+                  <span ref={periapsisRef} className="hud-value nav-periapsis" />
+                </div>
+                <div className="hud-metric-inline">
+                  <div className="hud-label">Apo</div>
+                  <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
+                </div>
+              </div>
+              <div className="hud-divider" />
+              <div className="hud-metric">
+                <div className="hud-label">Approach</div>
+                <span ref={approachRef} className="hud-value nav-approach" />
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
       </div>
+      )}
 
       {dialogOpen && (
         <NavTargetDialog

@@ -1,15 +1,16 @@
-import { useRef, useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type React from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
-import { shipQuaternion } from '../context/ShipState';
+import { shipQuaternion, shipVelocity } from '../context/ShipState';
 import {
   selectedTargetKey,
   selectedTargetName,
   selectedTargetPosition,
   selectedTargetType,
+  selectedTargetVelocity,
 } from '../context/TargetSelection';
 import { DOCKING_PORT_LOCAL_Z } from '../config/shipConfig';
 import { navHudEnabledRef } from '../context/NavHud';
@@ -24,12 +25,14 @@ const TUTORIAL_NAV_LUNA_ID = 'tutorial-luna';
 const TUTORIAL_DOCKING_BAY_COLLIDER_ID = 'docking-bay-tutorial-space-station';
 
 // Scratch vectors — avoid allocating on every frame
-const _dir = new THREE.Vector3();
-const _labelPos = new THREE.Vector3();
 const _tgtWorld = new THREE.Vector3();
 const _shipWorld = new THREE.Vector3();
 const _nose = new THREE.Vector3();
 const _fwd = new THREE.Vector3(0, 0, 1);
+const _targetVel = new THREE.Vector3();
+const _toTgt = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _labelPos = new THREE.Vector3();
 
 const COLOR_DEFAULT = new THREE.Color('#9fdfff');
 const COLOR_MAGNETIC = new THREE.Color('#ffaa00');
@@ -60,7 +63,8 @@ export default function TargetIndicatorLine({
   }, []);
 
   const labelGroupRef = useRef<THREE.Group>(null!);
-  const textRef = useRef<HTMLDivElement>(null!);
+  const distRef = useRef<HTMLDivElement>(null!);
+  const relVelRef = useRef<HTMLDivElement>(null!);
 
   useFrame(() => {
     if (!navHudEnabledRef.current) {
@@ -82,7 +86,10 @@ export default function TargetIndicatorLine({
       return;
     }
     line.visible = true;
-    if (labelGroupRef.current) labelGroupRef.current.visible = true;
+
+    // Magnetic / drive scan HUD already shows distance + rel speed on the screen-space bracket.
+    const scanHudShowsReadout =
+      hasSelectedPos && (selectedTargetType === 'magnetic' || selectedTargetType === 'ship');
     const tgt = _tgtWorld;
     if (hasSelectedPos && selectedTargetKey) {
       if (selectedTargetType === 'magnetic') {
@@ -127,6 +134,30 @@ export default function TargetIndicatorLine({
       }
     }
 
+    // Target velocity for floating line label (nav targets, non-scan contacts).
+    _targetVel.set(0, 0, 0);
+    if (!scanHudShowsReadout) {
+      if (hasSelectedPos && selectedTargetKey) {
+        if (selectedTargetType === 'magnetic') {
+          const liveMag = getMagneticTargets().find((m) => m.id === selectedTargetKey);
+          if (liveMag?.getVelocity) liveMag.getVelocity(_targetVel);
+          else _targetVel.copy(selectedTargetVelocity);
+        } else if (selectedTargetType === 'ship') {
+          const liveDrive = getDriveSignatures().find((d) => d.id === selectedTargetKey);
+          if (liveDrive?.getVelocity) liveDrive.getVelocity(_targetVel);
+          else _targetVel.copy(selectedTargetVelocity);
+        } else {
+          _targetVel.copy(selectedTargetVelocity);
+        }
+      } else if (hasNavTarget) {
+        const nid = navTargetIdRef.current;
+        if (nid === TUTORIAL_NAV_DAEDALUS_ID) {
+          const bay = getCollidables().find((c) => c.id === TUTORIAL_DOCKING_BAY_COLLIDER_ID);
+          if (bay?.getWorldVelocity) bay.getWorldVelocity(_targetVel);
+        }
+      }
+    }
+
     // Update line color
     mat.color.copy(isMagnetic && hasSelectedPos ? COLOR_MAGNETIC : COLOR_DEFAULT);
 
@@ -142,21 +173,44 @@ export default function TargetIndicatorLine({
     attr.needsUpdate = true;
     line.computeLineDistances();
 
-    // Place label 100 units ahead of the ship toward the target (world space)
-    _dir.subVectors(tgt, _shipWorld).normalize();
-    _labelPos.copy(_shipWorld).addScaledVector(_dir, 100);
-    if (labelGroupRef.current) labelGroupRef.current.position.copy(_labelPos);
-
-    // Mutate DOM directly — no re-render
-    const dist = Math.round(_shipWorld.distanceTo(tgt));
-    if (textRef.current) {
-      textRef.current.textContent = `${dist.toLocaleString()} u`;
-      if (isMagnetic && hasSelectedPos) {
-        textRef.current.style.color = '#ffaa00';
-        textRef.current.style.textShadow = '0 0 8px rgba(255,170,0,0.5)';
+    if (scanHudShowsReadout) {
+      if (labelGroupRef.current) labelGroupRef.current.visible = false;
+    } else {
+      if (labelGroupRef.current) labelGroupRef.current.visible = true;
+      _toTgt.subVectors(tgt, _shipWorld);
+      const distWorld = _toTgt.length();
+      let relVelStr = '—';
+      if (distWorld > 1e-5) {
+        const inv = 1 / distWorld;
+        const relVel =
+          ((shipVelocity.x - _targetVel.x) * _toTgt.x +
+            (shipVelocity.y - _targetVel.y) * _toTgt.y +
+            (shipVelocity.z - _targetVel.z) * _toTgt.z) *
+          inv;
+        relVelStr = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
+        _dir.copy(_toTgt).multiplyScalar(inv);
       } else {
-        textRef.current.style.color = 'rgba(255, 255, 255, 0.25)';
-        textRef.current.style.textShadow = '0 0 8px rgba(255, 255, 255, 0.5)';
+        _dir.set(0, 0, -1);
+      }
+      _labelPos.copy(_shipWorld).addScaledVector(_dir, 100);
+
+      if (labelGroupRef.current) labelGroupRef.current.position.copy(_labelPos);
+
+      const distRounded = Math.round(distWorld);
+      const magneticStyle = isMagnetic && hasSelectedPos;
+      const color = magneticStyle ? '#ffaa00' : 'rgba(255, 255, 255, 0.25)';
+      const shadow = magneticStyle
+        ? '0 0 8px rgba(255,170,0,0.5)'
+        : '0 0 8px rgba(255, 255, 255, 0.5)';
+      if (distRef.current) {
+        distRef.current.textContent = `${distRounded.toLocaleString()} u`;
+        distRef.current.style.color = color;
+        distRef.current.style.textShadow = shadow;
+      }
+      if (relVelRef.current) {
+        relVelRef.current.textContent = relVelStr;
+        relVelRef.current.style.color = color;
+        relVelRef.current.style.textShadow = shadow;
       }
     }
   });
@@ -164,20 +218,40 @@ export default function TargetIndicatorLine({
   return (
     <>
       <primitive object={line} />
-      <group ref={labelGroupRef}>
+      <group ref={labelGroupRef} visible={false}>
         <Html center>
           <div
-            ref={textRef}
             style={{
-              color: 'rgba(255, 255, 255, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2px',
               fontFamily: 'monospace',
-              fontSize: '12px',
-              whiteSpace: 'nowrap',
               pointerEvents: 'none',
-              textShadow: '0 0 8px rgba(255, 255, 255, 0.5)',
               opacity: opacity * 10,
+              textAlign: 'center',
             }}
-          />
+          >
+            <div
+              ref={distRef}
+              style={{
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                color: 'rgba(255, 255, 255, 0.25)',
+                textShadow: '0 0 8px rgba(255, 255, 255, 0.5)',
+              }}
+            />
+            <div
+              ref={relVelRef}
+              style={{
+                fontSize: '10px',
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.02em',
+                color: 'rgba(255, 255, 255, 0.22)',
+                textShadow: '0 0 8px rgba(255, 255, 255, 0.45)',
+              }}
+            />
+          </div>
         </Html>
       </group>
     </>
