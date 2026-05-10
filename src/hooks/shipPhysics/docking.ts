@@ -16,6 +16,7 @@ import {
   setO2,
 } from '../../context/ShipState';
 import { FUEL_REFILL_RATE, O2_REFILL_RATE, O2_DRAIN_RATE } from '../../config/damageConfig';
+import { zeroThrusterLights } from './thrusterLight';
 
 const _collidablePos = new THREE.Vector3();
 const _boxQuat = new THREE.Quaternion();
@@ -34,16 +35,16 @@ const DOCK_ROT_SMOOTH_SPEED = 28;
 interface DockedStateParams {
   group: THREE.Group;
   dockedTo: { current: string | null };
-  thrusterLightRef: RefObject<THREE.PointLight>;
-  thrusterLightIntensity: { current: number };
+  thrusterLightRefs: RefObject<(THREE.PointLight | null)[]>;
+  thrusterLightIntensities: { current: number[] };
   rawDelta: number;
 }
 
 export function applyDockedState({
   group,
   dockedTo,
-  thrusterLightRef,
-  thrusterLightIntensity,
+  thrusterLightRefs,
+  thrusterLightIntensities,
   rawDelta,
 }: DockedStateParams): boolean {
   if (!dockedTo.current) return false;
@@ -69,8 +70,7 @@ export function applyDockedState({
 
   shipVelocity.set(0, 0, 0);
   shipAcceleration.current = 0;
-  thrusterLightIntensity.current = 0;
-  if (thrusterLightRef.current) thrusterLightRef.current.intensity = 0;
+  zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
   if (isRefueling.current) setFuel(Math.min(100, fuel + FUEL_REFILL_RATE * rawDelta));
   if (isTransferringO2.current) setO2(Math.min(100, o2 + O2_REFILL_RATE * rawDelta));
   setO2(Math.max(0, o2 - O2_DRAIN_RATE * rawDelta));

@@ -365,3 +365,36 @@
 .tutorial-powerhud-focus .power-hud-cargo-item {
   opacity: 0.3;
 }
+
+.tutorial-match-vel-wrap {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 110;
+  pointer-events: auto;
+}
+
+.tutorial-match-vel-btn {
+  font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  padding: 10px 20px;
+  color: rgba(190, 230, 255, 0.95);
+  background: linear-gradient(180deg, rgba(8, 22, 36, 0.92), rgba(4, 12, 22, 0.88));
+  border: 1px solid rgba(0, 200, 255, 0.45);
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(3, 12, 24, 0.55);
+}
+
+.tutorial-match-vel-btn:hover {
+  border-color: rgba(0, 200, 255, 0.85);
+  background: rgba(0, 200, 255, 0.1);
+}
+
+.tutorial-match-vel-btn--active {
+  color: rgba(80, 255, 160, 0.95);
+  border-color: rgba(80, 220, 140, 0.55);
+}

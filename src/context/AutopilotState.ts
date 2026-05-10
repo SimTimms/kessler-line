@@ -1,3 +1,5 @@
+import { velocityMatchUsesTutorialDaedalusVel } from './VelocityMatch';
+
 export type AutopilotPhase =
   | 'idle'
   | 'align'
@@ -21,21 +23,42 @@ export const autopilotYawLeft = { current: false };
 export const autopilotYawRight = { current: false };
 export const autopilotRadialOut = { current: false };
 export const autopilotRadialIn = { current: false };
+export const autopilotThrustStrafeLeft = { current: false };
+export const autopilotThrustStrafeRight = { current: false };
+
+export type AutopilotMode = 'approach' | 'velocityMatch';
+
+export const autopilotMode: { current: AutopilotMode } = { current: 'approach' };
 
 export function enableAutopilot() {
   autopilotActive.current = true;
+  autopilotMode.current = 'approach';
+  autopilotStatus.current = 'ENGAGED';
+  velocityMatchUsesTutorialDaedalusVel.current = false;
   const audio = new Audio('hyperbolic.mp3');
   audio.play().catch(() => {});
   autopilotPhase.current = 'hyperbolic-approach'; // DEBUG: skip align
 }
 
+export function enableVelocityMatchAutopilot() {
+  autopilotActive.current = true;
+  autopilotMode.current = 'velocityMatch';
+  autopilotPhase.current = 'idle';
+  autopilotStatus.current = 'VEL MATCH';
+}
+
 export function disableAutopilot() {
   autopilotActive.current = false;
+  autopilotMode.current = 'approach';
   autopilotPhase.current = 'idle';
+  autopilotStatus.current = 'ENGAGED';
   autopilotThrustForward.current = false;
   autopilotThrustReverse.current = false;
   autopilotYawLeft.current = false;
   autopilotYawRight.current = false;
   autopilotRadialOut.current = false;
   autopilotRadialIn.current = false;
+  autopilotThrustStrafeLeft.current = false;
+  autopilotThrustStrafeRight.current = false;
+  velocityMatchUsesTutorialDaedalusVel.current = false;
 }

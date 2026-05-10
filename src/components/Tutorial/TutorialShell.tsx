@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import AppContainer from '../App/AppContainer';
 import AppStyles from '../App/AppStyles';
@@ -40,6 +40,13 @@ import {
   selectedTargetVelocity,
 } from '../../context/TargetSelection';
 import { FUEL_STATION_DEF } from '../../config/worldConfig';
+import {
+  autopilotActive,
+  autopilotMode,
+  disableAutopilot,
+  enableVelocityMatchAutopilot,
+} from '../../context/AutopilotState';
+import { velocityMatchUsesTutorialDaedalusVel } from '../../context/VelocityMatch';
 import { getCollidables } from '../../context/CollisionRegistry';
 import { TUTORIAL_MOON_POSITION } from '../../config/moonConfig';
 
@@ -60,6 +67,33 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
     "You're currently moving away from the waypoint drone. You need to increase your velocity past zero to start closing the distance."
   );
   const [relVelCheckThrustPressed, setRelVelCheckThrustPressed] = useState(false);
+  const matchDaedalusBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (tutorialMode !== 'general-movement') return;
+    let raf: number;
+    const tick = () => {
+      if (matchDaedalusBtnRef.current) {
+        const on = autopilotActive.current && autopilotMode.current === 'velocityMatch';
+        matchDaedalusBtnRef.current.textContent = on
+          ? 'Stop matching velocity'
+          : 'Match Daedalus velocity';
+        matchDaedalusBtnRef.current.className = `tutorial-match-vel-btn${on ? ' tutorial-match-vel-btn--active' : ''}`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [tutorialMode]);
+
+  const handleTutorialMatchDaedalus = useCallback(() => {
+    if (autopilotActive.current && autopilotMode.current === 'velocityMatch') {
+      disableAutopilot();
+    } else {
+      velocityMatchUsesTutorialDaedalusVel.current = true;
+      enableVelocityMatchAutopilot();
+    }
+  }, []);
 
   useEffect(() => {
     applyRadioChatterPool(TUTORIAL_RADIO_CHATTER_LINES);
@@ -67,6 +101,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
     clearSelectedTarget();
     navTargetIdRef.current = '';
     return () => {
+      disableAutopilot();
       dockingTutorialActiveRef.current = false;
       setRadioChatterPhase('pre');
       setNavHudEnabled(true);
@@ -294,6 +329,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
         <NavHUD
           showNavTarget={showDockingNavTargetControl}
           showAutopilot={showDockingAutopilot}
+          showVelocityMatch={false}
           showMetrics={false}
           forceNavTargetFlash={showDockingNavTargetControl && !navTargetClicked}
           onNavTargetClick={() => setNavTargetClicked(true)}
@@ -346,6 +382,18 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
       {isDockingRelativeVelocityPhase && (
         <div className="tutorial-powerhud-focus">
           <PowerHUD />
+        </div>
+      )}
+      {tutorialMode === 'general-movement' && (
+        <div className="tutorial-match-vel-wrap">
+          <button
+            ref={matchDaedalusBtnRef}
+            type="button"
+            className="tutorial-match-vel-btn"
+            onClick={handleTutorialMatchDaedalus}
+          >
+            Match Daedalus velocity
+          </button>
         </div>
       )}
       <RadioChatterStream />

@@ -1,4 +1,3 @@
-import SunGravity from './Environment/SunGravity';
 import SkySphere from './Environment/SkySphere';
 
 export default function DefaultEnvironment() {

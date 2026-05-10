@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import ThrusterParticles from './ThrusterParticles';
@@ -17,11 +17,24 @@ import VelocityIndicator from '../VelocityIndicator';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
 import { DEBUG_THRUSTER_HITBOXES } from '../../config/debugConfig';
 import {
-  THRUSTER_LIGHT_POSITION,
+  MAIN_ENGINE_LOCAL_POS_A,
+  MAIN_ENGINE_LOCAL_POS_B,
+  RCS_THRUSTER_LOCAL,
   THRUSTER_LIGHT_COLOR,
   THRUSTER_LIGHT_DISTANCE,
   THRUSTER_LIGHT_DECAY,
 } from '../../config/shipConfig';
+
+/** Order must match `thrusterLight.ts` slot indices and `useShipPhysics` actives. */
+const THRUSTER_LIGHT_SLOTS: { key: string; position: [number, number, number] }[] = [
+  { key: 'reverseA', position: MAIN_ENGINE_LOCAL_POS_A },
+  { key: 'reverseB', position: MAIN_ENGINE_LOCAL_POS_B },
+  { key: 'rcsForward', position: RCS_THRUSTER_LOCAL.forwardLight },
+  { key: 'rcsLeft', position: RCS_THRUSTER_LOCAL.leftLight },
+  { key: 'rcsRight', position: RCS_THRUSTER_LOCAL.rightLight },
+  { key: 'rcsStrafeL', position: RCS_THRUSTER_LOCAL.strafeLeftLight },
+  { key: 'rcsStrafeR', position: RCS_THRUSTER_LOCAL.strafeRightLight },
+];
 
 // Re-export everything consumers currently import from this file
 export {
@@ -52,6 +65,8 @@ interface SpaceshipProps {
   initialDockedTo?: string | null;
   enableShipExplosion?: boolean;
   shipParticleCloudProps?: Partial<ShipParticleCloudProps>;
+  /** World-space velocity (units/s) once at spawn; gravity/thrust apply after. Y ignored (horizontal plane). Omit if starting docked. */
+  initialVelocity?: [number, number, number];
 }
 
 export default function Spaceship({
@@ -63,9 +78,18 @@ export default function Spaceship({
   initialDockedTo,
   enableShipExplosion = false,
   shipParticleCloudProps,
+  initialVelocity,
 }: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
+
+  useEffect(() => {
+    gltf.scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        (child as THREE.Mesh).castShadow = true;
+      }
+    });
+  }, [gltf.scene]);
   const dockingPortRef = useRef<THREE.Group>(null!);
 
   const setGroupRef = useCallback(
@@ -96,25 +120,35 @@ export default function Spaceship({
     thrustStrafeLeft,
     thrustStrafeRight,
     releaseParticleTrigger,
-    thrusterLightRef,
-  } = useShipPhysics({ groupRef, dockingPortRef, initialDockedTo });
+    thrusterLightRefs,
+  } = useShipPhysics({ groupRef, dockingPortRef, initialDockedTo, initialVelocity });
 
   return (
     <>
       <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
-        <primitive object={gltf.scene} scale={scale} rotation={[0, Math.PI / 2, 0]} />
+        <primitive
+          object={gltf.scene}
+          scale={scale}
+          rotation={[0, Math.PI / 2, 0]}
+          castShadow={true}
+        />
         <group position={[0, -2, 0]}>
           <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
         </group>
-        {/* Thruster point light — rear of ship, activates when any thruster fires */}
-        <pointLight
-          ref={thrusterLightRef}
-          position={THRUSTER_LIGHT_POSITION}
-          color={THRUSTER_LIGHT_COLOR}
-          intensity={0}
-          distance={THRUSTER_LIGHT_DISTANCE}
-          decay={THRUSTER_LIGHT_DECAY}
-        />
+        {/* Thruster point lights — one per main nozzle and RCS emitter (see ThrusterParticles). */}
+        {THRUSTER_LIGHT_SLOTS.map(({ key, position }, index) => (
+          <pointLight
+            key={key}
+            ref={(el) => {
+              thrusterLightRefs.current[index] = el;
+            }}
+            position={position}
+            color={THRUSTER_LIGHT_COLOR}
+            distance={THRUSTER_LIGHT_DISTANCE}
+            decay={THRUSTER_LIGHT_DECAY}
+            intensity={0}
+          />
+        ))}
         {/* Docking port at ship nose — local +Z = forward direction of port */}
         <group ref={dockingPortRef} position={[0, -0.025, DOCKING_PORT_LOCAL_Z - 0.1]}>
           <mesh>

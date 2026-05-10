@@ -18,6 +18,8 @@ import {
   autopilotYawRight,
   autopilotRadialOut,
   autopilotRadialIn,
+  autopilotThrustStrafeLeft,
+  autopilotThrustStrafeRight,
 } from '../../context/AutopilotState';
 
 export interface ThrustInputRefs {
@@ -64,8 +66,14 @@ export function getCombinedInputs(refs: ThrustInputRefs) {
     mobileThrustReverse.current ||
     cinematicThrustReverse.current ||
     autopilotThrustReverse.current;
-  const strL = refs.thrustStrafeLeft.current || mobileThrustStrafeLeft.current;
-  const strR = refs.thrustStrafeRight.current || mobileThrustStrafeRight.current;
+  const strL =
+    refs.thrustStrafeLeft.current ||
+    mobileThrustStrafeLeft.current ||
+    autopilotThrustStrafeLeft.current;
+  const strR =
+    refs.thrustStrafeRight.current ||
+    mobileThrustStrafeRight.current ||
+    autopilotThrustStrafeRight.current;
   const radOut = refs.thrustRadialOut.current || mobileThrustRadialOut.current || autopilotRadialOut.current;
   const radIn = refs.thrustRadialIn.current || mobileThrustRadialIn.current || autopilotRadialIn.current;
 

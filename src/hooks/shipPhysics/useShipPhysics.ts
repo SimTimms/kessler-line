@@ -12,6 +12,7 @@ import {
   shipDestroyed,
   shipControlDisabledUntil,
   thrustMultiplier,
+  mainEngineDisabled,
 } from '../../context/ShipState';
 import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
@@ -22,7 +23,12 @@ import { getCombinedInputs, getManualInput } from './inputs';
 import { updateAutopilotThrustOutputs } from './simpleAutopilot';
 import { PHYSICS_MAX_DELTA, PHYSICS_MAX_STEP } from './constants';
 import { updateEngineAudio } from './engineAudio';
-import { updateThrusterLight } from './thrusterLight';
+import {
+  updateThrusterLights,
+  zeroThrusterLights,
+  THRUSTER_POINT_LIGHT_COUNT,
+  type ThrusterLightActives,
+} from './thrusterLight';
 import {
   cinematicAutopilotActive,
   neptuneNoFlyZoneActive,
@@ -55,6 +61,8 @@ interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
   dockingPortRef: React.RefObject<THREE.Group>;
   initialDockedTo?: string | null;
+  /** World-space velocity (units/s) applied once on first free-flight frame — not continuous forcing. Y is ignored (game plane). */
+  initialVelocity?: [number, number, number];
 }
 
 export interface UseShipPhysicsResult {
@@ -67,18 +75,20 @@ export interface UseShipPhysicsResult {
   thrustRadialOut: React.MutableRefObject<boolean>;
   thrustRadialIn: React.MutableRefObject<boolean>;
   releaseParticleTrigger: React.MutableRefObject<boolean>;
-  thrusterLightRef: React.RefObject<THREE.PointLight>;
+  thrusterLightRefs: React.MutableRefObject<(THREE.PointLight | null)[]>;
 }
 
 export function useShipPhysics({
   groupRef,
   dockingPortRef,
   initialDockedTo = null,
+  initialVelocity,
 }: UseShipPhysicsParams): UseShipPhysicsResult {
   const velocity = useRef(new THREE.Vector3());
   const physicsPosition = useRef(new THREE.Vector3());
   const renderPosition = useRef(new THREE.Vector3());
   const didInitPositions = useRef(false);
+  const didApplyInitialVelocity = useRef(false);
   const angularVelocity = useRef(0); // yaw rate in rad/s — no drag, persists like linear velocity
   const angularVelocity3 = useRef(new THREE.Vector3());
   const destroyedFired = useRef(false);
@@ -87,8 +97,10 @@ export function useShipPhysics({
   const primaryGravityId = useRef<string | null>(null);
   const primaryGravityVelocity = useRef(new THREE.Vector3());
 
-  const thrusterLightRef = useRef<THREE.PointLight>(null!);
-  const thrusterLightIntensity = useRef(0);
+  const thrusterLightRefs = useRef<(THREE.PointLight | null)[]>([]);
+  const thrusterLightIntensities = useRef<number[]>(
+    Array.from({ length: THRUSTER_POINT_LIGHT_COUNT }, () => 0)
+  );
 
   const {
     thrustForward,
@@ -140,15 +152,15 @@ export function useShipPhysics({
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
     }
 
-    if (
-      applyDockedState({
-        group: groupRef.current,
-        dockedTo,
-        thrusterLightRef,
-        thrusterLightIntensity,
-        rawDelta,
-      })
-    ) {
+    const docked = applyDockedState({
+      group: groupRef.current,
+      dockedTo,
+      thrusterLightRefs,
+      thrusterLightIntensities,
+      rawDelta,
+    });
+    if (docked) {
+      didApplyInitialVelocity.current = true;
       // Keep authoritative refs synced while docked so follow camera and
       // undock handoff use the actual docked transform (no snap to stale spawn).
       physicsPosition.current.copy(groupRef.current.position);
@@ -158,6 +170,11 @@ export function useShipPhysics({
       shipAngularVelocity.current = 0;
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
       return;
+    }
+
+    if (!didApplyInitialVelocity.current && initialVelocity) {
+      didApplyInitialVelocity.current = true;
+      velocity.current.set(initialVelocity[0], 0, initialVelocity[2]);
     }
 
     // ── Scrapper intro: pin player ship inside the hold ───────────────────────
@@ -178,6 +195,7 @@ export function useShipPhysics({
     updateAutopilotThrustOutputs(groupRef.current, velocity.current, {
       controlsLocked,
       shipDestroyed: shipDestroyed.current,
+      primaryGravityId,
     });
 
     let { yawLeft, yawRight, fwd, rev, strL, strR, radOut, radIn } = getCombinedInputs({
@@ -298,10 +316,19 @@ export function useShipPhysics({
     const mainThrust = fwd || (rev && activeMainEngines > 0);
     const rcsThrust = strL || strR || yawLeft || yawRight;
     const anyThrusting = updateEngineAudio({ mainThrust, rcsThrust });
-    if (shipDestroyed.current && thrusterLightRef.current) {
-      thrusterLightIntensity.current = 0;
-      thrusterLightRef.current.intensity = 0;
+    if (shipDestroyed.current) {
+      zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
     }
+
+    const thrusterLightActives: ThrusterLightActives = {
+      reverseA: rev && !mainEngineDisabled.reverseA.current,
+      reverseB: rev && !mainEngineDisabled.reverseB.current,
+      forward: fwd,
+      left: yawLeft,
+      right: yawRight,
+      strafeLeft: strL,
+      strafeRight: strR,
+    };
 
     applyEngineAsymmetryTorque({
       rev,
@@ -338,10 +365,10 @@ export function useShipPhysics({
         radIn,
       });
 
-      updateThrusterLight({
-        thrusterLightIntensity,
-        thrusterLightRef,
-        anyThrusting,
+      updateThrusterLights({
+        thrusterLightIntensities,
+        thrusterLightRefs,
+        actives: thrusterLightActives,
         dt,
       });
     }
@@ -414,6 +441,6 @@ export function useShipPhysics({
     thrustRadialOut,
     thrustRadialIn,
     releaseParticleTrigger,
-    thrusterLightRef,
+    thrusterLightRefs,
   };
 }

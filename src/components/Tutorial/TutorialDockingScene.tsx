@@ -132,11 +132,11 @@ export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props
       <Suspense fallback={null}>
         <OrbitingDockingStationCluster waypointRef={waypointRef} />
         <Spaceship
-          url="/shuttle.glb"
+          url="/shuttle-low.glb"
           shipGroupRef={spaceshipGroupRef}
           initialPosition={[0, 0, 0]}
           initialDockedTo="docking-bay-tutorial-space-station"
-          scale={0.5}
+          scale={1}
         />
       </Suspense>
     </Canvas>

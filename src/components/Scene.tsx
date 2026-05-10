@@ -239,7 +239,7 @@ export default function Scene() {
       {loadStage >= 3 && (
         <Suspense fallback={null}>
           <Spaceship
-            url="/shuttle.glb"
+            url="/shuttle-low.glb"
             shipGroupRef={spaceshipGroupRef}
             initialPosition={shipInitPos}
             initialRotation={shipInitRot}

@@ -14,6 +14,7 @@ import {
   mobileThrustStrafeLeft,
   mobileThrustStrafeRight,
 } from '../../context/ShipState';
+import { RCS_THRUSTER_LOCAL } from '../../config/shipConfig';
 import { autopilotThrustForward, autopilotThrustReverse } from '../../context/AutopilotState';
 
 const EMIT_RATE = 900; // particles per second per emitter
@@ -39,14 +40,28 @@ type MainKey = keyof typeof MAIN_EMITTERS;
 // ── RCS emitters (maneuvering thrusters) ─────────────────────────────────
 const RCS_MAX = 200;
 const RCS_EMITTERS = {
-  forward: { localPos: new THREE.Vector3(0, -2, 9.5), localDir: new THREE.Vector3(0, 0, 1) },
-  left: { localPos: new THREE.Vector3(1.5, 0, 0), localDir: new THREE.Vector3(1, 0, 0) },
-  right: { localPos: new THREE.Vector3(-1.5, 0, 0), localDir: new THREE.Vector3(-1, 0, 0) },
-  strafeLeft: { localPos: new THREE.Vector3(2.0, 0, 1.0), localDir: new THREE.Vector3(1, 0, 0) },
-  strafeRight: { localPos: new THREE.Vector3(-2.0, 0, 1.0), localDir: new THREE.Vector3(-1, 0, 0) },
+  forward: {
+    localPos: new THREE.Vector3(...RCS_THRUSTER_LOCAL.forward),
+    localDir: new THREE.Vector3(0, 0, 1),
+  },
+  left: {
+    localPos: new THREE.Vector3(...RCS_THRUSTER_LOCAL.left),
+    localDir: new THREE.Vector3(1, 0, 0),
+  },
+  right: {
+    localPos: new THREE.Vector3(...RCS_THRUSTER_LOCAL.right),
+    localDir: new THREE.Vector3(-1, 0, 0),
+  },
+  strafeLeft: {
+    localPos: new THREE.Vector3(...RCS_THRUSTER_LOCAL.strafeLeft),
+    localDir: new THREE.Vector3(1, 0, 0),
+  },
+  strafeRight: {
+    localPos: new THREE.Vector3(...RCS_THRUSTER_LOCAL.strafeRight),
+    localDir: new THREE.Vector3(-1, 0, 0),
+  },
 } as const;
 type RcsKey = keyof typeof RCS_EMITTERS;
-
 
 type Particle = {
   active: boolean;

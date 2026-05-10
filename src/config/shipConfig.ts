@@ -32,15 +32,31 @@ export const ENGINE_TORQUE_SCALE = 0.15;
 /** Exponential smoothing time constant for render-position lerp (higher = snappier). */
 export const RENDER_SMOOTHING = 14;
 
-// ── Thruster point light ─────────────────────────────────────────────────
-/** Local position of the thruster point light (behind the ship). */
-export const THRUSTER_LIGHT_POSITION: [number, number, number] = [0, 0, -14];
+// ── Thruster point lights (local space; align with ThrusterParticles emitters) ─
 /** Color of the thruster exhaust glow. */
 export const THRUSTER_LIGHT_COLOR = '#88ccff';
 /** Thruster light range (world units). */
 export const THRUSTER_LIGHT_DISTANCE = 40;
 /** Thruster light decay exponent. */
 export const THRUSTER_LIGHT_DECAY = 2;
+/** Point-light intensity per main nozzle while reverse thrust is active (scaled by thrust multiplier). */
+export const THRUSTER_LIGHT_INTENSITY_MAIN = 200;
+/** Point-light intensity per RCS emitter while that thruster is active (scaled by thrust multiplier). */
+export const THRUSTER_LIGHT_INTENSITY_RCS = 65;
+
+/** RCS thruster nozzle positions in ship-local space (same values as particle emitters). */
+export const RCS_THRUSTER_LOCAL = {
+  forward: [0, 0, 18.5] as [number, number, number],
+  left: [1.4, 0, 18] as [number, number, number],
+  right: [-1.4, 0, 18] as [number, number, number],
+  strafeLeft: [3.6, 0, 4.0] as [number, number, number],
+  strafeRight: [-3.6, 0, 4.0] as [number, number, number],
+  forwardLight: [0, 0, 20.5] as [number, number, number],
+  leftLight: [3.4, 2, 18] as [number, number, number],
+  rightLight: [-3.4, 2, 18] as [number, number, number],
+  strafeLeftLight: [3.6, 2, 4.0] as [number, number, number],
+  strafeRightLight: [-3.6, 2, 4.0] as [number, number, number],
+} as const;
 
 // ── Player ship roster ────────────────────────────────────────────────────
 export interface PlayerShip {

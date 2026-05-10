@@ -26,9 +26,11 @@ import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/Drive
 import { KM_PER_UNIT } from '../../config/commsConfig';
 import {
   autopilotActive,
+  autopilotMode,
   autopilotPhase,
   autopilotStatus,
   enableAutopilot,
+  enableVelocityMatchAutopilot,
   disableAutopilot,
 } from '../../context/AutopilotState';
 import { NavTargetDialog, type NavTargetItem } from './NavTargetDialog';
@@ -65,6 +67,8 @@ function formatDist(distUnits: number): string {
 interface NavHUDProps {
   showNavTarget?: boolean;
   showAutopilot?: boolean;
+  /** When true, show "MATCH VEL" if the player has a selected contact with known velocity. */
+  showVelocityMatch?: boolean;
   showMetrics?: boolean;
   forceNavTargetFlash?: boolean;
   onNavTargetClick?: () => void;
@@ -77,6 +81,7 @@ interface NavHUDProps {
 export const NavHUD = ({
   showNavTarget = true,
   showAutopilot = true,
+  showVelocityMatch = true,
   showMetrics = true,
   forceNavTargetFlash = false,
   onNavTargetClick,
@@ -113,6 +118,7 @@ export const NavHUD = ({
   const relativeVelRef = useRef<HTMLSpanElement>(null!);
   const dockingHintRef = useRef<HTMLSpanElement>(null!);
   const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
+  const velocityMatchBtnRef = useRef<HTMLButtonElement>(null!);
 
   const prevNavSigRef = useRef('');
   const prevGeneralSigRef = useRef('');
@@ -265,9 +271,19 @@ export const NavHUD = ({
         }
       }
       if (autopilotBtnRef.current) {
-        const active = autopilotActive.current;
+        const active =
+          autopilotActive.current && autopilotMode.current === 'approach';
         autopilotBtnRef.current.textContent = active ? autopilotStatus.current : 'DISENGAGED';
         autopilotBtnRef.current.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
+      }
+      if (velocityMatchBtnRef.current && showVelocityMatch) {
+        const hasVel =
+          selectedTargetName !== null && selectedTargetVelocity.lengthSq() > 1e-8;
+        const vmActive =
+          autopilotActive.current && autopilotMode.current === 'velocityMatch';
+        velocityMatchBtnRef.current.disabled = !hasVel;
+        velocityMatchBtnRef.current.textContent = vmActive ? 'VEL MATCH ON' : 'MATCH VEL';
+        velocityMatchBtnRef.current.className = `autopilot-btn autopilot-btn--velocity-match${vmActive ? ' autopilot-active' : ''}${!hasVel ? ' autopilot-btn--disabled' : ''}`;
       }
 
       // Nav target distances
@@ -525,11 +541,24 @@ export const NavHUD = ({
   };
 
   const handleAutopilot = () => {
-    if (autopilotActive.current) {
+    if (autopilotActive.current && autopilotMode.current === 'approach') {
       disableAutopilot();
       window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
     } else {
       enableAutopilot();
+      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: true } }));
+    }
+  };
+
+  const handleVelocityMatch = () => {
+    const hasVel =
+      selectedTargetName !== null && selectedTargetVelocity.lengthSq() > 1e-8;
+    if (!hasVel) return;
+    if (autopilotActive.current && autopilotMode.current === 'velocityMatch') {
+      disableAutopilot();
+      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+    } else {
+      enableVelocityMatchAutopilot();
       window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: true } }));
     }
   };
@@ -553,7 +582,7 @@ export const NavHUD = ({
   };
 
   const showNavBar =
-    isDocked || showNavTarget || showAutopilot || showMetrics;
+    isDocked || showNavTarget || showAutopilot || showVelocityMatch || showMetrics;
 
   return (
     <>
@@ -625,7 +654,22 @@ export const NavHUD = ({
               </button>
             </div>
           )}
-          {(showNavTarget || showAutopilot) && showMetrics && <div className="hud-divider" />}
+          {showVelocityMatch && showNavTarget && (
+            <div className="nav-target-group">
+              <div className="nav-target-label">Relative</div>
+              <button
+                ref={velocityMatchBtnRef}
+                type="button"
+                className="autopilot-btn autopilot-btn--velocity-match"
+                onClick={handleVelocityMatch}
+              >
+                MATCH VEL
+              </button>
+            </div>
+          )}
+          {(showNavTarget || showAutopilot || showVelocityMatch) && showMetrics && (
+            <div className="hud-divider" />
+          )}
 
           {showMetrics && (
             <div className="hud-metrics nav-metrics">

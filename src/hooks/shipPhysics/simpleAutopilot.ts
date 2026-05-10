@@ -1,10 +1,15 @@
 import * as THREE from 'three';
 import {
   autopilotActive,
+  autopilotMode,
   autopilotThrustForward,
   autopilotThrustReverse,
   autopilotYawLeft,
   autopilotYawRight,
+  autopilotRadialOut,
+  autopilotRadialIn,
+  autopilotThrustStrafeLeft,
+  autopilotThrustStrafeRight,
 } from '../../context/AutopilotState';
 import { navTargetIdRef, navTargetPosRef } from '../../context/NavTarget';
 import {
@@ -13,6 +18,7 @@ import {
   selectedTargetVelocity,
 } from '../../context/TargetSelection';
 import { shipPosRef } from '../../context/ShipPos';
+import { updateVelocityMatchThrustOutputs } from './velocityMatchAutopilot';
 
 const _toTarget = new THREE.Vector3();
 const _nose = new THREE.Vector3();
@@ -25,19 +31,38 @@ const MAX_CLOSING = 35;
 const MIN_CLOSING = 6;
 const CLOSING_HYST = 2;
 
+export interface AutopilotThrustOpts {
+  controlsLocked: boolean;
+  shipDestroyed: boolean;
+  primaryGravityId: { current: string | null };
+}
+
 /** Fills `autopilotThrust*` refs for `getCombinedInputs`; clears them when autopilot is off. */
 export function updateAutopilotThrustOutputs(
   group: THREE.Group,
   shipVelocity: THREE.Vector3,
-  opts: { controlsLocked: boolean; shipDestroyed: boolean },
+  opts: AutopilotThrustOpts,
 ): void {
   autopilotThrustForward.current = false;
   autopilotThrustReverse.current = false;
   autopilotYawLeft.current = false;
   autopilotYawRight.current = false;
+  autopilotRadialOut.current = false;
+  autopilotRadialIn.current = false;
+  autopilotThrustStrafeLeft.current = false;
+  autopilotThrustStrafeRight.current = false;
 
   if (!autopilotActive.current || opts.controlsLocked || opts.shipDestroyed) return;
 
+  if (autopilotMode.current === 'velocityMatch') {
+    updateVelocityMatchThrustOutputs(group, shipVelocity, opts);
+    return;
+  }
+
+  updateApproachAutopilotThrustOutputs(group, shipVelocity);
+}
+
+function updateApproachAutopilotThrustOutputs(group: THREE.Group, shipVelocity: THREE.Vector3): void {
   const hasSelected =
     selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
   const hasNav = navTargetIdRef.current.trim().length > 0;
