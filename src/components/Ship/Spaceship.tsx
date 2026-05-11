@@ -82,6 +82,7 @@ export default function Spaceship({
 }: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
+  const shadowLightTarget = useRef(new THREE.Object3D());
 
   useEffect(() => {
     gltf.scene.traverse((child) => {
@@ -135,6 +136,25 @@ export default function Spaceship({
         <group position={[0, -2, 0]}>
           <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
         </group>
+
+        {/* Shadow-only light — tight cone so the shadow map covers a small area,
+            giving high texel density and a clean shadow shape. Zero intensity so
+            it contributes no extra illumination. */}
+        <spotLight
+          position={[0, 500, 100]}
+          target={shadowLightTarget.current}
+          angle={Math.PI / 5}
+          penumbra={0.4}
+          intensity={50000}
+          distance={1000}
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+          shadow-radius={8}
+          shadow-camera-near={1}
+          shadow-camera-far={400}
+        />
+        <primitive object={shadowLightTarget.current} position={[0, 0, 0]} />
         {/* Thruster point lights — one per main nozzle and RCS emitter (see ThrusterParticles). */}
         {THRUSTER_LIGHT_SLOTS.map(({ key, position }, index) => (
           <pointLight

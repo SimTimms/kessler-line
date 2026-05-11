@@ -1,5 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { useTexture } from '@react-three/drei';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { gravityBodies } from '../../../context/GravityRegistry';
@@ -8,13 +7,12 @@ import { SHIP_RADIUS, setHullIntegrity, shipDestroyed } from '../../../context/S
 import { shipPosRef } from '../../../context/ShipPos';
 import {
   MOON_BODY_ID,
-  MOON_BUMP_MAP_URL,
   MOON_SOI_MULTIPLIER,
   MOON_SURFACE_GRAVITY,
-  MOON_TEXTURE_URL,
   TUTORIAL_MOON_POSITION,
   TUTORIAL_MOON_RADIUS,
 } from '../../../config/moonConfig';
+import { buildLunarColorMap, buildLunarBumpMap } from '../../../utils/lunarTextureGen';
 import { ORBIT_ALTITUDE_MULTIPLIER } from '../../../config/solarConfig';
 
 // ~27.3 Earth days per lunar day; same reference spin as SolarSystem Earth (0.04 rad/s = 1 game day).
@@ -36,12 +34,8 @@ export default function Moon({
   const spinRef = useRef<THREE.Group>(null);
   const prevWorldPosRef = useRef(new THREE.Vector3());
   const hasPrevWorldPosRef = useRef(false);
-  const [colorMap, bumpMap] = useTexture([MOON_TEXTURE_URL, MOON_BUMP_MAP_URL]);
-
-  useLayoutEffect(() => {
-    colorMap.colorSpace = THREE.SRGBColorSpace;
-    bumpMap.colorSpace = THREE.NoColorSpace;
-  }, [colorMap, bumpMap]);
+  const colorMap = useMemo(() => buildLunarColorMap(2048, 1024), []);
+  const bumpMap = useMemo(() => buildLunarBumpMap(2048, 1024), []);
 
   const mu = MOON_SURFACE_GRAVITY * radius * radius;
   const soiRadius = radius * MOON_SOI_MULTIPLIER;

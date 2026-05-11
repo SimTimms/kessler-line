@@ -91,12 +91,12 @@ export default memo(function TutorialScene({ onStepAdvance }: Props) {
         }}
         shadows={true}
       >
-        <fogExp2 attach="fog" args={[fogColor, 0.001]} />
+        <fogExp2 attach="fog" args={[fogColor, 0.0005]} />
         <DefaultLighting
           color={lightColor}
           intensity={1}
-          ambientIntensity={0.02}
-          position={[0, 200, 0]}
+          ambientIntensity={0.2}
+          position={[0, 4000, 40000]}
         />
         <ShipShadowLight intensity={0.5} color={fogColor} />
         <TutorialFollowCamera followTarget={shipPosRef} followOffset={TUTORIAL_FOLLOW_OFFSET} />

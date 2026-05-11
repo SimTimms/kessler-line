@@ -2,10 +2,6 @@
 
 export const MOON_BODY_ID = 'Moon';
 
-export const MOON_TEXTURE_URL = '/moon.jpg';
-/** Grayscale height / bump (paired with diffuse for relief). */
-export const MOON_BUMP_MAP_URL = '/moon_bump.jpg';
-
 /** World-space sphere radius (visual + gravity surface). */
 export const TUTORIAL_MOON_RADIUS = 2880;
 

@@ -145,6 +145,7 @@ export default function Scene() {
     <Canvas
       style={{ width: '100vw', height: '100vh', background: '#000000', touchAction: 'none' }}
       camera={{ near: CANVAS_NEAR, far: CANVAS_FAR }}
+      shadows="soft"
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
