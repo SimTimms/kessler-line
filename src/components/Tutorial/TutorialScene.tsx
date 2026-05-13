@@ -9,6 +9,7 @@ import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/vis
 import TutorialFollowCamera from './TutorialFollowCamera';
 import DefaultLighting from '../DefaultLighting';
 import LunarLandscape from './LunarLandscape';
+import LunarSettlement from './LunarSettlement';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import {
   SHIP_PARTICLE_COUNT,
@@ -103,6 +104,7 @@ export default memo(function TutorialScene({ onStepAdvance }: Props) {
         <TutorialStepWatcher onStepAdvance={onStepAdvance} />
         <Suspense fallback={null}>
           <LunarLandscape />
+          <LunarSettlement />
           <Spaceship
             url="/shuttle-low.glb"
             shipGroupRef={spaceshipGroupRef}

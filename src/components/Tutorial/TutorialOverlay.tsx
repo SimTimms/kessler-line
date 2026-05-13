@@ -106,8 +106,7 @@ const TutorialOverlay = memo(function TutorialOverlay({
 
   const handleSkip = onSkip ?? onComplete;
 
-  const hasKeyStrip =
-    !!step && ((step.keyHints?.length ?? 0) > 0 || step.keys.length > 0);
+  const hasKeyStrip = !!step && ((step.keyHints?.length ?? 0) > 0 || step.keys.length > 0);
 
   return (
     <div className="tutorial-overlay">
@@ -127,7 +126,6 @@ const TutorialOverlay = memo(function TutorialOverlay({
               <span className="tutorial-overlay__contact-role">Licensing Invigilator</span>
             </div>
             <div className="tutorial-overlay__contact-divider" />
-            <div className="tutorial-overlay__step-title">{step.title}</div>
             <div
               className={`tutorial-overlay__step-prompt${
                 hasKeyStrip ? '' : ' tutorial-overlay__step-prompt--no-keys'

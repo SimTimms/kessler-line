@@ -6,7 +6,7 @@ import { buildLunarTextures } from '../../utils/lunarTextureGen';
 // Sphere radius — large enough to look flat from low altitude
 const MOON_RADIUS = 10000;
 // Surface sits at world y = -150; sphere center is below that by the radius
-const SURFACE_Y = -100;
+const SURFACE_Y = -900;
 // How many times the texture tiles around the sphere (U) and pole-to-pole (V)
 const TEXTURE_REPEAT_U = 8;
 const TEXTURE_REPEAT_V = 4;
@@ -45,7 +45,7 @@ export default function LunarLandscape() {
         bumpMap={bumpMap}
         bumpScale={3}
         displacementMap={bumpMap}
-        displacementScale={5}
+        displacementScale={0}
         displacementBias={-12.5}
         roughness={0.95}
         metalness={0}

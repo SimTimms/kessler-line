@@ -384,6 +384,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
           <PowerHUD />
         </div>
       )}
+      {/*
       {tutorialMode === 'general-movement' && (
         <div className="tutorial-match-vel-wrap">
           <button
@@ -396,6 +397,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
           </button>
         </div>
       )}
+      */}
       <RadioChatterStream />
       <AppStyles />
     </AppContainer>

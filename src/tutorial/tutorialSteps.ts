@@ -61,8 +61,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
     title: 'Welcome Aboard',
-    prompt:
-      "Hi, welcome to Daedalus. I'm Phil, your invigilator. Going to take you through some of the basics today.",
+    prompt: 'Welcome to Lunar.. Going to take you through some of the basics today.',
     keys: [],
     completionCriteria: { type: 'continue' },
     continueLabel: 'Continue',

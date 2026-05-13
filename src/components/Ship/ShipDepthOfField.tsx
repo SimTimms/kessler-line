@@ -1,25 +1,35 @@
 import { useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import { radiationExposureRef } from '../../context/RadiationScan';
 import { getGraphicsSettings } from '../../context/GraphicsState';
+import { shipPosRef } from '../../context/ShipPos';
 import { EffectComposer, Bloom, Vignette, HueSaturation } from '@react-three/postprocessing';
-import { BlendFunction, NoiseEffect } from 'postprocessing';
+import { BlendFunction, NoiseEffect, DepthOfFieldEffect } from 'postprocessing';
 
 const NOISE_BASE = 0.00005;
 const NOISE_MAX = 0.25;
 
 export function ShipDepthOfField() {
+  const { camera } = useThree();
   const noiseEffect = useMemo(() => new NoiseEffect({ blendFunction: BlendFunction.NORMAL }), []);
+  // target is updated each frame so the focal plane always sits on the ship
+  const dofEffect = useMemo(
+    () => new DepthOfFieldEffect(camera, { focusDistance: 70, focusRange: 100, bokehScale: 2 }),
+    [camera]
+  );
   const bloomEnabled = getGraphicsSettings().bloomEnabled;
 
   useFrame(() => {
     noiseEffect.blendMode.opacity.value =
       NOISE_BASE + radiationExposureRef.current * (NOISE_MAX - NOISE_BASE);
+    dofEffect.target = shipPosRef.current;
   });
 
   return (
     <EffectComposer>
+      <primitive object={dofEffect} />
       <Bloom
+        enabled={bloomEnabled}
         radius={0.02}
         mipmapBlur
         luminanceThreshold={0.0}
