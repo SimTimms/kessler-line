@@ -13,6 +13,12 @@ import {
   shipControlDisabledUntil,
   thrustMultiplier,
   mainEngineDisabled,
+  effectiveThrustFwd,
+  effectiveThrustRev,
+  effectiveYawLeft,
+  effectiveYawRight,
+  effectiveThrustStrL,
+  effectiveThrustStrR,
 } from '../../context/ShipState';
 import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
@@ -112,6 +118,7 @@ export function useShipPhysics({
     thrustRadialOut,
     thrustRadialIn,
     releaseParticleTrigger,
+    stabilizerActive,
   } = useInputListeners({ dockedTo, velocity, groupRef });
 
   // Spawn already docked (e.g. docking tutorial): physics sets dockedTo before any bay overlap,
@@ -169,6 +176,12 @@ export function useShipPhysics({
       groupRef.current.getWorldQuaternion(shipQuaternion);
       shipAngularVelocity.current = 0;
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
+      effectiveThrustFwd.current = false;
+      effectiveThrustRev.current = false;
+      effectiveYawLeft.current = false;
+      effectiveYawRight.current = false;
+      effectiveThrustStrL.current = false;
+      effectiveThrustStrR.current = false;
       return;
     }
 
@@ -231,6 +244,14 @@ export function useShipPhysics({
       radIn = false;
     }
 
+    // Stabiliser (Space held): synthetically activates both keys of every cancel pair so the
+    // cancel-assist blocks below fire opposing thrusters on all three axes simultaneously.
+    if (stabilizerActive.current) {
+      fwd = true; rev = true;
+      yawLeft = true; yawRight = true;
+      strL = true; strR = true;
+    }
+
     // Opposite-key cancel assist:
     // - W+S (fwd+rev): cancel longitudinal velocity
     // - A+D (yawLeft+yawRight): cancel yaw rate
@@ -288,6 +309,15 @@ export function useShipPhysics({
       }
     }
 
+    // Publish effective thruster states so ThrusterParticles shows the correct
+    // visual for cancel-assist and stabilizer thrusts, not just raw key presses.
+    effectiveThrustFwd.current = fwd;
+    effectiveThrustRev.current = rev;
+    effectiveYawLeft.current = yawLeft;
+    effectiveYawRight.current = yawRight;
+    effectiveThrustStrL.current = strL;
+    effectiveThrustStrR.current = strR;
+
     const manualInput = getManualInput({
       thrustForward,
       thrustReverse,
@@ -307,7 +337,7 @@ export function useShipPhysics({
       }
     }
 
-    if (autopilotActive.current && manualInput) {
+    if (autopilotActive.current && (manualInput || stabilizerActive.current)) {
       disableAutopilot();
       window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
     }

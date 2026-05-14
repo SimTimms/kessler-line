@@ -18,6 +18,51 @@
   gap: 6px;
 }
 
+.power-hud-crew-row {
+  gap: 5px;
+  margin-bottom: 2px;
+}
+
+.crew-icon--active {
+  color: #00cfff;
+  filter: drop-shadow(0 0 3px rgba(0, 200, 255, 0.7));
+}
+
+.flex-column {
+  display: flex;
+  align-items: left;
+  flex-direction: column;
+}
+.power-hud-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(0, 200, 255, 0.4);
+  margin-top: 2px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.4);
+}
+
+.crew-icon--empty {
+  color: rgba(0, 200, 255, 0.65);
+}
+
+.power-hud-cargo-cap-row {
+  gap: 3px;
+}
+
+.power-hud-cargo-slot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(0, 200, 255, 0.65);
+  background: transparent;
+}
+
+.power-hud-cargo-slot--filled {
+  background: #00cfff;
+  border-color: rgba(0, 200, 255, 0.85);
+  box-shadow: 0 0 4px rgba(0, 200, 255, 0.5);
+}
+
 .power-hud-divider {
   color: rgba(0, 200, 255, 0.4);
   margin-top: 8px;
@@ -43,4 +88,3 @@
   text-align: left;
   font-family: inherit;
 }
-

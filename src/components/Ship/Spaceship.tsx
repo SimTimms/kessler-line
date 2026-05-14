@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
+import { useTutorialThrustersHighlighted } from '../../tutorial/useTutorialThrustersHighlighted';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import ThrusterParticles from './ThrusterParticles';
@@ -124,6 +125,8 @@ export default function Spaceship({
     thrusterLightRefs,
   } = useShipPhysics({ groupRef, dockingPortRef, initialDockedTo, initialVelocity });
 
+  const thrustersHighlighted = useTutorialThrustersHighlighted();
+
   return (
     <>
       <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
@@ -193,6 +196,7 @@ export default function Spaceship({
           thrustRight={thrustRight}
           thrustStrafeLeft={thrustStrafeLeft}
           thrustStrafeRight={thrustStrafeRight}
+          thrustersHighlighted={thrustersHighlighted}
         />
       </group>
       <group position={[0, 0, 9]}>

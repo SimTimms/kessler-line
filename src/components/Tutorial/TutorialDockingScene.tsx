@@ -12,6 +12,7 @@ import DefaultEnvironment from '../Environment';
 import StationDrones from './StationDrones';
 import { TUTORIAL_MOON_POSITION, TUTORIAL_MOON_RADIUS } from '../../config/moonConfig';
 import TutorialDockingStepWatcher from './TutorialDockingStepWatcher';
+import LaserRay from '../Combat/LaserRay';
 import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
 
 interface Props {
@@ -138,6 +139,7 @@ export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props
           initialDockedTo="docking-bay-tutorial-space-station"
           scale={1}
         />
+        <LaserRay shipGroupRef={spaceshipGroupRef} />
       </Suspense>
     </Canvas>
   );

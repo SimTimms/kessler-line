@@ -1,3 +1,20 @@
+// ── Laser spotlight ───────────────────────────────────────────────────────
+/** Light colour of the cursor-tracking spotlight. */
+export const LASER_SPOTLIGHT_COLOR = '#ffffff';
+/** Luminous intensity of the spotlight. */
+export const LASER_SPOTLIGHT_INTENSITY = 8;
+/** Half-angle of the spotlight cone (radians). */
+export const LASER_SPOTLIGHT_ANGLE = 0.58;
+/** Soft-edge fraction (0 = hard edge, 1 = fully soft). */
+export const LASER_SPOTLIGHT_PENUMBRA = 0.85;
+/** Physically-based distance falloff exponent (lower = slower falloff). */
+export const LASER_SPOTLIGHT_DECAY = 0.2;
+/**
+ * Maximum range of the spotlight in world units.
+ * 0 = unlimited (Three.js removes the hard cutoff; falloff is governed by decay only).
+ */
+export const LASER_SPOTLIGHT_DISTANCE = 0;
+
 // ── Railgun beam geometry ─────────────────────────────────────────────────
 /** Outer radius of the railgun beam cylinder (world units). */
 export const RAILGUN_BEAM_OUTER_RADIUS = 0.03;

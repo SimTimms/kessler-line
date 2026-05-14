@@ -17,6 +17,7 @@ export const KEY_STRAFE_RIGHT = 'KeyE'; // starboard (E)
 export const KEY_RADIAL_OUT = 'KeyR'; // away from planet
 export const KEY_RADIAL_IN = 'KeyF'; // toward planet
 export const KEY_UNDOCK_CARGO = 'Space'; // undock when docked; cargo release otherwise
+export const KEY_STABILISER = 'Space'; // hold to cancel all linear and angular velocity via thrusters
 
 /** Dispatched by the Undock HUD control; handled in useInputListeners (same effect as Space when docked). */
 export const EVENT_REQUEST_UNDOCK = 'RequestUndock';

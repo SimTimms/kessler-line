@@ -123,3 +123,15 @@ export const mainEngineDisabled = {
 
 // Yaw rate in rad/s — written by useShipPhysics each frame, read by AutopilotController
 export const shipAngularVelocity = { current: 0 };
+
+// ── Effective thruster states ─────────────────────────────────────────────────
+// Written by useShipPhysics each frame after cancel-assist and stabilizer logic.
+// Read by ThrusterParticles so visual effects reflect computed thrust, not just
+// raw key presses (stabilizer, autopilot overrides, and cancel-assist all show
+// the correct thruster firing).
+export const effectiveThrustFwd = { current: false };
+export const effectiveThrustRev = { current: false };
+export const effectiveYawLeft = { current: false };
+export const effectiveYawRight = { current: false };
+export const effectiveThrustStrL = { current: false };
+export const effectiveThrustStrR = { current: false };

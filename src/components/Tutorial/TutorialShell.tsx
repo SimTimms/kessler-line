@@ -6,7 +6,8 @@ import TutorialScene from './TutorialScene';
 import TutorialDockingScene from './TutorialDockingScene';
 import TutorialOverlay from './TutorialOverlay';
 import RadioChatterStream from '../Radio/RadioChatterStream';
-import { dockingTutorialActiveRef, tutorialStepRef } from '../../context/TutorialState';
+import { dockingTutorialActiveRef, tutorialStepRef, tutorialThrustersHighlightedRef } from '../../context/TutorialState';
+import { getThrustersHighlightedForStep } from '../../tutorial/tutorialHighlights';
 import { applyRadioChatterPool, setRadioChatterPhase } from '../../radio/radioChatterPhase';
 import { TUTORIAL_RADIO_CHATTER_LINES } from '../../tutorial/tutorialRadioChatter';
 import { TUTORIAL_STEPS } from '../../tutorial/tutorialSteps';
@@ -103,6 +104,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
     return () => {
       disableAutopilot();
       dockingTutorialActiveRef.current = false;
+      tutorialThrustersHighlightedRef.current = [];
       setRadioChatterPhase('pre');
       setNavHudEnabled(true);
       navTargetIdRef.current = FUEL_STATION_DEF.id;
@@ -141,6 +143,11 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
             ? { ...step, prompt: relativeVelocityPrompt }
             : step
         );
+  const currentStepId = steps[currentStep]?.id;
+  useEffect(() => {
+    tutorialThrustersHighlightedRef.current = getThrustersHighlightedForStep(currentStepId);
+  }, [currentStepId]);
+
   const dockingMagneticStepIndex = TUTORIAL_DOCKING_STEPS.findIndex(
     (s) => s.id === 'docking-magnetic-scan'
   );
@@ -379,6 +386,7 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
           </div>
         </>
       )}
+      {tutorialMode === 'general-movement' && <PowerHUD />}
       {isDockingRelativeVelocityPhase && (
         <div className="tutorial-powerhud-focus">
           <PowerHUD />

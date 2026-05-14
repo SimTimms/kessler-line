@@ -1,6 +1,8 @@
+import './ThrusterParticles.css';
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { Html } from '@react-three/drei';
 import { thrustMultiplier } from './Spaceship';
 import {
   cinematicThrustForward,
@@ -13,8 +15,19 @@ import {
   mobileThrustRight,
   mobileThrustStrafeLeft,
   mobileThrustStrafeRight,
+  effectiveThrustFwd,
+  effectiveThrustRev,
+  effectiveYawLeft,
+  effectiveYawRight,
+  effectiveThrustStrL,
+  effectiveThrustStrR,
+  shipVelocity,
 } from '../../context/ShipState';
-import { RCS_THRUSTER_LOCAL } from '../../config/shipConfig';
+import {
+  RCS_THRUSTER_LOCAL,
+  HOVER_THRUSTER_LOCAL,
+  HOVER_CUTOFF_SPEED,
+} from '../../config/shipConfig';
 import { autopilotThrustForward, autopilotThrustReverse } from '../../context/AutopilotState';
 
 const EMIT_RATE = 900; // particles per second per emitter
@@ -36,6 +49,18 @@ const MAIN_EMITTERS = {
   },
 } as const;
 type MainKey = keyof typeof MAIN_EMITTERS;
+
+// ── Hover emitters (underside — always on) ───────────────────────────────
+const HOVER_MAX = 500;
+const HOVER_EMIT_RATE = 500; // particles per second per nozzle
+const HOVER_LIFETIME = 0.06; // seconds (slightly longer trail than RCS)
+const HOVER_SPEED = 70; // world units/s (slower than RCS — downward drift)
+const HOVER_LOCAL_DIR = new THREE.Vector3(0, -1, 0); // straight down in local space
+const HOVER_EMITTERS: { localPos: THREE.Vector3; localDir: THREE.Vector3 }[] =
+  HOVER_THRUSTER_LOCAL.map(([x, y, z]) => ({
+    localPos: new THREE.Vector3(x, y, z),
+    localDir: HOVER_LOCAL_DIR,
+  }));
 
 // ── RCS emitters (maneuvering thrusters) ─────────────────────────────────
 const RCS_MAX = 200;
@@ -111,6 +136,7 @@ interface ThrusterParticlesProps {
   thrustStrafeRight: { current: boolean };
   /** @deprecated No longer used — particles are simulated in ship-local space. */
   shipVelocityRef?: { current: THREE.Vector3 };
+  thrustersHighlighted: string[];
 }
 
 export default function ThrusterParticles({
@@ -121,10 +147,12 @@ export default function ThrusterParticles({
   thrustRight,
   thrustStrafeLeft,
   thrustStrafeRight,
+  thrustersHighlighted,
 }: ThrusterParticlesProps) {
   // ── Material refs (for per-frame size updates) ───────────────────────────
   const mainMatRef = useRef<THREE.PointsMaterial>(null!);
   const rcsMatRef = useRef<THREE.PointsMaterial>(null!);
+  const hoverMatRef = useRef<THREE.PointsMaterial>(null!);
 
   // ── Main engine buffers ──────────────────────────────────────────────────
   const mainGeoRef = useRef<THREE.BufferGeometry>(null!);
@@ -147,6 +175,14 @@ export default function ThrusterParticles({
     strafeLeft: 0,
     strafeRight: 0,
   });
+
+  // ── Hover buffers (underside — always on) ────────────────────────────────
+  const hoverGeoRef = useRef<THREE.BufferGeometry>(null!);
+  const hoverPos = useMemo(() => new Float32Array(HOVER_MAX * 3), []);
+  const hoverCol = useMemo(() => new Float32Array(HOVER_MAX * 3), []);
+  const hoverPool = useRef<Particle[]>(makePool(HOVER_MAX));
+  const hoverSlot = useRef(0);
+  const hoverAccum = useRef<number[]>(Array(HOVER_EMITTERS.length).fill(0));
 
   const spriteTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
@@ -296,7 +332,8 @@ export default function ThrusterParticles({
       thrustReverse.current ||
       mobileThrustReverse.current ||
       cinematicThrustReverse.current ||
-      autopilotThrustReverse.current;
+      autopilotThrustReverse.current ||
+      effectiveThrustRev.current;
 
     if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
@@ -322,13 +359,14 @@ export default function ThrusterParticles({
             thrustForward.current ||
             mobileThrustForward.current ||
             cinematicThrustForward.current ||
-            autopilotThrustForward.current,
+            autopilotThrustForward.current ||
+            effectiveThrustFwd.current,
         },
       ],
-      ['left', combined(thrustLeft, mobileThrustLeft)],
-      ['right', combined(thrustRight, mobileThrustRight)],
-      ['strafeLeft', combined(thrustStrafeLeft, mobileThrustStrafeLeft)],
-      ['strafeRight', combined(thrustStrafeRight, mobileThrustStrafeRight)],
+      ['left', combined(thrustLeft, mobileThrustLeft, effectiveYawLeft)],
+      ['right', combined(thrustRight, mobileThrustRight, effectiveYawRight)],
+      ['strafeLeft', combined(thrustStrafeLeft, mobileThrustStrafeLeft, effectiveThrustStrL)],
+      ['strafeRight', combined(thrustStrafeRight, mobileThrustStrafeRight, effectiveThrustStrR)],
     ];
     for (const [key, ref] of rcsInputs) {
       if (ref.current) {
@@ -342,12 +380,54 @@ export default function ThrusterParticles({
       }
     }
 
+    // Hover thrusters — active at low speed (cuts off when in orbit / fast flight)
+    const hoverActive = shipVelocity.length() <= HOVER_CUTOFF_SPEED;
+
+    for (let hi = 0; hi < HOVER_EMITTERS.length; hi++) {
+      if (!hoverActive) {
+        hoverAccum.current[hi] = 0;
+        continue;
+      }
+      hoverAccum.current[hi] = (hoverAccum.current[hi] ?? 0) + HOVER_EMIT_RATE * delta;
+      const count = Math.floor(hoverAccum.current[hi]);
+      hoverAccum.current[hi] -= count;
+      const { localPos } = HOVER_EMITTERS[hi];
+      for (let ci = 0; ci < count; ci++) {
+        // Jitter around straight-down direction
+        const jx = (Math.random() - 0.5) * 0.12;
+        const jz = (Math.random() - 0.5) * 0.12;
+        const jLen = Math.sqrt(jx * jx + 1 + jz * jz);
+        const speed = HOVER_SPEED * (0.7 + Math.random() * 0.6);
+        const lifetime = HOVER_LIFETIME * (0.7 + Math.random() * 0.6);
+        const idx = hoverSlot.current;
+        hoverSlot.current = (idx + 1) % HOVER_MAX;
+        const p = hoverPool.current[idx];
+        p.active = true;
+        p.age = 0;
+        p.maxAge = lifetime;
+        p.px = localPos.x;
+        p.py = localPos.y;
+        p.pz = localPos.z;
+        p.ox = localPos.x;
+        p.oy = localPos.y;
+        p.oz = localPos.z;
+        p.dx = 0;
+        p.dy = -1;
+        p.dz = 0; // taper axis: straight down
+        p.vx = (jx / jLen) * speed;
+        p.vy = (-1 / jLen) * speed;
+        p.vz = (jz / jLen) * speed;
+      }
+    }
+
     // Scale point size with sqrt(multiplier) so particles visually swell at high thrust
     if (mainMatRef.current) mainMatRef.current.size = 1.4 * Math.sqrt(m);
     if (rcsMatRef.current) rcsMatRef.current.size = 0.18 * Math.sqrt(m);
+    if (hoverMatRef.current) hoverMatRef.current.size = 0.15;
 
     tickPool(mainPool.current, MAIN_MAX, mainPos, mainCol, delta, mainGeoRef);
     tickPool(rcsPool.current, RCS_MAX, rcsPos, rcsCol, delta, rcsGeoRef);
+    tickPool(hoverPool.current, HOVER_MAX, hoverPos, hoverCol, delta, hoverGeoRef);
   });
 
   const sharedMatProps = {
@@ -360,6 +440,54 @@ export default function ThrusterParticles({
     sizeAttenuation: true,
   } as const;
 
+  function highlightThruster(thruster: string) {
+    if (thruster === 'vertical') {
+      const verticalThrusterHighlights: React.ReactNode[] = [];
+      HOVER_THRUSTER_LOCAL.forEach((pos) => {
+        verticalThrusterHighlights.push(
+          <Html position={[pos[0], pos[1] - 1, pos[2] + 0.1]}>
+            <div className="thruster-particles-highlight"></div>
+          </Html>
+        );
+      });
+      return verticalThrusterHighlights;
+    }
+    if (thruster === 'main') {
+      const mainThrusterHighlights: React.ReactNode[] = [];
+      MAIN_ENGINE_LOCAL_POS.reverseA;
+      mainThrusterHighlights.push(
+        <Html
+          position={[
+            MAIN_ENGINE_LOCAL_POS.reverseA.x,
+            MAIN_ENGINE_LOCAL_POS.reverseA.y,
+            MAIN_ENGINE_LOCAL_POS.reverseA.z,
+          ]}
+        >
+          <div className="thruster-particles-highlight"></div>
+        </Html>
+      );
+      return mainThrusterHighlights;
+    }
+    if (thruster === 'rcs') {
+      const rcsThrusterHighlights: React.ReactNode[] = [];
+      const thrusterArray = [
+        RCS_THRUSTER_LOCAL.forward,
+        RCS_THRUSTER_LOCAL.left,
+        RCS_THRUSTER_LOCAL.right,
+        RCS_THRUSTER_LOCAL.strafeLeft,
+        RCS_THRUSTER_LOCAL.strafeRight,
+      ];
+      thrusterArray.forEach((pos) => {
+        rcsThrusterHighlights.push(
+          <Html position={[pos[0], pos[1], pos[2]]}>
+            <div className="thruster-particles-highlight"></div>
+          </Html>
+        );
+      });
+      return rcsThrusterHighlights;
+    }
+    return null;
+  }
   return (
     <>
       {/* Main engines — two larger nozzles */}
@@ -370,7 +498,6 @@ export default function ThrusterParticles({
         </bufferGeometry>
         <pointsMaterial ref={mainMatRef} size={1.4} {...sharedMatProps} />
       </points>
-
       {/* RCS maneuvering thrusters — smaller */}
       <points frustumCulled={false}>
         <bufferGeometry ref={rcsGeoRef}>
@@ -378,6 +505,15 @@ export default function ThrusterParticles({
           <bufferAttribute attach="attributes-color" args={[rcsCol, 3]} />
         </bufferGeometry>
         <pointsMaterial ref={rcsMatRef} size={0.18} {...sharedMatProps} />
+      </points>
+      {/* Hover thrusters — underside, always on */}
+      {highlightThruster(thrustersHighlighted[0])}
+      <points frustumCulled={false}>
+        <bufferGeometry ref={hoverGeoRef}>
+          <bufferAttribute attach="attributes-position" args={[hoverPos, 3]} />
+          <bufferAttribute attach="attributes-color" args={[hoverCol, 3]} />
+        </bufferGeometry>
+        <pointsMaterial ref={hoverMatRef} size={0.15} {...sharedMatProps} />
       </points>
     </>
   );

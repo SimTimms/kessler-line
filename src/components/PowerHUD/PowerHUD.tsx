@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Zap, Shield, Droplets, Wind, Gauge, Activity, AlertTriangle } from 'lucide-react';
+import { Zap, Shield, Droplets, Wind, Gauge, Activity, AlertTriangle, User } from 'lucide-react';
 import {
   power,
   hullIntegrity,
@@ -109,46 +109,94 @@ export default function PowerHUD() {
   return (
     <>
       <div className="power-hud" aria-live="polite">
-        <div className="power-hud-row" style={{ color: powerColor }}>
-          <Zap size={13} strokeWidth={1.5} />
-          {displayPower}
-          <WarningBadge level={resourceLevel(displayPower)} />
+        <div className="flex-column orange">
+          <div className="power-hud-label">Velocity</div>
+          <div
+            className="power-hud-row"
+            style={{
+              color:
+                velocityLevel(displayVelocity) === 'red'
+                  ? 'rgba(255, 40, 140, 0.85)'
+                  : velocityLevel(displayVelocity) === 'orange'
+                    ? '#ffaa00'
+                    : 'rgba(0,200,255,1)',
+            }}
+          >
+            <Activity size={13} strokeWidth={1.5} />
+            {displayVelocity.toFixed(1)} m/s
+            <WarningBadge level={velocityLevel(displayVelocity)} />
+          </div>
         </div>
-        <div className="power-hud-row" style={{ color: hullColor }}>
-          <Shield size={13} strokeWidth={1.5} />
-          {displayHull}
-          <WarningBadge level={resourceLevel(displayHull)} />
+        <div className="flex-column orange">
+          <div className="power-hud-label">G-Force</div>
+          <div className="power-hud-row" style={{ color: gForceColor }}>
+            <Gauge size={13} strokeWidth={1.5} />
+            {displayGForce.toFixed(1)}g
+            <WarningBadge level={gforceLevel(displayGForce)} />
+          </div>
         </div>
-        <div className="power-hud-row" style={{ color: fuelColor }}>
-          <Droplets size={13} strokeWidth={1.5} />
-          {displayFuel}
-          <WarningBadge level={resourceLevel(displayFuel)} />
+
+        <div className="power-hud-divider"></div>
+        <div className="power-hud-divider"></div>
+        <div className="power-hud-divider"></div>
+
+        <div className="flex-column blue">
+          <div className="power-hud-label">Crew</div>
+          <div className="power-hud-row power-hud-crew-row">
+            {([0, 1, 2] as const).map((i) => (
+              <User
+                key={i}
+                size={14}
+                strokeWidth={1.5}
+                className={i === 0 ? 'crew-icon--active' : 'crew-icon--empty'}
+              />
+            ))}
+          </div>
         </div>
-        <div className="power-hud-row" style={{ color: o2Color }}>
-          <Wind size={13} strokeWidth={1.5} />
-          {displayO2}
-          <WarningBadge level={resourceLevel(displayO2)} />
+        <div className="flex-column blue">
+          <div className="power-hud-label">Cargo</div>
+          <div className="power-hud-row power-hud-cargo-cap-row">
+            {([0, 1, 2, 3] as const).map((i) => (
+              <div
+                key={i}
+                className={`power-hud-cargo-slot${i === 0 ? ' power-hud-cargo-slot--filled' : ''}`}
+              />
+            ))}
+          </div>
         </div>
-        <div className="power-hud-row" style={{ color: gForceColor }}>
-          <Gauge size={13} strokeWidth={1.5} />
-          {displayGForce.toFixed(1)}g
-          <WarningBadge level={gforceLevel(displayGForce)} />
+        <div className="flex-column blue">
+          <div className="power-hud-label">Power</div>
+          <div className="power-hud-row" style={{ color: powerColor }}>
+            <Zap size={13} strokeWidth={1.5} />
+            {displayPower}
+            <WarningBadge level={resourceLevel(displayPower)} />
+          </div>
         </div>
-        <div
-          className="power-hud-row"
-          style={{
-            color:
-              velocityLevel(displayVelocity) === 'red'
-                ? 'rgba(255, 40, 140, 0.85)'
-                : velocityLevel(displayVelocity) === 'orange'
-                  ? '#ffaa00'
-                  : 'rgba(0,200,255,1)',
-          }}
-        >
-          <Activity size={13} strokeWidth={1.5} />
-          {displayVelocity.toFixed(1)} m/s
-          <WarningBadge level={velocityLevel(displayVelocity)} />
+        <div className="flex-column blue">
+          <div className="power-hud-label">Hull Integrity</div>
+          <div className="power-hud-row" style={{ color: hullColor }}>
+            <Shield size={13} strokeWidth={1.5} />
+            {displayHull}
+            <WarningBadge level={resourceLevel(displayHull)} />
+          </div>
         </div>
+        <div className="flex-column blue">
+          <div className="power-hud-label">Propellant</div>
+          <div className="power-hud-row" style={{ color: fuelColor }}>
+            <Droplets size={13} strokeWidth={1.5} />
+            {displayFuel}
+            <WarningBadge level={resourceLevel(displayFuel)} />
+          </div>
+        </div>
+        <div className="flex-column blue">
+          <div className="power-hud-label">o2</div>
+          <div className="power-hud-row" style={{ color: o2Color }}>
+            <Wind size={13} strokeWidth={1.5} />
+            {displayO2}
+            <WarningBadge level={resourceLevel(displayO2)} />
+          </div>
+        </div>
+
         {displayCargo.length > 0 && (
           <>
             <div className="power-hud-divider">───────</div>

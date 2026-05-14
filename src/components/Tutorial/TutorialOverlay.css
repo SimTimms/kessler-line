@@ -1,5 +1,4 @@
 .tutorial-overlay {
-  position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 100;
@@ -8,7 +7,7 @@
 
 .tutorial-overlay__step-card {
   position: absolute;
-  bottom: 120px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: grid;

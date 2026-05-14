@@ -1,13 +1,11 @@
 import {
-  KEY_UNDOCK_CARGO,
   KEY_STRAFE_LEFT,
   KEY_STRAFE_RIGHT,
   KEY_THRUST_FORWARD,
   KEY_THRUST_REVERSE,
   KEY_YAW_LEFT,
   KEY_YAW_RIGHT,
-  KEY_TOGGLE_NAV_HUD,
-  KEY_TOGGLE_CAMERA_DECOUPLE,
+  KEY_STABILISER,
   displayLabelForKeyCode,
 } from '../config/keybindings';
 
@@ -60,8 +58,48 @@ export interface TutorialStep {
 export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
-    title: 'Welcome Aboard',
-    prompt: 'Welcome to Lunar.. Going to take you through some of the basics today.',
+    title: '',
+    prompt: `Welcome to Lunar. I'm going to take you through the basics of piloting your craft.`,
+    keys: [],
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
+  },
+  {
+    id: 'bas-250',
+    title: '',
+    prompt: `You'll be flying the BAS-250, it's a transit shuttle that comes with a few advanced features that will keep you out of trouble.  `,
+    keys: [],
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
+  },
+  {
+    id: 'bas-250-capacity',
+    title: '',
+    prompt: `There's enough capacity in this craft for 3 crew, a few packages, enough food and supplies for a short run to Mars. Though if you ever made it that far, you'll need to restock for the return journey.   `,
+    keys: [],
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
+  },
+  {
+    id: 'bas-250-features',
+    title: '',
+    prompt: `The BAS-250 has six self-engaging vertical safety thrusters, meaning you'll be able to maintain altitude at low velocity....`,
+    keys: [],
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
+  },
+  {
+    id: 'bas-250-features-2',
+    title: '',
+    prompt: `...and a Schneider QVPT for main thrust.`,
+    keys: [],
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
+  },
+  {
+    id: 'bas-250-features-3',
+    title: '',
+    prompt: `For finer control, there are retrograde, linear and rotational RCS thrusters.`,
     keys: [],
     completionCriteria: { type: 'continue' },
     continueLabel: 'Continue',
@@ -69,20 +107,22 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'camera-orbit',
     title: 'Camera Controls',
-    prompt:
-      'Hold down the left mouse button and move the mouse to orbit the camera around the ship.',
+    prompt: `Start by adjusting your view. Hold the left mouse button and drag to rotate the camera.  `,
     keys: [],
     keyHints: [{ kind: 'mouseLeft' }, { kind: 'mouseMove' }],
-    completionCriteria: { type: 'mouseOrbit' },
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
   },
   {
     id: 'camera-zoom',
     title: 'Camera Zoom',
-    prompt: 'Use the scroll wheel to zoom in and out of the camera.',
+    prompt: 'Use the scroll wheel to increase or decrease the zoom level.',
     keys: [],
     keyHints: [{ kind: 'scrollWheel' }],
-    completionCriteria: { type: 'mouseScroll' },
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
   },
+  /*
   {
     id: 'nav-camera',
     title: 'Nav Camera',
@@ -91,7 +131,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     )} to switch to the Nav camera — a top-down view above your ship. `,
     keys: [K(KEY_TOGGLE_CAMERA_DECOUPLE)],
     keyHints: [{ kind: 'keyboard', code: KEY_TOGGLE_CAMERA_DECOUPLE }],
-    /** Fired from TutorialFollowCamera when Nav camera (top-down) is entered with C — not on key repeat. */
     completionCriteria: { type: 'event', name: 'TutorialNavCameraEntered' },
   },
   {
@@ -119,7 +158,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     prompt: `Press ${K(KEY_TOGGLE_CAMERA_DECOUPLE)} to switch back to the follow camera.`,
     keys: [K(KEY_TOGGLE_CAMERA_DECOUPLE)],
     keyHints: [{ kind: 'keyboard', code: KEY_TOGGLE_CAMERA_DECOUPLE }],
-    /** Fired from TutorialFollowCamera when follow camera is entered with C — not on key repeat. */
     completionCriteria: { type: 'event', name: 'TutorialFollowCameraEntered' },
   },
   {
@@ -147,6 +185,16 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     prompt:
       'In orbit, tiny changes in speed or direction compound quickly. A small push now can become a major trajectory change later.',
     keys: [],
+    completionCriteria: { type: 'continue' },
+    continueLabel: 'Continue',
+  },
+  */
+  {
+    id: 'crisis-management',
+    title: '',
+    prompt: `At any time while piloting this craft, if you feel you're getting out of control, hold down the ${K(KEY_STABILISER)} key. This will fire opposing thrusters on all axes to help you regain control. `,
+    keys: [K(KEY_STABILISER)],
+    keyHints: [{ kind: 'keyboard', code: KEY_STABILISER }],
     completionCriteria: { type: 'continue' },
     continueLabel: 'Continue',
   },

@@ -21,6 +21,16 @@ export const RADIO_CHATTER_CASCADE_LINES = [
   '<<DISPATCHNAME>>: All inbound traffic — hold position. Do not approach inner system.',
 ];
 
+// ── Reactive lines ────────────────────────────────────────────────────────
+// Triggered by specific player actions rather than picked at random.
+
+/** Fired when the player shines the spotlight on the lunar settlement. */
+export const SPOTLIGHT_SETTLEMENT_LINES = [
+  "LUNA BASE: Point that spotlight somewhere else — you're blinding the whole settlement.",
+  "LUNA CONTROL: Unidentified vessel, cut that light. You're flooding our solar sensors.",
+  'LUNA CONTROL: Pilot — spotlight off the settlement. Now.',
+];
+
 export const RADIO_CHATTER_POST_CASCADE_LINES = [
   '<<SHIPNAME>>: Still no signal from Earth. Day six.',
   '<<BEACONNAME>>: Inner system corridor — closed indefinitely.',

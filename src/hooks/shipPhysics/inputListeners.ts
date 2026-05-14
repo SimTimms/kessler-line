@@ -19,6 +19,7 @@ import {
   KEY_RADIAL_OUT,
   KEY_RADIAL_IN,
   KEY_UNDOCK_CARGO,
+  KEY_STABILISER,
   EVENT_REQUEST_UNDOCK,
 } from '../../config/keybindings';
 import {
@@ -38,6 +39,7 @@ export interface InputListenersResult {
   thrustRadialOut: React.MutableRefObject<boolean>;
   thrustRadialIn: React.MutableRefObject<boolean>;
   releaseParticleTrigger: React.MutableRefObject<boolean>;
+  stabilizerActive: React.MutableRefObject<boolean>;
 }
 
 export function useInputListeners({
@@ -58,6 +60,7 @@ export function useInputListeners({
   const thrustRadialOut = useRef(false); // R: radial out (away from planet)
   const thrustRadialIn = useRef(false); // F: radial in (toward planet)
   const releaseParticleTrigger = useRef(false);
+  const stabilizerActive = useRef(false);
   const lastRailgunTarget = useRef<'reverseA' | 'reverseB' | null>(null);
 
   useEffect(() => {
@@ -94,6 +97,10 @@ export function useInputListeners({
           window.dispatchEvent(new CustomEvent('CargoRelease'));
         }
       }
+      // Stabiliser: hold Space while flying (not docked) to fire opposing thrusters on all axes.
+      if (e.code === KEY_STABILISER && !dockedTo.current) {
+        stabilizerActive.current = true;
+      }
     };
 
     const onRequestUndock = () => {
@@ -120,6 +127,7 @@ export function useInputListeners({
       if (e.code === KEY_STRAFE_LEFT) thrustStrafeRight.current = false;
       if (e.code === KEY_RADIAL_OUT) thrustRadialOut.current = false;
       if (e.code === KEY_RADIAL_IN) thrustRadialIn.current = false;
+      if (e.code === KEY_STABILISER) stabilizerActive.current = false;
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -196,5 +204,6 @@ export function useInputListeners({
     thrustRadialOut,
     thrustRadialIn,
     releaseParticleTrigger,
+    stabilizerActive,
   };
 }

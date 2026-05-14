@@ -4,11 +4,21 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { drainPower } from '../Ship/Spaceship';
 import { radioBeaconHitRef } from '../Radio/RadioBeacon';
+import {
+  LASER_SPOTLIGHT_COLOR,
+  LASER_SPOTLIGHT_INTENSITY,
+  LASER_SPOTLIGHT_ANGLE,
+  LASER_SPOTLIGHT_PENUMBRA,
+  LASER_SPOTLIGHT_DECAY,
+  LASER_SPOTLIGHT_DISTANCE,
+} from '../../config/combatConfig';
 
 interface LaserRayProps {
   shipGroupRef: { current: THREE.Group | null };
-  stationGroupRef: { current: THREE.Group | null };
+  stationGroupRef?: { current: THREE.Group | null };
   beaconGroupRef?: { current: THREE.Group | null };
+  /** Enable spotlight-on-settlement detection (tutorial only). */
+  detectSettlement?: boolean;
 }
 
 // Cylinder geometry is along the Y axis — we rotate it to align with the beam direction.
@@ -26,7 +36,12 @@ const _dir = new THREE.Vector3();
 const _mid = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 
-export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef }: LaserRayProps) {
+// Settlement spotlight detection — tutorial use only.
+// Bounding sphere centred at SURFACE_Y (-920); radius covers the farthest dome (~1900 XZ units).
+const _settlementSphere = new THREE.Sphere(new THREE.Vector3(0, -920, 0), 2500);
+const _spotRay = new THREE.Ray();
+
+export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef, detectSettlement }: LaserRayProps) {
   const { camera } = useThree();
 
   const mouseNDC = useRef(new THREE.Vector2());
@@ -45,6 +60,8 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
   const wasHit = useRef(false);
   const wasBeaconHit = useRef(false);
   const isMouseDown = useRef(false);
+  const settlementWasHit = useRef(false);
+  const settlementCooldown = useRef(0); // timestamp (ms) of last SpotlightSettlementHit dispatch
 
   // Track mouse cursor in NDC and mouse button state.
   useEffect(() => {
@@ -86,28 +103,7 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
     )
       return;
 
-    // Hide everything and bail when the mouse button is not held.
-    /*
-    if (!isMouseDown.current) {
-      coreRef.current.visible = false;
-      glowRef.current.visible = false;
-      impactSphereRef.current.visible = false;
-      if (labelRef.current) labelRef.current.style.display = 'none';
-      wasHit.current = false;
-    return;
-    }
-    */
-    coreRef.current.visible = false;
-    glowRef.current.visible = true;
-
-    // Drain 2 power per second while laser is firing.
-    if (isMouseDown.current) {
-      coreRef.current.visible = true;
-      drainPower(2 * delta);
-    }
-
-    // Laser origin: ship world position offset 3 units along the ship's forward direction.
-    // Forward is computed the same way Spaceship.tsx computes thrust direction.
+    // Always compute origin and update spotlight — it tracks the cursor even when not firing.
     ship.getWorldPosition(_worldPos);
     _forward.set(0, 0, 1).applyQuaternion(ship.quaternion);
     _origin.copy(_worldPos).addScaledVector(_forward, 3);
@@ -116,10 +112,44 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
     _camRaycaster.setFromCamera(mouseNDC.current, camera);
     _target.copy(_camRaycaster.ray.origin).addScaledVector(_camRaycaster.ray.direction, 1000);
 
-    // Spotlight origin mirrors the laser origin.
+    // Spotlight always tracks the cursor regardless of firing state.
     spotLightRef.current.position.copy(_origin);
-    // Default spotlight target = mouse cursor point; overridden below if beam hits something.
     spotTargetRef.current.position.copy(_target);
+
+    // Spotlight-on-settlement detection (runs even when not firing — light is always on).
+    if (detectSettlement) {
+      _dir.subVectors(_target, _origin);
+      const dirLen = _dir.length();
+      if (dirLen > 0.001) {
+        _dir.divideScalar(dirLen);
+        _spotRay.origin.copy(_origin);
+        _spotRay.direction.copy(_dir);
+        const onSettlement = _spotRay.intersectsSphere(_settlementSphere);
+        const now = Date.now();
+        if (onSettlement && !settlementWasHit.current && now - settlementCooldown.current > 20000) {
+          window.dispatchEvent(new CustomEvent('SpotlightSettlementHit'));
+          settlementCooldown.current = now;
+        }
+        settlementWasHit.current = onSettlement;
+      }
+    }
+
+    // Hide beam visuals and bail when the mouse button is not held.
+    if (!isMouseDown.current) {
+      coreRef.current.visible = false;
+      glowRef.current.visible = false;
+      impactSphereRef.current.visible = false;
+      if (labelRef.current) labelRef.current.style.display = 'none';
+      wasHit.current = false;
+      wasBeaconHit.current = false;
+      radioBeaconHitRef.current = false;
+      return;
+    }
+
+    // Beam is active — show both cylinders and drain power.
+    coreRef.current.visible = true;
+    glowRef.current.visible = true;
+    drainPower(2 * delta);
 
     // Beam direction and length.
     _dir.subVectors(_target, _origin);
@@ -140,7 +170,7 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
     glowRef.current.quaternion.copy(_q);
 
     // Raycast from ship origin toward target — detect station intersection.
-    const station = stationGroupRef.current;
+    const station = stationGroupRef?.current;
     if (station) {
       _shipRaycaster.set(_origin, _dir);
       _shipRaycaster.far = len;
@@ -222,7 +252,7 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
         <meshBasicMaterial
           color="#00ffff"
           transparent
-          opacity={0.0005}
+          opacity={0.06}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           side={THREE.DoubleSide}
@@ -271,12 +301,12 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
       */}
       <spotLight
         ref={spotLightRef}
-        color="#fff"
-        intensity={4}
-        angle={0.58}
-        penumbra={0.85}
-        decay={0.2}
-        distance={500}
+        color={LASER_SPOTLIGHT_COLOR}
+        intensity={LASER_SPOTLIGHT_INTENSITY}
+        angle={LASER_SPOTLIGHT_ANGLE}
+        penumbra={LASER_SPOTLIGHT_PENUMBRA}
+        decay={LASER_SPOTLIGHT_DECAY}
+        distance={LASER_SPOTLIGHT_DISTANCE}
         castShadow={false}
       />
 

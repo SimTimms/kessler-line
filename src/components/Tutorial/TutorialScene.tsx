@@ -11,6 +11,7 @@ import DefaultLighting from '../DefaultLighting';
 import LunarLandscape from './LunarLandscape';
 import LunarSettlement from './LunarSettlement';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
+import LaserRay from '../Combat/LaserRay';
 import {
   SHIP_PARTICLE_COUNT,
   SHIP_PARTICLE_SPEED_MIN,
@@ -118,6 +119,7 @@ export default memo(function TutorialScene({ onStepAdvance }: Props) {
               speedGateMax: SHIP_PARTICLE_SPEED_MAX,
             }}
           />
+          <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
         </Suspense>
         <ShipDepthOfField />
       </Canvas>

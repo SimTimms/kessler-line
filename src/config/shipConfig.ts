@@ -44,6 +44,28 @@ export const THRUSTER_LIGHT_INTENSITY_MAIN = 200;
 /** Point-light intensity per RCS emitter while that thruster is active (scaled by thrust multiplier). */
 export const THRUSTER_LIGHT_INTENSITY_RCS = 65;
 
+/** Speed threshold (m/s) above which hover thrusters cut out — ship is in orbit, not hovering. */
+export const HOVER_CUTOFF_SPEED = 30;
+
+/**
+ * Hover thruster nozzle positions in ship-local space.
+ * Six nozzles in three pairs (front / mid / rear) on the underside of the craft.
+ * Particles emit in local -Y (straight down). Adjust to match the model geometry.
+ *
+ *  [x, y, z]  — x: +port / -starboard,  y: height (negative = underside),  z: +nose / -tail
+ */
+export const HOVER_THRUSTER_LOCAL: readonly [number, number, number][] = [
+  //  front pair  (near nose)
+  [1.8, 0.5, 16.0],
+  [-1.8, 0.5, 16.0],
+  //  mid pair    (centre of hull)
+  [3.2, 0.5, 3.0],
+  [-3.2, 0.5, 3.0],
+  //  rear pair   (near main engines)
+  [6.8, 0.5, -7.0],
+  [-6.8, 0.5, -7.0],
+] as const;
+
 /** RCS thruster nozzle positions in ship-local space (same values as particle emitters). */
 export const RCS_THRUSTER_LOCAL = {
   forward: [0, 0, 18.5] as [number, number, number],
