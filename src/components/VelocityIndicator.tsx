@@ -39,7 +39,7 @@ function getApsisMarkerScale(
   camera: THREE.Camera,
   canvasHeight: number,
   worldX: number,
-  worldZ: number,
+  worldZ: number
 ): [number, number] {
   _apsisScaleWorld.set(worldX, 0, worldZ);
   if (camera instanceof THREE.PerspectiveCamera) {
@@ -90,8 +90,12 @@ export default function VelocityIndicator() {
   const trajectoryHighlightRef = useRef(false);
 
   useEffect(() => {
-    const onStart = () => { trajectoryHighlightRef.current = true; };
-    const onStop = () => { trajectoryHighlightRef.current = false; };
+    const onStart = () => {
+      trajectoryHighlightRef.current = true;
+    };
+    const onStop = () => {
+      trajectoryHighlightRef.current = false;
+    };
     window.addEventListener('TrajectoryHighlightStart', onStart);
     window.addEventListener('TrajectoryHighlightStop', onStop);
     return () => {

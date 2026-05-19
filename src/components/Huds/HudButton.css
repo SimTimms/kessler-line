@@ -1,0 +1,17 @@
+.hud-btn-highlight {
+  animation: hudBtnHighlight 0.7s ease-in-out infinite;
+  border-radius: 3px;
+}
+
+.hud-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+}
+
+.hud-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}

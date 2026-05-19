@@ -1,18 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { radioOnRef, radioRangeRef } from '../../context/RadioState';
-import { shipPosRef } from '../../context/ShipPos';
+import { radioOnRef, radioRangeRef } from '../../../context/RadioState';
+import { shipPosRef } from '../../../context/ShipPos';
 import {
   RADIO_BROADCAST_DEFS,
   RADIO_BEACON_DEFS,
   SPACE_STATION_DEF,
-} from '../../config/worldConfig';
-import type { RadioBroadcastDef } from '../../config/worldConfig';
-import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
-import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
-import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
-import { BroadcastDialog } from '../BroadcastDialog/BroadcastDialog';
-import { getCollidables } from '../../context/CollisionRegistry';
+} from '../../../config/worldConfig';
+import type { RadioBroadcastDef } from '../../../config/worldConfig';
+import { solarPlanetPositions } from '../../../context/SolarSystemMinimap';
+import { SOLAR_SYSTEM_SCALE } from '../../Planets/SolarSystem';
+import { SelectionDialog } from '../../SelectionDialog/SelectionDialog';
+import { BroadcastDialog } from '../../BroadcastDialog/BroadcastDialog';
+import { getCollidables } from '../../../context/CollisionRegistry';
 import './RadioHUD.css';
 
 export const RadioHUD = () => {

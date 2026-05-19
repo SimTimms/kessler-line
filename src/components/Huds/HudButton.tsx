@@ -1,4 +1,5 @@
 import { type LucideIcon } from 'lucide-react';
+import './HudButton.css';
 
 const LEVELS = [1, 2, 3, 4, 5] as const;
 
@@ -25,20 +26,9 @@ export const HudButton = ({
   flashingPipLevel?: number;
   flashingPipOn?: boolean;
 }) => (
-  <div
-    className={highlight ? 'hud-btn-highlight' : undefined}
-    style={{
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      width: 100,
-      opacity: disabled ? 0.3 : 1,
-      pointerEvents: disabled ? 'none' : 'auto',
-    }}
-  >
+  <div className={`hud-btn ${highlight ? 'hud-btn-highlight' : ''} `}>
     <button
-      className="hud-btn"
+      className={`hud-btn `}
       disabled={disabled}
       onClick={onClickEvent}
       style={{
@@ -66,7 +56,6 @@ export const HudButton = ({
               width: 7,
               height: 7,
               background: lit || flashing ? '#00cfff' : '#1e1e1e',
-              cursor: disabled ? 'default' : 'pointer',
               border: `1px solid ${
                 lit || flashing ? 'rgba(0,207,255,0.85)' : 'rgba(100,100,100,0.35)'
               }`,
@@ -77,6 +66,5 @@ export const HudButton = ({
         );
       })}
     </div>
-    <div style={{ fontSize: 12, color: '#888' }}>{name}</div>
   </div>
 );

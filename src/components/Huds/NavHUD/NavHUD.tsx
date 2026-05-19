@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { NAV_TARGET_DEFS, displayNameForDockedStation } from '../../config/worldConfig';
-import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
-import { isDockingTutorialUndockAllowed } from '../../tutorial/tutorialDockingInputGate';
-import { dockingTutorialActiveRef, tutorialStepRef } from '../../context/TutorialState';
-import { TUTORIAL_DOCKING_STEPS } from '../../tutorial/tutorialDockingSteps';
-import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
-import { gravityBodies } from '../../context/GravityRegistry';
-import { shipPosRef } from '../../context/ShipPos';
-import { orbitStatusRef, shipVelocity } from '../../context/ShipState';
+import { NAV_TARGET_DEFS, displayNameForDockedStation } from '../../../config/worldConfig';
+import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
+import { isDockingTutorialUndockAllowed } from '../../../tutorial/tutorialDockingInputGate';
+import { dockingTutorialActiveRef, tutorialStepRef } from '../../../context/TutorialState';
+import { TUTORIAL_DOCKING_STEPS } from '../../../tutorial/tutorialDockingSteps';
+import { navTargetPosRef, navTargetIdRef } from '../../../context/NavTarget';
+import { gravityBodies } from '../../../context/GravityRegistry';
+import { shipPosRef } from '../../../context/ShipPos';
+import { orbitStatusRef, shipVelocity } from '../../../context/ShipState';
 import {
   selectTarget,
   flashTarget,
@@ -18,12 +18,12 @@ import {
   selectedTargetVelocity,
   targetFlashUntil,
   type TargetType,
-} from '../../context/TargetSelection';
-import { getMagneticTargets } from '../../context/MagneticRegistry';
-import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
-import { getDriveSignatures } from '../../context/DriveSignatureRegistry';
-import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
-import { KM_PER_UNIT } from '../../config/commsConfig';
+} from '../../../context/TargetSelection';
+import { getMagneticTargets } from '../../../context/MagneticRegistry';
+import { magneticOnRef, magneticScanRangeRef } from '../../../context/MagneticScan';
+import { getDriveSignatures } from '../../../context/DriveSignatureRegistry';
+import { driveSignatureOnRef, driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
+import { KM_PER_UNIT } from '../../../config/commsConfig';
 import {
   autopilotActive,
   autopilotMode,
@@ -32,7 +32,7 @@ import {
   enableAutopilot,
   enableVelocityMatchAutopilot,
   disableAutopilot,
-} from '../../context/AutopilotState';
+} from '../../../context/AutopilotState';
 import { NavTargetDialog, type NavTargetItem } from './NavTargetDialog';
 import './NavHUD.css';
 
@@ -65,31 +65,20 @@ function formatDist(distUnits: number): string {
 }
 
 interface NavHUDProps {
-  showNavTarget?: boolean;
-  showAutopilot?: boolean;
-  /** When true, show "MATCH VEL" if the player has a selected contact with known velocity. */
-  showVelocityMatch?: boolean;
-  showMetrics?: boolean;
-  forceNavTargetFlash?: boolean;
-  onNavTargetClick?: () => void;
+  disableElements: string[];
+  focusElements: string[];
+  onNavTargetClick?: (id: string) => void;
   customGeneralTargets?: TutorialTargetDef[];
   customPlanetaryTargets?: TutorialTargetDef[];
-  showDriveContacts?: boolean;
-  forcedHighlightContactId?: string;
 }
 
 export const NavHUD = ({
-  showNavTarget = true,
-  showAutopilot = true,
-  showVelocityMatch = true,
-  showMetrics = true,
-  forceNavTargetFlash = false,
+  disableElements,
+  focusElements,
   onNavTargetClick,
   customGeneralTargets,
   customPlanetaryTargets,
-  showDriveContacts = true,
-  forcedHighlightContactId,
-}: NavHUDProps = {}) => {
+}: NavHUDProps) => {
   const [targetId, setTargetId] = useState(navTargetIdRef.current);
   const [targetLabel, setTargetLabel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -97,7 +86,7 @@ export const NavHUD = ({
   const [navTargetHighlight, setNavTargetHighlight] = useState(false);
   const [highlightedContactId, setHighlightedContactId] = useState<string | undefined>();
   const [navItems, setNavItems] = useState<NavTargetItem[]>(() =>
-    NAV_TARGETS.map((t) => ({ id: t.id, label: t.label })),
+    NAV_TARGETS.map((t) => ({ id: t.id, label: t.label }))
   );
   const [generalItems, setGeneralItems] = useState<NavTargetItem[]>([]);
   const [magneticContacts, setMagneticContacts] = useState<ScanContact[]>([]);
@@ -271,19 +260,9 @@ export const NavHUD = ({
         }
       }
       if (autopilotBtnRef.current) {
-        const active =
-          autopilotActive.current && autopilotMode.current === 'approach';
+        const active = autopilotActive.current && autopilotMode.current === 'approach';
         autopilotBtnRef.current.textContent = active ? autopilotStatus.current : 'DISENGAGED';
         autopilotBtnRef.current.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
-      }
-      if (velocityMatchBtnRef.current && showVelocityMatch) {
-        const hasVel =
-          selectedTargetName !== null && selectedTargetVelocity.lengthSq() > 1e-8;
-        const vmActive =
-          autopilotActive.current && autopilotMode.current === 'velocityMatch';
-        velocityMatchBtnRef.current.disabled = !hasVel;
-        velocityMatchBtnRef.current.textContent = vmActive ? 'VEL MATCH ON' : 'MATCH VEL';
-        velocityMatchBtnRef.current.className = `autopilot-btn autopilot-btn--velocity-match${vmActive ? ' autopilot-active' : ''}${!hasVel ? ' autopilot-btn--disabled' : ''}`;
       }
 
       // Nav target distances
@@ -350,7 +329,10 @@ export const NavHUD = ({
             });
           }
         }
-        const sig = inRange.map((c) => `${c.id}:${c.distance}`).sort().join('|');
+        const sig = inRange
+          .map((c) => `${c.id}:${c.distance}`)
+          .sort()
+          .join('|');
         if (sig !== prevMagSigRef.current) {
           prevMagSigRef.current = sig;
           setMagneticContacts(inRange);
@@ -380,7 +362,10 @@ export const NavHUD = ({
             });
           }
         }
-        const sig = inRange.map((c) => c.id).sort().join('|');
+        const sig = inRange
+          .map((c) => c.id)
+          .sort()
+          .join('|');
         if (sig !== prevDriveSigRef.current) {
           prevDriveSigRef.current = sig;
           setDriveContacts(inRange);
@@ -438,10 +423,6 @@ export const NavHUD = ({
     };
   }, []);
 
-  useEffect(() => {
-    if (forceNavTargetFlash) setNavTargetHighlight(true);
-  }, [forceNavTargetFlash]);
-
   // Tutorial highlight: pulse a specific contact item in the dialog
   useEffect(() => {
     const onStart = (e: Event) => {
@@ -462,12 +443,13 @@ export const NavHUD = ({
   const navMatch = NAV_TARGETS.find((t) => t.id === targetId);
   const magneticMatch = magneticContacts.find((c) => c.id === targetId);
   const driveMatch = driveContacts.find((c) => c.id === targetId);
-  const resolvedTargetLabel = customGeneralMatch?.label
-    ?? customPlanetaryMatch?.label
-    ?? magneticMatch?.label
-    ?? driveMatch?.label
-    ?? (customGeneralTargets || customPlanetaryTargets ? undefined : navMatch?.label)
-    ?? targetLabel;
+  const resolvedTargetLabel =
+    customGeneralMatch?.label ??
+    customPlanetaryMatch?.label ??
+    magneticMatch?.label ??
+    driveMatch?.label ??
+    (customGeneralTargets || customPlanetaryTargets ? undefined : navMatch?.label) ??
+    targetLabel;
   const displayLabel = selectedObjName ?? (resolvedTargetLabel || 'select a target.');
 
   const handleSelect = (id: string) => {
@@ -551,8 +533,7 @@ export const NavHUD = ({
   };
 
   const handleVelocityMatch = () => {
-    const hasVel =
-      selectedTargetName !== null && selectedTargetVelocity.lengthSq() > 1e-8;
+    const hasVel = selectedTargetName !== null && selectedTargetVelocity.lengthSq() > 1e-8;
     if (!hasVel) return;
     if (autopilotActive.current && autopilotMode.current === 'velocityMatch') {
       disableAutopilot();
@@ -581,12 +562,8 @@ export const NavHUD = ({
     window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK));
   };
 
-  const showNavBar =
-    isDocked || showNavTarget || showAutopilot || showVelocityMatch || showMetrics;
-
   return (
     <>
-      {showNavBar && (
       <div className="hud-bar-wrapper ">
         <div className="hud-bar">
           {isDocked ? (
@@ -608,107 +585,88 @@ export const NavHUD = ({
             </div>
           ) : (
             <>
-          {/*
-        <div className="hud-metrics nav-metrics">
-          <div className="hud-metric">
-            <div className="hud-label">X | Z</div>
-            <span ref={coordsRef} className="hud-value nav-coords" />
-          </div>
-        </div>
-        */}
-          {showNavTarget && (
-            <div className="nav-target-group">
-              <div className="nav-target-label">Nav Target</div>
-              <div className="nav-target-cluster">
-                <button
-                  type="button"
-                  className={`nav-target-btn nav-target-btn--open${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
-                  onClick={() => {
-                    setDialogOpen(true);
-                    setNavTargetHighlight(false);
-                    onNavTargetClick?.();
-                  }}
-                >
-                  Open
-                </button>
-                <div className="nav-target-readouts">
-                  <span
-                    className={`nav-target-current-name${displayLabel === 'select a target.' ? ' nav-target-current-name--empty' : ''}`}
+              <div className="nav-target-group">
+                <div className="nav-target-label">Nav Target</div>
+                <div className="nav-target-cluster">
+                  <button
+                    type="button"
+                    className={`nav-target-btn nav-target-btn--open${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
+                    onClick={() => {
+                      setDialogOpen(true);
+                      setNavTargetHighlight(false);
+                      onNavTargetClick?.(targetId);
+                    }}
                   >
-                    {displayLabel}
-                  </span>
-                  <div className="nav-target-rel-line">
-                    <span className="nav-target-rel-label">Rel Vel</span>
-                    <span ref={relativeVelRef} className="hud-value nav-relative-velocity" />
-                    <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                    Open
+                  </button>
+                  <div className="nav-target-readouts">
+                    <span
+                      className={`nav-target-current-name${displayLabel === 'select a target.' ? ' nav-target-current-name--empty' : ''}`}
+                    >
+                      {displayLabel}
+                    </span>
+                    <div className="nav-target-rel-line">
+                      <span className="nav-target-rel-label">Rel Vel</span>
+                      <span ref={relativeVelRef} className="hud-value nav-relative-velocity" />
+                      <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          {showAutopilot && (
-            <div className="nav-target-group">
-              <div className="nav-target-label">Autopilot</div>
-              <button ref={autopilotBtnRef} className="autopilot-btn" onClick={handleAutopilot}>
-                AUTOPILOT
-              </button>
-            </div>
-          )}
-          {showVelocityMatch && showNavTarget && (
-            <div className="nav-target-group">
-              <div className="nav-target-label">Relative</div>
-              <button
-                ref={velocityMatchBtnRef}
-                type="button"
-                className="autopilot-btn autopilot-btn--velocity-match"
-                onClick={handleVelocityMatch}
-              >
-                MATCH VEL
-              </button>
-            </div>
-          )}
-          {(showNavTarget || showAutopilot || showVelocityMatch) && showMetrics && (
-            <div className="hud-divider" />
-          )}
+              <div className="nav-target-group">
+                <div className="nav-target-label">Autopilot</div>
+                <button ref={autopilotBtnRef} className="autopilot-btn" onClick={handleAutopilot}>
+                  AUTOPILOT
+                </button>
+              </div>
+              <div className="nav-target-group">
+                <div className="nav-target-label">Relative</div>
+                <button
+                  ref={velocityMatchBtnRef}
+                  type="button"
+                  className="autopilot-btn autopilot-btn--velocity-match"
+                  onClick={handleVelocityMatch}
+                >
+                  MATCH VEL
+                </button>
+              </div>
+              <div className="hud-divider" />
 
-          {showMetrics && (
-            <div className="hud-metrics nav-metrics">
-              <div className="hud-metric">
-                <div className="hud-label">
-                  {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
+              <div className="hud-metrics nav-metrics">
+                <div className="hud-metric">
+                  <div className="hud-label">
+                    {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
+                  </div>
+                  <span ref={orbitRef} className="hud-value nav-orbit" />
                 </div>
-                <span ref={orbitRef} className="hud-value nav-orbit" />
-              </div>
-              <div className="hud-divider" />
-              <div className="hud-metric" style={{ minWidth: '50px' }}>
-                <div className="hud-label">Altitude</div>
-                <span ref={altRef} className="hud-value nav-alt" />
-                <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
-              </div>
-              <div className="hud-divider" />
-              <div className="hud-metric">
-                <div className="hud-label">Apsis</div>
-                <div className="hud-metric-inline">
-                  <div className="hud-label">Per</div>
-                  <span ref={periapsisRef} className="hud-value nav-periapsis" />
+                <div className="hud-divider" />
+                <div className="hud-metric" style={{ minWidth: '50px' }}>
+                  <div className="hud-label">Altitude</div>
+                  <span ref={altRef} className="hud-value nav-alt" />
+                  <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
                 </div>
-                <div className="hud-metric-inline">
-                  <div className="hud-label">Apo</div>
-                  <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
+                <div className="hud-divider" />
+                <div className="hud-metric">
+                  <div className="hud-label">Apsis</div>
+                  <div className="hud-metric-inline">
+                    <div className="hud-label">Per</div>
+                    <span ref={periapsisRef} className="hud-value nav-periapsis" />
+                  </div>
+                  <div className="hud-metric-inline">
+                    <div className="hud-label">Apo</div>
+                    <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
+                  </div>
+                </div>
+                <div className="hud-divider" />
+                <div className="hud-metric">
+                  <div className="hud-label">Approach</div>
+                  <span ref={approachRef} className="hud-value nav-approach" />
                 </div>
               </div>
-              <div className="hud-divider" />
-              <div className="hud-metric">
-                <div className="hud-label">Approach</div>
-                <span ref={approachRef} className="hud-value nav-approach" />
-              </div>
-            </div>
-          )}
             </>
           )}
         </div>
       </div>
-      )}
 
       {dialogOpen && (
         <NavTargetDialog
@@ -718,9 +676,9 @@ export const NavHUD = ({
           navSectionLabel="PLANETARY CONTACTS"
           magneticItems={magneticItems}
           driveItems={driveItems}
-          showDriveItems={showDriveContacts}
+          showDriveItems={true}
           selectedId={targetId}
-          highlightId={forcedHighlightContactId ?? highlightedContactId}
+          highlightId={highlightedContactId}
           onSelect={handleSelect}
           onClose={() => setDialogOpen(false)}
         />

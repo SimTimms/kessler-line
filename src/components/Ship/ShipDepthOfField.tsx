@@ -9,7 +9,10 @@ import { BlendFunction, NoiseEffect, DepthOfFieldEffect } from 'postprocessing';
 const NOISE_BASE = 0.00005;
 const NOISE_MAX = 0.25;
 
-export function ShipDepthOfField() {
+interface ShipDepthOfFieldProps {
+  saturation?: number;
+}
+export function ShipDepthOfField({ saturation }: ShipDepthOfFieldProps) {
   const { camera } = useThree();
   const noiseEffect = useMemo(() => new NoiseEffect({ blendFunction: BlendFunction.NORMAL }), []);
   // target is updated each frame so the focal plane always sits on the ship
@@ -38,7 +41,7 @@ export function ShipDepthOfField() {
       />
       <Vignette eskil={false} offset={0.1} darkness={0.8} />
       <primitive object={noiseEffect} />
-      <HueSaturation saturation={-1} />
+      <HueSaturation saturation={saturation ?? -1} />
     </EffectComposer>
   );
 }

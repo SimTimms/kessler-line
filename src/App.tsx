@@ -1,12 +1,10 @@
 import './App.css';
 import { AppShell } from './components/App';
-import AppContainer from './components/App/AppContainer';
-import AppStyles from './components/App/AppStyles';
-import StartOverlay, { type TutorialMenuSelection } from './components/App/StartOverlay';
 import { useAppLifecycle, useAppState } from './hooks';
 import { resumeAudioContext } from './sound/SoundManager';
 import { useCallback, useState } from 'react';
 import TutorialShell from './components/Tutorial/TutorialShell';
+import TutorialResources from './components/TutorialResources/TutorialResources';
 import { tutorialStepRef } from './context/TutorialState';
 import {
   shipVelocity,
@@ -17,9 +15,8 @@ import {
   mainEngineDisabled,
 } from './context/ShipState';
 import { shipPosRef } from './context/ShipPos';
-
-type AppMode = 'start' | 'tutorial' | 'game';
-type TutorialMode = TutorialMenuSelection;
+import StartOverlay from './components/App/StartOverlay';
+import { GAME_MODES, type GameMode, type TutorialMenuSelection } from './config/gameModes';
 
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
@@ -37,28 +34,28 @@ function resetShipState() {
 function App() {
   useAppLifecycle();
   const { hud, docking, beacon, mission, thrust } = useAppState();
-  const [mode, setMode] = useState<AppMode>('start');
-  const [tutorialMode, setTutorialMode] = useState<TutorialMode>('general-movement');
+  const [mode, setMode] = useState<GameMode>(GAME_MODES.menu);
+  const [tutorialMode, setTutorialMode] = useState<TutorialMenuSelection>(GAME_MODES.tutorial);
   const [showShipTitle, setShowShipTitle] = useState(false);
 
   const handleStart = useCallback(() => {
     resumeAudioContext();
-    setMode('game');
+    setMode(GAME_MODES.game);
     setShowShipTitle(true);
   }, []);
 
-  const handleTutorialSelect = useCallback((selection: TutorialMode) => {
+  const handleTutorialSelect = useCallback((selection: TutorialMenuSelection) => {
     resumeAudioContext();
     resetShipState();
     tutorialStepRef.current = 0;
     setTutorialMode(selection);
-    setMode('tutorial');
+    setMode(selection);
   }, []);
 
   const handleTutorialComplete = useCallback(() => {
     resetShipState();
     tutorialStepRef.current = 0;
-    setMode('game');
+    setMode(GAME_MODES.game);
     setShowShipTitle(true);
   }, []);
 
@@ -66,55 +63,51 @@ function App() {
     setShowShipTitle(false);
   }, []);
 
-  if (mode === 'start') {
-    return (
-      <AppContainer>
-        <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} />
-        <AppStyles />
-      </AppContainer>
-    );
+  switch (mode) {
+    case GAME_MODES.menu:
+      return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} />;
+    case GAME_MODES.tutorial:
+      return <TutorialShell onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
+    case GAME_MODES.resources:
+      return <TutorialResources onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
+    case GAME_MODES.game:
+      return (
+        <AppShell
+          spotlightOn={hud.spotlightOn}
+          setSpotlightOn={hud.setSpotlightOn}
+          magneticOn={hud.magneticOn}
+          setMagneticOn={hud.setMagneticOn}
+          driveSignatureOn={hud.driveSignatureOn}
+          setDriveSignatureOn={hud.setDriveSignatureOn}
+          proximity={hud.proximity}
+          setProximity={hud.setProximity}
+          radioOn={hud.radioOn}
+          setRadioOn={hud.setRadioOn}
+          showMinimap={hud.showMinimap}
+          docked={docking.docked}
+          dockedStation={docking.dockedStation}
+          activeMission={mission.activeMission}
+          completedMissions={mission.completedMissions}
+          refueling={docking.refueling}
+          transferringO2={docking.transferringO2}
+          onRefuel={docking.onRefuel}
+          onTransferO2={docking.onTransferO2}
+          onMissionSelect={mission.onMissionSelect}
+          onMissionComplete={mission.onMissionComplete}
+          beaconActivated={beacon.beaconActivated}
+          listeningToMessage={beacon.listeningToMessage}
+          setListeningToMessage={beacon.setListeningToMessage}
+          activeAudioRef={beacon.activeAudioRef}
+          thrustLevel={thrust.thrustLevel}
+          setThrustLevel={thrust.setThrustLevel}
+          showStartOverlay={false}
+          onStart={handleStart}
+          onTutorial={() => handleTutorialSelect(GAME_MODES.tutorial)}
+          showShipTitle={showShipTitle}
+          onShipTitleDone={handleShipTitleDone}
+        />
+      );
   }
-
-  if (mode === 'tutorial') {
-    return <TutorialShell onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
-  }
-
-  return (
-    <AppShell
-      spotlightOn={hud.spotlightOn}
-      setSpotlightOn={hud.setSpotlightOn}
-      magneticOn={hud.magneticOn}
-      setMagneticOn={hud.setMagneticOn}
-      driveSignatureOn={hud.driveSignatureOn}
-      setDriveSignatureOn={hud.setDriveSignatureOn}
-      proximity={hud.proximity}
-      setProximity={hud.setProximity}
-      radioOn={hud.radioOn}
-      setRadioOn={hud.setRadioOn}
-      showMinimap={hud.showMinimap}
-      docked={docking.docked}
-      dockedStation={docking.dockedStation}
-      activeMission={mission.activeMission}
-      completedMissions={mission.completedMissions}
-      refueling={docking.refueling}
-      transferringO2={docking.transferringO2}
-      onRefuel={docking.onRefuel}
-      onTransferO2={docking.onTransferO2}
-      onMissionSelect={mission.onMissionSelect}
-      onMissionComplete={mission.onMissionComplete}
-      beaconActivated={beacon.beaconActivated}
-      listeningToMessage={beacon.listeningToMessage}
-      setListeningToMessage={beacon.setListeningToMessage}
-      activeAudioRef={beacon.activeAudioRef}
-      thrustLevel={thrust.thrustLevel}
-      setThrustLevel={thrust.setThrustLevel}
-      showStartOverlay={false}
-      onStart={handleStart}
-      onTutorial={() => handleTutorialSelect('general-movement')}
-      showShipTitle={showShipTitle}
-      onShipTitleDone={handleShipTitleDone}
-    />
-  );
 }
 
 export default App;

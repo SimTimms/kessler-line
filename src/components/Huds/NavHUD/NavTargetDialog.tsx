@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { playDialogOpen, playDialogSelect } from '../../sound/SoundManager';
+import { playDialogOpen, playDialogSelect } from '../../../sound/SoundManager';
 import './NavTargetDialog.css';
 
 export interface NavTargetItem {

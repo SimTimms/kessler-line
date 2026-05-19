@@ -3,6 +3,13 @@
   font-size: 14px;
   display: flex;
   flex-direction: column;
+  position: fixed;
+  left: 16px;
+  bottom: 50px;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(14px);
 }
 
 /* ── Scanner panel slide wrapper ─────────────────────────────────────────── */
@@ -14,6 +21,12 @@
   transform: translateY(0);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(14px);
+}
+
+.hud-button-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(100%);
 }
 
 .hud-scanner-wrap--hidden {

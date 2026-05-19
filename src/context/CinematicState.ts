@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // ── Scrapper intro ─────────────────────────────────────────────────────────────
 /** True while the player ship is pinned inside the scrapper's hold. */
-export const scrapperIntroActive = { current: true };
+export const scrapperIntroActive = { current: false };
 /** World-space position of the AIScrapper, updated every frame. */
 export const scrapperWorldPos = new THREE.Vector3();
 /** World-space quaternion of the AIScrapper, updated every frame. */

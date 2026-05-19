@@ -1,13 +1,12 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { sceneCamera } from '../context/CameraRef';
-import { magneticOnRef, magneticScanRangeRef } from '../context/MagneticScan';
-import { getMagneticTargets } from '../context/MagneticRegistry';
-import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { shipVelocity } from '../context/ShipState';
+import { sceneCamera } from '../../context/CameraRef';
+import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
+import { getDriveSignatures } from '../../context/DriveSignatureRegistry';
+import { minimapShipPosition } from '../../context/MinimapShipPosition';
+import { shipVelocity } from '../../context/ShipState';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
-const MAX_MARKERS = 200; // pre-allocated pool — supports up to this many simultaneous targets
 
 // ─── Marker DOM structure ────────────────────────────────────────────────────
 function createMarker(container: HTMLElement) {
@@ -21,18 +20,18 @@ function createMarker(container: HTMLElement) {
   `;
 
   const box = document.createElement('div');
-  box.className = 'mhud-box';
+  box.className = 'dshud-box';
 
   const label = document.createElement('div');
-  label.className = 'mhud-label';
+  label.className = 'dshud-label';
   label.style.cssText = `
     font-family: monospace;
     font-size: 10px;
-    color: #ffaa00;
+    color: #ff4444;
     text-align: center;
     white-space: pre-line;
     line-height: 1.25;
-    text-shadow: 0 0 4px rgba(255,170,0,0.8);
+    text-shadow: 0 0 4px rgba(255,68,68,0.8);
     margin-top: 4px;
     max-width: min(220px, 40vw);
   `;
@@ -50,8 +49,8 @@ function styleOnScreen(marker: Marker, size: number) {
   marker.box.style.cssText = `
     width: ${size}px;
     height: ${size}px;
-    border: 1px solid #ffaa00;
-    box-shadow: 0 0 8px rgba(255,170,0,0.5), inset 0 0 4px rgba(255,170,0,0.1);
+    border: 1px solid #ff4444;
+    box-shadow: 0 0 8px rgba(255,68,68,0.5), inset 0 0 4px rgba(255,68,68,0.1);
   `;
 }
 
@@ -60,70 +59,80 @@ function styleOffScreen(marker: Marker) {
   marker.box.style.cssText = `
     width: 10px;
     height: 10px;
-    background: rgba(255,170,0,0.8);
-    box-shadow: 0 0 6px rgba(255,170,0,0.9);
+    background: rgba(255,68,68,0.8);
+    box-shadow: 0 0 6px rgba(255,68,68,0.9);
     transform: rotate(45deg);
     margin: 2px;
   `;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function MagneticHUD() {
+export default function DriveSignatureHUD() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Pre-allocate a fixed pool of marker DOM nodes
-    const markers: Marker[] = Array.from({ length: MAX_MARKERS }, () =>
-      createMarker(container),
-    );
-
+    const _pos = new THREE.Vector3();
     const _vec = new THREE.Vector3();
-    const _worldPos = new THREE.Vector3();
     const _toTgt = new THREE.Vector3();
     const _targetVel = new THREE.Vector3();
+
+    // Markers are created/destroyed dynamically as the registry changes.
+    // We keep a map keyed by entry id.
+    const markerMap = new Map<string, Marker>();
 
     let rafId: number;
     const update = () => {
       rafId = requestAnimationFrame(update);
 
-      const camera = sceneCamera.current;
-      if (!magneticOnRef.current || !camera) {
-        for (const m of markers) m.root.style.display = 'none';
+      if (!driveSignatureOnRef.current || !sceneCamera.current) {
+        for (const m of markerMap.values()) m.root.style.display = 'none';
         return;
       }
 
-      const targets = getMagneticTargets();
+      const camera = sceneCamera.current;
       const W = window.innerWidth;
       const H = window.innerHeight;
       const cx = W * 0.5;
       const cy = H * 0.5;
 
-      for (let i = 0; i < MAX_MARKERS; i++) {
-        const target = targets[i];
-        const marker = markers[i];
+      const entries = getDriveSignatures();
 
-        if (!target) {
+      // Ensure a marker exists for each registered entry
+      const seenIds = new Set<string>();
+      for (const entry of entries) {
+        seenIds.add(entry.id);
+        if (!markerMap.has(entry.id)) {
+          markerMap.set(entry.id, createMarker(container));
+        }
+      }
+
+      // Remove markers for entries that have unregistered
+      for (const [id, marker] of markerMap) {
+        if (!seenIds.has(id)) {
+          marker.root.remove();
+          markerMap.delete(id);
+        }
+      }
+
+      for (const entry of entries) {
+        const marker = markerMap.get(entry.id)!;
+
+        entry.getPosition(_pos);
+        const dist = minimapShipPosition.distanceTo(_pos);
+        if (dist > driveSignatureRangeRef.current) {
           marker.root.style.display = 'none';
           continue;
         }
 
-        target.getPosition(_worldPos);
-        const dist = minimapShipPosition.distanceTo(_worldPos);
-
-        if (dist > magneticScanRangeRef.current) {
-          marker.root.style.display = 'none';
-          continue;
-        }
-
-        _toTgt.subVectors(_worldPos, minimapShipPosition);
+        _toTgt.subVectors(_pos, minimapShipPosition);
         const len = _toTgt.length();
         let relVelStr = '—';
         if (len > 1e-5) {
           const inv = 1 / len;
-          if (target.getVelocity) target.getVelocity(_targetVel);
+          if (entry.getVelocity) entry.getVelocity(_targetVel);
           else _targetVel.set(0, 0, 0);
           const rel =
             ((shipVelocity.x - _targetVel.x) * _toTgt.x +
@@ -134,22 +143,20 @@ export default function MagneticHUD() {
         }
 
         // Project to normalised device coords
-        _vec.copy(_worldPos).project(camera);
+        _vec.copy(_pos);
+        _vec.project(camera);
 
         const isBehind = _vec.z > 1;
         let sx = (_vec.x * 0.5 + 0.5) * W;
         let sy = (-_vec.y * 0.5 + 0.5) * H;
 
         const onScreen =
-          !isBehind &&
-          sx > EDGE_PAD && sx < W - EDGE_PAD &&
-          sy > EDGE_PAD && sy < H - EDGE_PAD;
+          !isBehind && sx > EDGE_PAD && sx < W - EDGE_PAD && sy > EDGE_PAD && sy < H - EDGE_PAD;
 
-        const distText =
-          dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
+        const distText = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
 
         marker.root.style.display = 'flex';
-        marker.label.textContent = `${target.label}\n${distText}\n${relVelStr}`;
+        marker.label.textContent = `${entry.label}\n${distText}\n${relVelStr}`;
 
         if (onScreen) {
           const SIZE = 28;
@@ -158,13 +165,18 @@ export default function MagneticHUD() {
           marker.root.style.top = `${sy}px`;
           marker.root.style.transform = 'translate(-50%, -50%)';
         } else {
-          if (isBehind) { sx = W - sx; sy = H - sy; }
+          // Flip direction when behind camera
+          if (isBehind) {
+            sx = W - sx;
+            sy = H - sy;
+          }
 
+          // Clamp to screen edge
           const dx = sx - cx;
           const dy = sy - cy;
           const scale = Math.min(
             (cx - EDGE_PAD) / (Math.abs(dx) || 1),
-            (cy - EDGE_PAD) / (Math.abs(dy) || 1),
+            (cy - EDGE_PAD) / (Math.abs(dy) || 1)
           );
           const ex = scale < 1 ? cx + dx * scale : sx;
           const ey = scale < 1 ? cy + dy * scale : sy;
@@ -180,7 +192,7 @@ export default function MagneticHUD() {
     rafId = requestAnimationFrame(update);
     return () => {
       cancelAnimationFrame(rafId);
-      for (const m of markers) m.root.remove();
+      for (const m of markerMap.values()) m.root.remove();
     };
   }, []);
 

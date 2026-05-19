@@ -246,7 +246,16 @@ export function OrbitCamera({
     return () => {
       scene.attach(camera);
     };
-  }, [attachTo, camera, scene, decoupled, scrapperMode, launchMode, transitioningState, disableCinematics]);
+  }, [
+    attachTo,
+    camera,
+    scene,
+    decoupled,
+    scrapperMode,
+    launchMode,
+    transitioningState,
+    disableCinematics,
+  ]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

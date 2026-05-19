@@ -24,15 +24,15 @@ import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { proximityScanOnRef } from '../../context/ProximityScan';
 import { radioOnRef } from '../../context/RadioState';
-import { POWER_HUD_ELEMENTS } from '../../components/Huds/PowerHUD/PowerHUD';
-import { HUDElements } from '../../components/Huds/HUD/HUD';
+import { POWER_HUD_ELEMENTS } from '../Huds/PowerHUD/PowerHUD';
+import { HUDElements } from '../Huds/HUD/HUD';
 
 interface Props {
   onComplete: () => void;
   tutorialMode: TutorialMenuSelection;
 }
 
-export default function TutorialShell({ onComplete, tutorialMode }: Props) {
+export default function TutorialResources({ onComplete, tutorialMode }: Props) {
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightOn, setSpotlightOn] = useState(false);
   const [magneticOn, setMagneticOn] = useState(false);

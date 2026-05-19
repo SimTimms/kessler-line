@@ -2,14 +2,14 @@ import { memo, useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ScanLine, ChevronUp, ChevronDown } from 'lucide-react';
 import { hudShakeOffset } from '../../context/HudShake';
-import PowerHUD from '../PowerHUD/PowerHUD';
-import MagneticHUD from '../MagneticHUD';
-import DriveSignatureHUD from '../DriveSignatureHUD';
+import PowerHUD from '../Huds/PowerHUD/PowerHUD';
+import MagneticHUD from '../Huds/MagneticHUD';
+import DriveSignatureHUD from '../Huds/DriveSignatureHUD';
 import RadiationHUD from '../RadiationHUD';
 import ProximityHUD from '../Proximity/ProximityHUD';
 import MiniMap from '../Minimap/MiniMap';
-import { HUD } from '../HUD/HUD';
-import { NavHUD } from '../NavHUD/NavHUD';
+import { NavHUD } from '../Huds/NavHUD/NavHUD';
+import { HUD } from '../Huds/HUD/HUD';
 import CinematicOverlay from '../Cinematic/CinematicOverlay';
 import ContactsHUD from '../ContactsHUD/ContactsHUD';
 import RadioChatterStream from '../Radio/RadioChatterStream';
@@ -64,7 +64,7 @@ const HudLayer = memo(function HudLayer({
 
   return (
     <>
-      <PowerHUD />
+      <PowerHUD disableElements={[]} focusElements={[]} />
       <MagneticHUD />
       <DriveSignatureHUD />
       <ProximityHUD />
@@ -104,7 +104,7 @@ const HudLayer = memo(function HudLayer({
         />
       </div>
 
-      <NavHUD />
+      <NavHUD disableElements={[]} focusElements={[]} />
       <ContactsHUD />
       <RadioChatterStream />
       <CinematicOverlay />

@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import AppContainer from './AppContainer';
-import AppStyles from './AppStyles';
 import SceneLayer from './SceneLayer';
 import OverlayLayer from './OverlayLayer';
 import HudLayer from './HudLayer';
@@ -133,7 +132,6 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
       <LoadingScreen />
       {/* <DebugCascadePanel /> */}
       <GraphicsSettings />
-      <AppStyles />
     </AppContainer>
   );
 });

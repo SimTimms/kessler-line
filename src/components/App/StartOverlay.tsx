@@ -1,11 +1,6 @@
 import { memo, useCallback, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
-
-export type TutorialMenuSelection =
-  | 'general-movement'
-  | 'navigation'
-  | 'orbital-mechanics'
-  | 'docking';
+import { GAME_MODES, type TutorialMenuSelection } from '../../config/gameModes';
 
 interface StartOverlayProps {
   onStart: () => void;
@@ -46,13 +41,8 @@ const TUTORIAL_MENU_ITEMS: Array<{
   selection?: TutorialMenuSelection;
   placeholder?: boolean;
 }> = [
-  { id: 'general-movement', label: 'Basic Movement', selection: 'general-movement' },
-  { id: 'navigation', label: 'Navigation', selection: 'navigation' },
-  { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: 'orbital-mechanics' },
-  { id: 'docking', label: 'Docking', selection: 'docking' },
-  { id: 'scanner-sweep', label: 'Scanner Sweep (Soon)', placeholder: true },
-  { id: 'combat-intro', label: 'Combat Intro (Soon)', placeholder: true },
-  { id: 'navigation-ops', label: 'Navigation Ops (Soon)', placeholder: true },
+  { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
+  { id: 'resources', label: 'Resources', selection: GAME_MODES.resources },
 ];
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {
@@ -117,8 +107,9 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: S
                 className={`start-button${item.placeholder ? ' start-button--placeholder' : ''}`}
                 disabled={item.placeholder}
                 onClick={() => {
-                  if (!item.selection) return;
-                  dismiss(() => onTutorialSelect(item.selection as TutorialMenuSelection));
+                  const selection = item.selection;
+                  if (!selection) return;
+                  dismiss(() => onTutorialSelect(selection));
                 }}
               >
                 {item.label}

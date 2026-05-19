@@ -247,9 +247,12 @@ export function useShipPhysics({
     // Stabiliser (Space held): synthetically activates both keys of every cancel pair so the
     // cancel-assist blocks below fire opposing thrusters on all three axes simultaneously.
     if (stabilizerActive.current) {
-      fwd = true; rev = true;
-      yawLeft = true; yawRight = true;
-      strL = true; strR = true;
+      fwd = true;
+      rev = true;
+      yawLeft = true;
+      yawRight = true;
+      strL = true;
+      strR = true;
     }
 
     // Opposite-key cancel assist:
