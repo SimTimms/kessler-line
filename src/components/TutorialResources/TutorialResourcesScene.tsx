@@ -52,7 +52,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
           <LunarLandscape />
           <LunarSettlement />
           <Spaceship
-            url="/shuttle-low.glb"
+            url="/shuttle-low-british.glb"
             shipGroupRef={spaceshipGroupRef}
             initialPosition={[0, 0, 0]}
             scale={1}
@@ -65,7 +65,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
             }}
           />
         </Suspense>
-        <ShipDepthOfField />
+        <ShipDepthOfField saturation={-1} />
       </Canvas>
     </>
   );
