@@ -7,7 +7,7 @@ import { magneticScanRangeRef } from '../../../context/MagneticScan';
 import { driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
 import { radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
-import './HUD.css';
+import './ScannerHUD.css';
 import {
   SCAN_RANGES,
   DRIVE_SIGNATURE_RANGES,
@@ -18,7 +18,7 @@ import {
 import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
 
-export const HUDElements = {
+export const ScannerHUDElements = {
   SPOTLIGHT: 'spotlight',
   MAGNET: 'magnet',
   DRIVE: 'drive',
@@ -27,8 +27,8 @@ export const HUDElements = {
   RADIATION: 'radiation',
 } as const;
 
-export type HUDElementId = (typeof HUDElements)[keyof typeof HUDElements];
-interface HUDProps {
+export type ScannerHUDElementId = (typeof ScannerHUDElements)[keyof typeof ScannerHUDElements];
+interface ScannerHUDProps {
   spotlightOn: boolean;
   setSpotlightOn: (on: boolean) => void;
   spotlightOnRef: React.RefObject<boolean>;
@@ -58,7 +58,7 @@ interface ButtonDef {
   onSideEffect: (on: boolean, level: number) => void;
 }
 
-export const HUD = ({
+export const ScannerHUD = ({
   spotlightOn,
   setSpotlightOn,
   spotlightOnRef,
@@ -77,7 +77,7 @@ export const HUD = ({
   tutorialMagneticFocus = false,
   focusElements = [],
   disableElements = [],
-}: HUDProps) => {
+}: ScannerHUDProps) => {
   const [radiationOn, setRadiationOn] = useState(false);
 
   // Coords display — mutated directly to avoid re-renders
@@ -99,7 +99,7 @@ export const HUD = ({
   // To add a new HUD button, append an entry here. No other changes needed.
   const buttonDefs: ButtonDef[] = [
     {
-      id: HUDElements.SPOTLIGHT,
+      id: ScannerHUDElements.SPOTLIGHT,
       icon: Flashlight,
       initialPower: 1,
       isActive: spotlightOn,
@@ -109,7 +109,7 @@ export const HUD = ({
       },
     },
     {
-      id: HUDElements.MAGNET,
+      id: ScannerHUDElements.MAGNET,
       icon: Magnet,
       initialPower: 1,
       isActive: magneticOn,
@@ -122,7 +122,7 @@ export const HUD = ({
       },
     },
     {
-      id: HUDElements.DRIVE,
+      id: ScannerHUDElements.DRIVE,
       icon: HardDrive,
       initialPower: 1,
       isActive: driveSignatureOn,
@@ -134,7 +134,7 @@ export const HUD = ({
       },
     },
     {
-      id: HUDElements.PROXIMITY,
+      id: ScannerHUDElements.PROXIMITY,
       icon: Radar,
       initialPower: 1,
       isActive: proximity,
@@ -145,7 +145,7 @@ export const HUD = ({
       },
     },
     {
-      id: HUDElements.RADIO,
+      id: ScannerHUDElements.RADIO,
       icon: AudioLines,
       initialPower: 1,
       isActive: radioOn,
@@ -156,7 +156,7 @@ export const HUD = ({
       },
     },
     {
-      id: HUDElements.RADIATION,
+      id: ScannerHUDElements.RADIATION,
       icon: Radiation,
       initialPower: 1,
       isActive: radiationOn,
@@ -182,8 +182,6 @@ export const HUD = ({
     setPowers((prev) => ({ ...prev, [id]: level }));
     onSideEffect(level > 1, level);
   };
-
-  console.log('disableElements', disableElements);
 
   return (
     <div className="button-panel">

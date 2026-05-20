@@ -1,6 +1,11 @@
-import { POWER_HUD_ELEMENTS } from '../components/Huds/PowerHUD/PowerHUD';
-import { HUDElements } from '../components/Huds/HUD/HUD';
-import { TUTORIAL_STEP_IDS } from './tutorialSteps';
+import {
+  MOVEMENT_HUD_ELEMENTS,
+  INVENTORY_HUD_ELEMENTS,
+  HULL_HUD_ELEMENTS,
+  RESOURCE_HUD_ELEMENTS,
+} from '../Huds/PowerHUD/PowerHUD';
+import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
+import { TUTORIAL_STEP_IDS } from './tutorialMovementSteps';
 
 export function getThrustersHighlightedForStep(stepId: string | undefined): string[] {
   switch (stepId) {
@@ -11,20 +16,12 @@ export function getThrustersHighlightedForStep(stepId: string | undefined): stri
     case 'bas-250-features-3':
       return ['rcs'];
 
-    case TUTORIAL_STEP_IDS.SCANNERS:
-      return [
-        HUDElements.PROXIMITY,
-        HUDElements.RADIO,
-        HUDElements.RADIATION,
-        HUDElements.SPOTLIGHT,
-        HUDElements.MAGNET,
-      ];
     default:
       return [];
   }
 }
 
-export function getPowerHudElementsHighlightedForStep(stepId: string | undefined): string[] {
+export function highlightedHudElements(stepId: string | undefined): string[] {
   switch (stepId) {
     case 'welcome':
     case 'bas-250':
@@ -34,31 +31,20 @@ export function getPowerHudElementsHighlightedForStep(stepId: string | undefined
       return [];
 
     case TUTORIAL_STEP_IDS.BAS_250_CAPACITY:
-      return [POWER_HUD_ELEMENTS.CREW_STATUS, POWER_HUD_ELEMENTS.CARGO_CAPACITY];
+      return [INVENTORY_HUD_ELEMENTS.CREW_STATUS, INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY];
 
     case TUTORIAL_STEP_IDS.MAIN_THRUST:
-      return [POWER_HUD_ELEMENTS.PROPELLENT, POWER_HUD_ELEMENTS.VELOCITY];
+      return [RESOURCE_HUD_ELEMENTS.PROPELLENT, MOVEMENT_HUD_ELEMENTS.VELOCITY];
 
     case TUTORIAL_STEP_IDS.FLIP:
-      return [POWER_HUD_ELEMENTS.VELOCITY];
-
-    case TUTORIAL_STEP_IDS.RESOURCES:
-      return [
-        POWER_HUD_ELEMENTS.POWER,
-        POWER_HUD_ELEMENTS.HULL,
-        POWER_HUD_ELEMENTS.PROPELLENT,
-        POWER_HUD_ELEMENTS.O2,
-      ];
-
-    case TUTORIAL_STEP_IDS.AIR:
-      return [POWER_HUD_ELEMENTS.O2];
+      return [MOVEMENT_HUD_ELEMENTS.VELOCITY];
 
     default:
       return [];
   }
 }
 
-export function getHudElementsHighlightedForStep(stepId: string | undefined): string[] {
+export function getScannerHudElementsHighlightedForStep(stepId: string | undefined): string[] {
   switch (stepId) {
     case 'welcome':
       return [];
@@ -68,29 +54,23 @@ export function getHudElementsHighlightedForStep(stepId: string | undefined): st
   }
 }
 
-export function getDisabledPowerElementsForStep(stepId: string | undefined): string[] {
+export function disabledHudElements(stepId: string | undefined): string[] {
   switch (stepId) {
     case 'welcome':
     case 'bas-250':
       return [
-        POWER_HUD_ELEMENTS.POWER,
-        POWER_HUD_ELEMENTS.HULL,
-        POWER_HUD_ELEMENTS.PROPELLENT,
-        POWER_HUD_ELEMENTS.O2,
-        POWER_HUD_ELEMENTS.VELOCITY,
-        POWER_HUD_ELEMENTS.GFORCE,
-        POWER_HUD_ELEMENTS.CREW_STATUS,
-        POWER_HUD_ELEMENTS.CARGO_CAPACITY,
+        ...Object.values(MOVEMENT_HUD_ELEMENTS),
+        ...Object.values(INVENTORY_HUD_ELEMENTS),
+        ...Object.values(HULL_HUD_ELEMENTS),
+        ...Object.values(RESOURCE_HUD_ELEMENTS),
       ];
 
     case TUTORIAL_STEP_IDS.BAS_250_FEATURES:
       return [
-        POWER_HUD_ELEMENTS.POWER,
-        POWER_HUD_ELEMENTS.HULL,
-        POWER_HUD_ELEMENTS.PROPELLENT,
-        POWER_HUD_ELEMENTS.O2,
-        POWER_HUD_ELEMENTS.VELOCITY,
-        POWER_HUD_ELEMENTS.GFORCE,
+        ...Object.values(MOVEMENT_HUD_ELEMENTS),
+        ...Object.values(INVENTORY_HUD_ELEMENTS),
+        ...Object.values(HULL_HUD_ELEMENTS),
+        ...Object.values(RESOURCE_HUD_ELEMENTS),
       ];
     case TUTORIAL_STEP_IDS.BAS_250_FEATURES_2:
     case TUTORIAL_STEP_IDS.BAS_250_FEATURES_3:
@@ -100,12 +80,10 @@ export function getDisabledPowerElementsForStep(stepId: string | undefined): str
     case TUTORIAL_STEP_IDS.CRISIS_MANAGEMENT:
     case TUTORIAL_STEP_IDS.YAW:
       return [
-        POWER_HUD_ELEMENTS.POWER,
-        POWER_HUD_ELEMENTS.HULL,
-        POWER_HUD_ELEMENTS.PROPELLENT,
-        POWER_HUD_ELEMENTS.O2,
-        POWER_HUD_ELEMENTS.VELOCITY,
-        POWER_HUD_ELEMENTS.GFORCE,
+        ...Object.values(MOVEMENT_HUD_ELEMENTS),
+        ...Object.values(INVENTORY_HUD_ELEMENTS),
+        ...Object.values(HULL_HUD_ELEMENTS),
+        ...Object.values(RESOURCE_HUD_ELEMENTS),
       ];
 
     case TUTORIAL_STEP_IDS.THRUST:
@@ -118,17 +96,17 @@ export function getDisabledPowerElementsForStep(stepId: string | undefined): str
     case TUTORIAL_STEP_IDS.MOMENTUM_ASSIST_INTRO:
     case TUTORIAL_STEP_IDS.MOMENTUM_ASSIST_CONTROLS:
       return [
-        POWER_HUD_ELEMENTS.POWER,
-        POWER_HUD_ELEMENTS.HULL,
-        POWER_HUD_ELEMENTS.O2,
-        POWER_HUD_ELEMENTS.GFORCE,
+        ...Object.values(MOVEMENT_HUD_ELEMENTS),
+        ...Object.values(INVENTORY_HUD_ELEMENTS),
+        ...Object.values(HULL_HUD_ELEMENTS),
+        ...Object.values(RESOURCE_HUD_ELEMENTS),
       ];
     default:
       return [];
   }
 }
 
-export function getDisabledHudElementsForStep(stepId: string | undefined): string[] {
+export function getDisabledScannerHudElementsForStep(stepId: string | undefined): string[] {
   switch (stepId) {
     case TUTORIAL_STEP_IDS.WELCOME:
     case TUTORIAL_STEP_IDS.BAS_250:
@@ -149,12 +127,12 @@ export function getDisabledHudElementsForStep(stepId: string | undefined): strin
     case TUTORIAL_STEP_IDS.MOMENTUM_ASSIST_INTRO:
     case TUTORIAL_STEP_IDS.MOMENTUM_ASSIST_CONTROLS:
       return [
-        HUDElements.MAGNET,
-        HUDElements.DRIVE,
-        HUDElements.PROXIMITY,
-        HUDElements.RADIO,
-        HUDElements.RADIATION,
-        HUDElements.SPOTLIGHT,
+        ScannerHUDElements.MAGNET,
+        ScannerHUDElements.DRIVE,
+        ScannerHUDElements.PROXIMITY,
+        ScannerHUDElements.RADIO,
+        ScannerHUDElements.RADIATION,
+        ScannerHUDElements.SPOTLIGHT,
       ];
 
     default:

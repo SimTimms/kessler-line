@@ -1,38 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
 import AppContainer from '../App/AppContainer';
-import LunarTutorialScene from './LunarTutorialScene';
-import TutorialOverlay from './TutorialOverlay';
+import LunarTutorialScene from './TutorialMovementScene';
+import TutorialOverlay from '../TutorialShared/TutorialOverlay';
 import RadioChatterStream from '../Radio/RadioChatterStream';
 import { tutorialStepRef, tutorialThrustersHighlightedRef } from '../../context/TutorialState';
 import {
   getThrustersHighlightedForStep,
-  getPowerHudElementsHighlightedForStep,
-  getHudElementsHighlightedForStep,
-  getDisabledPowerElementsForStep,
-  getDisabledHudElementsForStep,
-} from '../../tutorial/tutorialHighlights';
-import { TUTORIAL_STEPS } from '../../tutorial/tutorialSteps';
-import type { TutorialStep } from '../../tutorial/tutorialSteps';
+  highlightedHudElements,
+  getScannerHudElementsHighlightedForStep,
+  disabledHudElements,
+  getDisabledScannerHudElementsForStep,
+} from './tutorialMovementHighlights';
+import { TUTORIAL_STEPS } from './tutorialMovementSteps';
+import type { TutorialMovementStep } from './tutorialMovementSteps';
 import type { TutorialMenuSelection } from '../../config/gameModes';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
-import { tutorialNavViewModeRef } from './TutorialFollowCamera';
-import { NavHUD } from '../Huds/NavHUD/NavHUD';
-import { HUD } from '../Huds/HUD/HUD';
+import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
+import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
 import PowerHUD from '../Huds/PowerHUD/PowerHUD';
 import { spotlightOnRef } from '../Combat/LaserRay';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { proximityScanOnRef } from '../../context/ProximityScan';
 import { radioOnRef } from '../../context/RadioState';
-import { POWER_HUD_ELEMENTS } from '../../components/Huds/PowerHUD/PowerHUD';
-import { HUDElements } from '../../components/Huds/HUD/HUD';
+import {
+  MOVEMENT_HUD_ELEMENTS,
+  INVENTORY_HUD_ELEMENTS,
+  HULL_HUD_ELEMENTS,
+  RESOURCE_HUD_ELEMENTS,
+} from '../Huds/PowerHUD/PowerHUD';
+import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
 
 interface Props {
   onComplete: () => void;
   tutorialMode: TutorialMenuSelection;
 }
 
-export default function TutorialShell({ onComplete, tutorialMode }: Props) {
+export default function TutorialMovement({ onComplete, tutorialMode }: Props) {
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightOn, setSpotlightOn] = useState(false);
   const [magneticOn, setMagneticOn] = useState(false);
@@ -43,15 +47,19 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
   const [activePowerElements, setActivePowerElements] = useState<string[]>([]);
   const [activeHudElements, setActiveHudElements] = useState<string[]>([]);
 
-  const [disabledPowerElements, setDisabledPowerElements] = useState<string[]>(
-    Object.values(POWER_HUD_ELEMENTS)
-  );
+  const [disabledPowerElements, setDisabledPowerElements] = useState<string[]>([
+    ...Object.values(MOVEMENT_HUD_ELEMENTS),
+    ...Object.values(INVENTORY_HUD_ELEMENTS),
+    ...Object.values(HULL_HUD_ELEMENTS),
+    ...Object.values(RESOURCE_HUD_ELEMENTS),
+  ]);
   const [disabledHudElements, setDisabledHudElements] = useState<string[]>([
-    HUDElements.DRIVE,
-    HUDElements.PROXIMITY,
-    HUDElements.RADIO,
-    HUDElements.RADIATION,
-    HUDElements.SPOTLIGHT,
+    ScannerHUDElements.DRIVE,
+    ScannerHUDElements.PROXIMITY,
+    ScannerHUDElements.RADIO,
+    ScannerHUDElements.RADIATION,
+    ScannerHUDElements.SPOTLIGHT,
+    ScannerHUDElements.MAGNET,
   ]);
 
   useEffect(() => {
@@ -65,16 +73,16 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
     setCurrentStep((s) => s + 1);
   }, []);
 
-  const steps: TutorialStep[] = TUTORIAL_STEPS;
+  const steps: TutorialMovementStep[] = TUTORIAL_STEPS;
 
   const currentStepId = steps[currentStep]?.id;
 
   useEffect(() => {
     tutorialThrustersHighlightedRef.current = getThrustersHighlightedForStep(currentStepId);
-    setActivePowerElements(getPowerHudElementsHighlightedForStep(currentStepId));
-    setActiveHudElements(getHudElementsHighlightedForStep(currentStepId));
-    setDisabledPowerElements(getDisabledPowerElementsForStep(currentStepId));
-    setDisabledHudElements(getDisabledHudElementsForStep(currentStepId));
+    setActivePowerElements(highlightedHudElements(currentStepId));
+    setActiveHudElements(getScannerHudElementsHighlightedForStep(currentStepId));
+    setDisabledPowerElements(disabledHudElements(currentStepId));
+    setDisabledHudElements(getDisabledScannerHudElementsForStep(currentStepId));
   }, [currentStepId]);
 
   return (
@@ -88,9 +96,8 @@ export default function TutorialShell({ onComplete, tutorialMode }: Props) {
         onSkip={onComplete}
         onContinueStep={handleStepAdvance}
       />
-      <NavHUD disableElements={[]} focusElements={[]} />
       <PowerHUD disableElements={disabledPowerElements} focusElements={activePowerElements} />
-      <HUD
+      <ScannerHUD
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
         spotlightOnRef={spotlightOnRef}

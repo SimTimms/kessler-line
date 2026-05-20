@@ -9,7 +9,7 @@ import RadiationHUD from '../RadiationHUD';
 import ProximityHUD from '../Proximity/ProximityHUD';
 import MiniMap from '../Minimap/MiniMap';
 import { NavHUD } from '../Huds/NavHUD/NavHUD';
-import { HUD } from '../Huds/HUD/HUD';
+import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
 import CinematicOverlay from '../Cinematic/CinematicOverlay';
 import ContactsHUD from '../ContactsHUD/ContactsHUD';
 import RadioChatterStream from '../Radio/RadioChatterStream';
@@ -85,7 +85,7 @@ const HudLayer = memo(function HudLayer({
         )}
       </button>
       <div className={`hud-scanner-wrap${showHUD ? '' : ' hud-scanner-wrap--hidden'}`}>
-        <HUD
+        <ScannerHUD
           spotlightOn={spotlightOn}
           setSpotlightOn={setSpotlightOn}
           spotlightOnRef={spotlightOnRef}

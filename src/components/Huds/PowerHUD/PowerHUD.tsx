@@ -30,15 +30,24 @@ interface StatDef {
   group: 'orange' | 'blue';
 }
 
-export const POWER_HUD_ELEMENTS = {
-  POWER: 'power',
-  HULL: 'hull',
-  PROPELLENT: 'propellant',
-  O2: 'o2',
+export const MOVEMENT_HUD_ELEMENTS = {
   VELOCITY: 'velocity',
   GFORCE: 'gforce',
+} as const;
+
+export const INVENTORY_HUD_ELEMENTS = {
   CREW_STATUS: 'crew-status',
   CARGO_CAPACITY: 'cargo-capacity',
+} as const;
+
+export const HULL_HUD_ELEMENTS = {
+  HULL: 'hull',
+} as const;
+
+export const RESOURCE_HUD_ELEMENTS = {
+  POWER: 'power',
+  PROPELLENT: 'propellant',
+  O2: 'o2',
 } as const;
 
 function StatCell({
@@ -119,7 +128,7 @@ export default function PowerHUD({
 
   const orangeStats: StatDef[] = [
     {
-      id: POWER_HUD_ELEMENTS.VELOCITY,
+      id: MOVEMENT_HUD_ELEMENTS.VELOCITY,
       label: 'VELOCITY',
       icon: Activity,
       value: `${displayVelocity.toFixed(1)} m/s`,
@@ -127,7 +136,7 @@ export default function PowerHUD({
       group: 'orange',
     },
     {
-      id: POWER_HUD_ELEMENTS.GFORCE,
+      id: MOVEMENT_HUD_ELEMENTS.GFORCE,
       label: 'G-FORCE',
       icon: Gauge,
       value: `${displayGForce.toFixed(1)}g`,
@@ -138,15 +147,7 @@ export default function PowerHUD({
 
   const blueStats: StatDef[] = [
     {
-      id: POWER_HUD_ELEMENTS.POWER,
-      label: 'POWER',
-      icon: Zap,
-      value: `${displayPower}`,
-      level: resourceLevel(displayPower),
-      group: 'blue',
-    },
-    {
-      id: POWER_HUD_ELEMENTS.HULL,
+      id: HULL_HUD_ELEMENTS.HULL,
       label: 'HULL INTEGRITY',
       icon: Shield,
       value: `${displayHull}`,
@@ -154,7 +155,16 @@ export default function PowerHUD({
       group: 'blue',
     },
     {
-      id: POWER_HUD_ELEMENTS.PROPELLENT,
+      id: RESOURCE_HUD_ELEMENTS.POWER,
+      label: 'POWER',
+      icon: Zap,
+      value: `${displayPower}`,
+      level: resourceLevel(displayPower),
+      group: 'blue',
+    },
+
+    {
+      id: RESOURCE_HUD_ELEMENTS.PROPELLENT,
       label: 'PROPELLENT',
       icon: Droplets,
       value: `${displayFuel}`,
@@ -162,7 +172,7 @@ export default function PowerHUD({
       group: 'blue',
     },
     {
-      id: POWER_HUD_ELEMENTS.O2,
+      id: RESOURCE_HUD_ELEMENTS.O2,
       label: 'O2',
       icon: Wind,
       value: `${displayO2}`,
@@ -188,13 +198,13 @@ export default function PowerHUD({
         <div className="power-hud-divider"></div>
 
         <div
-          className={`flex-column blue ${disableElements.includes(POWER_HUD_ELEMENTS.CREW_STATUS) ? 'hud-button-disabled' : ''}`}
+          className={`flex-column blue ${disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? 'hud-button-disabled' : ''}`}
         >
           <div className="power-hud-label">
             Crew <User size={14} strokeWidth={1.5} className="crew-icon--active" />
           </div>
           <div
-            className={`hud-btn ${focusElements.includes(POWER_HUD_ELEMENTS.CREW_STATUS) ? 'hud-btn-highlight' : ''}`}
+            className={`hud-btn ${focusElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? 'hud-btn-highlight' : ''}`}
           >
             {([0, 1, 2] as const).map((i) => (
               <User
@@ -207,13 +217,13 @@ export default function PowerHUD({
           </div>
         </div>
         <div
-          className={`flex-column blue ${disableElements.includes(POWER_HUD_ELEMENTS.CARGO_CAPACITY) ? 'hud-button-disabled' : ''}`}
+          className={`flex-column blue ${disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) ? 'hud-button-disabled' : ''}`}
         >
           <div className="power-hud-label">
             Cargo <div className=" power-hud-cargo-slot"> </div>
           </div>
           <div
-            className={`hud-btn ${focusElements.includes(POWER_HUD_ELEMENTS.CARGO_CAPACITY) ? 'hud-btn-highlight' : ''}`}
+            className={`hud-btn ${focusElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) ? 'hud-btn-highlight' : ''}`}
           >
             {([0, 1, 2, 3] as const).map((i) => (
               <div

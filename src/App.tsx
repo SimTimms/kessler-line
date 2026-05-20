@@ -3,7 +3,7 @@ import { AppShell } from './components/App';
 import { useAppLifecycle, useAppState } from './hooks';
 import { resumeAudioContext } from './sound/SoundManager';
 import { useCallback, useState } from 'react';
-import TutorialShell from './components/Tutorial/TutorialShell';
+import TutorialMovement from './components/TutorialMovement/TutorialMovement';
 import TutorialResources from './components/TutorialResources/TutorialResources';
 import { tutorialStepRef } from './context/TutorialState';
 import {
@@ -67,7 +67,7 @@ function App() {
     case GAME_MODES.menu:
       return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} />;
     case GAME_MODES.tutorial:
-      return <TutorialShell onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
+      return <TutorialMovement onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
     case GAME_MODES.resources:
       return <TutorialResources onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
     case GAME_MODES.game:

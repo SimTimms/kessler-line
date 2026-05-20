@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
-import type { TutorialStep } from '../../tutorial/tutorialSteps';
+import type { TutorialStep } from '../TutorialMovement/tutorialMovementSteps';
 import { displayLabelForKeyCode } from '../../config/keybindings';
 import TutorialKeyHints from './TutorialKeyHints';
 import './TutorialOverlay.css';
@@ -169,13 +169,6 @@ const TutorialOverlay = memo(function TutorialOverlay({
             )}
           </div>
         </div>
-      )}
-
-      {/* ── Skip button ─────────────────────────────────────────────── */}
-      {!isDone && (
-        <button type="button" onClick={handleSkip} className="tutorial-overlay__skip-btn">
-          Skip Tutorial
-        </button>
       )}
 
       {/* ── Completion screen ───────────────────────────────────────── */}

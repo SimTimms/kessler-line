@@ -1,31 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppContainer from '../App/AppContainer';
-import LunarTutorialScene from './LunarTutorialScene';
-import TutorialOverlay from './TutorialOverlay';
-import RadioChatterStream from '../Radio/RadioChatterStream';
-import { tutorialStepRef, tutorialThrustersHighlightedRef } from '../../context/TutorialState';
-import {
-  getThrustersHighlightedForStep,
-  getPowerHudElementsHighlightedForStep,
-  getHudElementsHighlightedForStep,
-  getDisabledPowerElementsForStep,
-  getDisabledHudElementsForStep,
-} from '../../tutorial/tutorialHighlights';
-import { TUTORIAL_STEPS } from '../../tutorial/tutorialSteps';
-import type { TutorialStep } from '../../tutorial/tutorialSteps';
+import TutorialResourcesScene from './TutorialResourcesScene';
+import TutorialOverlay from '../TutorialShared/TutorialOverlay';
+import { highlightedHudElements, disabledHudElements } from './tutorialResourcesHighlights';
+import { TUTORIAL_STEPS } from './tutorialResourcesSteps';
 import type { TutorialMenuSelection } from '../../config/gameModes';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
-import { tutorialNavViewModeRef } from './TutorialFollowCamera';
-import { NavHUD } from '../Huds/NavHUD/NavHUD';
-import { HUD } from '../Huds/HUD/HUD';
+import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
 import PowerHUD from '../Huds/PowerHUD/PowerHUD';
 import { spotlightOnRef } from '../Combat/LaserRay';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { proximityScanOnRef } from '../../context/ProximityScan';
 import { radioOnRef } from '../../context/RadioState';
-import { POWER_HUD_ELEMENTS } from '../Huds/PowerHUD/PowerHUD';
-import { HUDElements } from '../Huds/HUD/HUD';
+import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
+
+const defaultDisabledHudElements = [];
 
 interface Props {
   onComplete: () => void;
@@ -39,58 +29,27 @@ export default function TutorialResources({ onComplete, tutorialMode }: Props) {
   const [driveSignatureOn, setDriveSignatureOn] = useState(false);
   const [proximity, setProximity] = useState(false);
   const [radioOn, setRadioOn] = useState(false);
-
-  const [activePowerElements, setActivePowerElements] = useState<string[]>([]);
-  const [activeHudElements, setActiveHudElements] = useState<string[]>([]);
-
-  const [disabledPowerElements, setDisabledPowerElements] = useState<string[]>(
-    Object.values(POWER_HUD_ELEMENTS)
-  );
-  const [disabledHudElements, setDisabledHudElements] = useState<string[]>([
-    HUDElements.DRIVE,
-    HUDElements.PROXIMITY,
-    HUDElements.RADIO,
-    HUDElements.RADIATION,
-    HUDElements.SPOTLIGHT,
-  ]);
+  const [activeHudElementsState, setActiveHudElementsState] = useState<string[]>([]);
+  const [disabledHudElementsState, setDisabledHudElementsState] = useState<string[]>([]);
 
   useEffect(() => {
-    tutorialStepRef.current = 0;
-    setCurrentStep(0);
-    tutorialNavViewModeRef.current = false;
-  }, [tutorialMode]);
-
-  const handleStepAdvance = useCallback(() => {
-    tutorialStepRef.current += 1;
-    setCurrentStep((s) => s + 1);
-  }, []);
-
-  const steps: TutorialStep[] = TUTORIAL_STEPS;
-
-  const currentStepId = steps[currentStep]?.id;
-
-  useEffect(() => {
-    tutorialThrustersHighlightedRef.current = getThrustersHighlightedForStep(currentStepId);
-    setActivePowerElements(getPowerHudElementsHighlightedForStep(currentStepId));
-    setActiveHudElements(getHudElementsHighlightedForStep(currentStepId));
-    setDisabledPowerElements(getDisabledPowerElementsForStep(currentStepId));
-    setDisabledHudElements(getDisabledHudElementsForStep(currentStepId));
-  }, [currentStepId]);
+    setActiveHudElementsState(highlightedHudElements(TUTORIAL_STEPS[currentStep].id));
+    setDisabledHudElementsState(disabledHudElements(TUTORIAL_STEPS[currentStep].id));
+  }, [currentStep]);
 
   return (
     <AppContainer>
       <NavHudKeyBinding />
-      <LunarTutorialScene onStepAdvance={handleStepAdvance} />
+      <TutorialResourcesScene onStepAdvance={() => setCurrentStep((s) => s + 1)} />
       <TutorialOverlay
-        steps={steps}
+        steps={TUTORIAL_STEPS}
         currentStep={currentStep}
         onComplete={onComplete}
         onSkip={onComplete}
-        onContinueStep={handleStepAdvance}
+        onContinueStep={() => setCurrentStep((s) => s + 1)}
       />
-      <NavHUD disableElements={[]} focusElements={[]} />
-      <PowerHUD disableElements={disabledPowerElements} focusElements={activePowerElements} />
-      <HUD
+      <PowerHUD disableElements={disabledHudElementsState} focusElements={activeHudElementsState} />
+      <ScannerHUD
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
         spotlightOnRef={spotlightOnRef}
@@ -106,10 +65,9 @@ export default function TutorialResources({ onComplete, tutorialMode }: Props) {
         radioOn={radioOn}
         setRadioOn={setRadioOn}
         radioOnRef={radioOnRef}
-        focusElements={activeHudElements}
-        disableElements={disabledHudElements}
+        focusElements={activeHudElementsState}
+        disableElements={disabledHudElementsState}
       />
-      <RadioChatterStream />
     </AppContainer>
   );
 }

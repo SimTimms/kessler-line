@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { tutorialThrustersHighlightedRef } from '../context/TutorialState';
+import { tutorialThrustersHighlightedRef } from '../../context/TutorialState';
 
 /**
  * R3F hook — must be called inside a <Canvas>. Reads tutorialThrustersHighlightedRef

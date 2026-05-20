@@ -1,5 +1,5 @@
 import { POWER_HUD_ELEMENTS } from '../components/Huds/PowerHUD/PowerHUD';
-import { HUDElements } from '../components/Huds/HUD/HUD';
+import { HUDElements } from '../components/Huds/HUD/ScannerHUD';
 import { TUTORIAL_STEP_IDS } from './tutorialSteps';
 
 export function getThrustersHighlightedForStep(stepId: string | undefined): string[] {
@@ -24,7 +24,7 @@ export function getThrustersHighlightedForStep(stepId: string | undefined): stri
   }
 }
 
-export function getPowerHudElementsHighlightedForStep(stepId: string | undefined): string[] {
+export function highlightedHudElements(stepId: string | undefined): string[] {
   switch (stepId) {
     case 'welcome':
     case 'bas-250':
@@ -58,7 +58,7 @@ export function getPowerHudElementsHighlightedForStep(stepId: string | undefined
   }
 }
 
-export function getHudElementsHighlightedForStep(stepId: string | undefined): string[] {
+export function getScannerHudElementsHighlightedForStep(stepId: string | undefined): string[] {
   switch (stepId) {
     case 'welcome':
       return [];
@@ -68,7 +68,7 @@ export function getHudElementsHighlightedForStep(stepId: string | undefined): st
   }
 }
 
-export function getDisabledPowerElementsForStep(stepId: string | undefined): string[] {
+export function disabledHudElements(stepId: string | undefined): string[] {
   switch (stepId) {
     case 'welcome':
     case 'bas-250':
@@ -128,7 +128,7 @@ export function getDisabledPowerElementsForStep(stepId: string | undefined): str
   }
 }
 
-export function getDisabledHudElementsForStep(stepId: string | undefined): string[] {
+export function getDisabledScannerHudElementsForStep(stepId: string | undefined): string[] {
   switch (stepId) {
     case TUTORIAL_STEP_IDS.WELCOME:
     case TUTORIAL_STEP_IDS.BAS_250:

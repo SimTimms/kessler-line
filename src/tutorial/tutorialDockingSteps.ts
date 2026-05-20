@@ -8,7 +8,7 @@ import {
   KEY_THRUST_REVERSE,
   displayLabelForKeyCode,
 } from '../config/keybindings';
-import type { TutorialStep } from './tutorialSteps';
+import type { TutorialStep } from '../components/TutorialMovement/tutorialMovementSteps';
 
 const K = displayLabelForKeyCode;
 

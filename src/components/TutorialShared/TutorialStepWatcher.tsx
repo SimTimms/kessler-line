@@ -2,8 +2,8 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { shipVelocity, shipAngularVelocity } from '../../context/ShipState';
 import { tutorialStepRef } from '../../context/TutorialState';
-import { TUTORIAL_STEPS } from '../../tutorial/tutorialSteps';
-import type { CompletionCriteria } from '../../tutorial/tutorialSteps';
+import { TUTORIAL_STEPS } from '../TutorialMovement/tutorialMovementSteps';
+import type { CompletionCriteria } from './tutorialSharedConst';
 
 interface Props {
   onStepAdvance: () => void;

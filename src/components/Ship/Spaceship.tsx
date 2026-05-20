@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { useTutorialThrustersHighlighted } from '../../tutorial/useTutorialThrustersHighlighted';
+import { useTutorialThrustersHighlighted } from '../TutorialMovement/useTutorialThrustersHighlighted';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import ThrusterParticles from './ThrusterParticles';

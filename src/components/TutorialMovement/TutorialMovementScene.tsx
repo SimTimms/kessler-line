@@ -2,13 +2,13 @@ import { Suspense, memo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
-import TutorialStepWatcher from './TutorialStepWatcher';
+import TutorialStepWatcher from '../TutorialShared/TutorialStepWatcher';
 import { shipPosRef } from '../../context/ShipPos';
 import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
-import TutorialFollowCamera from './TutorialFollowCamera';
+import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import DefaultLighting from '../DefaultLighting';
-import LunarLandscape from './LunarLandscape';
-import LunarSettlement from './LunarSettlement';
+import LunarLandscape from '../LunarLandscape/LunarLandscape';
+import LunarSettlement from '../LunarLandscape/LunarSettlement';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import {
   SHIP_PARTICLE_COUNT,
@@ -22,7 +22,7 @@ interface LunarTutorialSceneProps {
 
 const TUTORIAL_FOLLOW_OFFSET: [number, number, number] = [-40, 50, 50];
 
-export default memo(function LunarTutorialScene({ onStepAdvance }: LunarTutorialSceneProps) {
+export default memo(function TutorialMovementScene({ onStepAdvance }: LunarTutorialSceneProps) {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const fogColor = '#000000';
   const lightColor = '#ccccff';
@@ -65,7 +65,7 @@ export default memo(function LunarTutorialScene({ onStepAdvance }: LunarTutorial
             }}
           />
         </Suspense>
-        <ShipDepthOfField />
+        <ShipDepthOfField saturation={-1} />
       </Canvas>
     </>
   );
