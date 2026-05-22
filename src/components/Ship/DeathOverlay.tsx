@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
 
-type DeathCause = 'o2' | 'hull';
+export type DeathCause = 'o2' | 'hull' | 'radiation';
 
 const CAUSE_CONFIG: Record<
   DeathCause,
@@ -19,9 +19,21 @@ const CAUSE_CONFIG: Record<
     titleColor: '#707580',
     subtitleColor: '#3d4657',
   },
+  radiation: {
+    title: 'RADIATION OVERLOAD',
+    subtitle: 'HULL INTEGRITY LOST',
+    titleColor: '#88ff44',
+    subtitleColor: '#5a9e3a',
+  },
 };
 
-export function DeathOverlay() {
+interface DeathOverlayProps {
+  /** When set, Restart runs this instead of clearing saves and reloading the page. */
+  onRestart?: () => void;
+  restartLabel?: string;
+}
+
+export function DeathOverlay({ onRestart, restartLabel = 'Restart' }: DeathOverlayProps) {
   const triggeredRef = useRef(false);
   const [cause, setCause] = useState<DeathCause | null>(null);
   const [showContent, setShowContent] = useState(false);
@@ -34,7 +46,10 @@ export function DeathOverlay() {
       setTimeout(() => setShowContent(true), 3500);
     };
     const onO2 = () => trigger('o2');
-    const onHull = () => trigger('hull');
+    const onHull = (e: Event) => {
+      const detail = (e as CustomEvent<{ cause?: DeathCause }>).detail;
+      trigger(detail?.cause === 'radiation' ? 'radiation' : 'hull');
+    };
     window.addEventListener('O2Depleted', onO2);
     window.addEventListener('ShipDestroyed', onHull);
     return () => {
@@ -45,6 +60,15 @@ export function DeathOverlay() {
 
   const triggered = cause !== null;
   const config = cause ? CAUSE_CONFIG[cause] : null;
+
+  const handleRestart = () => {
+    if (onRestart) {
+      onRestart();
+      return;
+    }
+    clearAllSaves();
+    window.location.reload();
+  };
 
   return (
     <div
@@ -90,12 +114,9 @@ export function DeathOverlay() {
             type="button"
             className="start-button restart-button"
             style={{ marginTop: 28 }}
-            onClick={() => {
-              clearAllSaves();
-              window.location.reload();
-            }}
+            onClick={handleRestart}
           >
-            Restart
+            {restartLabel}
           </button>
         </>
       )}

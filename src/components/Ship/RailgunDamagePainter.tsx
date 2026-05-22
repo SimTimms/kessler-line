@@ -32,10 +32,54 @@ type PainterInfo = {
   emissiveCanvas: HTMLCanvasElement;
   emissiveCtx: CanvasRenderingContext2D;
   emissiveTexture: THREE.CanvasTexture;
-  size: number;
+  texWidth: number;
+  texHeight: number;
+  flipY: boolean;
   emissiveMarks: EmissiveMark[];
   originalImageData: ImageData;
 };
+
+/** Preserve GLTF/map UV transform so swapping to a canvas copy does not shift the hull. */
+function applyMapTransform(target: THREE.Texture, source: THREE.Texture | null): void {
+  if (!source) {
+    target.wrapS = THREE.ClampToEdgeWrapping;
+    target.wrapT = THREE.ClampToEdgeWrapping;
+    target.repeat.set(1, 1);
+    target.offset.set(0, 0);
+    target.rotation = 0;
+    target.center.set(0.5, 0.5);
+    target.flipY = false;
+    return;
+  }
+  target.wrapS = source.wrapS;
+  target.wrapT = source.wrapT;
+  target.repeat.copy(source.repeat);
+  target.offset.copy(source.offset);
+  target.rotation = source.rotation;
+  target.center.copy(source.center);
+  target.flipY = source.flipY;
+  target.matrixAutoUpdate = source.matrixAutoUpdate;
+  if (!source.matrixAutoUpdate) {
+    target.matrix.copy(source.matrix);
+  }
+  target.colorSpace = source.colorSpace;
+}
+
+function uvToCanvas(
+  uv: THREE.Vector2,
+  texWidth: number,
+  texHeight: number,
+  flipY: boolean
+): { x: number; y: number } {
+  return {
+    x: uv.x * texWidth,
+    y: flipY ? (1 - uv.y) * texHeight : uv.y * texHeight,
+  };
+}
+
+function texMin(painter: PainterInfo): number {
+  return Math.min(painter.texWidth, painter.texHeight);
+}
 
 type RailgunDamagePoint = {
   position: THREE.Vector3;
@@ -75,46 +119,40 @@ function initPainter(material: EmissiveMaterial): PainterInfo {
     | OffscreenCanvas
     | null
     | undefined;
-  const size = image && 'width' in image ? image.width : DEFAULT_TEX_SIZE;
+  let texWidth = DEFAULT_TEX_SIZE;
+  let texHeight = DEFAULT_TEX_SIZE;
+  if (image && 'width' in image && 'height' in image) {
+    texWidth = image.width;
+    texHeight = image.height;
+  }
+
   const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = texWidth;
+  canvas.height = texHeight;
   const ctx = canvas.getContext('2d')!;
 
   const emissiveCanvas = document.createElement('canvas');
-  emissiveCanvas.width = size;
-  emissiveCanvas.height = size;
+  emissiveCanvas.width = texWidth;
+  emissiveCanvas.height = texHeight;
   const emissiveCtx = emissiveCanvas.getContext('2d')!;
-  emissiveCtx.clearRect(0, 0, size, size);
+  emissiveCtx.clearRect(0, 0, texWidth, texHeight);
 
   if (image) {
-    ctx.drawImage(image as CanvasImageSource, 0, 0, size, size);
+    ctx.drawImage(image as CanvasImageSource, 0, 0, texWidth, texHeight);
   } else {
     const color = material.color ?? new THREE.Color('#2a2a2a');
     ctx.fillStyle = `#${color.getHexString()}`;
-    ctx.fillRect(0, 0, size, size);
+    ctx.fillRect(0, 0, texWidth, texHeight);
   }
 
   // Snapshot the clean hull before any damage
-  const originalImageData = ctx.getImageData(0, 0, size, size);
+  const originalImageData = ctx.getImageData(0, 0, texWidth, texHeight);
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = map?.wrapS ?? THREE.RepeatWrapping;
-  texture.wrapT = map?.wrapT ?? THREE.RepeatWrapping;
-  texture.repeat.copy(map?.repeat ?? new THREE.Vector2(1, 1));
-  texture.offset.copy(map?.offset ?? new THREE.Vector2(0, 0));
-  texture.rotation = map?.rotation ?? 0;
-  texture.center.copy(map?.center ?? new THREE.Vector2(0.5, 0.5));
-  texture.colorSpace = THREE.SRGBColorSpace;
+  applyMapTransform(texture, map);
 
   const emissiveTexture = new THREE.CanvasTexture(emissiveCanvas);
-  emissiveTexture.wrapS = texture.wrapS;
-  emissiveTexture.wrapT = texture.wrapT;
-  emissiveTexture.repeat.copy(texture.repeat);
-  emissiveTexture.offset.copy(texture.offset);
-  emissiveTexture.rotation = texture.rotation;
-  emissiveTexture.center.copy(texture.center);
-  emissiveTexture.colorSpace = THREE.SRGBColorSpace;
+  applyMapTransform(emissiveTexture, map);
 
   material.map = texture;
   material.emissive = new THREE.Color('#ffffff');
@@ -129,7 +167,9 @@ function initPainter(material: EmissiveMaterial): PainterInfo {
     emissiveCanvas,
     emissiveCtx,
     emissiveTexture,
-    size,
+    texWidth,
+    texHeight,
+    flipY: texture.flipY,
     emissiveMarks: [],
     originalImageData,
   };
@@ -157,11 +197,10 @@ function paintGouge(
   now: number,
   emissiveLife?: number
 ): EmissiveMark {
-  const { ctx, texture, size } = painter;
-  const x = uv.x * size;
-  const y = (1 - uv.y) * size;
+  const { ctx, texture, texWidth, texHeight, flipY } = painter;
+  const { x, y } = uvToCanvas(uv, texWidth, texHeight, flipY);
   const sizeJitter = 1 + (Math.random() * 2 - 1) * SIZE_VARIANCE;
-  const radius = size * 0.0012 * sizeJitter;
+  const radius = texMin(painter) * 0.0012 * sizeJitter;
   const angle = Math.random() * Math.PI * 2;
   const longStreak = Math.random() < 0.25;
   const stretch = longStreak ? 8 + Math.random() * 6 : 2.2;
@@ -228,10 +267,9 @@ function paintGouge(
 
 // Small black soot dot or short streak — permanent base damage, no emissive glow
 function paintSoot(painter: PainterInfo, uv: THREE.Vector2): void {
-  const { ctx, texture, size } = painter;
-  const x = uv.x * size;
-  const y = (1 - uv.y) * size;
-  const radius = size * 0.0006 * (0.4 + Math.random() * 1.2);
+  const { ctx, texture, texWidth, texHeight, flipY } = painter;
+  const { x, y } = uvToCanvas(uv, texWidth, texHeight, flipY);
+  const radius = texMin(painter) * 0.0006 * (0.4 + Math.random() * 1.2);
   const angle = Math.random() * Math.PI * 2;
 
   ctx.save();
@@ -265,11 +303,10 @@ function paintSoot(painter: PainterInfo, uv: THREE.Vector2): void {
 
 // Deep hull cut — long slash burned into the hull with persistent emissive glow
 function paintCut(painter: PainterInfo, uv: THREE.Vector2, now: number): EmissiveMark {
-  const { ctx, texture, size } = painter;
-  const x = uv.x * size;
-  const y = (1 - uv.y) * size;
+  const { ctx, texture, texWidth, texHeight, flipY } = painter;
+  const { x, y } = uvToCanvas(uv, texWidth, texHeight, flipY);
   const sizeJitter = 1 + (Math.random() * 2 - 1) * SIZE_VARIANCE * 0.5;
-  const radius = size * 0.0016 * sizeJitter;
+  const radius = texMin(painter) * 0.0016 * sizeJitter;
   const angle = Math.random() * Math.PI * 2;
   const stretch = 10 + Math.random() * 9; // always a long slash
   const colorShift = Math.random() * ORANGE_SHIFT_MAX;
@@ -335,9 +372,8 @@ function paintCut(painter: PainterInfo, uv: THREE.Vector2, now: number): Emissiv
 }
 
 function drawEmissiveMark(painter: PainterInfo, mark: EmissiveMark, progress: number): void {
-  const { emissiveCtx, size } = painter;
-  const x = mark.uv.x * size;
-  const y = (1 - mark.uv.y) * size;
+  const { emissiveCtx, texWidth, texHeight, flipY } = painter;
+  const { x, y } = uvToCanvas(mark.uv, texWidth, texHeight, flipY);
   const rimRadius = mark.radius * 1.18;
   const heat = 1 - progress;
 
@@ -496,7 +532,7 @@ export default function RailgunDamagePainter({ shipGroupRef }: RailgunDamagePain
     // ── Emissive fade / cool update ────────────────────────────────────────────
     for (const painter of paintersListRef.current) {
       if (!painter.emissiveMarks.length) continue;
-      painter.emissiveCtx.clearRect(0, 0, painter.size, painter.size);
+      painter.emissiveCtx.clearRect(0, 0, painter.texWidth, painter.texHeight);
       let alive = 0;
       for (const mark of painter.emissiveMarks) {
         const age = now - mark.createdAt;
@@ -614,7 +650,7 @@ export default function RailgunDamagePainter({ shipGroupRef }: RailgunDamagePain
       for (const painter of paintersListRef.current) {
         painter.ctx.putImageData(painter.originalImageData, 0, 0);
         painter.texture.needsUpdate = true;
-        painter.emissiveCtx.clearRect(0, 0, painter.size, painter.size);
+        painter.emissiveCtx.clearRect(0, 0, painter.texWidth, painter.texHeight);
         painter.emissiveMarks = [];
         painter.emissiveTexture.needsUpdate = true;
       }

@@ -7,6 +7,7 @@ import {
   cinematicThrustReverse,
 } from '../../context/ShipState';
 import { cinematicAutopilotActive } from '../../context/CinematicState';
+import { radiationExposureRef } from '../../context/RadiationScan';
 
 export function checkShipDestruction({
   destroyedFired,
@@ -60,6 +61,7 @@ export function checkShipDestruction({
         (Math.random() * 2 - 1) * 0.6
       );
     }
-    window.dispatchEvent(new CustomEvent('ShipDestroyed'));
+    const cause = radiationExposureRef.current > 0 ? 'radiation' : 'hull';
+    window.dispatchEvent(new CustomEvent('ShipDestroyed', { detail: { cause } }));
   }
 }

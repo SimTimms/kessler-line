@@ -15,6 +15,9 @@ import {
   SHIP_PARTICLE_SPEED_MIN,
   SHIP_PARTICLE_SPEED_MAX,
 } from '../../config/particleConfig';
+import RadiationZones from '../RadiationZones';
+import { RADIATION_ZONES } from './radationConfigTutorial';
+import { UBoat } from './UBoat';
 
 interface LunarTutorialSceneProps {
   onStepAdvance: () => void;
@@ -42,8 +45,8 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
         <fogExp2 attach="fog" args={[fogColor, 0.0005]} />
         <DefaultLighting
           color={lightColor}
-          intensity={1}
-          ambientIntensity={0.2}
+          intensity={2}
+          ambientIntensity={0.02}
           position={[0, 4000, 40000]}
         />
         <TutorialFollowCamera followTarget={shipPosRef} followOffset={TUTORIAL_FOLLOW_OFFSET} />
@@ -64,6 +67,10 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
               speedGateMax: SHIP_PARTICLE_SPEED_MAX,
             }}
           />
+          <group position={[-1600, 0, 2000]}>
+            <UBoat />
+          </group>
+          <RadiationZones radiationZones={RADIATION_ZONES} />
         </Suspense>
         <ShipDepthOfField saturation={-1} />
       </Canvas>

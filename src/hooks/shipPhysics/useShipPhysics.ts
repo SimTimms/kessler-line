@@ -125,6 +125,24 @@ export function useShipPhysics({
   // so we must sync HUD / useDockingState with the same ShipDocked path as live docking.
   // Defer past sibling useEffects (NavHUD registers listeners after this ship mounts).
   useEffect(() => {
+    const onTutorialShipReset = () => {
+      destroyedFired.current = false;
+      destroyedSpinSet.current = false;
+      velocity.current.set(0, 0, 0);
+      angularVelocity.current = 0;
+      angularVelocity3.current.set(0, 0, 0);
+      didApplyInitialVelocity.current = false;
+      if (groupRef.current) {
+        groupRef.current.position.set(0, 0, 0);
+        physicsPosition.current.set(0, 0, 0);
+        renderPosition.current.set(0, 0, 0);
+      }
+    };
+    window.addEventListener('TutorialShipReset', onTutorialShipReset);
+    return () => window.removeEventListener('TutorialShipReset', onTutorialShipReset);
+  }, [groupRef]);
+
+  useEffect(() => {
     if (!initialDockedTo) return;
     let cancelled = false;
     const bay = getCollidables().find((c) => c.id === initialDockedTo);

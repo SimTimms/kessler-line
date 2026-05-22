@@ -58,6 +58,7 @@ import { advanceLoadStage, useLoadStage } from '../context/LoadStageStore';
 import DefaultEnvironment from './Environment';
 import SunGravity from './Environment/SunGravity';
 import { defaultConfig } from '../components/Planets/Neptune/NeptuneInnerWispyRing';
+import { RADIATION_ZONES } from '../config/radiationConfig';
 
 const STAGE_2_GLB_URLS = ['/space_station.glb', '/fuel-station.glb', '/container.glb'] as const;
 const STAGE_3_GLB_URLS = ['/untitled.gltf', '/large_ship.glb', '/supportDrone.glb'] as const;
@@ -176,7 +177,7 @@ export default function Scene() {
           <NeptuneDustRing />
           <NeptuneInnerWispyRing config={defaultConfig} />
           <BrokenVenusMoon />
-          <RadiationZones />
+          <RadiationZones radiationZones={RADIATION_ZONES} />
           <StartZoneAsteroidCluster center={START_ZONE_CENTER} />
           <SpaceDebris />
           <DistressBeaconField />
