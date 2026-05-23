@@ -12,6 +12,7 @@ import {
   LASER_SPOTLIGHT_DECAY,
   LASER_SPOTLIGHT_DISTANCE,
 } from '../../config/combatConfig';
+import { spotlightOnRef } from '../../context/SpotlightState';
 
 interface LaserRayProps {
   shipGroupRef: { current: THREE.Group | null };
@@ -24,7 +25,6 @@ interface LaserRayProps {
 // Cylinder geometry is along the Y axis — we rotate it to align with the beam direction.
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
-export const spotlightOnRef = { current: false };
 // Module-level scratch objects to avoid per-frame allocations.
 const _camRaycaster = new THREE.Raycaster();
 const _shipRaycaster = new THREE.Raycaster();
@@ -112,12 +112,15 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
     _camRaycaster.setFromCamera(mouseNDC.current, camera);
     _target.copy(_camRaycaster.ray.origin).addScaledVector(_camRaycaster.ray.direction, 1000);
 
-    // Spotlight always tracks the cursor regardless of firing state.
+    const spotlightActive = spotlightOnRef.current;
+    spotLightRef.current.intensity = spotlightActive ? LASER_SPOTLIGHT_INTENSITY : 0;
+
+    // Spotlight tracks the cursor when enabled via the HUD.
     spotLightRef.current.position.copy(_origin);
     spotTargetRef.current.position.copy(_target);
 
-    // Spotlight-on-settlement detection (runs even when not firing — light is always on).
-    if (detectSettlement) {
+    // Spotlight-on-settlement detection (tutorial).
+    if (detectSettlement && spotlightActive) {
       _dir.subVectors(_target, _origin);
       const dirLen = _dir.length();
       if (dirLen > 0.001) {

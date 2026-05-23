@@ -1,3 +1,5 @@
+import { clearResourceRates } from '../../context/ResourceRates';
+import { spotlightOnRef } from '../../context/SpotlightState';
 import { shipPosRef } from '../../context/ShipPos';
 import {
   radiationExposureRef,
@@ -29,6 +31,8 @@ export function resetTutorialResourcesRun() {
   radiationExposureRef.current = 0;
   radiationOnRef.current = false;
   radiationRangeRef.current = 0;
+  spotlightOnRef.current = false;
+  clearResourceRates();
   tutorialStepRef.current = 0;
   window.dispatchEvent(new CustomEvent('RepairShip'));
   window.dispatchEvent(new CustomEvent('TutorialShipReset'));

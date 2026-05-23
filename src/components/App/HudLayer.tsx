@@ -13,7 +13,7 @@ import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
 import CinematicOverlay from '../Cinematic/CinematicOverlay';
 import ContactsHUD from '../ContactsHUD/ContactsHUD';
 import RadioChatterStream from '../Radio/RadioChatterStream';
-import { spotlightOnRef } from '../Combat/LaserRay';
+import { spotlightOnRef } from '../../context/SpotlightState';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { proximityScanOnRef } from '../../context/ProximityScan';

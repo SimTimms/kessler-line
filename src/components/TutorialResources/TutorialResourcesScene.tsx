@@ -18,6 +18,18 @@ import {
 import RadiationZones from '../RadiationZones';
 import { RADIATION_ZONES } from './radationConfigTutorial';
 import { UBoat } from './UBoat';
+import LaserRay from '../Combat/LaserRay';
+import ProximityHighlight from '../Proximity/ProximityHighlight';
+import ScannerRangeRings from '../Scanners/ScannerRangeRings';
+import StartZoneAsteroidCluster from '../Environment/StartZoneAsteroidCluster';
+import {
+  TUTORIAL_RESOURCES_ASTEROID_CENTER,
+  TUTORIAL_RESOURCES_ASTEROID_COUNT,
+  TUTORIAL_RESOURCES_ASTEROID_INNER_RADIUS,
+  TUTORIAL_RESOURCES_ASTEROID_OUTER_RADIUS,
+  TUTORIAL_RESOURCES_ASTEROID_SEED,
+  TUTORIAL_RESOURCES_ASTEROID_COLLIDABLE_PREFIX,
+} from './tutorialResourcesConfig';
 
 interface LunarTutorialSceneProps {
   onStepAdvance: () => void;
@@ -54,6 +66,15 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
         <Suspense fallback={null}>
           <LunarLandscape />
           <LunarSettlement />
+          <StartZoneAsteroidCluster
+            center={TUTORIAL_RESOURCES_ASTEROID_CENTER}
+            count={TUTORIAL_RESOURCES_ASTEROID_COUNT}
+            innerRadius={TUTORIAL_RESOURCES_ASTEROID_INNER_RADIUS}
+            outerRadius={TUTORIAL_RESOURCES_ASTEROID_OUTER_RADIUS}
+            seed={TUTORIAL_RESOURCES_ASTEROID_SEED}
+            registerCollidables
+            collidableIdPrefix={TUTORIAL_RESOURCES_ASTEROID_COLLIDABLE_PREFIX}
+          />
           <Spaceship
             url="/shuttle-low-british.glb"
             shipGroupRef={spaceshipGroupRef}
@@ -71,6 +92,9 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
             <UBoat />
           </group>
           <RadiationZones radiationZones={RADIATION_ZONES} />
+          <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+          <ProximityHighlight />
+          <ScannerRangeRings />
         </Suspense>
         <ShipDepthOfField saturation={-1} />
       </Canvas>

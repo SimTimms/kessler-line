@@ -18,7 +18,7 @@ import NavHudKeyBinding from '../App/NavHudKeyBinding';
 import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
 import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
 import PowerHUD from '../Huds/PowerHUD/PowerHUD';
-import { spotlightOnRef } from '../Combat/LaserRay';
+import { spotlightOnRef } from '../../context/SpotlightState';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { proximityScanOnRef } from '../../context/ProximityScan';

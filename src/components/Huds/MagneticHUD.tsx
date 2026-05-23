@@ -144,7 +144,7 @@ export default function MagneticHUD() {
         const distText = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
 
         marker.root.style.display = 'flex';
-        marker.label.textContent = `${target.label}\n${distText}\n${relVelStr}`;
+        marker.label.textContent = `${target.label} - ${distText}\n${relVelStr}`;
 
         if (onScreen) {
           const SIZE = 28;

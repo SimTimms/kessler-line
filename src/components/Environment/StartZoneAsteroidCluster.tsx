@@ -1,10 +1,16 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
+import {
+  ASTEROID_CLUSTER_COLLIDER_Y_MIN,
+  ASTEROID_CLUSTER_COLLIDER_Y_MAX,
+} from '../../config/particleConfig';
 
-const COUNT = 380;
-const INNER_RADIUS = 80;
-const OUTER_RADIUS = 2400;
+const DEFAULT_COUNT = 380;
+const DEFAULT_INNER_RADIUS = 80;
+const DEFAULT_OUTER_RADIUS = 2400;
+const DEFAULT_SEED = 93847;
 
 function mulberry32(seed: number): () => number {
   let a = seed;
@@ -45,25 +51,45 @@ const craterBumpTexture = (() => {
   return new THREE.CanvasTexture(canvas);
 })();
 
-interface StartZoneAsteroidClusterProps {
+export interface StartZoneAsteroidClusterProps {
   center: [number, number, number];
+  count?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  seed?: number;
+  /** Register sphere colliders for proximity scan and ship collision. */
+  registerCollidables?: boolean;
+  collidableIdPrefix?: string;
+  /** Only asteroids with world Y in [collidableYMin, collidableYMax] are registered. */
+  collidableYMin?: number;
+  collidableYMax?: number;
 }
 
-export default function StartZoneAsteroidCluster({ center }: StartZoneAsteroidClusterProps) {
+export default function StartZoneAsteroidCluster({
+  center,
+  count = DEFAULT_COUNT,
+  innerRadius = DEFAULT_INNER_RADIUS,
+  outerRadius = DEFAULT_OUTER_RADIUS,
+  seed = DEFAULT_SEED,
+  registerCollidables = false,
+  collidableIdPrefix = 'cluster-asteroid',
+  collidableYMin = ASTEROID_CLUSTER_COLLIDER_Y_MIN,
+  collidableYMax = ASTEROID_CLUSTER_COLLIDER_Y_MAX,
+}: StartZoneAsteroidClusterProps) {
   const icosRef = useRef<THREE.InstancedMesh>(null!);
   const octaRef = useRef<THREE.InstancedMesh>(null!);
-  const countEach = Math.ceil(COUNT / 2);
+  const countEach = Math.ceil(count / 2);
 
   const asteroidData = useMemo<AsteroidData[][]>(() => {
-    const rng = mulberry32(93847);
+    const rng = mulberry32(seed);
     const icos: AsteroidData[] = [];
     const octa: AsteroidData[] = [];
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       // Spherical distribution biased toward inner region
       const theta = rng() * Math.PI * 2;
       const phi = Math.acos(2 * rng() - 1);
-      const r = INNER_RADIUS + (OUTER_RADIUS - INNER_RADIUS) * Math.pow(rng(), 0.7);
+      const r = innerRadius + (outerRadius - innerRadius) * Math.pow(rng(), 0.7);
       const x = r * Math.sin(phi) * Math.cos(theta);
       const y = r * Math.sin(phi) * Math.sin(theta) * 0.25; // disc-shaped cluster
       const z = r * Math.cos(phi);
@@ -102,11 +128,7 @@ export default function StartZoneAsteroidCluster({ center }: StartZoneAsteroidCl
       }
 
       const entry: AsteroidData = {
-        position: new THREE.Vector3(
-          center[0] + x,
-          center[1] + y,
-          center[2] + z
-        ),
+        position: new THREE.Vector3(center[0] + x, center[1] + y, center[2] + z),
         scale,
         rotation,
         rotSpeed,
@@ -118,18 +140,53 @@ export default function StartZoneAsteroidCluster({ center }: StartZoneAsteroidCl
     }
 
     return [icos, octa];
-  }, [center]);
+  }, [center, count, innerRadius, outerRadius, seed]);
+
+  const collidableAsteroids = useMemo(() => {
+    if (!registerCollidables) return [];
+    const result: { id: string; worldPos: THREE.Vector3; radius: number }[] = [];
+    const typeNames = ['icos', 'octa'] as const;
+    asteroidData.forEach((group, typeIdx) => {
+      group.forEach((data, i) => {
+        const y = data.position.y;
+        if (y < collidableYMin || y > collidableYMax) return;
+        result.push({
+          id: `${collidableIdPrefix}-${typeNames[typeIdx]}-${i}`,
+          worldPos: data.position.clone(),
+          radius: Math.max(data.scale.x, data.scale.y, data.scale.z),
+        });
+      });
+    });
+    return result;
+  }, [asteroidData, registerCollidables, collidableIdPrefix, collidableYMin, collidableYMax]);
+
+  useEffect(() => {
+    if (!registerCollidables) return;
+    for (const ast of collidableAsteroids) {
+      const pos = ast.worldPos;
+      registerCollidable({
+        id: ast.id,
+        getWorldPosition: (target) => target.copy(pos),
+        shape: { type: 'sphere', radius: ast.radius },
+      });
+    }
+    return () => {
+      for (const ast of collidableAsteroids) {
+        unregisterCollidable(ast.id);
+      }
+    };
+  }, [collidableAsteroids, registerCollidables]);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const material = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: '#ffffff',
-        roughness: 0.93,
+        color: '#666666',
+        roughness: 0.3,
         metalness: 0.1,
         bumpMap: craterBumpTexture,
-        bumpScale: 1.0,
+        bumpScale: 10.0,
       }),
     []
   );
@@ -167,8 +224,8 @@ export default function StartZoneAsteroidCluster({ center }: StartZoneAsteroidCl
     });
   });
 
-  const icosGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 0), []);
-  const octaGeo = useMemo(() => new THREE.OctahedronGeometry(1, 0), []);
+  const icosGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 1), []);
+  const octaGeo = useMemo(() => new THREE.OctahedronGeometry(1, 1), []);
 
   return (
     <>

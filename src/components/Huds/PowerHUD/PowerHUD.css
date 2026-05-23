@@ -66,6 +66,33 @@
   box-shadow: 0 0 4px rgba(0, 200, 255, 0.5);
 }
 
+.hud-btn {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+
+.power-hud-value {
+  white-space: nowrap;
+}
+
+.power-hud-rate {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.power-hud-rate--gain {
+  color: rgba(136, 255, 68, 0.95);
+  text-shadow: 0 0 6px rgba(136, 255, 68, 0.35);
+}
+
+.power-hud-rate--loss {
+  color: rgba(255, 130, 90, 0.95);
+  text-shadow: 0 0 6px rgba(255, 100, 60, 0.25);
+}
+
 .power-hud-divider {
   color: rgba(0, 200, 255, 0.4);
   margin-top: 8px;

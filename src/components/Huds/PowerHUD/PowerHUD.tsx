@@ -17,8 +17,10 @@ import {
   gforceLevel,
   resourceLevel,
   levelToColor,
+  formatResourceRate,
   type WarnLevel,
 } from './PowerHUDHelpers';
+import { resourceRateRefs } from '../../../context/ResourceRates';
 import Cargo from './Cargo/Cargo';
 
 interface StatDef {
@@ -26,6 +28,7 @@ interface StatDef {
   label: string;
   icon: LucideIcon;
   value: string;
+  ratePerSec: number;
   level: WarnLevel;
   group: 'orange' | 'blue';
 }
@@ -60,6 +63,7 @@ function StatCell({
   highlight: boolean;
 }) {
   const Icon = stat.icon;
+  const rateLabel = formatResourceRate(stat.ratePerSec);
   return (
     <div className={`flex-column ${disabled ? 'hud-button-disabled' : ''} ${stat.group}`}>
       <div className="power-hud-label">{stat.label}</div>
@@ -68,7 +72,15 @@ function StatCell({
         style={{ color: levelToColor(stat.level) }}
       >
         <Icon size={13} strokeWidth={1.5} />
-        {stat.value}
+        <span className="power-hud-value">{stat.value}</span>
+        {rateLabel && (
+          <span
+            className={`power-hud-rate ${stat.ratePerSec > 0 ? 'power-hud-rate--gain' : 'power-hud-rate--loss'}`}
+            title="per second"
+          >
+            {rateLabel}
+          </span>
+        )}
         <WarningBadge level={stat.level} />
       </div>
     </div>
@@ -132,6 +144,7 @@ export default function PowerHUD({
       label: 'VELOCITY',
       icon: Activity,
       value: `${displayVelocity.toFixed(1)} m/s`,
+      ratePerSec: 0,
       level: velocityLevel(displayVelocity),
       group: 'orange',
     },
@@ -140,6 +153,7 @@ export default function PowerHUD({
       label: 'G-FORCE',
       icon: Gauge,
       value: `${displayGForce.toFixed(1)}g`,
+      ratePerSec: 0,
       level: gforceLevel(displayGForce),
       group: 'orange',
     },
@@ -151,6 +165,7 @@ export default function PowerHUD({
       label: 'HULL INTEGRITY',
       icon: Shield,
       value: `${displayHull}`,
+      ratePerSec: resourceRateRefs.hull.current,
       level: resourceLevel(displayHull),
       group: 'blue',
     },
@@ -159,6 +174,7 @@ export default function PowerHUD({
       label: 'POWER',
       icon: Zap,
       value: `${displayPower}`,
+      ratePerSec: resourceRateRefs.power.current,
       level: resourceLevel(displayPower),
       group: 'blue',
     },
@@ -168,6 +184,7 @@ export default function PowerHUD({
       label: 'PROPELLENT',
       icon: Droplets,
       value: `${displayFuel}`,
+      ratePerSec: resourceRateRefs.fuel.current,
       level: resourceLevel(displayFuel),
       group: 'blue',
     },
@@ -176,6 +193,7 @@ export default function PowerHUD({
       label: 'O2',
       icon: Wind,
       value: `${displayO2}`,
+      ratePerSec: resourceRateRefs.o2.current,
       level: resourceLevel(displayO2),
       group: 'blue',
     },

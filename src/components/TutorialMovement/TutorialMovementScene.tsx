@@ -10,6 +10,7 @@ import DefaultLighting from '../DefaultLighting';
 import LunarLandscape from '../LunarLandscape/LunarLandscape';
 import LunarSettlement from '../LunarLandscape/LunarSettlement';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
+import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import {
   SHIP_PARTICLE_COUNT,
   SHIP_PARTICLE_SPEED_MIN,
@@ -64,6 +65,7 @@ export default memo(function TutorialMovementScene({ onStepAdvance }: LunarTutor
               speedGateMax: SHIP_PARTICLE_SPEED_MAX,
             }}
           />
+          <ScannerRangeRings />
         </Suspense>
         <ShipDepthOfField saturation={-1} />
       </Canvas>

@@ -6,7 +6,10 @@ import * as THREE from 'three';
 import type { RadiationZoneDef } from '../config/radiationConfig';
 import { radiationOnRef, radiationRangeRef } from '../context/RadiationScan';
 import { shipPosRef } from '../context/ShipPos';
-import { gravityBodies } from '../context/GravityRegistry';
+import {
+  resolveRadiationZoneWorldPosition,
+  horizontalDistanceToRadiationZone,
+} from '../utils/radiationZonePosition';
 import './RadiationZones.css';
 
 const RAD_COLOR = new THREE.Color('#88ff44');
@@ -178,16 +181,17 @@ export default function RadiationZones({ radiationZones }: RadiationZonesProps) 
       const group = groupRefs.current[i];
       if (!group) continue;
 
-      if (zone.planetName) {
-        const body = gravityBodies.get(zone.planetName);
-        if (body) zonePos[i].copy(body.position);
+      if (!resolveRadiationZoneWorldPosition(zone, zonePos[i])) {
+        if (visibleRef.current[i]) {
+          visibleRef.current[i] = false;
+          visibilityChanged = true;
+        }
+        continue;
       }
 
       group.position.copy(zonePos[i]);
 
-      const dx = shipPosRef.current.x - zonePos[i].x;
-      const dz = shipPosRef.current.z - zonePos[i].z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
+      const dist = horizontalDistanceToRadiationZone(shipPosRef.current, zonePos[i]);
       const visible = scanOn && range > 0 && dist <= range;
 
       if (visibleRef.current[i] !== visible) {

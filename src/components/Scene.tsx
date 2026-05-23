@@ -21,6 +21,7 @@ import EjectedCargo from './WorldObjects/EjectedCargo';
 import SpaceDebris from './WorldObjects/SpaceDebris';
 import CargoContainerField from './WorldObjects/CargoContainerField';
 import ProximityHighlight from './Proximity/ProximityHighlight';
+import ScannerRangeRings from './Scanners/ScannerRangeRings';
 import { sceneCamera } from '../context/CameraRef';
 import AIShip from './NPCs/AIShip';
 import AIScrapper from './NPCs/AIScrapper';
@@ -264,6 +265,7 @@ export default function Scene() {
           />
           <RailgunWarning shipGroupRef={spaceshipGroupRef} />
           <ProximityHighlight />
+          <ScannerRangeRings />
           {/* CinematicController starts its intro timers on mount — fire only
               once the player ship is in the scene and the world is fully set up */}
           <CinematicController />

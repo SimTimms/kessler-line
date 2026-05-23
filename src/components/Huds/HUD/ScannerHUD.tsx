@@ -8,13 +8,7 @@ import { driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
 import { radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
 import './ScannerHUD.css';
-import {
-  SCAN_RANGES,
-  DRIVE_SIGNATURE_RANGES,
-  MAGNETIC_RANGES,
-  RADIO_RANGES,
-  RADIATION_RANGES,
-} from '../../../config/scanRanges';
+import { getScannerRange } from '../../../config/scanRanges';
 import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
 
@@ -115,7 +109,7 @@ export const ScannerHUD = ({
       isActive: magneticOn,
       onSideEffect: (on, level) => {
         magneticOnRef.current = on;
-        magneticScanRangeRef.current = MAGNETIC_RANGES[level - 1];
+        magneticScanRangeRef.current = getScannerRange('magnet', level);
         setMagneticOn(on);
         if (level === 5) window.dispatchEvent(new CustomEvent('MagnetScannerMaxed'));
         if (!on) window.dispatchEvent(new CustomEvent('MagnetScannerOff'));
@@ -128,7 +122,7 @@ export const ScannerHUD = ({
       isActive: driveSignatureOn,
       onSideEffect: (on, level) => {
         driveSignatureOnRef.current = on;
-        driveSignatureRangeRef.current = DRIVE_SIGNATURE_RANGES[level - 1];
+        driveSignatureRangeRef.current = getScannerRange('drive', level);
         setDriveSignatureOn(on);
         if (level === 5) window.dispatchEvent(new CustomEvent('DriveSignatureAt5'));
       },
@@ -140,7 +134,7 @@ export const ScannerHUD = ({
       isActive: proximity,
       onSideEffect: (on, level) => {
         proximityScanOnRef.current = on;
-        proximityScanRangeRef.current = SCAN_RANGES[level - 1];
+        proximityScanRangeRef.current = getScannerRange('proximity', level);
         setProximity(on);
       },
     },
@@ -151,7 +145,7 @@ export const ScannerHUD = ({
       isActive: radioOn,
       onSideEffect: (on, level) => {
         radioOnRef.current = on;
-        radioRangeRef.current = RADIO_RANGES[level - 1] * 5;
+        radioRangeRef.current = getScannerRange('radio', level);
         setRadioOn(on);
       },
     },
@@ -162,7 +156,7 @@ export const ScannerHUD = ({
       isActive: radiationOn,
       onSideEffect: (on, level) => {
         radiationOnRef.current = on;
-        radiationRangeRef.current = RADIATION_RANGES[level - 1];
+        radiationRangeRef.current = getScannerRange('radiation', level);
         setRadiationOn(on);
       },
     },

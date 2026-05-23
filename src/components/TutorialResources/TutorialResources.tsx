@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { radiationOnRef, radiationRangeRef, radiationExposureRef } from '../../context/RadiationScan';
+import {
+  radiationOnRef,
+  radiationRangeRef,
+  radiationExposureRef,
+} from '../../context/RadiationScan';
 import {
   activeRadiationZonesRef,
   activeRadiationHullDrainRateRef,
@@ -21,16 +25,17 @@ import type { TutorialMenuSelection } from '../../config/gameModes';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
 import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
 import PowerHUD from '../Huds/PowerHUD/PowerHUD';
-import { spotlightOnRef } from '../Combat/LaserRay';
+import { spotlightOnRef } from '../../context/SpotlightState';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { proximityScanOnRef } from '../../context/ProximityScan';
 import { radioOnRef } from '../../context/RadioState';
-import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 import { resetTutorialResourcesRun } from './resetTutorialResourcesRun';
-
-const defaultDisabledHudElements = [];
+import MagneticHUD from '../Huds/MagneticHUD';
+import DriveSignatureHUD from '../Huds/DriveSignatureHUD';
+import ProximityHUD from '../Proximity/ProximityHUD';
+import RadiationHUD from '../RadiationHUD';
 
 interface Props {
   onComplete: () => void;
@@ -115,6 +120,10 @@ export default function TutorialResources({ onComplete, tutorialMode }: Props) {
         focusElements={activeHudElementsState}
         disableElements={disabledHudElementsState}
       />
+      <MagneticHUD />
+      <DriveSignatureHUD />
+      <ProximityHUD />
+      <RadiationHUD />
       <DeathOverlay
         key={deathOverlayKey}
         restartLabel="Restart Tutorial"

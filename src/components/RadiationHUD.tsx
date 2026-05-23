@@ -2,9 +2,12 @@ import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { sceneCamera } from '../context/CameraRef';
 import { radiationOnRef, radiationRangeRef } from '../context/RadiationScan';
-import { RADIATION_ZONES } from '../config/radiationConfig';
-import { minimapShipPosition } from '../context/MinimapShipPosition';
-import { gravityBodies } from '../context/GravityRegistry';
+import { activeRadiationZonesRef } from '../context/ActiveRadiationZones';
+import { shipPosRef } from '../context/ShipPos';
+import {
+  resolveRadiationZoneWorldPosition,
+  horizontalDistanceToRadiationZone,
+} from '../utils/radiationZonePosition';
 
 const EDGE_PAD = 30;
 const RAD_COLOR = '#88ff44';
@@ -55,48 +58,63 @@ function styleOffScreen(marker: Marker) {
 
 export default function RadiationHUD() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<Marker[]>([]);
+  const zonePosRef = useRef(new THREE.Vector3());
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const markers: Marker[] = RADIATION_ZONES.map(() => createMarker(container));
     const _vec = new THREE.Vector3();
-    // Current zone positions — updated each frame from gravityBodies for planet-linked zones
-    const zonePos = RADIATION_ZONES.map((z) => z.position?.clone() ?? new THREE.Vector3());
+
+    const ensureMarkers = (count: number) => {
+      const markers = markersRef.current;
+      while (markers.length < count) {
+        markers.push(createMarker(container));
+      }
+      for (let i = count; i < markers.length; i++) {
+        markers[i].root.style.display = 'none';
+      }
+    };
 
     let rafId: number;
     const update = () => {
       rafId = requestAnimationFrame(update);
+
+      const zones = activeRadiationZonesRef.current;
+      const markers = markersRef.current;
 
       if (!radiationOnRef.current || !sceneCamera.current) {
         for (const m of markers) m.root.style.display = 'none';
         return;
       }
 
+      ensureMarkers(zones.length);
+
       const camera = sceneCamera.current;
       const W = window.innerWidth;
       const H = window.innerHeight;
       const cx = W * 0.5;
       const cy = H * 0.5;
+      const shipPos = shipPosRef.current;
+      const zonePos = zonePosRef.current;
 
-      for (let i = 0; i < RADIATION_ZONES.length; i++) {
-        const zone = RADIATION_ZONES[i];
+      for (let i = 0; i < zones.length; i++) {
+        const zone = zones[i];
         const marker = markers[i];
 
-        // Sync planet-linked zone positions
-        if (zone.planetName) {
-          const body = gravityBodies.get(zone.planetName);
-          if (body) zonePos[i].copy(body.position);
+        if (!resolveRadiationZoneWorldPosition(zone, zonePos)) {
+          marker.root.style.display = 'none';
+          continue;
         }
 
-        const dist = minimapShipPosition.distanceTo(zonePos[i]);
+        const dist = horizontalDistanceToRadiationZone(shipPos, zonePos);
         if (dist > radiationRangeRef.current) {
           marker.root.style.display = 'none';
           continue;
         }
 
-        _vec.copy(zonePos[i]);
+        _vec.copy(zonePos);
         _vec.project(camera);
 
         const isBehind = _vec.z > 1;
@@ -105,20 +123,25 @@ export default function RadiationHUD() {
 
         const onScreen =
           !isBehind &&
-          sx > EDGE_PAD && sx < W - EDGE_PAD &&
-          sy > EDGE_PAD && sy < H - EDGE_PAD;
+          sx > EDGE_PAD &&
+          sx < W - EDGE_PAD &&
+          sy > EDGE_PAD &&
+          sy < H - EDGE_PAD;
 
         const distText =
           dist >= 1000 ? `${(dist / 1000).toFixed(1)}km` : `${Math.round(dist)}m`;
 
-        marker.root.style.display = 'block';
+        marker.root.style.display = 'flex';
+        marker.root.style.flexDirection = 'column';
+        marker.root.style.alignItems = 'center';
         marker.label.textContent = `\u26A0 ${zone.label} [${distText}]`;
 
         if (onScreen) {
           const SIZE = 28;
           styleOnScreen(marker, SIZE);
-          marker.root.style.left = `${sx - SIZE * 0.5}px`;
-          marker.root.style.top = `${sy - SIZE * 0.5}px`;
+          marker.root.style.left = `${sx}px`;
+          marker.root.style.top = `${sy}px`;
+          marker.root.style.transform = 'translate(-50%, -50%)';
         } else {
           if (isBehind) {
             sx = W - sx;
@@ -133,8 +156,9 @@ export default function RadiationHUD() {
           const ex = scale < 1 ? cx + dx * scale : sx;
           const ey = scale < 1 ? cy + dy * scale : sy;
           styleOffScreen(marker);
-          marker.root.style.left = `${ex - 7}px`;
-          marker.root.style.top = `${ey - 7}px`;
+          marker.root.style.left = `${ex}px`;
+          marker.root.style.top = `${ey}px`;
+          marker.root.style.transform = 'translate(-50%, -50%)';
         }
       }
     };
@@ -142,7 +166,8 @@ export default function RadiationHUD() {
     rafId = requestAnimationFrame(update);
     return () => {
       cancelAnimationFrame(rafId);
-      for (const m of markers) m.root.remove();
+      for (const m of markersRef.current) m.root.remove();
+      markersRef.current = [];
     };
   }, []);
 

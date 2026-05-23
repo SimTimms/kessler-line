@@ -23,3 +23,14 @@ export function velocityLevel(val: number): WarnLevel {
   if (val > 150) return 'orange';
   return null;
 }
+
+const RATE_EPSILON = 0.004;
+
+/** Format signed per-second rate for HUD, e.g. −2 or +10 */
+export function formatResourceRate(ratePerSec: number): string | null {
+  if (Math.abs(ratePerSec) < RATE_EPSILON) return null;
+  const sign = ratePerSec > 0 ? '+' : '−';
+  const abs = Math.abs(ratePerSec);
+  const digits = abs >= 10 ? abs.toFixed(0) : abs >= 1 ? abs.toFixed(1) : abs.toFixed(2);
+  return `${sign}${digits}`;
+}

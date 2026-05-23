@@ -10,7 +10,9 @@ const EDGE_PAD = 30;
 
 function getLabelFromId(id: string): string {
   if (id.startsWith('debris-')) return 'DEBRIS';
-  if (id.startsWith('asteroid-')) return 'ASTEROID';
+  if (id.startsWith('asteroid-') || id.startsWith('tutorial-asteroid-') || id.startsWith('cluster-asteroid-')) {
+    return 'ASTEROID';
+  }
   if (id.startsWith('ai-ship')) return 'VESSEL';
   if (id === 'space-station') return 'STATION';
   if (id === 'fuel-station') return 'SIRIX STATION';

@@ -23,6 +23,9 @@ export const ASTEROID_BELT_COUNT_PER_TYPE = 520;
 export const ASTEROID_BELT_COLLIDER_Y_MIN = -100;
 /** Maximum world-Y for an asteroid to receive collision registration. */
 export const ASTEROID_BELT_COLLIDER_Y_MAX = 100;
+/** World-Y band for start-zone / tutorial cluster proximity and collision registration. */
+export const ASTEROID_CLUSTER_COLLIDER_Y_MIN = -20;
+export const ASTEROID_CLUSTER_COLLIDER_Y_MAX = 20;
 /** Minimum base size of an individual asteroid (before per-axis scale variance). */
 export const ASTEROID_SIZE_MIN = 10;
 /** Maximum base size of an individual asteroid (before per-axis scale variance). */

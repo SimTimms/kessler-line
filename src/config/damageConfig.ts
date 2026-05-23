@@ -2,7 +2,7 @@
 // Tuning values for hull damage, O2/fuel drain, and refill rates.
 
 // Hull damage from collisions: damage = impactSpeed × multiplier
-export const COLLISION_DAMAGE_MULTIPLIER = 0.2;
+export const COLLISION_DAMAGE_MULTIPLIER = 2;
 
 // Railgun hit damage (randomised between min and max)
 export const RAILGUN_DAMAGE_MIN = 20;

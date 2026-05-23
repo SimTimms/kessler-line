@@ -16,6 +16,7 @@ import {
   setO2,
 } from '../../context/ShipState';
 import { FUEL_REFILL_RATE, O2_REFILL_RATE, O2_DRAIN_RATE } from '../../config/damageConfig';
+import { resourceRateRefs } from '../../context/ResourceRates';
 import { zeroThrusterLights } from './thrusterLight';
 
 const _collidablePos = new THREE.Vector3();
@@ -71,9 +72,22 @@ export function applyDockedState({
   shipVelocity.set(0, 0, 0);
   shipAcceleration.current = 0;
   zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
-  if (isRefueling.current) setFuel(Math.min(100, fuel + FUEL_REFILL_RATE * rawDelta));
-  if (isTransferringO2.current) setO2(Math.min(100, o2 + O2_REFILL_RATE * rawDelta));
+
+  let fuelRate = 0;
+  let o2Rate = -O2_DRAIN_RATE;
+  if (isRefueling.current) {
+    fuelRate += FUEL_REFILL_RATE;
+    setFuel(Math.min(100, fuel + FUEL_REFILL_RATE * rawDelta));
+  }
+  if (isTransferringO2.current) {
+    o2Rate += O2_REFILL_RATE;
+    setO2(Math.min(100, o2 + O2_REFILL_RATE * rawDelta));
+  }
   setO2(Math.max(0, o2 - O2_DRAIN_RATE * rawDelta));
+
+  resourceRateRefs.power.current = 0;
+  resourceRateRefs.fuel.current = fuelRate;
+  resourceRateRefs.o2.current = o2Rate;
   // shipPosRef.current.copy(group.position);
   minimapShipPosition.copy(group.position);
   return true;

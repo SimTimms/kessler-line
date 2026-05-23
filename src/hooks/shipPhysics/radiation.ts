@@ -5,7 +5,11 @@ import {
   activeRadiationZonesRef,
   activeRadiationHullDrainRateRef,
 } from '../../context/ActiveRadiationZones';
-import { gravityBodies } from '../../context/GravityRegistry';
+import { resourceRateRefs } from '../../context/ResourceRates';
+import {
+  resolveRadiationZoneWorldPosition,
+  horizontalDistanceToRadiationZone,
+} from '../../utils/radiationZonePosition';
 
 const _zonePos = new THREE.Vector3();
 
@@ -16,19 +20,9 @@ export function applyRadiationDamage(shipPos: THREE.Vector3, dt: number) {
   for (let i = 0; i < zones.length; i++) {
     const zone = zones[i];
 
-    if (zone.planetName) {
-      const body = gravityBodies.get(zone.planetName);
-      if (!body) continue;
-      _zonePos.copy(body.position);
-    } else if (zone.position) {
-      _zonePos.copy(zone.position);
-    } else {
-      _zonePos.set(0, 0, 0);
-    }
+    if (!resolveRadiationZoneWorldPosition(zone, _zonePos)) continue;
 
-    const dx = shipPos.x - _zonePos.x;
-    const dz = shipPos.z - _zonePos.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
+    const dist = horizontalDistanceToRadiationZone(shipPos, _zonePos);
     if (dist < zone.radius) {
       const depth = (1 - dist / zone.radius) * zone.intensity;
       if (depth > totalExposure) totalExposure = depth;
@@ -38,11 +32,10 @@ export function applyRadiationDamage(shipPos: THREE.Vector3, dt: number) {
   radiationExposureRef.current = Math.min(1, totalExposure);
 
   if (totalExposure > 0) {
-    setHullIntegrity(
-      Math.max(
-        0,
-        hullIntegrity - activeRadiationHullDrainRateRef.current * totalExposure * dt
-      )
-    );
+    const hullDrainPerSec = activeRadiationHullDrainRateRef.current * totalExposure;
+    resourceRateRefs.hull.current = -hullDrainPerSec;
+    setHullIntegrity(Math.max(0, hullIntegrity - hullDrainPerSec * dt));
+  } else {
+    resourceRateRefs.hull.current = 0;
   }
 }
