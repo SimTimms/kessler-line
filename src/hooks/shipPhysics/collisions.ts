@@ -7,8 +7,12 @@ import {
   SHIP_RADIUS,
   damageHull,
 } from '../../context/ShipState';
+import { SHIP_COLLISION_SAMPLES } from '../../config/shipConfig';
 
 const _shipWorldPos = new THREE.Vector3();
+const _shipWorldQuat = new THREE.Quaternion();
+const _localSample = new THREE.Vector3();
+const _samplePos = new THREE.Vector3();
 const _collidablePos = new THREE.Vector3();
 const _collisionNormal = new THREE.Vector3();
 const _impulse = new THREE.Vector3();
@@ -24,7 +28,8 @@ function resolveEntryCollision(
   collidable: CollidableEntry,
   shipPos: THREE.Vector3,
   velocity: THREE.Vector3,
-  group: THREE.Object3D
+  group: THREE.Object3D,
+  sampleRadius = SHIP_RADIUS
 ) {
   const shape = collidable.shape;
   let colliding = false;
@@ -32,7 +37,7 @@ function resolveEntryCollision(
 
   if (shape.type === 'sphere') {
     const dist = shipPos.distanceTo(_collidablePos);
-    const minDist = SHIP_RADIUS + shape.radius;
+    const minDist = sampleRadius + shape.radius;
     if (dist < minDist && dist > 0.001) {
       colliding = true;
       overlap = minDist - dist;
@@ -55,9 +60,9 @@ function resolveEntryCollision(
     const sepY = _localShipPos.y - _closestPoint.y;
     const sepZ = _localShipPos.z - _closestPoint.z;
     const dist = Math.sqrt(sepX * sepX + sepY * sepY + sepZ * sepZ);
-    if (dist > 0.001 && dist < SHIP_RADIUS) {
+    if (dist > 0.001 && dist < sampleRadius) {
       colliding = true;
-      overlap = SHIP_RADIUS - dist;
+      overlap = sampleRadius - dist;
       _collisionNormal.set(sepX / dist, sepY / dist, sepZ / dist).applyQuaternion(_boxQuat);
     } else if (dist <= 0.001) {
       const dx = shape.halfExtents.x - Math.abs(_localShipPos.x);
@@ -65,13 +70,13 @@ function resolveEntryCollision(
       const dz = shape.halfExtents.z - Math.abs(_localShipPos.z);
       colliding = true;
       if (dx <= dy && dx <= dz) {
-        overlap = dx + SHIP_RADIUS;
+        overlap = dx + sampleRadius;
         _collisionNormal.set(Math.sign(_localShipPos.x), 0, 0).applyQuaternion(_boxQuat);
       } else if (dy <= dz) {
-        overlap = dy + SHIP_RADIUS;
+        overlap = dy + sampleRadius;
         _collisionNormal.set(0, Math.sign(_localShipPos.y), 0).applyQuaternion(_boxQuat);
       } else {
-        overlap = dz + SHIP_RADIUS;
+        overlap = dz + sampleRadius;
         _collisionNormal.set(0, 0, Math.sign(_localShipPos.z)).applyQuaternion(_boxQuat);
       }
     }
@@ -101,7 +106,7 @@ function resolveEntryCollision(
           )
         : 0;
     _closestPoint.set(_capsuleA.x + abX * t, _capsuleA.y + abY * t, _capsuleA.z + abZ * t);
-    const minDist = SHIP_RADIUS + shape.radius;
+    const minDist = sampleRadius + shape.radius;
     const dist = shipPos.distanceTo(_closestPoint);
     if (dist < minDist && dist > 0.001) {
       colliding = true;
@@ -130,9 +135,17 @@ function resolveEntryCollision(
 
 export function resolveCollisions(group: THREE.Object3D, velocity: THREE.Vector3) {
   group.getWorldPosition(_shipWorldPos);
+  group.getWorldQuaternion(_shipWorldQuat);
+
   for (const collidable of getCollidables()) {
     if (collidable.id === SHIP_COLLISION_ID) continue;
     collidable.getWorldPosition(_collidablePos);
-    resolveEntryCollision(collidable, _shipWorldPos, velocity, group);
+
+    for (const sample of SHIP_COLLISION_SAMPLES) {
+      group.getWorldPosition(_shipWorldPos);
+      _localSample.set(sample.local[0], sample.local[1], sample.local[2]);
+      _samplePos.copy(_localSample).applyQuaternion(_shipWorldQuat).add(_shipWorldPos);
+      resolveEntryCollision(collidable, _samplePos, velocity, group, sample.radius);
+    }
   }
 }

@@ -20,6 +20,10 @@ export const DEV_JUPITER_TEST = false;
 /** Spawn near Mars instead of Neptune (ignores autosave). */
 export const DEV_MARS_TEST = false;
 
+// ── Collision debugging ───────────────────────────────────────────────────
+/** Draw wireframe overlays for every registered collidable (ship = green, others = orange). */
+export const DEBUG_SHOW_COLLIDABLES = true;
+
 // ── Spaceship ─────────────────────────────────────────────────────────────
 /** Show thruster hitbox debug wireframes on the spaceship. */
 export const DEBUG_THRUSTER_HITBOXES = false;

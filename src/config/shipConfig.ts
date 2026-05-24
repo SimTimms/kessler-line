@@ -3,8 +3,24 @@
 export const THRUST = 2.2;
 /** Yaw angular acceleration (radians per second²). */
 export const YAW_THRUST = 1.0;
-/** Bounding sphere radius for collision detection (world units). */
+/** Bounding sphere radius for legacy point checks (docking helpers, etc.). */
 export const SHIP_RADIUS = 3;
+/** Oriented box half-extents used for ship hull collision + debug overlay. */
+export const SHIP_BOX_HALF_EXTENTS: [number, number, number] = [7, 3, 17];
+/**
+ * Sample points in ship-local space approximating the hull volume.
+ * Physics tests each sphere against obstacles so nose/tail contacts register.
+ */
+export const SHIP_COLLISION_SAMPLES: ReadonlyArray<{
+  local: readonly [number, number, number];
+  radius: number;
+}> = [
+  { local: [0, 0, 0], radius: 4 },
+  { local: [0, 0, 14], radius: 3.5 },
+  { local: [0, 0, -8], radius: 3.5 },
+  { local: [0, 0, 7], radius: 3 },
+  { local: [0, 0, -4], radius: 3 },
+];
 /** Collision restitution: 0 = dead stop, 1 = fully elastic. */
 export const RESTITUTION = 0.4;
 /** Global cap on thrust multiplier (player slider and autopilot). */
@@ -16,7 +32,7 @@ export const SHIP_IMPACT_PULSE_MS = 1200;
 /** Detection sphere radius at the nose docking port (world units). */
 export const DOCKING_PORT_RADIUS = 2;
 /** Local +Z distance from ship center to the nose docking port. */
-export const DOCKING_PORT_LOCAL_Z = 9.8;
+export const DOCKING_PORT_LOCAL_Z = 19.6;
 
 // ── Main engine positions ─────────────────────────────────────────────────
 /** Distance threshold for a railgun hit to register on a main engine. */

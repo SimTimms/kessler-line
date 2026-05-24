@@ -125,7 +125,11 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
         activeAudioRef={activeAudioRef}
       />
       <ControlLayer thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
-      {showStartOverlay ? <StartOverlay onStart={onStart} onTutorial={onTutorial} /> : <BackgroundHum />}
+      {showStartOverlay ? (
+        <StartOverlay onStart={onStart} onTutorialSelect={onTutorial} />
+      ) : (
+        <BackgroundHum />
+      )}
       {showShipTitle && <ShipTitleCard onDone={onShipTitleDone} />}
       <DeathOverlay />
       {/* Loading screen sits above everything; self-removes when all stages complete */}

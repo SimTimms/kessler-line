@@ -8,7 +8,6 @@ import {
   getThrustersHighlightedForStep,
   highlightedHudElements,
   getScannerHudElementsHighlightedForStep,
-  disabledHudElements,
   getDisabledScannerHudElementsForStep,
 } from './tutorialMovementHighlights';
 import { TUTORIAL_STEPS } from './tutorialMovementSteps';

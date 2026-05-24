@@ -27,6 +27,12 @@ export function useScannableRegistration({
     return target;
   };
 
+  const getWorldQuaternion = (target: THREE.Quaternion) => {
+    if (groupRef.current) groupRef.current.getWorldQuaternion(target);
+    else target.identity();
+    return target;
+  };
+
   useEffect(() => {
     if (!scannable) return;
 
@@ -34,6 +40,7 @@ export function useScannableRegistration({
       registerCollidable({
         id,
         getWorldPosition: getPosition,
+        getWorldQuaternion,
         shape: proximityShape,
         getObject3D: () => groupRef.current,
       });

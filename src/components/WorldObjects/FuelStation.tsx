@@ -7,7 +7,6 @@ import { registerCollidable, unregisterCollidable } from '../../context/Collisio
 import { selectTarget } from '../../context/TargetSelection';
 import DockingBay from './DockingBay';
 import RadioBeacon from '../Radio/RadioBeacon';
-import type { mx_bilerp_0 } from 'three/src/nodes/materialx/lib/mx_noise.js';
 
 const COLLISION_ID = 'fuel-station';
 

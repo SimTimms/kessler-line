@@ -21,6 +21,7 @@ import {
   MAIN_ENGINE_LOCAL_POS_A,
   MAIN_ENGINE_LOCAL_POS_B,
   RCS_THRUSTER_LOCAL,
+  SHIP_BOX_HALF_EXTENTS,
   THRUSTER_LIGHT_COLOR,
   THRUSTER_LIGHT_DISTANCE,
   THRUSTER_LIGHT_DECAY,
@@ -103,9 +104,17 @@ export default function Spaceship({
           id: SHIP_COLLISION_ID,
           getWorldPosition: (target) => {
             if (groupRef.current) groupRef.current.getWorldPosition(target);
+            return target.set(target.x, target.y, target.z);
+          },
+          getWorldQuaternion: (target) => {
+            if (groupRef.current) groupRef.current.getWorldQuaternion(target);
             return target;
           },
-          shape: { type: 'box', halfExtents: new THREE.Vector3(9, 3, 10) },
+          shape: {
+            type: 'box',
+            halfExtents: new THREE.Vector3(...SHIP_BOX_HALF_EXTENTS),
+          },
+          getObject3D: () => groupRef.current,
         });
       } else {
         unregisterCollidable(SHIP_COLLISION_ID);

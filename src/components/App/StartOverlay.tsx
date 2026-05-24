@@ -42,7 +42,8 @@ const TUTORIAL_MENU_ITEMS: Array<{
   placeholder?: boolean;
 }> = [
   { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
-  { id: 'resources', label: 'Resources', selection: GAME_MODES.resources },
+  { id: 'resources', label: 'GeneralResources', selection: GAME_MODES.resources },
+  { id: 'air-management', label: 'Air Management', selection: GAME_MODES.airManagement },
 ];
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {

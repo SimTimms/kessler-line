@@ -14,6 +14,7 @@ import { TUTORIAL_MOON_POSITION, TUTORIAL_MOON_RADIUS } from '../../config/moonC
 import TutorialDockingStepWatcher from './TutorialDockingStepWatcher';
 import LaserRay from '../Combat/LaserRay';
 import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
+import CollisionDebug from '../Debug/CollisionDebug';
 
 interface Props {
   onStepAdvance: () => void;
@@ -141,6 +142,7 @@ export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props
         />
         <LaserRay shipGroupRef={spaceshipGroupRef} />
       </Suspense>
+      <CollisionDebug />
     </Canvas>
   );
 }

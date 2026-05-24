@@ -1,39 +1,54 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { DEBUG_SHOW_COLLIDABLES } from '../../config/debugConfig';
 import { getCollidables } from '../../context/CollisionRegistry';
+import { SHIP_COLLISION_ID } from '../../context/ShipState';
 
-// Colours for debug spheres
-const SHIP_COLOR = 0x00ff00;      // green  = player
-const OBSTACLE_COLOR = 0xff4400;  // orange = obstacle
+const SHIP_COLOR = 0x00ff00;
+const OBSTACLE_COLOR = 0xff4400;
+
+function disposeMesh(mesh: THREE.Mesh) {
+  mesh.geometry.dispose();
+  (mesh.material as THREE.Material).dispose();
+}
+
+function clearMeshes(group: THREE.Group, meshMap: Map<string, THREE.Mesh>) {
+  for (const mesh of meshMap.values()) {
+    group.remove(mesh);
+    disposeMesh(mesh);
+  }
+  meshMap.clear();
+}
 
 export default function CollisionDebug() {
   const groupRef = useRef<THREE.Group>(null!);
-  // Persistent map of collidable id → wireframe mesh so we create geometry once.
   const meshMap = useRef(new Map<string, THREE.Mesh>());
   const _pos = useRef(new THREE.Vector3());
   const _quat = useRef(new THREE.Quaternion());
 
   useFrame(() => {
-    if (!groupRef.current) return;
+    const group = groupRef.current;
+    if (!group) return;
+
+    if (!DEBUG_SHOW_COLLIDABLES) {
+      if (meshMap.current.size > 0) clearMeshes(group, meshMap.current);
+      return;
+    }
 
     const collidables = getCollidables();
     const activeIds = new Set(collidables.map((c) => c.id));
 
-    // Remove meshes for collidables that have unregistered
     for (const [id, mesh] of meshMap.current) {
       if (!activeIds.has(id)) {
-        groupRef.current.remove(mesh);
-        mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
+        group.remove(mesh);
+        disposeMesh(mesh);
         meshMap.current.delete(id);
       }
     }
 
-    // Add meshes for newly registered collidables, update transforms for all
     for (const c of collidables) {
       if (!meshMap.current.has(c.id)) {
-        const isShip = c.id === 'spaceship';
         const shape = c.shape;
         let geo: THREE.BufferGeometry;
         if (shape.type === 'sphere') {
@@ -42,20 +57,22 @@ export default function CollisionDebug() {
           geo = new THREE.BoxGeometry(
             shape.halfExtents.x * 2,
             shape.halfExtents.y * 2,
-            shape.halfExtents.z * 2,
+            shape.halfExtents.z * 2
           );
         } else {
-          // capsule
           geo = new THREE.CapsuleGeometry(shape.radius, shape.height, 8, 16);
         }
+
         const mat = new THREE.MeshBasicMaterial({
-          color: isShip ? SHIP_COLOR : OBSTACLE_COLOR,
+          color: c.id === SHIP_COLLISION_ID ? SHIP_COLOR : OBSTACLE_COLOR,
           wireframe: true,
           transparent: true,
-          opacity: 0.4,
+          opacity: 0.55,
+          depthTest: false,
         });
         const mesh = new THREE.Mesh(geo, mat);
-        groupRef.current.add(mesh);
+        mesh.renderOrder = 999;
+        group.add(mesh);
         meshMap.current.set(c.id, mesh);
       }
 
@@ -65,9 +82,13 @@ export default function CollisionDebug() {
       if (c.getWorldQuaternion) {
         c.getWorldQuaternion(_quat.current);
         mesh.quaternion.copy(_quat.current);
+      } else {
+        mesh.quaternion.identity();
       }
     }
   });
+
+  if (!DEBUG_SHOW_COLLIDABLES) return null;
 
   return <group ref={groupRef} />;
 }

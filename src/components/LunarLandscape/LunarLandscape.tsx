@@ -1,5 +1,5 @@
-import { useMemo, useEffect } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useMemo, useEffect, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { buildLunarTextures } from '../../utils/lunarTextureGen';
 
@@ -11,9 +11,15 @@ const SURFACE_Y = -900;
 const TEXTURE_REPEAT_U = 8;
 const TEXTURE_REPEAT_V = 4;
 
+const MOON_ROTATION_SPEED = 0.02;
+
 export default function LunarLandscape() {
   const { gl } = useThree();
+  const spinRef = useRef<THREE.Group>(null);
 
+  useFrame((_, delta) => {
+    if (spinRef.current) spinRef.current.rotation.y += MOON_ROTATION_SPEED * delta;
+  });
   const { colorMap, bumpMap } = useMemo(() => {
     const maps = buildLunarTextures(2048, 2048);
     for (const tex of [maps.colorMap, maps.bumpMap]) {
@@ -34,22 +40,22 @@ export default function LunarLandscape() {
 
   return (
     // Center is MOON_RADIUS below the surface so the top of the sphere sits at SURFACE_Y
-    <mesh
-      position={[0, SURFACE_Y - MOON_RADIUS, 0]}
-      receiveShadow
-      rotation={[Math.PI / 2, Math.PI / 1, 0]}
-    >
-      <sphereGeometry args={[MOON_RADIUS, 128, 128]} />
-      <meshStandardMaterial
-        map={colorMap}
-        bumpMap={bumpMap}
-        bumpScale={3}
-        displacementMap={bumpMap}
-        displacementScale={0}
-        displacementBias={-12.5}
-        roughness={0.95}
-        metalness={0}
-      />
-    </mesh>
+    <group position={[0, SURFACE_Y - MOON_RADIUS, 0]} rotation={[Math.PI / 2, Math.PI, 0]}>
+      <group ref={spinRef}>
+        <mesh receiveShadow>
+          <sphereGeometry args={[MOON_RADIUS, 128, 128]} />
+          <meshStandardMaterial
+            map={colorMap}
+            bumpMap={bumpMap}
+            bumpScale={3}
+            displacementMap={bumpMap}
+            displacementScale={0}
+            displacementBias={-12.5}
+            roughness={0.95}
+            metalness={0}
+          />
+        </mesh>
+      </group>
+    </group>
   );
 }

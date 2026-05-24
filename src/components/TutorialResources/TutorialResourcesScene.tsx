@@ -22,6 +22,7 @@ import LaserRay from '../Combat/LaserRay';
 import ProximityHighlight from '../Proximity/ProximityHighlight';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import StartZoneAsteroidCluster from '../Environment/StartZoneAsteroidCluster';
+import CollisionDebug from '../Debug/CollisionDebug';
 import {
   TUTORIAL_RESOURCES_ASTEROID_CENTER,
   TUTORIAL_RESOURCES_ASTEROID_COUNT,
@@ -96,6 +97,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
           <ProximityHighlight />
           <ScannerRangeRings />
         </Suspense>
+        <CollisionDebug />
         <ShipDepthOfField saturation={-1} />
       </Canvas>
     </>
