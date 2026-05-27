@@ -15,6 +15,9 @@ import {
   mainEngineDisabled,
 } from './context/ShipState';
 import { shipPosRef } from './context/ShipPos';
+import { clearNavTarget } from './context/NavTarget';
+import { clearSelectedTarget } from './context/TargetSelection';
+import { disableAutopilot } from './context/AutopilotState';
 import StartOverlay from './components/App/StartOverlay';
 import { GAME_MODES, type GameMode, type TutorialMenuSelection } from './config/gameModes';
 import TutorialAir from './components/TutorialAir/TutorialAir';
@@ -48,6 +51,9 @@ function App() {
   const handleTutorialSelect = useCallback((selection: TutorialMenuSelection) => {
     resumeAudioContext();
     resetShipState();
+    clearNavTarget();
+    clearSelectedTarget();
+    disableAutopilot();
     tutorialStepRef.current = 0;
     setTutorialMode(selection);
     setMode(selection);

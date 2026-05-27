@@ -8,14 +8,11 @@ import {
   type WorldObjectRegistrationConfig,
 } from '../../hooks/useRegisterWorldObject';
 import { boxColliderFromObject } from '../../utils/colliderFromObject';
+import { containerInventoryToPartner } from '../../config/containerInventoryConfig';
+import type { ContainerInventory } from '../../config/containerInventoryConfig';
+import { useRegisterDockablePartner } from '../../hooks/useRegisterDockablePartner';
 
-export type ContainerInventory = {
-  containerId: string;
-  dockingBayId: string;
-  air: number;
-  propellant: number;
-  power: number;
-};
+export type { ContainerInventory };
 
 function containerRegistration(
   inventory: ContainerInventory,
@@ -23,7 +20,7 @@ function containerRegistration(
 ): WorldObjectRegistrationConfig {
   return {
     id: inventory.containerId,
-    magnetic: { label: 'Metal Container' },
+    magnetic: { label: inventory.label ?? 'Metal Container' },
     collidable: {
       shape: { type: 'box', halfExtents: halfExtents.clone() },
     },
@@ -54,6 +51,9 @@ export default function ContainerBritish({
     [inventory.containerId, halfExtents]
   );
   useRegisterWorldObject(bodyRef, registration);
+
+  const partnerConfig = useMemo(() => containerInventoryToPartner(inventory), [inventory]);
+  useRegisterDockablePartner(partnerConfig);
 
   const dockDimensions = new THREE.Vector3(12, 1, 1);
   return (

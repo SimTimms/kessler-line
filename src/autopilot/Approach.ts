@@ -37,6 +37,7 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
     yawRight,
     angVel,
     orbitStatus,
+    status,
   } = ctx;
 
   // ── Gravity-body approach: straight at planet center, max thrust ─────────
@@ -48,8 +49,6 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
       (orbitStatus.radialVelocity ?? 0) < 0 &&
       speed > retroTargetSpeed
     ) {
-      console.log('coasting');
-
       return 'coast-to-periapsis';
     }
 
@@ -75,12 +74,13 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
     if (distToArrival <= brakeDist) return 'retroburn';
 
     // Still have room — full thrust toward planet
+    status.current = `APPROACH  ${Math.round(distToArrival)} u`;
     const dotAim = noseDir.dot(toTarget);
     if (dotAim > 0.95) thrustReverse.current = true; // only thrust once reasonably aligned
     return null;
   }
 
-  // ── Station approach: aim at target, approach, retroburn at arrival ───────
+  // ── Station / object approach: aim at target, approach, retroburn at arrival
   const crossYAim = noseDir.x * toTarget.z - noseDir.z * toTarget.x;
   const { yawLeft: yl, yawRight: yr } = computeYaw(
     Math.atan2(crossYAim, noseDir.dot(toTarget)),
@@ -99,7 +99,7 @@ export function Approach(ctx: AutopilotCtx): AutopilotPhase | null {
 
   if (distToArrival <= brakeDist) return 'retroburn';
 
-  // Suppress thrust from `velFlat` perpendicular component (match straight approach)
+  status.current = `APPROACH  ${Math.round(distToArrival)} u`;
   const dotNoseTarget = noseDir.x * toTarget.x + noseDir.z * toTarget.z;
   if (dotNoseTarget > 0.95) thrustReverse.current = true;
   return null;

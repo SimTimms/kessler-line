@@ -21,6 +21,7 @@ export let power = 100; // 0–100, decreases by 1 per active thrust key/sec
 export let hullIntegrity = 100; // 0–100, decreases on collision
 export let fuel = 100; // 0–100, drains while thrusting, refills while docked
 export let o2 = 100; // 0–100, depletes constantly, refills while docked
+export let shipCrew = 1; // crew aboard (0–SHIP_CREW_CAPACITY)
 
 export function setPower(v: number) {
   power = v;
@@ -30,6 +31,9 @@ export function setFuel(v: number) {
 }
 export function setO2(v: number) {
   o2 = v;
+}
+export function setShipCrew(v: number) {
+  shipCrew = v;
 }
 export function setHullIntegrity(v: number) {
   hullIntegrity = v;

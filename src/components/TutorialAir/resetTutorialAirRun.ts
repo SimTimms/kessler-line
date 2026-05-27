@@ -1,3 +1,6 @@
+import { clearNavTarget } from '../../context/NavTarget';
+import { clearSelectedTarget } from '../../context/TargetSelection';
+import { disableAutopilot } from '../../context/AutopilotState';
 import { clearResourceRates } from '../../context/ResourceRates';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { shipPosRef } from '../../context/ShipPos';
@@ -19,6 +22,9 @@ import {
 
 /** Restores ship + tutorial progress after radiation death in the resources tutorial. */
 export function resetTutorialAirRun() {
+  clearNavTarget();
+  clearSelectedTarget();
+  disableAutopilot();
   shipVelocity.set(0, 0, 20);
   shipPosRef.current.set(0, 0, 0);
   setHullIntegrity(100);

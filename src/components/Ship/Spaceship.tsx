@@ -149,9 +149,6 @@ export default function Spaceship({
           <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
         </group>
 
-        {/* Shadow-only light — tight cone so the shadow map covers a small area,
-            giving high texel density and a clean shadow shape. Zero intensity so
-            it contributes no extra illumination. */}
         <spotLight
           position={[0, 500, 100]}
           target={shadowLightTarget.current}

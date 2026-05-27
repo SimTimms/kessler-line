@@ -23,8 +23,7 @@ import { highlightedHudElements, disabledHudElements } from './tutorialResources
 import { TUTORIAL_STEPS } from './tutorialResourcesSteps';
 import type { TutorialMenuSelection } from '../../config/gameModes';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
-import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
-import PowerHUD from '../Huds/PowerHUD/PowerHUD';
+import HelmetHUD from '../Huds/HelmetHUD/HelmetHUD';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
@@ -100,8 +99,7 @@ export default function TutorialResources({ onComplete, tutorialMode }: Props) {
         onSkip={onComplete}
         onContinueStep={() => setCurrentStep((s) => s + 1)}
       />
-      <PowerHUD disableElements={disabledHudElementsState} focusElements={activeHudElementsState} />
-      <ScannerHUD
+      <HelmetHUD
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
         spotlightOnRef={spotlightOnRef}

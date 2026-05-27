@@ -8,6 +8,7 @@ import { driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
 import { radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
 import './ScannerHUD.css';
+import '../HelmetHUD/HelmetHUD.css';
 import { getScannerRange } from '../../../config/scanRanges';
 import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
@@ -22,7 +23,81 @@ export const ScannerHUDElements = {
 } as const;
 
 export type ScannerHUDElementId = (typeof ScannerHUDElements)[keyof typeof ScannerHUDElements];
+
+const SCANNER_ABBREV: Record<string, string> = {
+  [ScannerHUDElements.SPOTLIGHT]: 'LGT',
+  [ScannerHUDElements.MAGNET]: 'MAG',
+  [ScannerHUDElements.DRIVE]: 'DRV',
+  [ScannerHUDElements.PROXIMITY]: 'PRX',
+  [ScannerHUDElements.RADIO]: 'RAD',
+  [ScannerHUDElements.RADIATION]: 'RDN',
+};
+
+const POWER_LEVELS = [1, 2, 3, 4, 5] as const;
+
+function HelmetScannerRow({
+  id,
+  abbrev,
+  icon: Icon,
+  power,
+  isActive,
+  disabled,
+  highlight,
+  onToggle,
+  onPowerChange,
+}: {
+  id: string;
+  abbrev: string;
+  icon: LucideIcon;
+  power: number;
+  isActive: boolean;
+  disabled: boolean;
+  highlight: boolean;
+  onToggle: () => void;
+  onPowerChange: (level: number) => void;
+}) {
+  const levelDisplay = power > 1 ? String(power) : '—';
+
+  return (
+    <div
+      className={`helmet-scanner-row${disabled ? ' helmet-scanner-row--disabled' : ''}${highlight ? ' helmet-scanner-row--highlight' : ''}${isActive ? ' helmet-scanner-row--on' : ''}`}
+      title={id}
+    >
+      <button
+        type="button"
+        className="helmet-scanner-icon"
+        disabled={disabled}
+        onClick={onToggle}
+        aria-label={`${abbrev} sensor`}
+        aria-pressed={isActive}
+      >
+        <Icon size={15} strokeWidth={1.75} />
+      </button>
+      <div className="helmet-scanner-levels" role="group" aria-label={`${abbrev} power`}>
+        {POWER_LEVELS.map((level) => {
+          const lit = power > 1 && level <= power;
+          return (
+            <button
+              key={level}
+              type="button"
+              className={`helmet-seg helmet-seg--h${lit ? ' helmet-seg--lit' : ''}`}
+              disabled={disabled}
+              aria-label={`Level ${level}`}
+              onClick={() => onPowerChange(level)}
+            />
+          );
+        })}
+      </div>
+      <span className="helmet-scanner-lv" aria-hidden>
+        {levelDisplay}
+      </span>
+      <span className="helmet-scanner-abbr">{abbrev}</span>
+    </div>
+  );
+}
+
 interface ScannerHUDProps {
+  layout?: 'classic' | 'helmet';
   spotlightOn: boolean;
   setSpotlightOn: (on: boolean) => void;
   spotlightOnRef: React.RefObject<boolean>;
@@ -53,6 +128,7 @@ interface ButtonDef {
 }
 
 export const ScannerHUD = ({
+  layout = 'classic',
   spotlightOn,
   setSpotlightOn,
   spotlightOnRef,
@@ -177,17 +253,47 @@ export const ScannerHUD = ({
     onSideEffect(level > 1, level);
   };
 
+  if (layout === 'helmet') {
+    return (
+      <div className="helmet-scanner-deck" aria-label="Sensors">
+        <div className="helmet-scanner-deck-head">SCAN</div>
+        <div className="helmet-scanner-grid">
+          {buttonDefs.map(({ id, icon, isActive, onSideEffect }) => {
+            const disabled = disableElements.includes(id);
+            const highlight = focusElements.includes(id);
+            return (
+              <HelmetScannerRow
+                key={id}
+                id={id}
+                abbrev={SCANNER_ABBREV[id] ?? id.slice(0, 3).toUpperCase()}
+                icon={icon}
+                power={powers[id]}
+                isActive={isActive}
+                disabled={disabled}
+                highlight={highlight}
+                onToggle={() =>
+                  handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id], onSideEffect)
+                }
+                onPowerChange={(level) => handlePower(id, level, onSideEffect)}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="button-panel">
       {buttonDefs.map(({ id, icon, isActive, onSideEffect }) => (
         <div
+          key={id}
           className={`flex-column blue ${disableElements.includes(id) ? 'hud-button-disabled' : ''}`}
         >
           <div className="power-hud-label">{id.toUpperCase()}</div>
           <HudButton
-            key={id}
             icon={icon}
-            name={''}
+            name=""
             isActive={isActive}
             power={powers[id]}
             highlight={focusElements.includes(id)}

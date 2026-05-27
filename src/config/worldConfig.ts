@@ -58,6 +58,7 @@ const DOCKED_STATION_DISPLAY: Record<string, string> = {
   'tutorial-space-station': 'Daedalus',
   [FUEL_STATION_DEF.id]: FUEL_STATION_DEF.label,
   [ASTEROID_DOCK_DEF.id]: ASTEROID_DOCK_DEF.label,
+  C: 'Metal Container',
 };
 
 export function displayNameForDockedStation(stationId: string | null): string {

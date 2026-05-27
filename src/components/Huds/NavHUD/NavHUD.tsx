@@ -5,10 +5,11 @@ import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
 import { isDockingTutorialUndockAllowed } from '../../../tutorial/tutorialDockingInputGate';
 import { dockingTutorialActiveRef, tutorialStepRef } from '../../../context/TutorialState';
 import { TUTORIAL_DOCKING_STEPS } from '../../../tutorial/tutorialDockingSteps';
-import { navTargetPosRef, navTargetIdRef } from '../../../context/NavTarget';
+import { navTargetPosRef, navTargetIdRef, hasNavTarget } from '../../../context/NavTarget';
 import { gravityBodies } from '../../../context/GravityRegistry';
 import { shipPosRef } from '../../../context/ShipPos';
-import { orbitStatusRef, shipVelocity } from '../../../context/ShipState';
+import { getShipSpeedMps, orbitStatusRef, shipVelocity } from '../../../context/ShipState';
+import { velocityLevel } from '../PowerHUD/PowerHUDHelpers';
 import {
   selectTarget,
   flashTarget,
@@ -35,6 +36,7 @@ import {
 } from '../../../context/AutopilotState';
 import { NavTargetDialog, type NavTargetItem } from './NavTargetDialog';
 import './NavHUD.css';
+import '../HelmetHUD/HelmetHUD.css';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
 const ORBIT_LABELS = new Map(NAV_TARGET_DEFS.map((p) => [p.id, p.label]));
@@ -65,6 +67,7 @@ function formatDist(distUnits: number): string {
 }
 
 interface NavHUDProps {
+  layout?: 'classic' | 'helmet';
   disableElements: string[];
   focusElements: string[];
   onNavTargetClick?: (id: string) => void;
@@ -73,6 +76,7 @@ interface NavHUDProps {
 }
 
 export const NavHUD = ({
+  layout = 'classic',
   disableElements,
   focusElements,
   onNavTargetClick,
@@ -106,8 +110,10 @@ export const NavHUD = ({
   const approachRef = useRef<HTMLSpanElement>(null!);
   const relativeVelRef = useRef<HTMLSpanElement>(null!);
   const dockingHintRef = useRef<HTMLSpanElement>(null!);
-  const autopilotBtnRef = useRef<HTMLButtonElement>(null!);
+  const autopilotBtnRef = useRef<HTMLSpanElement>(null!);
   const velocityMatchBtnRef = useRef<HTMLButtonElement>(null!);
+  const orbitLineRef = useRef<HTMLSpanElement>(null!);
+  const speedRef = useRef<HTMLSpanElement>(null!);
 
   const prevNavSigRef = useRef('');
   const prevGeneralSigRef = useRef('');
@@ -261,8 +267,39 @@ export const NavHUD = ({
       }
       if (autopilotBtnRef.current) {
         const active = autopilotActive.current && autopilotMode.current === 'approach';
-        autopilotBtnRef.current.textContent = active ? autopilotStatus.current : 'DISENGAGED';
-        autopilotBtnRef.current.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
+        const helmetAp = autopilotBtnRef.current.closest('.helmet-nav');
+        autopilotBtnRef.current.textContent = active
+          ? helmetAp
+            ? 'ON'
+            : autopilotStatus.current
+          : helmetAp
+            ? 'OFF'
+            : 'DISENGAGED';
+        if (!helmetAp) {
+          const btn = autopilotBtnRef.current.parentElement;
+          if (btn) btn.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
+        }
+      }
+      if (layout === 'helmet' && speedRef.current) {
+        const speedMps = getShipSpeedMps();
+        speedRef.current.textContent = `${speedMps.toFixed(1)} m/s`;
+        const level = velocityLevel(speedMps);
+        speedRef.current.className = `helmet-nav-speed hud-value${level === 'red' ? ' helmet-nav-speed--crit' : level === 'orange' ? ' helmet-nav-speed--warn' : ''}${focusElements.includes('velocity') ? ' helmet-nav-speed--highlight' : ''}`;
+      }
+      if (layout === 'helmet' && orbitLineRef.current) {
+        const { bodyId, isOrbiting } = orbitStatusRef.current;
+        if (!bodyId) {
+          orbitLineRef.current.textContent = '';
+          orbitLineRef.current.style.display = 'none';
+        } else {
+          const label = ORBIT_LABELS.get(bodyId) ?? bodyId;
+          const alt = altRef.current?.textContent ?? '—';
+          const peri = periapsisRef.current?.textContent ?? '—';
+          const apo = apoapsisRef.current?.textContent ?? '—';
+          const prefix = isOrbiting === true ? 'ORB' : 'SOI';
+          orbitLineRef.current.textContent = `${prefix} ${label} · ALT ${alt} · PE ${peri} · AP ${apo}`;
+          orbitLineRef.current.style.display = '';
+        }
       }
 
       // Nav target distances
@@ -387,7 +424,7 @@ export const NavHUD = ({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [layout, focusElements]);
 
   // Listen for nav target set by external systems (e.g. docking request approval)
   useEffect(() => {
@@ -396,8 +433,18 @@ export const NavHUD = ({
       setTargetId(id);
       setTargetLabel(label);
     };
+    const onNavTargetCleared = () => {
+      setTargetId('');
+      setTargetLabel('');
+      setSelectedObjName(null);
+      selectedObjNameRef.current = null;
+    };
     window.addEventListener('NavTargetSet', onNavTargetSet);
-    return () => window.removeEventListener('NavTargetSet', onNavTargetSet);
+    window.addEventListener('NavTargetCleared', onNavTargetCleared);
+    return () => {
+      window.removeEventListener('NavTargetSet', onNavTargetSet);
+      window.removeEventListener('NavTargetCleared', onNavTargetCleared);
+    };
   }, []);
 
   // Listen for clicked world objects (cargo pods, ships, stations, etc.)
@@ -450,7 +497,8 @@ export const NavHUD = ({
     driveMatch?.label ??
     (customGeneralTargets || customPlanetaryTargets ? undefined : navMatch?.label) ??
     targetLabel;
-  const displayLabel = selectedObjName ?? (resolvedTargetLabel || 'select a target.');
+  const displayLabel =
+    selectedObjName ?? resolvedTargetLabel ?? (hasNavTarget() ? 'select a target.' : '');
 
   const handleSelect = (id: string) => {
     // Standard nav target
@@ -562,6 +610,88 @@ export const NavHUD = ({
     window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK));
   };
 
+  if (layout === 'helmet') {
+    return (
+      <>
+        <div className="helmet-nav">
+          {isDocked ? (
+            <div className="helmet-nav-docked">
+              <span className="helmet-nav-tag">DOCK</span>
+              <span className="helmet-nav-name">
+                {displayNameForDockedStation(dockedStationId)}
+              </span>
+              <span className="helmet-nav-tag">SPD</span>
+              <span ref={speedRef} className="helmet-nav-speed hud-value" />
+              <button
+                ref={undockBtnRef}
+                type="button"
+                className="helmet-nav-btn"
+                onClick={requestUndock}
+              >
+                UNDOCK
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="helmet-nav-target-line">
+                <button
+                  type="button"
+                  className={`helmet-nav-btn${navTargetHighlight ? ' helmet-nav-btn--highlight' : ''}`}
+                  onClick={() => {
+                    setDialogOpen(true);
+                    setNavTargetHighlight(false);
+                    onNavTargetClick?.(targetId);
+                  }}
+                >
+                  TGT
+                </button>
+                <span
+                  className={`helmet-nav-name${!displayLabel ? ' helmet-nav-name--empty' : ''}`}
+                >
+                  {displayLabel}
+                </span>
+              </div>
+              <div className="helmet-nav-row">
+                <span className="helmet-nav-tag">SPD</span>
+                <span ref={speedRef} className="helmet-nav-speed hud-value" />
+                <span className="helmet-nav-tag">Δv</span>
+                <span ref={relativeVelRef} className="helmet-nav-dv hud-value nav-relative-velocity" />
+                <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                <button type="button" className="helmet-nav-btn" onClick={handleAutopilot}>
+                  AP <span ref={autopilotBtnRef} className="helmet-ap-state" />
+                </button>
+                <button
+                  ref={velocityMatchBtnRef}
+                  type="button"
+                  className="helmet-nav-btn"
+                  onClick={handleVelocityMatch}
+                >
+                  MATCH
+                </button>
+              </div>
+              <span ref={orbitLineRef} className="helmet-nav-orbit" />
+            </>
+          )}
+        </div>
+        {dialogOpen && (
+          <NavTargetDialog
+            generalItems={generalItems}
+            generalSectionLabel="GENERAL CONTACTS"
+            navItems={navItems}
+            navSectionLabel="PLANETARY CONTACTS"
+            magneticItems={magneticItems}
+            driveItems={driveItems}
+            showDriveItems={true}
+            selectedId={targetId}
+            highlightId={highlightedContactId}
+            onSelect={handleSelect}
+            onClose={() => setDialogOpen(false)}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <div className="hud-bar-wrapper ">
@@ -601,7 +731,7 @@ export const NavHUD = ({
                   </button>
                   <div className="nav-target-readouts">
                     <span
-                      className={`nav-target-current-name${displayLabel === 'select a target.' ? ' nav-target-current-name--empty' : ''}`}
+                      className={`nav-target-current-name${!displayLabel ? ' nav-target-current-name--empty' : ''}`}
                     >
                       {displayLabel}
                     </span>
@@ -615,8 +745,8 @@ export const NavHUD = ({
               </div>
               <div className="nav-target-group">
                 <div className="nav-target-label">Autopilot</div>
-                <button ref={autopilotBtnRef} className="autopilot-btn" onClick={handleAutopilot}>
-                  AUTOPILOT
+                <button type="button" className="autopilot-btn" onClick={handleAutopilot}>
+                  <span ref={autopilotBtnRef}>AUTOPILOT</span>
                 </button>
               </div>
               <div className="nav-target-group">

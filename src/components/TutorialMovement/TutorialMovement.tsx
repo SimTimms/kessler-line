@@ -15,8 +15,7 @@ import type { TutorialMovementStep } from './tutorialMovementSteps';
 import type { TutorialMenuSelection } from '../../config/gameModes';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
 import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
-import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
-import PowerHUD from '../Huds/PowerHUD/PowerHUD';
+import HelmetHUD from '../Huds/HelmetHUD/HelmetHUD';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
@@ -95,8 +94,7 @@ export default function TutorialMovement({ onComplete, tutorialMode }: Props) {
         onSkip={onComplete}
         onContinueStep={handleStepAdvance}
       />
-      <PowerHUD disableElements={disabledPowerElements} focusElements={activePowerElements} />
-      <ScannerHUD
+      <HelmetHUD
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
         spotlightOnRef={spotlightOnRef}
@@ -112,8 +110,8 @@ export default function TutorialMovement({ onComplete, tutorialMode }: Props) {
         radioOn={radioOn}
         setRadioOn={setRadioOn}
         radioOnRef={radioOnRef}
-        focusElements={activeHudElements}
-        disableElements={disabledHudElements}
+        focusElements={[...activePowerElements, ...activeHudElements]}
+        disableElements={[...disabledPowerElements, ...disabledHudElements]}
       />
       <RadioChatterStream />
     </AppContainer>

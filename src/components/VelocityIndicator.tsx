@@ -412,10 +412,12 @@ export default function VelocityIndicator() {
     trajectoryApsisRef.current.surfaceRadius = primaryBody?.surfaceRadius ?? 0;
 
     const lineMat = line.material as THREE.LineDashedMaterial;
+    lineMat.dashSize = 6;
+    lineMat.gapSize = 6;
     lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
     lineMat.opacity = trajectoryHighlightRef.current
       ? TRAJECTORY_OPACITY_HIGHLIGHT_MIN +
-        TRAJECTORY_OPACITY_HIGHLIGHT_RANGE * (0.5 + 0.5 * Math.sin(Date.now() * 0.004))
+        TRAJECTORY_OPACITY_HIGHLIGHT_RANGE * (0.25 + 0.25 * Math.sin(Date.now() * 0.004))
       : TRAJECTORY_OPACITY_BASE;
 
     // Speed label at the midpoint of the active trajectory

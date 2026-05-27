@@ -21,6 +21,7 @@ import {
   orbitStatusRef,
 } from '../context/ShipState';
 import { gravityBodies } from '../context/GravityRegistry';
+import { getMagneticTargets } from '../context/MagneticRegistry';
 
 import { clearThrusts } from '../autopilot/clearThrusts';
 import { autopilotThrust } from '../autopilot/autopilotThrust';
@@ -93,12 +94,23 @@ export default function AutopilotController() {
     // ── Per-frame shared state ────────────────────────────────────────────────
     const shipPos = shipPosRef.current;
 
-    // Keep nav target locked to the live planet/body position — planets orbit
     const targetId = navTargetIdRef.current;
     const gravBody =
       gravityBodies.get(targetId) ??
       gravityBodies.get(targetId.charAt(0).toUpperCase() + targetId.slice(1));
-    if (gravBody) navTargetPosRef.current.copy(gravBody.position);
+
+    // Planets: track live body position. Magnetic / scan contacts: track registry each frame.
+    if (gravBody) {
+      navTargetPosRef.current.copy(gravBody.position);
+    } else if (targetId) {
+      const magnetic = getMagneticTargets().find((t) => t.id === targetId);
+      if (magnetic) {
+        magnetic.getPosition(navTargetPosRef.current);
+        if (magnetic.getVelocity) {
+          magnetic.getVelocity(selectedTargetVelocity);
+        }
+      }
+    }
 
     const targetPos = navTargetPosRef.current;
 

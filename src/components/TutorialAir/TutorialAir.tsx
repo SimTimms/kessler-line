@@ -5,8 +5,6 @@ import TutorialOverlay from '../TutorialShared/TutorialOverlay';
 import { highlightedHudElements, disabledHudElements } from './tutorialAirHighlights';
 import { TUTORIAL_STEPS } from './tutorialAirSteps';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
-import { ScannerHUD } from '../Huds/HUD/ScannerHUD';
-import PowerHUD from '../Huds/PowerHUD/PowerHUD';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
@@ -18,6 +16,10 @@ import MagneticHUD from '../Huds/MagneticHUD';
 import DriveSignatureHUD from '../Huds/DriveSignatureHUD';
 import ProximityHUD from '../Proximity/ProximityHUD';
 import RadiationHUD from '../RadiationHUD';
+import HelmetHUD from '../Huds/HelmetHUD/HelmetHUD';
+import { clearNavTarget } from '../../context/NavTarget';
+import { clearSelectedTarget } from '../../context/TargetSelection';
+import { disableAutopilot } from '../../context/AutopilotState';
 
 interface Props {
   onComplete: () => void;
@@ -33,6 +35,12 @@ export default function TutorialAir({ onComplete }: Props) {
   const [radioOn, setRadioOn] = useState(false);
   const [activeHudElementsState, setActiveHudElementsState] = useState<string[]>([]);
   const [disabledHudElementsState, setDisabledHudElementsState] = useState<string[]>([]);
+
+  useEffect(() => {
+    clearNavTarget();
+    clearSelectedTarget();
+    disableAutopilot();
+  }, []);
 
   useEffect(() => {
     setActiveHudElementsState(highlightedHudElements(TUTORIAL_STEPS[currentStep].id));
@@ -66,8 +74,7 @@ export default function TutorialAir({ onComplete }: Props) {
         onSkip={onComplete}
         onContinueStep={() => setCurrentStep((s) => s + 1)}
       />
-      <PowerHUD disableElements={disabledHudElementsState} focusElements={activeHudElementsState} />
-      <ScannerHUD
+      <HelmetHUD
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
         spotlightOnRef={spotlightOnRef}

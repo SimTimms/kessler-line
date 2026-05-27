@@ -18,7 +18,7 @@ import LaserRay from '../Combat/LaserRay';
 import ProximityHighlight from '../Proximity/ProximityHighlight';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import ContainerBritish from '../Container/ContainerBritish';
-import CollisionDebug from '../Debug/CollisionDebug';
+import { TUTORIAL_CONTAINER_C_INVENTORY } from '../../config/containerInventoryConfig';
 
 interface LunarTutorialSceneProps {
   onStepAdvance: () => void;
@@ -72,13 +72,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
           <ProximityHighlight />
           <ScannerRangeRings />
           <ContainerBritish
-            inventory={{
-              containerId: 'C',
-              dockingBayId: 'C',
-              air: 100,
-              propellant: 100,
-              power: 100,
-            }}
+            inventory={TUTORIAL_CONTAINER_C_INVENTORY}
             scale={10}
             position={[400, 0, 100]}
           />

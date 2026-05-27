@@ -12,6 +12,7 @@ import {
 import { cargo, type CargoItem, reduceCargoItem } from '../../../context/Inventory';
 import { triggerEject } from '../../../context/EjectEvent';
 import './PowerHUD.css';
+import '../HelmetHUD/HelmetHUD.css';
 import {
   velocityLevel,
   gforceLevel,
@@ -106,12 +107,122 @@ export interface EjectState {
   amount: number;
 }
 
+type PowerHUDLayout = 'classic' | 'helmet';
+
+interface VitalBarDef {
+  id: string;
+  tag: string;
+  pct: number;
+  display: string;
+  ratePerSec: number;
+  level: WarnLevel;
+}
+
+const VITAL_SEGMENT_COUNT = 5;
+
+function litSegmentCount(pct: number): number {
+  return Math.max(0, Math.min(VITAL_SEGMENT_COUNT, Math.round((pct / 100) * VITAL_SEGMENT_COUNT)));
+}
+
+function HelmetVitalsView({
+  bars,
+  disableElements,
+  focusElements,
+  showCrew,
+  showCargo,
+}: {
+  bars: VitalBarDef[];
+  disableElements: string[];
+  focusElements: string[];
+  showCrew: boolean;
+  showCargo: boolean;
+}) {
+  return (
+    <div className="helmet-vitals" aria-live="polite">
+      {bars.map((bar) => {
+        const disabled = disableElements.includes(bar.id);
+        const highlight = focusElements.includes(bar.id);
+        const rateLabel = formatResourceRate(bar.ratePerSec);
+        const valClass =
+          bar.level === 'red'
+            ? 'helmet-vital-val--crit'
+            : bar.level === 'orange'
+              ? 'helmet-vital-val--warn'
+              : '';
+        const segLevelClass =
+          bar.level === 'red' ? 'helmet-seg--crit' : bar.level === 'orange' ? 'helmet-seg--warn' : '';
+        const litCount = litSegmentCount(bar.pct);
+        return (
+          <div
+            key={bar.id}
+            className={`helmet-vital${disabled ? ' helmet-vital--disabled' : ''}${highlight ? ' helmet-vital--highlight' : ''}`}
+            title={bar.tag}
+          >
+            <span
+              className={`helmet-vital-rate${rateLabel ? '' : ' helmet-vital-rate--empty'}${rateLabel && bar.ratePerSec > 0 ? ' helmet-vital-rate--gain' : ''}`}
+              aria-hidden={!rateLabel}
+            >
+              {rateLabel ?? '\u00a0'}
+            </span>
+            <span className={`helmet-vital-val ${valClass}`}>{bar.display}</span>
+            <div className="helmet-vital-segments" aria-hidden>
+              {Array.from({ length: VITAL_SEGMENT_COUNT }, (_, i) => {
+                const tierFromBottom = i + 1;
+                const lit = tierFromBottom <= litCount;
+                return (
+                  <div
+                    key={tierFromBottom}
+                    className={`helmet-seg helmet-seg--v${lit ? ' helmet-seg--lit' : ''}${lit ? ` ${segLevelClass}` : ''}`}
+                  />
+                );
+              })}
+            </div>
+            <span className="helmet-vital-tag">{bar.tag}</span>
+          </div>
+        );
+      })}
+      {(showCrew || showCargo) && (
+        <div className="helmet-vitals-meta">
+          {showCrew && (
+            <div
+              className={`helmet-vitals-crew${disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? ' helmet-vital--disabled' : ''}`}
+            >
+              {([0, 1, 2] as const).map((i) => (
+                <User
+                  key={i}
+                  size={11}
+                  strokeWidth={1.5}
+                  className={i === 0 ? 'crew-icon--active' : 'crew-icon--empty'}
+                />
+              ))}
+            </div>
+          )}
+          {showCargo && (
+            <div
+              className={`helmet-vitals-cargo${disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) ? ' helmet-vital--disabled' : ''}`}
+            >
+              {([0, 1, 2, 3] as const).map((i) => (
+                <div
+                  key={i}
+                  className={`power-hud-cargo-slot${i === 0 ? ' power-hud-cargo-slot--filled' : ''}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PowerHUD({
   disableElements,
   focusElements,
+  layout = 'classic',
 }: {
   disableElements: string[];
   focusElements: string[];
+  layout?: PowerHUDLayout;
 }) {
   const [displayPower, setDisplayPower] = useState(100);
   const [displayHull, setDisplayHull] = useState(100);
@@ -148,6 +259,7 @@ export default function PowerHUD({
       level: velocityLevel(displayVelocity),
       group: 'orange',
     },
+    /*
     {
       id: MOVEMENT_HUD_ELEMENTS.GFORCE,
       label: 'G-FORCE',
@@ -157,6 +269,7 @@ export default function PowerHUD({
       level: gforceLevel(displayGForce),
       group: 'orange',
     },
+    */
   ];
 
   const blueStats: StatDef[] = [
@@ -198,6 +311,79 @@ export default function PowerHUD({
       group: 'blue',
     },
   ];
+
+  const helmetBars: VitalBarDef[] = [
+    {
+      id: HULL_HUD_ELEMENTS.HULL,
+      tag: 'HUL',
+      pct: displayHull,
+      display: `${displayHull}`,
+      ratePerSec: resourceRateRefs.hull.current,
+      level: resourceLevel(displayHull),
+    },
+    {
+      id: RESOURCE_HUD_ELEMENTS.POWER,
+      tag: 'PWR',
+      pct: displayPower,
+      display: `${displayPower}`,
+      ratePerSec: resourceRateRefs.power.current,
+      level: resourceLevel(displayPower),
+    },
+    {
+      id: RESOURCE_HUD_ELEMENTS.PROPELLENT,
+      tag: 'FUEL',
+      pct: displayFuel,
+      display: `${displayFuel}`,
+      ratePerSec: resourceRateRefs.fuel.current,
+      level: resourceLevel(displayFuel),
+    },
+    {
+      id: RESOURCE_HUD_ELEMENTS.O2,
+      tag: 'O2',
+      pct: displayO2,
+      display: `${displayO2}`,
+      ratePerSec: resourceRateRefs.o2.current,
+      level: resourceLevel(displayO2),
+    },
+  ];
+
+  if (layout === 'helmet') {
+    return (
+      <>
+        <HelmetVitalsView
+          bars={helmetBars}
+          disableElements={disableElements}
+          focusElements={focusElements}
+          showCrew
+          showCargo
+        />
+        {displayCargo.length > 0 && (
+          <div className="power-hud power-hud--cargo-flyout" aria-live="polite">
+            <div className="power-hud-section">CARGO</div>
+            {displayCargo.map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                title="Click to eject"
+                className="power-hud-cargo-item"
+                onClick={() => setEjectState({ item, step: 'confirm', amount: item.quantity })}
+              >
+                {item.quantity}x {item.name.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
+        {ejectState && (
+          <Cargo
+            ejectState={ejectState}
+            setEjectState={setEjectState}
+            triggerEject={triggerEject}
+            reduceCargoItem={reduceCargoItem}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <>

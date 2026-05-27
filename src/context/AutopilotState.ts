@@ -33,11 +33,9 @@ export const autopilotMode: { current: AutopilotMode } = { current: 'approach' }
 export function enableAutopilot() {
   autopilotActive.current = true;
   autopilotMode.current = 'approach';
-  autopilotStatus.current = 'ENGAGED';
+  autopilotPhase.current = 'align';
+  autopilotStatus.current = 'ALIGNING';
   velocityMatchUsesTutorialDaedalusVel.current = false;
-  const audio = new Audio('hyperbolic.mp3');
-  audio.play().catch(() => {});
-  autopilotPhase.current = 'hyperbolic-approach'; // DEBUG: skip align
 }
 
 export function enableVelocityMatchAutopilot() {

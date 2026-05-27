@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import DockingDialog from '../WorldObjects/DockingDialog';
 import type { MissionId } from '../../hooks/useMissionState';
+import { hasDockablePartner } from '../../context/DockablePartnerStore';
 
 interface DialogLayerProps {
   docked: boolean;
@@ -27,9 +28,11 @@ const DialogLayer = memo(function DialogLayer({
   onMissionSelect,
   onMissionComplete,
 }: DialogLayerProps) {
+  const showStationDialog = docked && !hasDockablePartner(dockedStation);
+
   return (
     <>
-      {docked && (
+      {showStationDialog && (
         <DockingDialog
           stationId={dockedStation}
           activeMission={activeMission}

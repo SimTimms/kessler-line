@@ -1,3 +1,14 @@
+.power-hud--cargo-flyout {
+  position: fixed;
+  top: 88px;
+  left: 12px;
+  max-width: 160px;
+  padding: 6px 8px;
+  background: rgba(0, 8, 18, 0.75);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  pointer-events: auto;
+}
+
 .power-hud {
   position: fixed;
   top: 70px;

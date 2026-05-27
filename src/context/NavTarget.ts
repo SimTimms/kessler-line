@@ -10,3 +10,14 @@ export const navTargetPosRef: { current: THREE.Vector3 } = {
 export const navTargetIdRef: { current: string } = {
   current: FUEL_STATION_DEF.id,
 };
+
+export function hasNavTarget(): boolean {
+  return navTargetIdRef.current.trim().length > 0;
+}
+
+/** Clear nav destination (tutorials, resets). Hides target line until player picks a target. */
+export function clearNavTarget() {
+  navTargetIdRef.current = '';
+  navTargetPosRef.current.set(0, 0, 0);
+  window.dispatchEvent(new CustomEvent('NavTargetCleared'));
+}

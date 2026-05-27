@@ -3,7 +3,7 @@ import type React from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
+import { hasNavTarget, navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
 import { shipQuaternion, shipVelocity } from '../context/ShipState';
 import {
   selectedTargetKey,
@@ -79,8 +79,8 @@ export default function TargetIndicatorLine({
     // Show line only when an explicit target exists (selected contact or nav target id).
     const isMagnetic = selectedTargetType === 'magnetic';
     const hasSelectedPos = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
-    const hasNavTarget = navTargetIdRef.current.trim().length > 0;
-    if (!hasSelectedPos && !hasNavTarget) {
+    const hasNavTargetId = hasNavTarget();
+    if (!hasSelectedPos && !hasNavTargetId) {
       line.visible = false;
       if (labelGroupRef.current) labelGroupRef.current.visible = false;
       return;
@@ -149,7 +149,7 @@ export default function TargetIndicatorLine({
         } else {
           _targetVel.copy(selectedTargetVelocity);
         }
-      } else if (hasNavTarget) {
+      } else if (hasNavTargetId) {
         const nid = navTargetIdRef.current;
         if (nid === TUTORIAL_NAV_DAEDALUS_ID) {
           const bay = getCollidables().find((c) => c.id === TUTORIAL_DOCKING_BAY_COLLIDER_ID);
