@@ -3,7 +3,10 @@
 .helmet-hud {
   --helmet-accent: rgba(0, 207, 255, 0.92);
   --helmet-muted: rgba(0, 200, 255, 0.38);
+  --helmet-text: rgba(190, 230, 255, 0.95);
   --helmet-bg: rgba(0, 10, 20, 0.45);
+  --helmet-panel-border: rgba(0, 200, 255, 0.2);
+  --helmet-panel-blur: blur(8px);
   --helmet-font: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
   font-family: var(--helmet-font);
   text-transform: uppercase;
@@ -19,6 +22,7 @@
 /* Shared segment primitives (scanner horizontal, vitals vertical) */
 .helmet-seg {
   background: rgba(80, 120, 140, 0.45);
+  border: 1px solid rgba(0, 200, 255, 0.12);
   box-sizing: border-box;
   border-radius: 0px;
   transition:
@@ -65,20 +69,23 @@
   border-color: rgba(0, 200, 255, 0.55);
 }
 
-/* ── Vitals (top-left) ───────────────────────────────────────────────────── */
+/* ── Vitals (top of left stack) ──────────────────────────────────────────── */
 
 .helmet-vitals {
-  position: fixed;
-  top: 14px;
-  left: 12px;
+  position: relative;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: flex-end;
+  justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
   background: var(--helmet-bg);
-  border: 1px solid rgba(0, 200, 255, 0.15);
-  backdrop-filter: blur(6px);
+  border: 1px solid var(--helmet-panel-border);
+  backdrop-filter: var(--helmet-panel-blur);
+  font-family: var(--helmet-font);
 }
 
 .helmet-vital {
@@ -94,6 +101,30 @@
   pointer-events: none;
 }
 
+.helmet-vital--ventable {
+  cursor: pointer;
+}
+
+.helmet-vital--ventable:hover {
+  filter: brightness(1.12);
+}
+
+.helmet-vital--ventable:focus-visible {
+  outline: 1px solid rgba(0, 207, 255, 0.65);
+  outline-offset: 2px;
+}
+
+.helmet-vitals-crew.helmet-vital--ventable,
+.helmet-vitals-cargo.helmet-vital--ventable {
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.helmet-vitals-crew.helmet-vital--ventable:hover,
+.helmet-vitals-cargo.helmet-vital--ventable:hover {
+  filter: brightness(1.12);
+}
+
 .helmet-vital--highlight .helmet-seg--lit {
   box-shadow: 0 0 10px rgba(0, 207, 255, 0.75);
 }
@@ -102,7 +133,7 @@
   font-family: var(--helmet-font);
   font-size: 10px;
   letter-spacing: 0.06em;
-  color: rgba(190, 230, 255, 0.95);
+  color: var(--helmet-text);
   line-height: 1;
   min-height: 12px;
   font-variant-numeric: tabular-nums;
@@ -167,17 +198,57 @@
   gap: 2px;
 }
 
-/* ── Nav chip (top-right) ─────────────────────────────────────────────────── */
+.helmet-sensor-stack .crew-icon--active {
+  color: var(--helmet-accent);
+  filter: drop-shadow(0 0 3px rgba(0, 207, 255, 0.7));
+}
+
+.helmet-sensor-stack .crew-icon--empty {
+  color: rgba(0, 200, 255, 0.55);
+}
+
+.helmet-sensor-stack .power-hud-cargo-slot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(0, 200, 255, 0.45);
+  background: transparent;
+}
+
+.helmet-sensor-stack .power-hud-cargo-slot--filled {
+  background: rgba(0, 207, 255, 0.95);
+  border-color: rgba(0, 207, 255, 0.85);
+  box-shadow: 0 0 4px rgba(0, 207, 255, 0.35);
+}
+
+/* ── Nav + scanner stack (bottom-left) ───────────────────────────────────── */
+
+.helmet-sensor-stack {
+  --helmet-sensor-stack-width: min(248px, 52vw);
+  position: fixed;
+  left: 12px;
+  bottom: 14px;
+  width: var(--helmet-sensor-stack-width);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 96;
+}
+
+.helmet-sensor-stack > * {
+  pointer-events: auto;
+}
 
 .helmet-nav {
-  position: fixed;
-  top: 14px;
-  right: 12px;
-  max-width: min(280px, 42vw);
+  position: relative;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
   padding: 8px 10px;
   background: var(--helmet-bg);
-  border: 1px solid rgba(0, 200, 255, 0.18);
-  backdrop-filter: blur(6px);
+  border: 1px solid var(--helmet-panel-border);
+  backdrop-filter: var(--helmet-panel-blur);
   font-family: var(--helmet-font);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -190,10 +261,30 @@
   gap: 8px;
 }
 
-.helmet-nav-target-line {
-  display: flex;
+.helmet-nav-metrics {
+  width: 100%;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.helmet-nav-metric {
+  display: inline-flex;
   align-items: baseline;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.helmet-nav-metric--rel {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.helmet-nav-target-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
   width: 100%;
   margin-bottom: 4px;
 }
@@ -206,7 +297,7 @@
 
 .helmet-nav-name {
   font-size: 10px;
-  color: rgba(190, 230, 255, 0.95);
+  color: var(--helmet-text);
   text-transform: none;
   letter-spacing: 0.04em;
   overflow: hidden;
@@ -272,8 +363,8 @@
 
 .helmet-nav-btn {
   background: rgba(0, 20, 35, 0.6);
-  border: 1px solid rgba(0, 200, 255, 0.28);
-  color: rgba(190, 230, 255, 0.9);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  color: var(--helmet-text);
   font-family: inherit;
   font-size: 8px;
   padding: 4px 8px;
@@ -292,6 +383,86 @@
 
 .helmet-nav-btn--highlight {
   animation: helmet-nav-pulse 0.9s ease-in-out infinite;
+}
+
+.helmet-nav-btn--target {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.helmet-nav-btn--target-filled {
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.helmet-nav-btn--target:not(.helmet-nav-btn--target-filled) {
+  opacity: 0.85;
+}
+
+.helmet-nav-btn--ap {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.helmet-nav-btn:disabled,
+.helmet-nav-btn--disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.helmet-nav-btn--scan {
+  flex-shrink: 0;
+  --scan-accent: #00c8ff;
+  background: color-mix(in srgb, var(--scan-accent) 14%, rgba(0, 12, 22, 0.72));
+  border-color: color-mix(in srgb, var(--scan-accent) 45%, transparent);
+  color: var(--scan-accent);
+  font-size: 10px;
+  min-width: 20px;
+  padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.helmet-nav-btn--scan:hover {
+  border-color: color-mix(in srgb, var(--scan-accent) 85%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--scan-accent) 25%, transparent);
+}
+
+.helmet-nav-btn--scan-active {
+  border-color: color-mix(in srgb, var(--scan-accent) 75%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--scan-accent) 40%, transparent);
+}
+
+.helmet-nav-btn--scan-empty {
+  opacity: 0.55;
+}
+
+.helmet-nav-btn--clear-target {
+  flex-shrink: 0;
+  min-width: 20px;
+  padding: 4px 6px;
+  color: var(--helmet-accent);
+  border-color: rgba(0, 200, 255, 0.45);
+  background: color-mix(in srgb, var(--helmet-accent) 12%, rgba(0, 12, 22, 0.72));
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.helmet-nav-btn--clear-target:hover {
+  border-color: rgba(0, 207, 255, 0.85);
+  box-shadow: 0 0 8px rgba(0, 207, 255, 0.25);
+  color: #fff;
 }
 
 .helmet-ap-state {
@@ -317,21 +488,20 @@
   flex-wrap: wrap;
 }
 
-/* ── Scanner deck (bottom-left) ──────────────────────────────────────────── */
+/* ── Scanner deck (in sensor stack, below nav) ───────────────────────────── */
 
 .helmet-scanner-deck {
-  position: fixed;
-  left: 12px;
-  bottom: 14px;
-  width: min(248px, 52vw);
+  position: relative;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
   padding: 8px 10px;
   background: var(--helmet-bg);
-  border: 1px solid rgba(0, 200, 255, 0.2);
-  backdrop-filter: blur(8px);
+  border: 1px solid var(--helmet-panel-border);
+  backdrop-filter: var(--helmet-panel-blur);
   font-family: var(--helmet-font);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  pointer-events: auto;
 }
 
 .helmet-scanner-deck-head {
@@ -389,16 +559,48 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: rgba(120, 160, 180, 0.85);
+  color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 42%, #0c141c);
   cursor: pointer;
 }
 
 .helmet-scanner-row--on .helmet-scanner-icon {
-  color: var(--helmet-accent);
+  color: var(--scan-accent, var(--helmet-accent));
 }
 
 .helmet-scanner-icon:hover:not(:disabled) {
-  color: #fff;
+  color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 75%, white);
+}
+
+.helmet-scanner-row .helmet-seg--h:not(.helmet-seg--lit) {
+  background: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 22%, #0a1218);
+  border-color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 32%, transparent);
+}
+
+.helmet-scanner-row:not(.helmet-scanner-row--on) .helmet-seg--h:not(.helmet-seg--lit) {
+  background: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 14%, #0a1218);
+  border-color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 24%, transparent);
+}
+
+.helmet-scanner-row .helmet-seg--h.helmet-seg--lit {
+  background: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 95%, transparent);
+  border-color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 85%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 35%, transparent);
+}
+
+.helmet-scanner-lv {
+  color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 48%, #0c141c);
+}
+
+.helmet-scanner-row--on .helmet-scanner-lv {
+  color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 92%, white);
+}
+
+.helmet-scanner-abbr {
+  color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 40%, transparent);
+}
+
+.helmet-scanner-row--on .helmet-scanner-abbr {
+  color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 65%, transparent);
 }
 
 .helmet-scanner-levels {
@@ -413,20 +615,14 @@
   font-size: 10px;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
-  color: rgba(190, 230, 255, 0.95);
   text-align: center;
   line-height: 1;
-}
-
-.helmet-scanner-row:not(.helmet-scanner-row--on) .helmet-scanner-lv {
-  color: var(--helmet-muted);
 }
 
 .helmet-scanner-abbr {
   font-family: inherit;
   font-size: 8px;
   letter-spacing: 0.18em;
-  color: var(--helmet-muted);
   text-align: right;
 }
 

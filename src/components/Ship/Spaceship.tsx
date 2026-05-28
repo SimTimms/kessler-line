@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import ThrusterParticles from './ThrusterParticles';
 import ThrusterHitboxDebug from './ThrusterHitboxDebug';
 import DockingReleaseParticles from '../WorldObjects/DockingReleaseParticles';
+import ResourceVentParticles from './ResourceVentParticles';
+import EjectedCrew from './EjectedCrew';
 import ShipExplosion from './ShipExplosion';
 import ShipParticleCloud, { type ShipParticleCloudProps } from './ShipParticleCloud';
 import RailgunDamagePainter from './RailgunDamagePainter';
@@ -208,6 +210,8 @@ export default function Spaceship({
       <group position={[0, 0, 9]}>
         <DockingReleaseParticles shipGroupRef={groupRef} triggerRef={releaseParticleTrigger} />
       </group>
+      <ResourceVentParticles shipGroupRef={groupRef} />
+      <EjectedCrew shipGroupRef={groupRef} />
       <ShipParticleCloud shipGroupRef={groupRef} {...shipParticleCloudProps} />
       <RailgunDamagePainter shipGroupRef={groupRef} />
       <RailgunOxygenVents shipGroupRef={groupRef} />

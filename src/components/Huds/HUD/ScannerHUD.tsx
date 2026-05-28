@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type CSSProperties } from 'react';
 import { Flashlight, Magnet, HardDrive, Radar, AudioLines, Radiation } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HudButton } from '../HudButton';
@@ -9,7 +9,7 @@ import { radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
 import './ScannerHUD.css';
 import '../HelmetHUD/HelmetHUD.css';
-import { getScannerRange } from '../../../config/scanRanges';
+import { getScannerAccentColor, getScannerRange } from '../../../config/scanRanges';
 import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
 
@@ -39,6 +39,7 @@ function HelmetScannerRow({
   id,
   abbrev,
   icon: Icon,
+  accentColor,
   power,
   isActive,
   disabled,
@@ -49,6 +50,7 @@ function HelmetScannerRow({
   id: string;
   abbrev: string;
   icon: LucideIcon;
+  accentColor: string;
   power: number;
   isActive: boolean;
   disabled: boolean;
@@ -61,6 +63,7 @@ function HelmetScannerRow({
   return (
     <div
       className={`helmet-scanner-row${disabled ? ' helmet-scanner-row--disabled' : ''}${highlight ? ' helmet-scanner-row--highlight' : ''}${isActive ? ' helmet-scanner-row--on' : ''}`}
+      style={{ '--scan-accent': accentColor } as CSSProperties}
       title={id}
     >
       <button
@@ -267,6 +270,7 @@ export const ScannerHUD = ({
                 id={id}
                 abbrev={SCANNER_ABBREV[id] ?? id.slice(0, 3).toUpperCase()}
                 icon={icon}
+                accentColor={getScannerAccentColor(id)}
                 power={powers[id]}
                 isActive={isActive}
                 disabled={disabled}
@@ -294,6 +298,7 @@ export const ScannerHUD = ({
           <HudButton
             icon={icon}
             name=""
+            accentColor={getScannerAccentColor(id)}
             isActive={isActive}
             power={powers[id]}
             highlight={focusElements.includes(id)}

@@ -6,9 +6,11 @@ import {
   hullIntegrity,
   fuel,
   o2,
+  shipCrew,
   shipAcceleration,
   getShipSpeedMps,
 } from '../../../context/ShipState';
+import { SHIP_CREW_CAPACITY } from '../../../config/dockTransferConfig';
 import { cargo, type CargoItem, reduceCargoItem } from '../../../context/Inventory';
 import { triggerEject } from '../../../context/EjectEvent';
 import './PowerHUD.css';
@@ -23,6 +25,9 @@ import {
 } from './PowerHUDHelpers';
 import { resourceRateRefs } from '../../../context/ResourceRates';
 import Cargo from './Cargo/Cargo';
+import { VentResourceModal } from './VentResourceModal';
+import { canVentResource } from '../../../context/ventResource';
+import type { VentResourceKind } from '../../../config/ventResourceConfig';
 
 interface StatDef {
   id: string;
@@ -124,19 +129,54 @@ function litSegmentCount(pct: number): number {
   return Math.max(0, Math.min(VITAL_SEGMENT_COUNT, Math.round((pct / 100) * VITAL_SEGMENT_COUNT)));
 }
 
+function CrewIcons({ count, size }: { count: number; size: number }) {
+  return (
+    <>
+      {Array.from({ length: SHIP_CREW_CAPACITY }, (_, i) => (
+        <User
+          key={i}
+          size={size}
+          strokeWidth={1.5}
+          className={i < count ? 'crew-icon--active' : 'crew-icon--empty'}
+        />
+      ))}
+    </>
+  );
+}
+
+function ventKindForBarId(barId: string): VentResourceKind | null {
+  switch (barId) {
+    case RESOURCE_HUD_ELEMENTS.PROPELLENT:
+      return 'fuel';
+    case RESOURCE_HUD_ELEMENTS.O2:
+      return 'o2';
+    case RESOURCE_HUD_ELEMENTS.POWER:
+      return 'power';
+    default:
+      return null;
+  }
+}
+
 function HelmetVitalsView({
   bars,
   disableElements,
   focusElements,
   showCrew,
+  crewCount,
   showCargo,
+  onVentRequest,
 }: {
   bars: VitalBarDef[];
   disableElements: string[];
   focusElements: string[];
   showCrew: boolean;
+  crewCount: number;
   showCargo: boolean;
+  onVentRequest: (kind: VentResourceKind) => void;
 }) {
+  const requestVent = (kind: VentResourceKind) => {
+    if (canVentResource(kind)) onVentRequest(kind);
+  };
   return (
     <div className="helmet-vitals" aria-live="polite">
       {bars.map((bar) => {
@@ -152,11 +192,26 @@ function HelmetVitalsView({
         const segLevelClass =
           bar.level === 'red' ? 'helmet-seg--crit' : bar.level === 'orange' ? 'helmet-seg--warn' : '';
         const litCount = litSegmentCount(bar.pct);
+        const ventKind = ventKindForBarId(bar.id);
+        const ventable = ventKind !== null && !disabled && canVentResource(ventKind);
         return (
           <div
             key={bar.id}
-            className={`helmet-vital${disabled ? ' helmet-vital--disabled' : ''}${highlight ? ' helmet-vital--highlight' : ''}`}
-            title={bar.tag}
+            role={ventable ? 'button' : undefined}
+            tabIndex={ventable ? 0 : undefined}
+            className={`helmet-vital${disabled ? ' helmet-vital--disabled' : ''}${highlight ? ' helmet-vital--highlight' : ''}${ventable ? ' helmet-vital--ventable' : ''}`}
+            title={ventable ? `${bar.tag} — click to vent` : bar.tag}
+            onClick={ventable && ventKind ? () => requestVent(ventKind) : undefined}
+            onKeyDown={
+              ventable && ventKind
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      requestVent(ventKind);
+                    }
+                  }
+                : undefined
+            }
           >
             <span
               className={`helmet-vital-rate${rateLabel ? '' : ' helmet-vital-rate--empty'}${rateLabel && bar.ratePerSec > 0 ? ' helmet-vital-rate--gain' : ''}`}
@@ -185,21 +240,81 @@ function HelmetVitalsView({
         <div className="helmet-vitals-meta">
           {showCrew && (
             <div
-              className={`helmet-vitals-crew${disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? ' helmet-vital--disabled' : ''}`}
+              role={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
+                canVentResource('crew')
+                  ? 'button'
+                  : undefined
+              }
+              tabIndex={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
+                canVentResource('crew')
+                  ? 0
+                  : undefined
+              }
+              className={`helmet-vitals-crew${disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? ' helmet-vital--disabled' : ''}${!disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) && canVentResource('crew') ? ' helmet-vital--ventable' : ''}`}
+              title={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) && canVentResource('crew')
+                  ? 'Crew — click to vent'
+                  : undefined
+              }
+              onClick={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS)
+                  ? () => requestVent('crew')
+                  : undefined
+              }
+              onKeyDown={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
+                canVentResource('crew')
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        requestVent('crew');
+                      }
+                    }
+                  : undefined
+              }
             >
-              {([0, 1, 2] as const).map((i) => (
-                <User
-                  key={i}
-                  size={11}
-                  strokeWidth={1.5}
-                  className={i === 0 ? 'crew-icon--active' : 'crew-icon--empty'}
-                />
-              ))}
+              <CrewIcons count={crewCount} size={11} />
             </div>
           )}
           {showCargo && (
             <div
-              className={`helmet-vitals-cargo${disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) ? ' helmet-vital--disabled' : ''}`}
+              role={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                canVentResource('cargo')
+                  ? 'button'
+                  : undefined
+              }
+              tabIndex={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                canVentResource('cargo')
+                  ? 0
+                  : undefined
+              }
+              className={`helmet-vitals-cargo${disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) ? ' helmet-vital--disabled' : ''}${!disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) && canVentResource('cargo') ? ' helmet-vital--ventable' : ''}`}
+              title={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                canVentResource('cargo')
+                  ? 'Cargo — click to vent'
+                  : undefined
+              }
+              onClick={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY)
+                  ? () => requestVent('cargo')
+                  : undefined
+              }
+              onKeyDown={
+                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                canVentResource('cargo')
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        requestVent('cargo');
+                      }
+                    }
+                  : undefined
+              }
             >
               {([0, 1, 2, 3] as const).map((i) => (
                 <div
@@ -231,7 +346,9 @@ export default function PowerHUD({
   const [displayGForce, setDisplayGForce] = useState(0);
   const [displayVelocity, setDisplayVelocity] = useState(0);
   const [displayCargo, setDisplayCargo] = useState<CargoItem[]>([]);
+  const [displayCrew, setDisplayCrew] = useState(() => Math.floor(shipCrew));
   const [ejectState, setEjectState] = useState<EjectState | null>(null);
+  const [ventKind, setVentKind] = useState<VentResourceKind | null>(null);
 
   useEffect(() => {
     let rafId: number;
@@ -243,6 +360,7 @@ export default function PowerHUD({
       setDisplayGForce((shipAcceleration.current * 10) / 9.81);
       setDisplayVelocity(getShipSpeedMps());
       setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
+      setDisplayCrew(Math.floor(shipCrew));
       rafId = requestAnimationFrame(update);
     };
     rafId = requestAnimationFrame(update);
@@ -355,8 +473,11 @@ export default function PowerHUD({
           disableElements={disableElements}
           focusElements={focusElements}
           showCrew
+          crewCount={displayCrew}
           showCargo
+          onVentRequest={setVentKind}
         />
+        {ventKind && <VentResourceModal kind={ventKind} onClose={() => setVentKind(null)} />}
         {displayCargo.length > 0 && (
           <div className="power-hud power-hud--cargo-flyout" aria-live="polite">
             <div className="power-hud-section">CARGO</div>
@@ -410,14 +531,7 @@ export default function PowerHUD({
           <div
             className={`hud-btn ${focusElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? 'hud-btn-highlight' : ''}`}
           >
-            {([0, 1, 2] as const).map((i) => (
-              <User
-                key={i}
-                size={14}
-                strokeWidth={1.5}
-                className={i === 0 ? 'crew-icon--active' : 'crew-icon--empty'}
-              />
-            ))}
+            <CrewIcons count={displayCrew} size={14} />
           </div>
         </div>
         <div

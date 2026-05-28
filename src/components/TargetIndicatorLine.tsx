@@ -48,10 +48,8 @@ export default function TargetIndicatorLine({
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(6); // 2 points × 3 components
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const m = new THREE.LineDashedMaterial({
+    const m = new THREE.LineBasicMaterial({
       color: COLOR_DEFAULT,
-      dashSize: 24,
-      gapSize: 10,
       transparent: true,
       opacity: opacity,
       depthTest: false,

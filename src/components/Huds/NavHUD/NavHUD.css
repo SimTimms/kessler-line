@@ -168,6 +168,52 @@
   animation: nav-target-pulse 0.9s ease-in-out infinite;
 }
 
+.nav-target-btn--scan {
+  width: auto;
+  min-width: 32px;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  --scan-accent: #00c8ff;
+  background: color-mix(in srgb, var(--scan-accent) 14%, rgba(0, 12, 22, 0.72));
+  border-color: color-mix(in srgb, var(--scan-accent) 45%, transparent);
+  color: var(--scan-accent);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.nav-target-btn--scan:hover {
+  border-color: color-mix(in srgb, var(--scan-accent) 85%, transparent);
+  background: color-mix(in srgb, var(--scan-accent) 10%, rgba(0, 12, 22, 0.72));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--scan-accent) 25%, transparent);
+}
+
+.nav-target-btn--scan-active {
+  border-color: color-mix(in srgb, var(--scan-accent) 75%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--scan-accent) 40%, transparent);
+}
+
+.nav-target-btn--scan-empty {
+  opacity: 0.55;
+}
+
+.nav-target-btn--clear-target {
+  min-width: 32px;
+  color: rgba(0, 207, 255, 0.95);
+  border-color: rgba(0, 200, 255, 0.45);
+  background: color-mix(in srgb, rgba(0, 207, 255, 1) 12%, rgba(0, 12, 22, 0.72));
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.nav-target-btn--clear-target:hover {
+  border-color: rgba(0, 207, 255, 0.85);
+  box-shadow: 0 0 8px rgba(0, 207, 255, 0.25);
+  color: #fff;
+}
+
 @keyframes nav-target-pulse {
   0%, 100% {
     box-shadow: 0 0 4px rgba(0, 170, 255, 0.24), 0 0 0 1px rgba(0, 170, 255, 0.18);

@@ -108,3 +108,22 @@
 .dock-transfer-hud__btn:active:not(:disabled) {
   background: rgba(0, 100, 140, 0.5);
 }
+
+.dock-transfer-hud__footer {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 200, 255, 0.12);
+}
+
+.dock-transfer-hud__btn--wide {
+  width: auto;
+  min-width: 108px;
+  height: 24px;
+  padding: 0 14px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

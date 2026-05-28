@@ -8,8 +8,13 @@ export const COLLISION_DAMAGE_MULTIPLIER = 2;
 export const RAILGUN_DAMAGE_MIN = 20;
 export const RAILGUN_DAMAGE_MAX = 30;
 
-// O2 drain rate (units per second, always active)
+// O2 drain rate per crew member (units per second per person, always active)
 export const O2_DRAIN_RATE = 0.05;
+
+/** Total O2 drain (units/s) scales linearly with crew aboard. */
+export function o2DrainRateForCrew(crewCount: number): number {
+  return O2_DRAIN_RATE * Math.max(1, Math.floor(crewCount));
+}
 
 // Hull stress damage — applies when thrust multiplier is maxed out and thrusting
 // One damage tick (1 HP) fires every HULL_STRESS_DAMAGE_INTERVAL seconds

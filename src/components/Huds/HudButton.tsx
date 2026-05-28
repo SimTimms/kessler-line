@@ -1,4 +1,8 @@
 import { type LucideIcon } from 'lucide-react';
+import {
+  getScannerAccentColorDim,
+  getScannerAccentColorMuted,
+} from '../../config/scanRanges';
 import './HudButton.css';
 
 const LEVELS = [1, 2, 3, 4, 5] as const;
@@ -8,6 +12,7 @@ export const HudButton = ({
   isActive,
   onClickEvent,
   icon: Icon,
+  accentColor = '#00cfff',
   power,
   highlight,
   onPowerChange,
@@ -19,13 +24,18 @@ export const HudButton = ({
   isActive: boolean;
   onClickEvent: () => void;
   icon: LucideIcon;
+  accentColor?: string;
   power: number;
   highlight?: boolean;
   onPowerChange: (level: number) => void;
   disabled?: boolean;
   flashingPipLevel?: number;
   flashingPipOn?: boolean;
-}) => (
+}) => {
+  const accentDim = getScannerAccentColorDim(accentColor);
+  const accentMuted = getScannerAccentColorMuted(accentColor);
+
+  return (
   <div className={`hud-btn ${highlight ? 'hud-btn-highlight' : ''} `}>
     <button
       className={`hud-btn `}
@@ -33,7 +43,7 @@ export const HudButton = ({
       onClick={onClickEvent}
       style={{
         background: isActive ? 'rgba(0,200,255,0.0)' : 'rgba(60,60,60,0)',
-        color: isActive ? '#00cfff' : '#888',
+        color: isActive ? accentColor : accentDim,
         cursor: disabled ? 'default' : 'pointer',
         userSelect: 'none',
         outline: 'none !important',
@@ -55,11 +65,11 @@ export const HudButton = ({
             style={{
               width: 7,
               height: 7,
-              background: lit || flashing ? '#00cfff' : '#1e1e1e',
+              background: lit || flashing ? accentColor : isActive ? accentMuted : accentDim,
               border: `1px solid ${
-                lit || flashing ? 'rgba(0,207,255,0.85)' : 'rgba(100,100,100,0.35)'
+                lit || flashing ? accentColor : isActive ? accentMuted : accentDim
               }`,
-              boxShadow: flashing ? '0 0 8px rgba(0, 200, 255, 0.65)' : 'none',
+              boxShadow: flashing ? `0 0 8px color-mix(in srgb, ${accentColor} 65%, transparent)` : 'none',
               transition: 'background 0.12s, border-color 0.12s',
             }}
           />
@@ -67,4 +77,5 @@ export const HudButton = ({
       })}
     </div>
   </div>
-);
+  );
+};

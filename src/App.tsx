@@ -11,9 +11,11 @@ import {
   setHullIntegrity,
   setFuel,
   setO2,
+  setShipCrew,
   shipDestroyed,
   mainEngineDisabled,
 } from './context/ShipState';
+import { SHIP_CREW_CAPACITY } from './config/dockTransferConfig';
 import { shipPosRef } from './context/ShipPos';
 import { clearNavTarget } from './context/NavTarget';
 import { clearSelectedTarget } from './context/TargetSelection';
@@ -24,12 +26,13 @@ import TutorialAir from './components/TutorialAir/TutorialAir';
 
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
-function resetShipState() {
+function resetShipState(forTutorial = false) {
   shipVelocity.set(0, 0, 0);
   shipPosRef.current.set(0, 0, 0);
   setHullIntegrity(100);
   setFuel(100);
   setO2(100);
+  setShipCrew(forTutorial ? SHIP_CREW_CAPACITY : 1);
   shipDestroyed.current = false;
   mainEngineDisabled.reverseA.current = false;
   mainEngineDisabled.reverseB.current = false;
@@ -50,7 +53,7 @@ function App() {
 
   const handleTutorialSelect = useCallback((selection: TutorialMenuSelection) => {
     resumeAudioContext();
-    resetShipState();
+    resetShipState(true);
     clearNavTarget();
     clearSelectedTarget();
     disableAutopilot();
@@ -60,7 +63,7 @@ function App() {
   }, []);
 
   const handleTutorialComplete = useCallback(() => {
-    resetShipState();
+    resetShipState(false);
     tutorialStepRef.current = 0;
     setMode(GAME_MODES.game);
     setShowShipTitle(true);

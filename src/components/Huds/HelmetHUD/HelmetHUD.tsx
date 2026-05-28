@@ -34,18 +34,20 @@ const HelmetHUD = memo(function HelmetHUD({
 }: HelmetHUDProps) {
   return (
     <div className="helmet-hud">
-      <PowerHUD
-        layout="helmet"
-        disableElements={disableElements}
-        focusElements={focusElements}
-      />
-      <NavHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
-      <ScannerHUD
-        layout="helmet"
-        focusElements={focusElements}
-        disableElements={disableElements}
-        {...scannerProps}
-      />
+      <div className="helmet-sensor-stack">
+        <PowerHUD
+          layout="helmet"
+          disableElements={disableElements}
+          focusElements={focusElements}
+        />
+        <NavHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
+        <ScannerHUD
+          layout="helmet"
+          focusElements={focusElements}
+          disableElements={disableElements}
+          {...scannerProps}
+        />
+      </div>
       <ContactsHUD />
       <DockTransferHUD />
     </div>

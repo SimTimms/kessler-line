@@ -10,12 +10,13 @@ import {
   shipVelocity,
   fuel,
   o2,
+  shipCrew,
   isRefueling,
   isTransferringO2,
   setFuel,
   setO2,
 } from '../../context/ShipState';
-import { FUEL_REFILL_RATE, O2_REFILL_RATE, O2_DRAIN_RATE } from '../../config/damageConfig';
+import { FUEL_REFILL_RATE, O2_REFILL_RATE, o2DrainRateForCrew } from '../../config/damageConfig';
 import { resourceRateRefs } from '../../context/ResourceRates';
 import { zeroThrusterLights } from './thrusterLight';
 import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
@@ -74,8 +75,10 @@ export function applyDockedState({
   shipAcceleration.current = 0;
   zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
 
+  const o2Drain = o2DrainRateForCrew(shipCrew);
+
   let fuelRate = 0;
-  let o2Rate = -O2_DRAIN_RATE;
+  let o2Rate = -o2Drain;
   if (isRefueling.current) {
     fuelRate += FUEL_REFILL_RATE;
     setFuel(Math.min(100, fuel + FUEL_REFILL_RATE * rawDelta));
@@ -84,7 +87,7 @@ export function applyDockedState({
     o2Rate += O2_REFILL_RATE;
     setO2(Math.min(100, o2 + O2_REFILL_RATE * rawDelta));
   }
-  setO2(Math.max(0, o2 - O2_DRAIN_RATE * rawDelta));
+  setO2(Math.max(0, o2 - o2Drain * rawDelta));
 
   resourceRateRefs.power.current = 0;
   resourceRateRefs.fuel.current = fuelRate;

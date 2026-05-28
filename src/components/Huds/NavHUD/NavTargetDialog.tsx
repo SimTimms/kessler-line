@@ -1,4 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
+import {
+  getNavScanPickerTheme,
+  isNavScanPickerVariant,
+  type NavScanPickerId,
+} from '../../../config/navScanPickerConfig';
 import { playDialogOpen, playDialogSelect } from '../../../sound/SoundManager';
 import './NavTargetDialog.css';
 
@@ -9,7 +14,12 @@ export interface NavTargetItem {
   distance?: string;
 }
 
+export type NavTargetDialogVariant = 'full' | NavScanPickerId | 'magnetic-only';
+
 interface NavTargetDialogProps {
+  variant?: NavTargetDialogVariant;
+  /** Single list for scan picker variants (`magnetic-only` → magnet). */
+  scanItems?: NavTargetItem[];
   generalItems?: NavTargetItem[];
   generalSectionLabel?: string;
   navItems: NavTargetItem[];
@@ -23,7 +33,15 @@ interface NavTargetDialogProps {
   onClose: () => void;
 }
 
+function resolveScanPickerId(variant: NavTargetDialogVariant): NavScanPickerId | null {
+  if (variant === 'full') return null;
+  if (variant === 'magnetic-only') return 'magnet';
+  return isNavScanPickerVariant(variant) ? variant : null;
+}
+
 export function NavTargetDialog({
+  variant = 'full',
+  scanItems,
   generalItems = [],
   generalSectionLabel = 'GENERAL CONTACTS',
   navItems,
@@ -36,6 +54,16 @@ export function NavTargetDialog({
   onSelect,
   onClose,
 }: NavTargetDialogProps) {
+  const scanPickerId = resolveScanPickerId(variant);
+  const scanOnly = scanPickerId !== null;
+  const pickerItems =
+    scanItems ??
+    (scanPickerId === 'magnet'
+      ? magneticItems
+      : scanPickerId === 'drive'
+        ? driveItems
+        : []);
+
   const soundFired = useRef(false);
   useEffect(() => {
     if (!soundFired.current) {
@@ -65,34 +93,60 @@ export function NavTargetDialog({
     );
   }
 
+  const theme = scanPickerId ? getNavScanPickerTheme(scanPickerId) : null;
+  const dialogClass = scanOnly
+    ? `ntd-dialog ntd-dialog--scan ntd-dialog--scan-${scanPickerId}`
+    : 'ntd-dialog';
+  const title = scanOnly ? theme!.title : 'SELECT NAV TARGET';
+
   return (
     <div className="ntd-backdrop" onClick={onClose}>
-      <div className="ntd-dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="ntd-title">SELECT NAV TARGET</div>
+      <div
+        className={dialogClass}
+        onClick={(e) => e.stopPropagation()}
+        style={theme ? ({ '--ntd-scan-color': theme.color } as CSSProperties) : undefined}
+      >
+        {theme && (
+          <span className="ntd-scan-brand" aria-hidden>
+            {theme.headerBrand}
+          </span>
+        )}
+        <div className="ntd-title">{title}</div>
         <div className="ntd-list">
-          {generalItems.length > 0 && (
+          {!scanOnly && generalItems.length > 0 && (
             <section>
               <div className="ntd-section-header">{generalSectionLabel}</div>
               {generalItems.map(renderItem)}
             </section>
           )}
-          {navItems.length > 0 && (
+          {!scanOnly && navItems.length > 0 && (
             <section>
               <div className="ntd-section-header">{navSectionLabel}</div>
               {navItems.map(renderItem)}
             </section>
           )}
-          {magneticItems.length > 0 && (
-            <section>
-              <div className="ntd-section-header">MAGNETIC CONTACTS</div>
-              {magneticItems.map(renderItem)}
-            </section>
-          )}
-          {showDriveItems && driveItems.length > 0 && (
-            <section>
-              <div className="ntd-section-header">DRIVE CONTACTS</div>
-              {driveItems.map(renderItem)}
-            </section>
+          {scanOnly ? (
+            <>
+              {pickerItems.length > 0 ? pickerItems.map(renderItem) : null}
+              {pickerItems.length === 0 && (
+                <div className="ntd-empty">{theme!.emptyMessage}</div>
+              )}
+            </>
+          ) : (
+            <>
+              {magneticItems.length > 0 && (
+                <section>
+                  <div className="ntd-section-header">MAGNETIC CONTACTS</div>
+                  {magneticItems.map(renderItem)}
+                </section>
+              )}
+              {showDriveItems && driveItems.length > 0 && (
+                <section>
+                  <div className="ntd-section-header">DRIVE CONTACTS</div>
+                  {driveItems.map(renderItem)}
+                </section>
+              )}
+            </>
           )}
         </div>
         <button className="ntd-close" onClick={onClose}>

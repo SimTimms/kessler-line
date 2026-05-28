@@ -9,6 +9,17 @@
   pointer-events: auto;
 }
 
+.helmet-sensor-stack .power-hud--cargo-flyout {
+  position: absolute;
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+}
+
 .power-hud {
   position: fixed;
   top: 70px;

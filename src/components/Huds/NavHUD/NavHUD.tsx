@@ -1,11 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type CSSProperties } from 'react';
 import * as THREE from 'three';
-import { NAV_TARGET_DEFS, displayNameForDockedStation } from '../../../config/worldConfig';
+import {
+  NAV_TARGET_DEFS,
+  RADIO_BROADCAST_DEFS,
+  displayNameForDockedStation,
+} from '../../../config/worldConfig';
 import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
 import { isDockingTutorialUndockAllowed } from '../../../tutorial/tutorialDockingInputGate';
 import { dockingTutorialActiveRef, tutorialStepRef } from '../../../context/TutorialState';
 import { TUTORIAL_DOCKING_STEPS } from '../../../tutorial/tutorialDockingSteps';
-import { navTargetPosRef, navTargetIdRef, hasNavTarget } from '../../../context/NavTarget';
+import { navTargetPosRef, navTargetIdRef, hasNavTarget, clearNavTarget } from '../../../context/NavTarget';
 import { gravityBodies } from '../../../context/GravityRegistry';
 import { shipPosRef } from '../../../context/ShipPos';
 import { getShipSpeedMps, orbitStatusRef, shipVelocity } from '../../../context/ShipState';
@@ -18,12 +22,27 @@ import {
   selectedTargetPosition,
   selectedTargetVelocity,
   targetFlashUntil,
-  type TargetType,
 } from '../../../context/TargetSelection';
+import { getCollidables } from '../../../context/CollisionRegistry';
 import { getMagneticTargets } from '../../../context/MagneticRegistry';
 import { magneticOnRef, magneticScanRangeRef } from '../../../context/MagneticScan';
 import { getDriveSignatures } from '../../../context/DriveSignatureRegistry';
 import { driveSignatureOnRef, driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
+import { proximityScanOnRef, proximityScanRangeRef } from '../../../context/ProximityScan';
+import { radioOnRef, radioRangeRef } from '../../../context/RadioState';
+import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
+import { activeRadiationZonesRef } from '../../../context/ActiveRadiationZones';
+import { SHIP_COLLISION_ID } from '../../../context/ShipState';
+import {
+  NAV_SCAN_PICKER_ORDER,
+  getNavScanPickerTheme,
+  type NavScanPickerId,
+} from '../../../config/navScanPickerConfig';
+import {
+  resolveRadiationZoneWorldPosition,
+  horizontalDistanceToRadiationZone,
+} from '../../../utils/radiationZonePosition';
+import { humanizeCollidableId, type NavScanContact } from './navScanPickerContacts';
 import { KM_PER_UNIT } from '../../../config/commsConfig';
 import {
   autopilotActive,
@@ -42,16 +61,6 @@ const NAV_TARGETS = NAV_TARGET_DEFS;
 const ORBIT_LABELS = new Map(NAV_TARGET_DEFS.map((p) => [p.id, p.label]));
 const _toTargetDir = new THREE.Vector3();
 
-interface ScanContact {
-  id: string;
-  label: string;
-  sublabel: string;
-  distance: string;
-  type: TargetType;
-  getPosition: (v: THREE.Vector3) => THREE.Vector3;
-  getVelocity?: (v: THREE.Vector3) => THREE.Vector3;
-}
-
 interface TutorialTargetDef {
   id: string;
   label: string;
@@ -64,6 +73,22 @@ function formatDist(distUnits: number): string {
   if (km >= 1_000_000) return `${(km / 1_000_000).toFixed(2)} Gm`;
   if (km >= 1_000) return `${(km / 1_000).toFixed(1)} Mm`;
   return `${km.toFixed(0)} km`;
+}
+
+function contactListSignature(contacts: { id: string; distance: string }[]): string {
+  return contacts
+    .map((c) => `${c.id}:${c.distance}`)
+    .sort()
+    .join('|');
+}
+
+function toNavTargetItems(contacts: NavScanContact[]): NavTargetItem[] {
+  return contacts.map((c) => ({
+    id: c.id,
+    label: c.label,
+    sublabel: c.sublabel,
+    distance: c.distance,
+  }));
 }
 
 interface NavHUDProps {
@@ -86,6 +111,7 @@ export const NavHUD = ({
   const [targetId, setTargetId] = useState(navTargetIdRef.current);
   const [targetLabel, setTargetLabel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [openScanPicker, setOpenScanPicker] = useState<NavScanPickerId | null>(null);
   const [selectedObjName, setSelectedObjName] = useState<string | null>(null);
   const [navTargetHighlight, setNavTargetHighlight] = useState(false);
   const [highlightedContactId, setHighlightedContactId] = useState<string | undefined>();
@@ -93,8 +119,11 @@ export const NavHUD = ({
     NAV_TARGETS.map((t) => ({ id: t.id, label: t.label }))
   );
   const [generalItems, setGeneralItems] = useState<NavTargetItem[]>([]);
-  const [magneticContacts, setMagneticContacts] = useState<ScanContact[]>([]);
-  const [driveContacts, setDriveContacts] = useState<ScanContact[]>([]);
+  const [magneticContacts, setMagneticContacts] = useState<NavScanContact[]>([]);
+  const [driveContacts, setDriveContacts] = useState<NavScanContact[]>([]);
+  const [proximityContacts, setProximityContacts] = useState<NavScanContact[]>([]);
+  const [radioContacts, setRadioContacts] = useState<NavScanContact[]>([]);
+  const [radiationContacts, setRadiationContacts] = useState<NavScanContact[]>([]);
   const [isDocked, setIsDocked] = useState(false);
   const [dockedStationId, setDockedStationId] = useState<string | null>(null);
   const isDockedRef = useRef(false);
@@ -119,6 +148,10 @@ export const NavHUD = ({
   const prevGeneralSigRef = useRef('');
   const prevMagSigRef = useRef('');
   const prevDriveSigRef = useRef('');
+  const prevProximitySigRef = useRef('');
+  const prevRadioSigRef = useRef('');
+  const prevRadiationSigRef = useRef('');
+  const radioPosVec = useRef(new THREE.Vector3());
   const scanVec = useRef(new THREE.Vector3());
   const navVec = useRef(new THREE.Vector3());
   const velVec = useRef(new THREE.Vector3());
@@ -275,9 +308,13 @@ export const NavHUD = ({
           : helmetAp
             ? 'OFF'
             : 'DISENGAGED';
-        if (!helmetAp) {
-          const btn = autopilotBtnRef.current.parentElement;
-          if (btn) btn.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
+        const btn = autopilotBtnRef.current.parentElement;
+        if (btn instanceof HTMLButtonElement) {
+          if (helmetAp) {
+            btn.classList.toggle('helmet-nav-btn--active', active);
+          } else {
+            btn.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
+          }
         }
       }
       if (layout === 'helmet' && speedRef.current) {
@@ -350,7 +387,7 @@ export const NavHUD = ({
       if (magneticOnRef.current) {
         const range = magneticScanRangeRef.current;
         const targets = getMagneticTargets();
-        const inRange: ScanContact[] = [];
+        const inRange: NavScanContact[] = [];
         for (const t of targets) {
           t.getPosition(scanVec.current);
           const dist = scanVec.current.distanceTo(shipPosRef.current);
@@ -366,10 +403,7 @@ export const NavHUD = ({
             });
           }
         }
-        const sig = inRange
-          .map((c) => `${c.id}:${c.distance}`)
-          .sort()
-          .join('|');
+        const sig = contactListSignature(inRange);
         if (sig !== prevMagSigRef.current) {
           prevMagSigRef.current = sig;
           setMagneticContacts(inRange);
@@ -383,7 +417,7 @@ export const NavHUD = ({
       if (driveSignatureOnRef.current) {
         const range = driveSignatureRangeRef.current;
         const sigs = getDriveSignatures();
-        const inRange: ScanContact[] = [];
+        const inRange: NavScanContact[] = [];
         for (const s of sigs) {
           s.getPosition(scanVec.current);
           const dist = scanVec.current.distanceTo(shipPosRef.current);
@@ -399,10 +433,7 @@ export const NavHUD = ({
             });
           }
         }
-        const sig = inRange
-          .map((c) => c.id)
-          .sort()
-          .join('|');
+        const sig = contactListSignature(inRange);
         if (sig !== prevDriveSigRef.current) {
           prevDriveSigRef.current = sig;
           setDriveContacts(inRange);
@@ -410,6 +441,105 @@ export const NavHUD = ({
       } else if (prevDriveSigRef.current !== '') {
         prevDriveSigRef.current = '';
         setDriveContacts([]);
+      }
+
+      // Proximity contacts (collidables in range)
+      if (proximityScanOnRef.current) {
+        const range = proximityScanRangeRef.current;
+        const inRange: NavScanContact[] = [];
+        for (const c of getCollidables()) {
+          if (c.id === SHIP_COLLISION_ID) continue;
+          c.getWorldPosition(scanVec.current);
+          const dist = scanVec.current.distanceTo(shipPosRef.current);
+          if (dist <= range) {
+            const getPosition = (target: THREE.Vector3) => c.getWorldPosition(target);
+            inRange.push({
+              id: c.id,
+              label: humanizeCollidableId(c.id),
+              sublabel: 'PROXIMITY',
+              distance: formatDist(dist),
+              type: 'default',
+              getPosition,
+              getVelocity: c.getWorldVelocity,
+            });
+          }
+        }
+        const sig = contactListSignature(inRange);
+        if (sig !== prevProximitySigRef.current) {
+          prevProximitySigRef.current = sig;
+          setProximityContacts(inRange);
+        }
+      } else if (prevProximitySigRef.current !== '') {
+        prevProximitySigRef.current = '';
+        setProximityContacts([]);
+      }
+
+      // Radio beacons in range
+      if (radioOnRef.current) {
+        const range = radioRangeRef.current;
+        const inRange: NavScanContact[] = [];
+        for (const def of RADIO_BROADCAST_DEFS) {
+          const collidable = getCollidables().find((c) => c.id === def.id);
+          if (collidable) {
+            collidable.getWorldPosition(radioPosVec.current);
+          } else {
+            radioPosVec.current.set(def.position[0], def.position[1], def.position[2]);
+          }
+          const dist = radioPosVec.current.distanceTo(shipPosRef.current);
+          if (dist <= range) {
+            inRange.push({
+              id: def.id,
+              label: def.label,
+              sublabel: 'RADIO BEACON',
+              distance: formatDist(dist),
+              type: 'default',
+              getPosition: (target) => {
+                const live = getCollidables().find((c) => c.id === def.id);
+                if (live) return live.getWorldPosition(target);
+                return target.set(def.position[0], def.position[1], def.position[2]);
+              },
+            });
+          }
+        }
+        const sig = contactListSignature(inRange);
+        if (sig !== prevRadioSigRef.current) {
+          prevRadioSigRef.current = sig;
+          setRadioContacts(inRange);
+        }
+      } else if (prevRadioSigRef.current !== '') {
+        prevRadioSigRef.current = '';
+        setRadioContacts([]);
+      }
+
+      // Radiation sources in range
+      if (radiationOnRef.current) {
+        const range = radiationRangeRef.current;
+        const inRange: NavScanContact[] = [];
+        for (const zone of activeRadiationZonesRef.current) {
+          if (!resolveRadiationZoneWorldPosition(zone, scanVec.current)) continue;
+          const dist = horizontalDistanceToRadiationZone(shipPosRef.current, scanVec.current);
+          if (dist <= range) {
+            inRange.push({
+              id: zone.id,
+              label: zone.label,
+              sublabel: 'RADIATION',
+              distance: formatDist(dist),
+              type: 'default',
+              getPosition: (target) => {
+                if (resolveRadiationZoneWorldPosition(zone, target)) return target;
+                return target.set(0, 0, 0);
+              },
+            });
+          }
+        }
+        const sig = contactListSignature(inRange);
+        if (sig !== prevRadiationSigRef.current) {
+          prevRadiationSigRef.current = sig;
+          setRadiationContacts(inRange);
+        }
+      } else if (prevRadiationSigRef.current !== '') {
+        prevRadiationSigRef.current = '';
+        setRadiationContacts([]);
       }
 
       if (undockBtnRef.current) {
@@ -490,11 +620,17 @@ export const NavHUD = ({
   const navMatch = NAV_TARGETS.find((t) => t.id === targetId);
   const magneticMatch = magneticContacts.find((c) => c.id === targetId);
   const driveMatch = driveContacts.find((c) => c.id === targetId);
+  const proximityMatch = proximityContacts.find((c) => c.id === targetId);
+  const radioMatch = radioContacts.find((c) => c.id === targetId);
+  const radiationMatch = radiationContacts.find((c) => c.id === targetId);
   const resolvedTargetLabel =
     customGeneralMatch?.label ??
     customPlanetaryMatch?.label ??
     magneticMatch?.label ??
     driveMatch?.label ??
+    proximityMatch?.label ??
+    radioMatch?.label ??
+    radiationMatch?.label ??
     (customGeneralTargets || customPlanetaryTargets ? undefined : navMatch?.label) ??
     targetLabel;
   const displayLabel =
@@ -554,7 +690,11 @@ export const NavHUD = ({
 
     // Scan contact (magnetic or drive)
     const contact =
-      magneticContacts.find((c) => c.id === id) ?? driveContacts.find((c) => c.id === id);
+      magneticContacts.find((c) => c.id === id) ??
+      driveContacts.find((c) => c.id === id) ??
+      proximityContacts.find((c) => c.id === id) ??
+      radioContacts.find((c) => c.id === id) ??
+      radiationContacts.find((c) => c.id === id);
     if (contact) {
       setTargetId(id);
       setTargetLabel(contact.label);
@@ -571,6 +711,7 @@ export const NavHUD = ({
   };
 
   const handleAutopilot = () => {
+    if (!autopilotEnabled) return;
     if (autopilotActive.current && autopilotMode.current === 'approach') {
       disableAutopilot();
       window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
@@ -592,23 +733,88 @@ export const NavHUD = ({
     }
   };
 
-  const magneticItems: NavTargetItem[] = magneticContacts.map((c) => ({
-    id: c.id,
-    label: c.label,
-    sublabel: c.sublabel,
-    distance: c.distance,
-  }));
-  const driveItems: NavTargetItem[] = driveContacts.map((c) => ({
-    id: c.id,
-    label: c.label,
-    sublabel: c.sublabel,
-    distance: c.distance,
-  }));
+  const magneticItems = toNavTargetItems(magneticContacts);
+  const driveItems = toNavTargetItems(driveContacts);
+  const scanContactsByPicker: Record<NavScanPickerId, NavScanContact[]> = {
+    magnet: magneticContacts,
+    drive: driveContacts,
+    proximity: proximityContacts,
+    radio: radioContacts,
+    radiation: radiationContacts,
+  };
+
+  const scanTargetActiveByPicker: Record<NavScanPickerId, boolean> = {
+    magnet: magneticMatch !== undefined,
+    drive: driveMatch !== undefined,
+    proximity: proximityMatch !== undefined,
+    radio: radioMatch !== undefined,
+    radiation: radiationMatch !== undefined,
+  };
 
   const requestUndock = () => {
     if (!isDockingTutorialUndockAllowed()) return;
     window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK));
   };
+
+  const hasActiveNavTarget = targetId.trim().length > 0;
+  const autopilotEnabled = hasActiveNavTarget;
+
+  const handleClearNavTarget = () => {
+    clearNavTarget();
+    clearSelectedTarget();
+    setTargetId('');
+    setTargetLabel('');
+    setSelectedObjName(null);
+    selectedObjNameRef.current = null;
+    setOpenScanPicker(null);
+    if (autopilotActive.current) {
+      disableAutopilot();
+      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+    }
+  };
+
+  const openNavTargetDialog = () => {
+    setOpenScanPicker(null);
+    setDialogOpen(true);
+    setNavTargetHighlight(false);
+    onNavTargetClick?.(targetId);
+  };
+
+  const openScanPickerDialog = (scanId: NavScanPickerId) => {
+    setDialogOpen(false);
+    setOpenScanPicker(scanId);
+  };
+
+  const scanPickerDialog = openScanPicker ? (
+    <NavTargetDialog
+      variant={openScanPicker}
+      scanItems={toNavTargetItems(scanContactsByPicker[openScanPicker])}
+      navItems={[]}
+      magneticItems={[]}
+      driveItems={[]}
+      showDriveItems={false}
+      selectedId={targetId}
+      highlightId={highlightedContactId}
+      onSelect={handleSelect}
+      onClose={() => setOpenScanPicker(null)}
+    />
+  ) : null;
+
+  const navTargetDialog = dialogOpen ? (
+    <NavTargetDialog
+      generalItems={generalItems}
+      generalSectionLabel="GENERAL CONTACTS"
+      navItems={navItems}
+      navSectionLabel="PLANETARY CONTACTS"
+      magneticItems={magneticItems}
+      driveItems={driveItems}
+      showDriveItems={true}
+      selectedId={targetId}
+      highlightId={highlightedContactId}
+      onSelect={handleSelect}
+      onClose={() => setDialogOpen(false)}
+    />
+  ) : null;
 
   if (layout === 'helmet') {
     return (
@@ -636,58 +842,68 @@ export const NavHUD = ({
               <div className="helmet-nav-target-line">
                 <button
                   type="button"
-                  className={`helmet-nav-btn${navTargetHighlight ? ' helmet-nav-btn--highlight' : ''}`}
-                  onClick={() => {
-                    setDialogOpen(true);
-                    setNavTargetHighlight(false);
-                    onNavTargetClick?.(targetId);
-                  }}
+                  className={`helmet-nav-btn helmet-nav-btn--target${displayLabel ? ' helmet-nav-btn--target-filled' : ''}${navTargetHighlight ? ' helmet-nav-btn--highlight' : ''}`}
+                  onClick={openNavTargetDialog}
+                  title={displayLabel || 'Select nav target'}
                 >
-                  TGT
+                  {displayLabel || 'TGT'}
                 </button>
-                <span
-                  className={`helmet-nav-name${!displayLabel ? ' helmet-nav-name--empty' : ''}`}
+                {hasActiveNavTarget ? (
+                  <button
+                    type="button"
+                    className="helmet-nav-btn helmet-nav-btn--clear-target"
+                    onClick={handleClearNavTarget}
+                    title="Clear nav target"
+                    aria-label="Clear nav target"
+                  >
+                    ✕
+                  </button>
+                ) : (
+                  NAV_SCAN_PICKER_ORDER.map((scanId) => {
+                    const count = scanContactsByPicker[scanId].length;
+                    const theme = getNavScanPickerTheme(scanId);
+                    return (
+                      <button
+                        key={scanId}
+                        type="button"
+                        className={`helmet-nav-btn helmet-nav-btn--scan${scanTargetActiveByPicker[scanId] ? ' helmet-nav-btn--scan-active' : ''}${count === 0 ? ' helmet-nav-btn--scan-empty' : ''}`}
+                        style={{ '--scan-accent': theme.color } as CSSProperties}
+                        onClick={() => openScanPickerDialog(scanId)}
+                        title={theme.pickerTitle}
+                        aria-label={`${count} ${theme.pickerTitle.toLowerCase()}`}
+                      >
+                        {count}
+                      </button>
+                    );
+                  })
+                )}
+                <button
+                  type="button"
+                  className={`helmet-nav-btn helmet-nav-btn--ap${!autopilotEnabled ? ' helmet-nav-btn--disabled' : ''}`}
+                  onClick={handleAutopilot}
+                  disabled={!autopilotEnabled}
+                  title={autopilotEnabled ? 'Autopilot' : 'Set a nav target first'}
                 >
-                  {displayLabel}
-                </span>
-              </div>
-              <div className="helmet-nav-row">
-                <span className="helmet-nav-tag">SPD</span>
-                <span ref={speedRef} className="helmet-nav-speed hud-value" />
-                <span className="helmet-nav-tag">Δv</span>
-                <span ref={relativeVelRef} className="helmet-nav-dv hud-value nav-relative-velocity" />
-                <span ref={dockingHintRef} className="nav-target-dock-hint" />
-                <button type="button" className="helmet-nav-btn" onClick={handleAutopilot}>
                   AP <span ref={autopilotBtnRef} className="helmet-ap-state" />
                 </button>
-                <button
-                  ref={velocityMatchBtnRef}
-                  type="button"
-                  className="helmet-nav-btn"
-                  onClick={handleVelocityMatch}
-                >
-                  MATCH
-                </button>
+              </div>
+              <div className="helmet-nav-row helmet-nav-metrics">
+                <div className="helmet-nav-metric">
+                  <span className="helmet-nav-tag">SPD</span>
+                  <span ref={speedRef} className="helmet-nav-speed hud-value" />
+                </div>
+                <div className="helmet-nav-metric helmet-nav-metric--rel">
+                  <span className="helmet-nav-tag">Δv</span>
+                  <span ref={relativeVelRef} className="helmet-nav-dv hud-value nav-relative-velocity" />
+                  <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                </div>
               </div>
               <span ref={orbitLineRef} className="helmet-nav-orbit" />
             </>
           )}
         </div>
-        {dialogOpen && (
-          <NavTargetDialog
-            generalItems={generalItems}
-            generalSectionLabel="GENERAL CONTACTS"
-            navItems={navItems}
-            navSectionLabel="PLANETARY CONTACTS"
-            magneticItems={magneticItems}
-            driveItems={driveItems}
-            showDriveItems={true}
-            selectedId={targetId}
-            highlightId={highlightedContactId}
-            onSelect={handleSelect}
-            onClose={() => setDialogOpen(false)}
-          />
-        )}
+        {navTargetDialog}
+        {scanPickerDialog}
       </>
     );
   }
@@ -721,14 +937,39 @@ export const NavHUD = ({
                   <button
                     type="button"
                     className={`nav-target-btn nav-target-btn--open${navTargetHighlight ? ' nav-target-btn--highlight' : ''}`}
-                    onClick={() => {
-                      setDialogOpen(true);
-                      setNavTargetHighlight(false);
-                      onNavTargetClick?.(targetId);
-                    }}
+                    onClick={openNavTargetDialog}
                   >
                     Open
                   </button>
+                  {hasActiveNavTarget ? (
+                    <button
+                      type="button"
+                      className="nav-target-btn nav-target-btn--clear-target"
+                      onClick={handleClearNavTarget}
+                      title="Clear nav target"
+                      aria-label="Clear nav target"
+                    >
+                      ✕
+                    </button>
+                  ) : (
+                    NAV_SCAN_PICKER_ORDER.map((scanId) => {
+                      const count = scanContactsByPicker[scanId].length;
+                      const theme = getNavScanPickerTheme(scanId);
+                      return (
+                        <button
+                          key={scanId}
+                          type="button"
+                          className={`nav-target-btn nav-target-btn--scan${scanTargetActiveByPicker[scanId] ? ' nav-target-btn--scan-active' : ''}${count === 0 ? ' nav-target-btn--scan-empty' : ''}`}
+                          style={{ '--scan-accent': theme.color } as CSSProperties}
+                          onClick={() => openScanPickerDialog(scanId)}
+                          title={theme.pickerTitle}
+                          aria-label={`${count} ${theme.pickerTitle.toLowerCase()}`}
+                        >
+                          {count}
+                        </button>
+                      );
+                    })
+                  )}
                   <div className="nav-target-readouts">
                     <span
                       className={`nav-target-current-name${!displayLabel ? ' nav-target-current-name--empty' : ''}`}
@@ -798,21 +1039,8 @@ export const NavHUD = ({
         </div>
       </div>
 
-      {dialogOpen && (
-        <NavTargetDialog
-          generalItems={generalItems}
-          generalSectionLabel="GENERAL CONTACTS"
-          navItems={navItems}
-          navSectionLabel="PLANETARY CONTACTS"
-          magneticItems={magneticItems}
-          driveItems={driveItems}
-          showDriveItems={true}
-          selectedId={targetId}
-          highlightId={highlightedContactId}
-          onSelect={handleSelect}
-          onClose={() => setDialogOpen(false)}
-        />
-      )}
+      {navTargetDialog}
+      {scanPickerDialog}
     </>
   );
 };

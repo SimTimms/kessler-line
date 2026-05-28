@@ -45,7 +45,7 @@ export const SCANNER_RANGE_CONFIG: Record<ScannerRangeId, ScannerRangeConfig> = 
     id: 'radio',
     ranges: [0, 200_000, 500_000, 2_000_000, 4_000_000],
     rangeMultiplier: 5,
-    ring: { color: '#00ff88', opacity: 0.3, yOffset: 2 },
+    ring: { color: '#b57bff', opacity: 0.35, yOffset: 2 },
   },
   radiation: {
     id: 'radiation',
@@ -112,3 +112,30 @@ export const SCANNER_RANGE_RING_DEFS: readonly ScannerRangeRingDef[] = [
 ];
 
 export const SCANNER_RANGE_RING_SEGMENTS = 128;
+
+/** Default cyan for spotlight (no range ring). */
+export const SCANNER_SPOTLIGHT_ACCENT = 'rgba(0, 207, 255, 0.92)';
+
+const SCANNER_ELEMENT_ACCENT: Record<string, string> = {
+  spotlight: SCANNER_SPOTLIGHT_ACCENT,
+  magnet: SCANNER_RANGE_CONFIG.magnet.ring.color,
+  drive: SCANNER_RANGE_CONFIG.drive.ring.color,
+  proximity: SCANNER_RANGE_CONFIG.proximity.ring.color,
+  radio: SCANNER_RANGE_CONFIG.radio.ring.color,
+  radiation: SCANNER_RANGE_CONFIG.radiation.ring.color,
+};
+
+/** Accent color for scanner HUD rows and nav scan picker buttons. */
+export function getScannerAccentColor(scannerElementId: string): string {
+  return SCANNER_ELEMENT_ACCENT[scannerElementId] ?? SCANNER_SPOTLIGHT_ACCENT;
+}
+
+/** Dimmed accent for scanner rows/buttons when the sensor is off. */
+export function getScannerAccentColorDim(accentColor: string): string {
+  return `color-mix(in srgb, ${accentColor} 40%, rgb(12, 20, 28))`;
+}
+
+/** Dimmed accent for unlit power segments while the sensor is on. */
+export function getScannerAccentColorMuted(accentColor: string): string {
+  return `color-mix(in srgb, ${accentColor} 28%, rgb(10, 18, 24))`;
+}

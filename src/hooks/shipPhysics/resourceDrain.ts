@@ -1,8 +1,8 @@
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { resourceRateRefs } from '../../context/ResourceRates';
-import { power, fuel, setFuel, setPower, setO2, o2 } from '../../context/ShipState';
-import { O2_DRAIN_RATE } from '../../config/damageConfig';
+import { power, fuel, shipCrew, setFuel, setPower, setO2, o2 } from '../../context/ShipState';
+import { o2DrainRateForCrew } from '../../config/damageConfig';
 
 interface DrainParams {
   keysHeld: number;
@@ -29,11 +29,13 @@ export function applyResourceDrain({ keysHeld, rawDelta }: DrainParams) {
     setPower(Math.max(0, power - 2 * rawDelta));
   }
 
+  const o2Drain = o2DrainRateForCrew(shipCrew);
+
   resourceRateRefs.power.current = powerRate;
   resourceRateRefs.fuel.current = fuelRate;
-  resourceRateRefs.o2.current = -O2_DRAIN_RATE;
+  resourceRateRefs.o2.current = -o2Drain;
 
-  const newO2 = Math.max(0, o2 - O2_DRAIN_RATE * rawDelta);
+  const newO2 = Math.max(0, o2 - o2Drain * rawDelta);
   if (newO2 === 0 && o2 > 0 && !o2DepletedFired) {
     o2DepletedFired = true;
     window.dispatchEvent(new CustomEvent('O2Depleted'));
