@@ -33,6 +33,7 @@ export const TUTORIAL_STEP_IDS = {
   GETTING_AIR_ONE: 'getting-air-one',
   GETTING_AIR_TWO: 'getting-air-two',
   GETTING_AIR_THREE: 'getting-air-three',
+  GETTING_AIR_FOUR: 'getting-air-four',
   GIVING_AIR: 'giving-air',
 };
 
@@ -44,11 +45,9 @@ const AIR_CONTENT = {
   FINDING_AIR: `Finding air is not that difficult. Look for any signs of civilization And you'll probably find some oxygen that you can either salvage or steal.  `,
   GETTING_AIR: `To get air, we need to transfer. Usually, you do this by docking, which will bring up the air dialog. `,
   GETTING_AIR_ONE: `Use your Magnet Scanner or Proximity Scanner or even your Spotlight to find man-made objects around you.  `,
-  GETTING_AIR_TWO: `Rendezvous With the object and dock with it.  `,
-  GETTING_AIR_THREE: `Wait for the transfer to complete. `,
-  GIVING_AIR: `Giving air is just as easy. Just dock with the supply station and select the air transfer option. `,
-  GIVING_AIR_ONE: `Dock with the supply station. `,
-  GIVING_AIR_TWO: `Select the air transfer option. `,
+  GETTING_AIR_TWO: `When you have found an object that you can dock with, Rendezvous with it and dock.  `,
+  GETTING_AIR_THREE: `As you'll dock, you'll see the options for transferring fuel and power between the ship and the docked options. For this instructional, you'll want to transfer as many resources as you can to your ship. `,
+  GETTING_AIR_FOUR: `Once you have transferred as many resources as you can, you can undock `,
   GIVING_AIR_THREE: `Wait for the transfer to complete. `,
 };
 
@@ -126,9 +125,9 @@ export const TUTORIAL_STEPS: TutorialResourcesStep[] = [
     continueLabel: 'Continue',
   },
   {
-    id: TUTORIAL_STEP_IDS.GIVING_AIR,
+    id: TUTORIAL_STEP_IDS.GETTING_AIR_FOUR,
     title: 'Giving Air',
-    prompt: AIR_CONTENT.GIVING_AIR,
+    prompt: AIR_CONTENT.GETTING_AIR_FOUR,
     keys: [],
     completionCriteria: { type: 'continue' },
     continueLabel: 'Continue',

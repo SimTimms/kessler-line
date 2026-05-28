@@ -43,15 +43,39 @@ const DOME_POSITIONS: [number, number][] = [
 // Pairs of dome indices defining road connections
 const ROADS: [number, number][] = [
   // Inner cluster
-  [0, 1], [0, 2], [1, 3], [2, 4], [0, 5], [3, 6], [4, 7], [2, 7],
+  [0, 1],
+  [0, 2],
+  [1, 3],
+  [2, 4],
+  [0, 5],
+  [3, 6],
+  [4, 7],
+  [2, 7],
   // Inner → middle spokes
-  [1, 8], [2, 9], [3, 10], [7, 11], [5, 12], [6, 13], [5, 14], [7, 15],
+  [1, 8],
+  [2, 9],
+  [3, 10],
+  [7, 11],
+  [5, 12],
+  [6, 13],
+  [5, 14],
+  [7, 15],
   // Middle cross-links
-  [8, 10], [9, 11], [10, 13], [11, 15],
+  [8, 10],
+  [9, 11],
+  [10, 13],
+  [11, 15],
   // Middle → far spokes
-  [8, 16], [13, 17], [9, 18], [12, 19], [14, 19], [15, 18], [20, 18],
+  [8, 16],
+  [13, 17],
+  [9, 18],
+  [12, 19],
+  [14, 19],
+  [15, 18],
+  [20, 18],
   // Far arc
-  [16, 17], [17, 21],
+  [16, 17],
+  [17, 21],
 ];
 
 const TOTAL_VEHICLES = ROADS.length * VEHICLES_PER_ROAD;
@@ -112,8 +136,8 @@ function generateBuildings(seed: number, domeRadius: number): Building[] {
 }
 
 // Computed once at module load — no React overhead
-const DOME_BUILDINGS: Building[][] = DOME_POSITIONS.map(
-  (_, di) => generateBuildings((di + 1) * 7919, DOME_RADII[di])
+const DOME_BUILDINGS: Building[][] = DOME_POSITIONS.map((_, di) =>
+  generateBuildings((di + 1) * 7919, DOME_RADII[di])
 );
 
 // ---------------------------------------------------------------------------
@@ -244,10 +268,10 @@ export default function LunarSettlement() {
     let i = 0;
     for (const [ai, bi] of ROADS) {
       buf[i++] = DOME_POSITIONS[ai][0];
-      buf[i++] = SURFACE_Y + 2;
+      buf[i++] = SURFACE_Y;
       buf[i++] = DOME_POSITIONS[ai][1];
       buf[i++] = DOME_POSITIONS[bi][0];
-      buf[i++] = SURFACE_Y + 2;
+      buf[i++] = SURFACE_Y;
       buf[i++] = DOME_POSITIONS[bi][1];
     }
     return buf;
@@ -257,18 +281,22 @@ export default function LunarSettlement() {
     const t = clock.getElapsedTime();
     let vi = 0;
     for (const [ai, bi] of ROADS) {
-      const ax = DOME_POSITIONS[ai][0], az = DOME_POSITIONS[ai][1];
-      const bx = DOME_POSITIONS[bi][0], bz = DOME_POSITIONS[bi][1];
+      const ax = DOME_POSITIONS[ai][0],
+        az = DOME_POSITIONS[ai][1];
+      const bx = DOME_POSITIONS[bi][0],
+        bz = DOME_POSITIONS[bi][1];
       for (let p = 0; p < VEHICLES_PER_ROAD; p++) {
         const frac = (t * VEHICLE_SPEED + Math.random() * 0.001 + p / VEHICLES_PER_ROAD) % 1.0;
-        particlePositions[vi * 3]     = ax + (bx - ax) * frac;
+        particlePositions[vi * 3] = ax + (bx - ax) * frac;
         particlePositions[vi * 3 + 1] = SURFACE_Y + 3;
         particlePositions[vi * 3 + 2] = az + (bz - az) * frac;
         vi++;
       }
     }
     if (particleGeomRef.current) {
-      const posAttr = particleGeomRef.current.getAttribute('position') as THREE.BufferAttribute | null;
+      const posAttr = particleGeomRef.current.getAttribute(
+        'position'
+      ) as THREE.BufferAttribute | null;
       if (posAttr) posAttr.needsUpdate = true;
     }
   });
@@ -295,7 +323,12 @@ export default function LunarSettlement() {
             {/* Glowing base ring at dome perimeter */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.5, 0]}>
               <ringGeometry args={[r * 1.27, r * 1.37, 48]} />
-              <meshBasicMaterial color="#000000" transparent opacity={0.8} side={THREE.DoubleSide} />
+              <meshBasicMaterial
+                color="#000000"
+                transparent
+                opacity={0.8}
+                side={THREE.DoubleSide}
+              />
             </mesh>
             {/* Interior buildings — single instanced draw call per dome */}
             <instancedMesh

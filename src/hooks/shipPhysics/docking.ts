@@ -18,6 +18,7 @@ import {
 import { FUEL_REFILL_RATE, O2_REFILL_RATE, O2_DRAIN_RATE } from '../../config/damageConfig';
 import { resourceRateRefs } from '../../context/ResourceRates';
 import { zeroThrusterLights } from './thrusterLight';
+import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
 
 const _collidablePos = new THREE.Vector3();
 const _boxQuat = new THREE.Quaternion();
@@ -131,6 +132,10 @@ export function checkDockingPort({ group, dockingPort, dockedTo, velocity }: Doc
   if (relSpeed >= 4) return;
 
   dockedTo.current = bayEntry.id;
+  if (autopilotActive.current) {
+    disableAutopilot();
+    window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+  }
   window.dispatchEvent(
     new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
   );

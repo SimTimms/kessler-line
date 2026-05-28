@@ -39,18 +39,67 @@ import {
   STATION_ARRIVAL_RADIUS,
 } from '../autopilot/constants';
 import type { AutopilotCtx } from '../autopilot/types';
-import { selectedTargetVelocity } from '../context/TargetSelection';
+import { selectedTargetName, selectedTargetPosition, selectedTargetVelocity } from '../context/TargetSelection';
 import { fuelStationWorldVel } from '../context/SolarSystemMinimap';
 
 // Saved player thrust level — restored when autopilot disengages
 const _savedThrust = { current: 1 };
 const _autopilotWasActive = { current: false };
+const _lastStatusLogged = { current: '' };
 
 // Scratch vectors — reused every frame to avoid allocations
 const _noseDir = new THREE.Vector3();
 const _toTarget = new THREE.Vector3();
 const _velFlat = new THREE.Vector3();
 const _predictedTargetPos = new THREE.Vector3();
+const ALIGN_ACCEPT_ANGLE = (10 * Math.PI) / 180; // 10 degrees
+const ALIGN_STOP_ANG_VEL = 0.03; // rad/s
+const ALIGN_BURST_ON_MS = 140;
+const ALIGN_BURST_OFF_MS = 280;
+const ALIGN_BRAKE_BURST_ON_MS = 100;
+const ALIGN_BRAKE_BURST_OFF_MS = 220;
+
+const _alignYawPulse = {
+  activeDir: 0 as -1 | 0 | 1, // -1 = yawLeft, +1 = yawRight
+  burstEndsAtMs: 0,
+  cooldownEndsAtMs: 0,
+};
+
+function resetAlignYawPulse() {
+  _alignYawPulse.activeDir = 0;
+  _alignYawPulse.burstEndsAtMs = 0;
+  _alignYawPulse.cooldownEndsAtMs = 0;
+}
+
+function applyAlignYawBurst(dir: -1 | 0 | 1, braking: boolean): -1 | 0 | 1 {
+  const now = performance.now();
+  const onMs = braking ? ALIGN_BRAKE_BURST_ON_MS : ALIGN_BURST_ON_MS;
+  const offMs = braking ? ALIGN_BRAKE_BURST_OFF_MS : ALIGN_BURST_OFF_MS;
+
+  if (dir === 0) {
+    if (_alignYawPulse.activeDir !== 0 && now < _alignYawPulse.burstEndsAtMs) {
+      return _alignYawPulse.activeDir;
+    }
+    _alignYawPulse.activeDir = 0;
+    return 0;
+  }
+
+  if (_alignYawPulse.activeDir !== 0) {
+    if (now < _alignYawPulse.burstEndsAtMs) return _alignYawPulse.activeDir;
+    _alignYawPulse.activeDir = 0;
+    _alignYawPulse.cooldownEndsAtMs = now + offMs;
+    return 0;
+  }
+
+  const brakingOppositeSpin =
+    (dir === -1 && shipAngularVelocity.current > ALIGN_STOP_ANG_VEL) ||
+    (dir === 1 && shipAngularVelocity.current < -ALIGN_STOP_ANG_VEL);
+  if (!brakingOppositeSpin && now < _alignYawPulse.cooldownEndsAtMs) return 0;
+
+  _alignYawPulse.activeDir = dir;
+  _alignYawPulse.burstEndsAtMs = now + onMs;
+  return dir;
+}
 
 export default function AutopilotController() {
   useFrame(() => {
@@ -62,6 +111,7 @@ export default function AutopilotController() {
           new CustomEvent('ThrustChanged', { detail: { value: _savedThrust.current } })
         );
         _autopilotWasActive.current = false;
+        _lastStatusLogged.current = '';
       }
       clearThrusts(
         autopilotThrustForward,
@@ -80,6 +130,17 @@ export default function AutopilotController() {
       _autopilotWasActive.current = true;
       apLogReset();
       resetHyperbolicApproach();
+      resetAlignYawPulse();
+      _lastStatusLogged.current = '';
+    }
+
+    // Selected scan/metal targets are controlled by simpleAutopilot (shipPhysics path).
+    // Avoid competing writes from this legacy phase-based controller.
+    const selectedTargetActive =
+      selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
+    if (selectedTargetActive) {
+      resetAlignYawPulse();
+      return;
     }
 
     clearThrusts(
@@ -258,11 +319,29 @@ export default function AutopilotController() {
 
       // ── align: rotate nose toward target ─────────────────────────────────────
     } else if (autopilotPhase.current === 'align') {
-      autopilotStatus.current = 'ALIGNING';
-      const { yawLeft: yl, yawRight: yr } = computeYaw(signedErrorToTarget, angVel);
-      autopilotYawLeft.current = yl;
-      autopilotYawRight.current = yr;
-      if (aligned) {
+      autopilotStatus.current = 'ALIGNING (BURST)';
+      const absErr = Math.abs(signedErrorToTarget);
+      let yawDir: -1 | 0 | 1 = 0;
+
+      if (absErr > ALIGN_ACCEPT_ANGLE) {
+        // Outside 10° cone: pulse-turn toward target.
+        yawDir = signedErrorToTarget > 0 ? -1 : 1;
+        yawDir = applyAlignYawBurst(yawDir, false);
+      } else if (Math.abs(angVel) > ALIGN_STOP_ANG_VEL) {
+        // Inside 10° cone: pulse counter-rotation until yaw rate is near zero.
+        yawDir = angVel > 0 ? -1 : 1;
+        yawDir = applyAlignYawBurst(yawDir, true);
+      } else {
+        // Aligned and stabilized.
+        yawDir = applyAlignYawBurst(0, true);
+      }
+
+      autopilotYawLeft.current = yawDir === -1;
+      autopilotYawRight.current = yawDir === 1;
+
+      const alignDone = absErr <= ALIGN_ACCEPT_ANGLE && Math.abs(angVel) <= ALIGN_STOP_ANG_VEL;
+      if (alignDone) {
+        resetAlignYawPulse();
         if (distToArrival <= 0) {
           autopilotPhase.current = 'done';
         } else if (gravBody) {
@@ -283,11 +362,20 @@ export default function AutopilotController() {
       if (next) autopilotPhase.current = next;
     }
 
+    if (autopilotPhase.current !== 'align') {
+      resetAlignYawPulse();
+    }
+
     // ── Log any changes that happened this frame ──────────────────────────────
     if (autopilotPhase.current !== prevPhase) {
       apLogPhaseChange(prevPhase, autopilotPhase.current);
     }
     apLogStatus(autopilotStatus.current);
+    if (autopilotStatus.current !== _lastStatusLogged.current) {
+      // eslint-disable-next-line no-console
+      console.log(`[AP STATUS] ${autopilotStatus.current}`);
+      _lastStatusLogged.current = autopilotStatus.current;
+    }
     apLogThrust(
       autopilotThrustForward.current,
       autopilotThrustReverse.current,
