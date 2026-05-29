@@ -25,11 +25,14 @@ export interface HelmetHUDProps {
   radioOnRef: React.RefObject<boolean>;
   disableElements?: string[];
   focusElements?: string[];
+  /** Contacts HUD: only show radio sources present in the scene. */
+  sceneRadioContactsOnly?: boolean;
 }
 
 const HelmetHUD = memo(function HelmetHUD({
   disableElements = [],
   focusElements = [],
+  sceneRadioContactsOnly = false,
   ...scannerProps
 }: HelmetHUDProps) {
   return (
@@ -48,7 +51,7 @@ const HelmetHUD = memo(function HelmetHUD({
           {...scannerProps}
         />
       </div>
-      <ContactsHUD />
+      <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly} />
       <DockTransferHUD />
     </div>
   );

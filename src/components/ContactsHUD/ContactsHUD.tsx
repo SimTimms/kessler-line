@@ -20,9 +20,10 @@ import {
   dismissIncomingHail,
   type IncomingHailEventDetail,
 } from '../../context/IncomingHailState';
-import { RADIO_BROADCAST_DEFS } from '../../config/worldConfig';
-import type { RadioBroadcastDef } from '../../config/worldConfig';
-import { getCollidables } from '../../context/CollisionRegistry';
+import {
+  getRadioBroadcasts,
+  type RadioBroadcastEntry,
+} from '../../context/RadioBroadcastRegistry';
 import { ContactsHudDialog } from './ContactsHudDialog/ContactsHudDialog';
 import type { SelectionItem } from './ContactsHudDialog/ContactsHudDialog';
 import CommsChat from '../CommsChat/CommsChat';
@@ -37,7 +38,7 @@ interface DriveContact {
 }
 
 interface BroadcastContact {
-  def: RadioBroadcastDef;
+  entry: RadioBroadcastEntry;
   distanceLabel: string;
   distanceRaw: number;
   inRadioRange: boolean;
@@ -136,7 +137,12 @@ function driveStatusPulse(hs: HailStatus, radioActive: boolean): boolean {
   return false;
 }
 
-export default function ContactsHUD() {
+interface ContactsHUDProps {
+  /** When true, only in-scene radio registrations and drive contacts (no static inbox contacts). */
+  sceneRadioContactsOnly?: boolean;
+}
+
+export default function ContactsHUD({ sceneRadioContactsOnly = false }: ContactsHUDProps) {
   const [open, setOpen] = useState(false);
   const [chatShipId, setChatShipId] = useState<string | null>(null);
   const [inRangeDrives, setInRangeDrives] = useState<DriveContact[]>([]);
@@ -200,19 +206,14 @@ export default function ContactsHUD() {
         setInRangeDrives([]);
       }
 
-      // Broadcast stations — always tracked, range-gate comms only
+      // Broadcast stations — only objects that registered in the scene
       {
         const newBcasts: BroadcastContact[] = [];
-        for (const def of RADIO_BROADCAST_DEFS) {
-          const collidable = getCollidables().find((c) => c.id === def.id);
-          if (collidable) {
-            collidable.getWorldPosition(bcastVec.current);
-          } else {
-            bcastVec.current.set(...def.position);
-          }
+        for (const entry of getRadioBroadcasts()) {
+          entry.getPosition(bcastVec.current);
           const dist = bcastVec.current.distanceTo(ship);
 
-          if (def.id === 'fuel-station' && !fuelStationHailFiredRef.current && dist <= 10000) {
+          if (entry.id === 'fuel-station' && !fuelStationHailFiredRef.current && dist <= 10000) {
             fuelStationHailFiredRef.current = true;
             setIncomingHail('fuel-station');
             queueMessage(
@@ -235,10 +236,10 @@ export default function ContactsHUD() {
                 ? `${(km / 1_000).toFixed(1)} Mm`
                 : `${km.toFixed(0)} km`;
           const inRadioRange = radioOnRef.current && dist <= radioRangeRef.current;
-          newBcasts.push({ def, distanceLabel: distLabel, distanceRaw: dist, inRadioRange });
+          newBcasts.push({ entry, distanceLabel: distLabel, distanceRaw: dist, inRadioRange });
         }
 
-        const bcastSig = newBcasts.map((b) => `${b.def.id}:${b.inRadioRange ? 1 : 0}`).join('|');
+        const bcastSig = newBcasts.map((b) => `${b.entry.id}:${b.inRadioRange ? 1 : 0}`).join('|');
         if (bcastSig !== prevBcastSigRef.current) {
           prevBcastSigRef.current = bcastSig;
           setBroadcastContacts(newBcasts);
@@ -363,10 +364,10 @@ export default function ContactsHUD() {
   }
 
   function broadcastItem(b: BroadcastContact): SelectionItem {
-    const isIncoming = incomingHails.has(b.def.id);
+    const isIncoming = incomingHails.has(b.entry.id);
     return {
-      id: b.def.id,
-      label: b.def.label,
+      id: b.entry.id,
+      label: b.entry.label,
       sublabel: `STATION · ${b.distanceLabel}`,
       statusLine: isIncoming
         ? commsStatus.incoming
@@ -377,8 +378,9 @@ export default function ContactsHUD() {
     };
   }
 
-  const savedItems: SelectionItem[] = [
-    ...STATIC_CONTACTS.map((c) => {
+  const staticContactItems: SelectionItem[] = sceneRadioContactsOnly
+    ? []
+    : STATIC_CONTACTS.map((c) => {
       const isIncoming = incomingHails.has(c.id);
       const hasUnread =
         !isIncoming &&
@@ -392,9 +394,12 @@ export default function ContactsHUD() {
         statusPulse: isIncoming ? true : undefined,
         statusIcon: hasUnread ? PLATFORM_UI[activePlatform].unreadIcon : undefined,
       };
-    }),
+    });
+
+  const savedItems: SelectionItem[] = [
+    ...staticContactItems,
     ...inRangeDrives.filter((d) => savedContactIds.has(d.id)).map(driveItem),
-    ...broadcastContacts.filter((b) => savedContactIds.has(b.def.id)).map(broadcastItem),
+    ...broadcastContacts.filter((b) => savedContactIds.has(b.entry.id)).map(broadcastItem),
   ];
 
   const inRangeItems: SelectionItem[] = [
@@ -402,19 +407,19 @@ export default function ContactsHUD() {
       .filter((d) => !savedContactIds.has(d.id))
       .map((d) => ({ ...driveItem(d), saveable: true })),
     ...broadcastContacts
-      .filter((b) => !savedContactIds.has(b.def.id))
+      .filter((b) => !savedContactIds.has(b.entry.id))
       .map((b) => ({ ...broadcastItem(b), saveable: true })),
   ];
 
   const chatShipName = chatShipId
     ? (inRangeDrives.find((d) => d.id === chatShipId)?.name ??
-      broadcastContacts.find((b) => b.def.id === chatShipId)?.def.label ??
+      broadcastContacts.find((b) => b.entry.id === chatShipId)?.entry.label ??
       chatShipId)
     : '';
 
   const chatRadioActive = chatShipId
     ? (inRangeDrives.find((d) => d.id === chatShipId)?.radioActive ??
-      broadcastContacts.find((b) => b.def.id === chatShipId)?.inRadioRange ??
+      broadcastContacts.find((b) => b.entry.id === chatShipId)?.inRadioRange ??
       false)
     : false;
 

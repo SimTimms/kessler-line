@@ -4,6 +4,7 @@ import {
   isNavScanPickerVariant,
   type NavScanPickerId,
 } from '../../../config/navScanPickerConfig';
+import { HUD_SCANNER_ACCENT } from '../../../config/scanRanges';
 import { playDialogOpen, playDialogSelect } from '../../../sound/SoundManager';
 import './NavTargetDialog.css';
 
@@ -104,7 +105,9 @@ export function NavTargetDialog({
       <div
         className={dialogClass}
         onClick={(e) => e.stopPropagation()}
-        style={theme ? ({ '--ntd-scan-color': theme.color } as CSSProperties) : undefined}
+        style={
+          theme ? ({ '--ntd-scan-color': HUD_SCANNER_ACCENT } as CSSProperties) : undefined
+        }
       >
         {theme && (
           <span className="ntd-scan-brand" aria-hidden>

@@ -9,7 +9,7 @@ import { radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
 import './ScannerHUD.css';
 import '../HelmetHUD/HelmetHUD.css';
-import { getScannerAccentColor, getScannerRange } from '../../../config/scanRanges';
+import { getScannerAccentColor, getScannerRange, SCANNER_ABBREV } from '../../../config/scanRanges';
 import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
 
@@ -23,15 +23,6 @@ export const ScannerHUDElements = {
 } as const;
 
 export type ScannerHUDElementId = (typeof ScannerHUDElements)[keyof typeof ScannerHUDElements];
-
-const SCANNER_ABBREV: Record<string, string> = {
-  [ScannerHUDElements.SPOTLIGHT]: 'LGT',
-  [ScannerHUDElements.MAGNET]: 'MAG',
-  [ScannerHUDElements.DRIVE]: 'DRV',
-  [ScannerHUDElements.PROXIMITY]: 'PRX',
-  [ScannerHUDElements.RADIO]: 'RAD',
-  [ScannerHUDElements.RADIATION]: 'RDN',
-};
 
 const POWER_LEVELS = [1, 2, 3, 4, 5] as const;
 

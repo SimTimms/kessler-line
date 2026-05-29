@@ -316,3 +316,7 @@ export const RADIO_BROADCAST_DEFS: RadioBroadcastDef[] = [
     ],
   },
 ];
+
+export function getRadioBroadcastDefById(id: string): RadioBroadcastDef | undefined {
+  return RADIO_BROADCAST_DEFS.find((def) => def.id === id);
+}

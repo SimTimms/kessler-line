@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import PowerSource from './PowerSource';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { selectTarget } from '../../context/TargetSelection';
+import { getRadioBroadcastDefById } from '../../config/worldConfig';
+import { useRegisterRadioBroadcast } from '../../hooks/useRegisterRadioBroadcast';
 
 const COLLISION_ID = 'space-station';
 
@@ -19,6 +21,8 @@ interface SpaceStationProps {
 export default function SpaceStation({ url, scale = 1, collisionRadius = 10405, stationGroupRef }: SpaceStationProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
+  const radioDef = getRadioBroadcastDefById('station-alpha');
+  useRegisterRadioBroadcast(groupRef, radioDef);
 
   // Fill the external stationGroupRef (if provided) so LaserRay can raycast against it.
   const setGroupRef = useCallback((el: THREE.Group | null) => {

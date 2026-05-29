@@ -7,6 +7,8 @@ import { registerCollidable, unregisterCollidable } from '../../context/Collisio
 import { selectTarget } from '../../context/TargetSelection';
 import DockingBay from './DockingBay';
 import RadioBeacon from '../Radio/RadioBeacon';
+import { getRadioBroadcastDefById } from '../../config/worldConfig';
+import { useRegisterRadioBroadcast } from '../../hooks/useRegisterRadioBroadcast';
 
 const COLLISION_ID = 'fuel-station';
 
@@ -26,6 +28,8 @@ export default function FuelStation({
 }: FuelStationProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
+  const radioDef = getRadioBroadcastDefById(COLLISION_ID);
+  useRegisterRadioBroadcast(groupRef, radioDef);
 
   // Fill the external stationGroupRef (if provided) so LaserRay can raycast against it.
   const setGroupRef = useCallback(

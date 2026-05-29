@@ -11,6 +11,8 @@ import { boxColliderFromObject } from '../../utils/colliderFromObject';
 import { containerInventoryToPartner } from '../../config/containerInventoryConfig';
 import type { ContainerInventory } from '../../config/containerInventoryConfig';
 import { useRegisterDockablePartner } from '../../hooks/useRegisterDockablePartner';
+import type { RadioBroadcastDef } from '../../config/worldConfig';
+import { useRegisterRadioBroadcast } from '../../hooks/useRegisterRadioBroadcast';
 
 export type { ContainerInventory };
 
@@ -31,15 +33,19 @@ interface ContainerBritishProps {
   scale?: number;
   inventory: ContainerInventory;
   position?: [number, number, number];
+  /** When set, registers this object as an in-scene radio contact. */
+  radioBroadcast?: RadioBroadcastDef;
 }
 
 export default function ContainerBritish({
   scale = 1,
   inventory,
   position = [0, 0, 0],
+  radioBroadcast,
 }: ContainerBritishProps) {
   const gltf = useGLTF('/container-british.glb') as unknown as { scene: THREE.Group };
   const bodyRef = useRef<THREE.Group>(null);
+  useRegisterRadioBroadcast(bodyRef, radioBroadcast);
 
   const { halfExtents, meshOffset } = useMemo(
     () => boxColliderFromObject(gltf.scene, scale),

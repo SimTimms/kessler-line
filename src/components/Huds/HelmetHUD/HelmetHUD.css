@@ -69,6 +69,15 @@
   border-color: rgba(0, 200, 255, 0.55);
 }
 
+/* Scanner power bars — fill only, no segment outline */
+.helmet-scanner-row .helmet-seg--h {
+  border: none;
+}
+
+.helmet-scanner-row .helmet-seg--h:hover:not(:disabled) {
+  border: none;
+}
+
 /* ── Vitals (top of left stack) ──────────────────────────────────────────── */
 
 .helmet-vitals {
@@ -385,25 +394,30 @@
   animation: helmet-nav-pulse 0.9s ease-in-out infinite;
 }
 
-.helmet-nav-btn--target {
+.helmet-nav-scan-chip--tgt {
   flex: 1 1 0;
   min-width: 0;
-  width: 100%;
+  align-items: stretch;
+}
+
+.helmet-nav-scan-chip--tgt .helmet-nav-scan-label {
   text-align: center;
 }
 
-.helmet-nav-btn--target-filled {
+.helmet-nav-btn--tgt {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
+.helmet-nav-btn--tgt-filled {
   text-align: left;
   text-transform: none;
   letter-spacing: 0.04em;
-  font-size: 10px;
+  font-size: 9px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.helmet-nav-btn--target:not(.helmet-nav-btn--target-filled) {
-  opacity: 0.85;
 }
 
 .helmet-nav-btn--ap {
@@ -418,9 +432,30 @@
   pointer-events: none;
 }
 
+.helmet-nav-scan-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.helmet-nav-scan-label {
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: var(--helmet-muted);
+  user-select: none;
+}
+
+.helmet-nav-scan-chip .helmet-nav-btn--scan {
+  min-width: 22px;
+}
+
 .helmet-nav-btn--scan {
   flex-shrink: 0;
-  --scan-accent: #00c8ff;
+  --scan-accent: var(--helmet-accent, #00c8ff);
   background: color-mix(in srgb, var(--scan-accent) 14%, rgba(0, 12, 22, 0.72));
   border-color: color-mix(in srgb, var(--scan-accent) 45%, transparent);
   color: var(--scan-accent);
@@ -573,17 +608,14 @@
 
 .helmet-scanner-row .helmet-seg--h:not(.helmet-seg--lit) {
   background: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 22%, #0a1218);
-  border-color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 32%, transparent);
 }
 
 .helmet-scanner-row:not(.helmet-scanner-row--on) .helmet-seg--h:not(.helmet-seg--lit) {
   background: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 14%, #0a1218);
-  border-color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 24%, transparent);
 }
 
 .helmet-scanner-row .helmet-seg--h.helmet-seg--lit {
   background: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 95%, transparent);
-  border-color: color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 85%, transparent);
   box-shadow: 0 0 6px color-mix(in srgb, var(--scan-accent, var(--helmet-accent)) 35%, transparent);
 }
 

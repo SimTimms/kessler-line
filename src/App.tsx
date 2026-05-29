@@ -23,6 +23,7 @@ import { disableAutopilot } from './context/AutopilotState';
 import StartOverlay from './components/App/StartOverlay';
 import { GAME_MODES, type GameMode, type TutorialMenuSelection } from './config/gameModes';
 import TutorialAir from './components/TutorialAir/TutorialAir';
+import TutorialRadio from './components/TutorialRadio/TutorialRadio';
 
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
@@ -81,7 +82,9 @@ function App() {
     case GAME_MODES.resources:
       return <TutorialResources onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
     case GAME_MODES.airManagement:
-      return <TutorialAir onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
+      return <TutorialAir onComplete={handleTutorialComplete} />;
+    case GAME_MODES.radioManagement:
+      return <TutorialRadio onComplete={handleTutorialComplete} />;
     case GAME_MODES.game:
       return (
         <AppShell

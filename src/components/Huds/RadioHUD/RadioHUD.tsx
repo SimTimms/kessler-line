@@ -2,12 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { radioOnRef, radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
-import {
-  RADIO_BROADCAST_DEFS,
-  RADIO_BEACON_DEFS,
-  SPACE_STATION_DEF,
-} from '../../../config/worldConfig';
+import { RADIO_BEACON_DEFS, SPACE_STATION_DEF } from '../../../config/worldConfig';
 import type { RadioBroadcastDef } from '../../../config/worldConfig';
+import { getRadioBroadcasts } from '../../../context/RadioBroadcastRegistry';
 import { solarPlanetPositions } from '../../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../../Planets/SolarSystem';
 import { SelectionDialog } from '../../SelectionDialog/SelectionDialog';
@@ -81,16 +78,16 @@ export const RadioHUD = () => {
           };
         });
 
-        const dynamicBroadcasts: RadioBroadcastDef[] = RADIO_BROADCAST_DEFS.map((def) => {
-          const collidable = getCollidables().find((c) => c.id === def.id);
-          if (collidable) {
-            collidable.getWorldPosition(broadcastPos);
-            return {
-              ...def,
-              position: [broadcastPos.x, broadcastPos.y, broadcastPos.z],
-            };
-          }
-          return def;
+        const dynamicBroadcasts: RadioBroadcastDef[] = getRadioBroadcasts().map((entry) => {
+          entry.getPosition(broadcastPos);
+          return {
+            id: entry.id,
+            label: entry.label,
+            position: [broadcastPos.x, broadcastPos.y, broadcastPos.z],
+            dialogue: entry.dialogue,
+            dockable: entry.dockable,
+            dockingBay: entry.dockingBay,
+          };
         });
 
         const inRange = [...dynamicBroadcasts, stationBeacon, ...beaconBroadcasts].filter((def) => {

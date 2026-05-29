@@ -7,6 +7,19 @@ import { radiationOnRef, radiationRangeRef } from '../context/RadiationScan';
 /** Matches `ScannerHUDElements` ids (except spotlight, which has no range). */
 export type ScannerRangeId = 'proximity' | 'magnet' | 'drive' | 'radio' | 'radiation';
 
+/** Shared helmet / nav HUD cyan for all scanner UI and range rings. */
+export const HUD_SCANNER_ACCENT = '#00c8ff';
+
+/** Short labels for scanner rows and nav contact count chips. */
+export const SCANNER_ABBREV: Record<ScannerRangeId | 'spotlight', string> = {
+  spotlight: 'LGT',
+  magnet: 'MAG',
+  drive: 'DRV',
+  proximity: 'PRX',
+  radio: 'RAD',
+  radiation: 'RDN',
+};
+
 export interface ScannerRangeConfig {
   id: ScannerRangeId;
   /** World-unit range per HUD power level. Index 0 = off; levels 1–4 increase range. */
@@ -29,28 +42,28 @@ export const SCANNER_RANGE_CONFIG: Record<ScannerRangeId, ScannerRangeConfig> = 
   proximity: {
     id: 'proximity',
     ranges: [0, 500, 1000, 1500, 3000],
-    ring: { color: '#00c8ff', opacity: 0.45, yOffset: 0 },
+    ring: { color: HUD_SCANNER_ACCENT, opacity: 0.45, yOffset: 0 },
   },
   magnet: {
     id: 'magnet',
     ranges: [0, 500, 2_000, 50_000, 100_000],
-    ring: { color: '#ffaa00', opacity: 0.4, yOffset: 0.5 },
+    ring: { color: HUD_SCANNER_ACCENT, opacity: 0.4, yOffset: 0.5 },
   },
   drive: {
     id: 'drive',
     ranges: [0, 1_000, 5_000, 2_000_000, 4_000_000],
-    ring: { color: '#ff4444', opacity: 0.35, yOffset: 1 },
+    ring: { color: HUD_SCANNER_ACCENT, opacity: 0.35, yOffset: 1 },
   },
   radio: {
     id: 'radio',
     ranges: [0, 200_000, 500_000, 2_000_000, 4_000_000],
     rangeMultiplier: 5,
-    ring: { color: '#b57bff', opacity: 0.35, yOffset: 2 },
+    ring: { color: HUD_SCANNER_ACCENT, opacity: 0.35, yOffset: 2 },
   },
   radiation: {
     id: 'radiation',
     ranges: [0, 500, 2000, 5000, 10000],
-    ring: { color: '#88ff44', opacity: 0.35, yOffset: 1.5 },
+    ring: { color: HUD_SCANNER_ACCENT, opacity: 0.35, yOffset: 1.5 },
   },
 };
 
@@ -116,18 +129,9 @@ export const SCANNER_RANGE_RING_SEGMENTS = 128;
 /** Default cyan for spotlight (no range ring). */
 export const SCANNER_SPOTLIGHT_ACCENT = 'rgba(0, 207, 255, 0.92)';
 
-const SCANNER_ELEMENT_ACCENT: Record<string, string> = {
-  spotlight: SCANNER_SPOTLIGHT_ACCENT,
-  magnet: SCANNER_RANGE_CONFIG.magnet.ring.color,
-  drive: SCANNER_RANGE_CONFIG.drive.ring.color,
-  proximity: SCANNER_RANGE_CONFIG.proximity.ring.color,
-  radio: SCANNER_RANGE_CONFIG.radio.ring.color,
-  radiation: SCANNER_RANGE_CONFIG.radiation.ring.color,
-};
-
-/** Accent color for scanner HUD rows and nav scan picker buttons. */
-export function getScannerAccentColor(scannerElementId: string): string {
-  return SCANNER_ELEMENT_ACCENT[scannerElementId] ?? SCANNER_SPOTLIGHT_ACCENT;
+/** Accent color for scanner HUD rows, nav scan chips, and picker dialogs. */
+export function getScannerAccentColor(_scannerElementId?: string): string {
+  return HUD_SCANNER_ACCENT;
 }
 
 /** Dimmed accent for scanner rows/buttons when the sensor is off. */

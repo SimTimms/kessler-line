@@ -1,11 +1,12 @@
 import type { ScannerRangeId } from './scanRanges';
-import { getScannerAccentColor } from './scanRanges';
+import { HUD_SCANNER_ACCENT, SCANNER_ABBREV } from './scanRanges';
 
 /** Scanner ids used for nav contact picker buttons (excludes spotlight). */
 export type NavScanPickerId = ScannerRangeId;
 
 export interface NavScanPickerTheme {
   id: NavScanPickerId;
+  abbrev: string;
   title: string;
   emptyMessage: string;
   headerBrand: string;
@@ -62,7 +63,8 @@ export function getNavScanPickerTheme(id: NavScanPickerId): NavScanPickerTheme {
   const meta = PICKER_META[id];
   return {
     id,
-    color: getScannerAccentColor(id),
+    abbrev: SCANNER_ABBREV[id],
+    color: HUD_SCANNER_ACCENT,
     ...meta,
   };
 }

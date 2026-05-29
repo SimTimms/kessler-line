@@ -7,10 +7,17 @@ import {
   type ColliderShape,
 } from '../context/CollisionRegistry';
 import { registerMagnetic, unregisterMagnetic } from '../context/MagneticRegistry';
+import {
+  registerDriveSignature,
+  unregisterDriveSignature,
+} from '../context/DriveSignatureRegistry';
 
-export type WorldObjectMagneticConfig = {
+export type WorldObjectScanLabelConfig = {
   label: string;
 };
+
+/** @deprecated Use {@link WorldObjectScanLabelConfig}. */
+export type WorldObjectMagneticConfig = WorldObjectScanLabelConfig;
 
 export type WorldObjectCollidableConfig = {
   shape: ColliderShape;
@@ -21,7 +28,8 @@ export type WorldObjectCollidableConfig = {
 export type WorldObjectRegistrationConfig = {
   id: string;
   /** `true` uses `id` as the HUD label; pass `{ label }` for a custom name. */
-  magnetic?: boolean | WorldObjectMagneticConfig;
+  magnetic?: boolean | WorldObjectScanLabelConfig;
+  driveSignature?: boolean | WorldObjectScanLabelConfig;
   collidable?: WorldObjectCollidableConfig;
 };
 
@@ -38,8 +46,10 @@ export function useRegisterWorldObject(
   const hasPrevRef = useRef(false);
   const worldPosRef = useRef(new THREE.Vector3());
 
-  const { id, magnetic, collidable } = config;
+  const { id, magnetic, driveSignature, collidable } = config;
   const magneticLabel = typeof magnetic === 'object' ? magnetic.label : id;
+  const driveSignatureLabel =
+    typeof driveSignature === 'object' ? driveSignature.label : id;
 
   useEffect(() => {
     const getWorldPosition = (target: THREE.Vector3) => {
@@ -74,14 +84,25 @@ export function useRegisterWorldObject(
       });
     }
 
+    if (driveSignature) {
+      registerDriveSignature({
+        id,
+        label: driveSignatureLabel,
+        getPosition: getWorldPosition,
+        getVelocity: getWorldVelocity,
+      });
+    }
+
     return () => {
       if (collidable) unregisterCollidable(id);
       if (magnetic) unregisterMagnetic(id);
+      if (driveSignature) unregisterDriveSignature(id);
     };
-  }, [id, magnetic, magneticLabel, collidable, objectRef]);
+  }, [id, magnetic, magneticLabel, driveSignature, driveSignatureLabel, collidable, objectRef]);
 
   useFrame((_, delta) => {
-    if (!objectRef.current || delta <= 0 || (!collidable && !magnetic)) return;
+    if (!objectRef.current || delta <= 0 || (!collidable && !magnetic && !driveSignature))
+      return;
 
     objectRef.current.getWorldPosition(worldPosRef.current);
     if (hasPrevRef.current) {

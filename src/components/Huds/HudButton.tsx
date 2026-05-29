@@ -66,11 +66,9 @@ export const HudButton = ({
               width: 7,
               height: 7,
               background: lit || flashing ? accentColor : isActive ? accentMuted : accentDim,
-              border: `1px solid ${
-                lit || flashing ? accentColor : isActive ? accentMuted : accentDim
-              }`,
+              border: 'none',
               boxShadow: flashing ? `0 0 8px color-mix(in srgb, ${accentColor} 65%, transparent)` : 'none',
-              transition: 'background 0.12s, border-color 0.12s',
+              transition: 'background 0.12s',
             }}
           />
         );

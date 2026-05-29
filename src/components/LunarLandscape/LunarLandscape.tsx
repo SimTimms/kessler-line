@@ -2,11 +2,14 @@ import { useMemo, useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { buildLunarTextures } from '../../utils/lunarTextureGen';
+import {
+  LUNAR_MOON_CENTER,
+  LUNAR_MOON_RADIUS,
+  LUNAR_SURFACE_Y,
+} from '../../config/lunarLandscapeConfig';
 
-// Sphere radius — large enough to look flat from low altitude
-const MOON_RADIUS = 10000;
-// Surface sits at world y = -150; sphere center is below that by the radius
-const SURFACE_Y = -900;
+const MOON_RADIUS = LUNAR_MOON_RADIUS;
+const SURFACE_Y = LUNAR_SURFACE_Y;
 // How many times the texture tiles around the sphere (U) and pole-to-pole (V)
 const TEXTURE_REPEAT_U = 8;
 const TEXTURE_REPEAT_V = 4;
@@ -40,7 +43,7 @@ export default function LunarLandscape() {
 
   return (
     // Center is MOON_RADIUS below the surface so the top of the sphere sits at SURFACE_Y
-    <group position={[0, SURFACE_Y - MOON_RADIUS, 0]} rotation={[Math.PI / 2, Math.PI, 0]}>
+    <group position={LUNAR_MOON_CENTER} rotation={[Math.PI / 2, Math.PI, 0]}>
       <group ref={spinRef}>
         <mesh receiveShadow>
           <sphereGeometry args={[MOON_RADIUS, 128, 128]} />
