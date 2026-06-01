@@ -7,6 +7,8 @@ import {
   LUNAR_MOON_RADIUS,
   LUNAR_SURFACE_Y,
 } from '../../config/lunarLandscapeConfig';
+import { MOON_BODY_ID } from '../../config/moonConfig';
+import { useRegisterPlanetCollider } from '../../hooks/useRegisterPlanetCollider';
 
 const MOON_RADIUS = LUNAR_MOON_RADIUS;
 const SURFACE_Y = LUNAR_SURFACE_Y;
@@ -18,7 +20,10 @@ const MOON_ROTATION_SPEED = 0.02;
 
 export default function LunarLandscape() {
   const { gl } = useThree();
+  const moonCenterRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
+
+  useRegisterPlanetCollider(moonCenterRef, MOON_BODY_ID, LUNAR_MOON_RADIUS);
 
   useFrame((_, delta) => {
     if (spinRef.current) spinRef.current.rotation.y += MOON_ROTATION_SPEED * delta;
@@ -43,7 +48,7 @@ export default function LunarLandscape() {
 
   return (
     // Center is MOON_RADIUS below the surface so the top of the sphere sits at SURFACE_Y
-    <group position={LUNAR_MOON_CENTER} rotation={[Math.PI / 2, Math.PI, 0]}>
+    <group ref={moonCenterRef} position={LUNAR_MOON_CENTER} rotation={[Math.PI / 2, Math.PI, 0]}>
       <group ref={spinRef}>
         <mesh receiveShadow>
           <sphereGeometry args={[MOON_RADIUS, 128, 128]} />

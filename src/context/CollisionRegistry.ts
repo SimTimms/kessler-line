@@ -41,6 +41,9 @@ export interface CollidableEntry {
    * The receiver should scale by its own mass/impulse factor.
    */
   applyImpulse?: (impulse: THREE.Vector3) => void;
+
+  /** Spherical body surface — inward impact destroys the ship and spawns dust VFX. */
+  planetSurfaceImpact?: boolean;
 }
 
 const registry = new Map<string, CollidableEntry>();

@@ -300,10 +300,10 @@ export default function VelocityIndicator() {
       posArr[i * 3 + 1] = 0;
       posArr[i * 3 + 2] = worldZ - sz;
 
-      // Track min/max distance from primary for apsis markers
+      // Track min/max distance from primary for apsis markers (worldX/worldZ, not ship-relative posArr)
       if (primaryBody) {
-        const pdx = posArr[i * 3] - primaryBody.position.x;
-        const pdz = posArr[i * 3 + 2] - primaryBody.position.z;
+        const pdx = worldX - primaryBody.position.x;
+        const pdz = worldZ - primaryBody.position.z;
         const pd = Math.sqrt(pdx * pdx + pdz * pdz);
         if (pd < periDist) {
           periDist = pd;

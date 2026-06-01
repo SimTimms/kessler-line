@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import {
-  NAV_TARGET_DEFS,
-  displayNameForDockedStation,
-} from '../../../config/worldConfig';
+import { NAV_TARGET_DEFS, displayNameForDockedStation } from '../../../config/worldConfig';
 import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
 import { isDockingTutorialUndockAllowed } from '../../../tutorial/tutorialDockingInputGate';
 import { dockingTutorialActiveRef, tutorialStepRef } from '../../../context/TutorialState';
 import { TUTORIAL_DOCKING_STEPS } from '../../../tutorial/tutorialDockingSteps';
-import { navTargetPosRef, navTargetIdRef, hasNavTarget, clearNavTarget } from '../../../context/NavTarget';
+import {
+  navTargetPosRef,
+  navTargetIdRef,
+  hasNavTarget,
+  clearNavTarget,
+} from '../../../context/NavTarget';
 import { gravityBodies } from '../../../context/GravityRegistry';
 import { shipPosRef } from '../../../context/ShipPos';
 import { getShipSpeedMps, orbitStatusRef, shipVelocity } from '../../../context/ShipState';
@@ -43,6 +45,7 @@ import {
   horizontalDistanceToRadiationZone,
 } from '../../../utils/radiationZonePosition';
 import { humanizeCollidableId, type NavScanContact } from './navScanPickerContacts';
+import { computeOrbitHudMetrics, orbitBodyLabel } from './orbitHudMetrics';
 import { KM_PER_UNIT } from '../../../config/commsConfig';
 import {
   autopilotActive,
@@ -61,7 +64,7 @@ const NAV_TARGETS = NAV_TARGET_DEFS;
 const ORBIT_LABELS = new Map(NAV_TARGET_DEFS.map((p) => [p.id, p.label]));
 const _toTargetDir = new THREE.Vector3();
 
-interface TutorialTargetDef {
+export interface TutorialTargetDef {
   id: string;
   label: string;
   getPosition: (v: THREE.Vector3) => THREE.Vector3;
@@ -116,7 +119,9 @@ export const NavHUD = ({
   const [navTargetHighlight, setNavTargetHighlight] = useState(false);
   const [highlightedContactId, setHighlightedContactId] = useState<string | undefined>();
   const [navItems, setNavItems] = useState<NavTargetItem[]>(() =>
-    NAV_TARGETS.map((t) => ({ id: t.id, label: t.label }))
+    customPlanetaryTargets
+      ? customPlanetaryTargets.map((t) => ({ id: t.id, label: t.label }))
+      : NAV_TARGETS.map((t) => ({ id: t.id, label: t.label }))
   );
   const [generalItems, setGeneralItems] = useState<NavTargetItem[]>([]);
   const [magneticContacts, setMagneticContacts] = useState<NavScanContact[]>([]);
@@ -184,44 +189,21 @@ export const NavHUD = ({
         const { x, z } = shipPosRef.current;
         coordsRef.current.textContent = `${Math.round(x)}, ${Math.round(z)}`;
       }
+      const orbitMetrics = computeOrbitHudMetrics();
+
       if (orbitRef.current) {
         const { bodyId } = orbitStatusRef.current;
-        const label = bodyId ? (ORBIT_LABELS.get(bodyId) ?? bodyId) : '—';
+        const label = bodyId ? (ORBIT_LABELS.get(bodyId) ?? orbitBodyLabel(bodyId)) : '—';
         orbitRef.current.textContent = label;
       }
       if (altRef.current) {
-        const { bodyId, surfaceRadius } = orbitStatusRef.current;
-        if (bodyId) {
-          const body = gravityBodies.get(bodyId);
-          if (body) {
-            const dx = shipPosRef.current.x - body.position.x;
-            const dy = shipPosRef.current.y - body.position.y;
-            const dz = shipPosRef.current.z - body.position.z;
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            const alt = Math.max(0, dist - surfaceRadius);
-            altRef.current.textContent = `${Math.round(alt)}`;
-          }
-        } else {
-          altRef.current.textContent = '—';
-        }
+        altRef.current.textContent = orbitMetrics.alt;
       }
       if (periapsisRef.current) {
-        const { bodyId, periapsis, surfaceRadius } = orbitStatusRef.current;
-        if (bodyId && periapsis > 0) {
-          const periAlt = Math.max(0, periapsis - surfaceRadius);
-          periapsisRef.current.textContent = `${Math.round(periAlt)}`;
-        } else {
-          periapsisRef.current.textContent = '—';
-        }
+        periapsisRef.current.textContent = orbitMetrics.peri;
       }
       if (apoapsisRef.current) {
-        const { bodyId, apoapsis, surfaceRadius } = orbitStatusRef.current;
-        if (bodyId && apoapsis > 0) {
-          const apoAlt = Math.max(0, apoapsis - surfaceRadius);
-          apoapsisRef.current.textContent = `${Math.round(apoAlt)}`;
-        } else {
-          apoapsisRef.current.textContent = '—';
-        }
+        apoapsisRef.current.textContent = orbitMetrics.apo;
       }
       if (apsesTargetRef.current) {
         const { bodyId } = orbitStatusRef.current;
@@ -233,9 +215,10 @@ export const NavHUD = ({
         }
       }
       if (approachRef.current) {
-        const { bodyId, periapsis, apoapsis, surfaceRadius, radialVelocity } =
+        const { bodyId, periapsis, apoapsis, surfaceRadius, radialVelocity, hyperbolicPeriapsis } =
           orbitStatusRef.current;
-        if (bodyId && periapsis > 0) {
+        const effectivePeri = periapsis > 0 ? periapsis : hyperbolicPeriapsis;
+        if (bodyId && effectivePeri > 0) {
           const body = gravityBodies.get(bodyId);
           if (body) {
             const dx = shipPosRef.current.x - body.position.x;
@@ -246,7 +229,7 @@ export const NavHUD = ({
               const apoAlt = Math.max(0, apoapsis - surfaceRadius);
               approachRef.current.textContent = `APO +${Math.round(apoAlt - currentAlt)}`;
             } else {
-              const periAlt = Math.max(0, periapsis - surfaceRadius);
+              const periAlt = Math.max(0, effectivePeri - surfaceRadius);
               approachRef.current.textContent = `PERI -${Math.round(currentAlt - periAlt)}`;
             }
           }
@@ -329,10 +312,8 @@ export const NavHUD = ({
           orbitLineRef.current.textContent = '';
           orbitLineRef.current.style.display = 'none';
         } else {
-          const label = ORBIT_LABELS.get(bodyId) ?? bodyId;
-          const alt = altRef.current?.textContent ?? '—';
-          const peri = periapsisRef.current?.textContent ?? '—';
-          const apo = apoapsisRef.current?.textContent ?? '—';
+          const label = ORBIT_LABELS.get(bodyId) ?? orbitBodyLabel(bodyId);
+          const { alt, peri, apo } = orbitMetrics;
           const prefix = isOrbiting === true ? 'ORB' : 'SOI';
           orbitLineRef.current.textContent = `${prefix} ${label} · ALT ${alt} · PE ${peri} · AP ${apo}`;
           orbitLineRef.current.style.display = '';
@@ -365,6 +346,10 @@ export const NavHUD = ({
         if (navSig !== prevNavSigRef.current) {
           prevNavSigRef.current = navSig;
           setNavItems(newNavItems);
+        }
+        const activeCustom = customPlanetaryTargets?.find((t) => t.id === navTargetIdRef.current);
+        if (activeCustom) {
+          activeCustom.getPosition(navTargetPosRef.current);
         }
       }
       if (customGeneralTargets) {
@@ -878,7 +863,7 @@ export const NavHUD = ({
                         : `${totalNavContactCount} nav contacts`
                     }
                   >
-                    {hasActiveNavTarget ? displayLabel || '—' : totalNavContactCount}
+                    {hasActiveNavTarget ? displayLabel || '—' : `${totalNavContactCount} CONTACTS`}
                   </button>
                 </div>
                 {hasActiveNavTarget ? (
@@ -928,7 +913,10 @@ export const NavHUD = ({
                 </div>
                 <div className="helmet-nav-metric helmet-nav-metric--rel">
                   <span className="helmet-nav-tag">Δv</span>
-                  <span ref={relativeVelRef} className="helmet-nav-dv hud-value nav-relative-velocity" />
+                  <span
+                    ref={relativeVelRef}
+                    className="helmet-nav-dv hud-value nav-relative-velocity"
+                  />
                   <span ref={dockingHintRef} className="nav-target-dock-hint" />
                 </div>
               </div>

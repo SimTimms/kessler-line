@@ -61,7 +61,7 @@ import SunGravity from './Environment/SunGravity';
 import { defaultConfig } from '../components/Planets/Neptune/NeptuneInnerWispyRing';
 import { RADIATION_ZONES } from '../config/radiationConfig';
 import CollisionDebug from './Debug/CollisionDebug';
-
+import PlanetSurfaceImpactDust from './Environment/PlanetSurfaceImpactDust';
 const STAGE_2_GLB_URLS = ['/space_station.glb', '/fuel-station.glb', '/container.glb'] as const;
 const STAGE_3_GLB_URLS = ['/untitled.gltf', '/large_ship.glb', '/supportDrone.glb'] as const;
 const STAGE_4_GLB_URLS = ['/shuttle.glb'] as const;
@@ -158,6 +158,7 @@ export default function Scene() {
       <CameraCapture />
       <DefaultEnvironment />
       <SunGravity />
+      <PlanetSurfaceImpactDust />
 
       <SaveSystemBridge />
       <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />

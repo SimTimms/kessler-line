@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { THRUST, YAW_THRUST, thrustMultiplier } from '../../context/ShipState';
 import { gravityBodies } from '../../context/GravityRegistry';
+import { applyYawAndRoll, getYawFromQuaternion } from '../../orbitalRoll/shipYawRoll';
 import { applyGravityStep } from './gravity';
 import { resolveCollisions } from './collisions';
 
@@ -52,7 +53,8 @@ export function applyPhysicsStep({
 }: StepParams) {
   if (yawLeft) angularVelocity.current -= YAW_THRUST * dt;
   if (yawRight) angularVelocity.current += YAW_THRUST * dt;
-  group.rotation.y += angularVelocity.current * dt;
+  const yaw = getYawFromQuaternion(group.quaternion) + angularVelocity.current * dt;
+  applyYawAndRoll(group, yaw, 0);
 
   _localForward.set(0, 0, 1).applyQuaternion(group.quaternion);
   if (fwd) velocity.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * dt);

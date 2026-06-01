@@ -1,11 +1,13 @@
 import { memo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import PowerHUD from '../PowerHUD/PowerHUD';
-import { NavHUD } from '../NavHUD/NavHUD';
+import { NavHUD, type TutorialTargetDef } from '../NavHUD/NavHUD';
 import { ScannerHUD } from '../HUD/ScannerHUD';
 import ContactsHUD from '../../ContactsHUD/ContactsHUD';
 import DockTransferHUD from '../DockTransferHUD/DockTransferHUD';
+import ShipControlsHUD from '../ShipControlsHUD/ShipControlsHUD';
 import './HelmetHUD.css';
+import '../ShipControlsHUD/ShipControlsHUD.css';
 
 export interface HelmetHUDProps {
   spotlightOn: boolean;
@@ -27,12 +29,19 @@ export interface HelmetHUDProps {
   focusElements?: string[];
   /** Contacts HUD: only show radio sources present in the scene. */
   sceneRadioContactsOnly?: boolean;
+  /** Replace default solar-system nav targets (e.g. orbital tutorial: Luna + Sol only). */
+  customPlanetaryTargets?: TutorialTargetDef[];
+  thrustLevel?: number;
+  setThrustLevel?: Dispatch<SetStateAction<number>>;
 }
 
 const HelmetHUD = memo(function HelmetHUD({
   disableElements = [],
   focusElements = [],
   sceneRadioContactsOnly = false,
+  customPlanetaryTargets,
+  thrustLevel,
+  setThrustLevel,
   ...scannerProps
 }: HelmetHUDProps) {
   return (
@@ -43,13 +52,21 @@ const HelmetHUD = memo(function HelmetHUD({
           disableElements={disableElements}
           focusElements={focusElements}
         />
-        <NavHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
-        <ScannerHUD
+        <NavHUD
           layout="helmet"
-          focusElements={focusElements}
           disableElements={disableElements}
-          {...scannerProps}
+          focusElements={focusElements}
+          customPlanetaryTargets={customPlanetaryTargets}
         />
+        <div className="helmet-scanner-controls-row">
+          <ScannerHUD
+            layout="helmet"
+            focusElements={focusElements}
+            disableElements={disableElements}
+            {...scannerProps}
+          />
+          <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
+        </div>
       </div>
       <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly} />
       <DockTransferHUD />

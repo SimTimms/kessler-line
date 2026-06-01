@@ -59,6 +59,35 @@ const _spinEuler = new THREE.Vector3();
 const _scrapperOffset = new THREE.Vector3();
 const _assistForward = new THREE.Vector3();
 const _assistRight = new THREE.Vector3();
+const _worldPos = new THREE.Vector3();
+
+/** Gameplay plane is world XZ (Y = 0), including when a parent group is banked. */
+function clampShipToWorldXZPlane(
+  group: THREE.Group,
+  physicsPosition: THREE.Vector3,
+  velocity: THREE.Vector3
+) {
+  velocity.y = 0;
+  group.getWorldPosition(_worldPos);
+  if (Math.abs(_worldPos.y) <= 1e-4) {
+    physicsPosition.copy(group.position);
+    return;
+  }
+  _worldPos.y = 0;
+  if (group.parent) {
+    group.parent.worldToLocal(_worldPos);
+    group.position.copy(_worldPos);
+  } else {
+    group.position.y = 0;
+  }
+  physicsPosition.copy(group.position);
+}
+
+/** HUD/camera follow world position (required when the ship group has a moving parent). */
+function syncShipWorldRefs(group: THREE.Group) {
+  group.getWorldPosition(shipPosRef.current);
+  minimapShipPosition.copy(shipPosRef.current);
+}
 
 const CANCEL_LINEAR_EPS = 1.1; // units/s deadzone
 const CANCEL_YAW_EPS = 0.03; // rad/s deadzone
@@ -133,9 +162,14 @@ export function useShipPhysics({
       angularVelocity3.current.set(0, 0, 0);
       didApplyInitialVelocity.current = false;
       if (groupRef.current) {
-        groupRef.current.position.set(0, 0, 0);
-        physicsPosition.current.set(0, 0, 0);
-        renderPosition.current.set(0, 0, 0);
+        // Use shipPosRef (set by each tutorial's reset handler) — not always world origin.
+        groupRef.current.position.set(
+          shipPosRef.current.x,
+          shipPosRef.current.y,
+          shipPosRef.current.z
+        );
+        physicsPosition.current.copy(groupRef.current.position);
+        renderPosition.current.copy(groupRef.current.position);
       }
     };
     window.addEventListener('TutorialShipReset', onTutorialShipReset);
@@ -189,8 +223,7 @@ export function useShipPhysics({
       // Keep authoritative refs synced while docked so follow camera and
       // undock handoff use the actual docked transform (no snap to stale spawn).
       physicsPosition.current.copy(groupRef.current.position);
-      shipPosRef.current.copy(physicsPosition.current);
-      minimapShipPosition.copy(physicsPosition.current);
+      syncShipWorldRefs(groupRef.current);
       groupRef.current.getWorldQuaternion(shipQuaternion);
       shipAngularVelocity.current = 0;
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
@@ -215,8 +248,7 @@ export function useShipPhysics({
         .applyQuaternion(scrapperWorldQuat);
       groupRef.current.position.copy(scrapperWorldPos).add(_scrapperOffset);
       physicsPosition.current.copy(groupRef.current.position);
-      shipPosRef.current.copy(physicsPosition.current);
-      minimapShipPosition.copy(physicsPosition.current);
+      syncShipWorldRefs(groupRef.current);
       velocity.current.set(0, 0, 0);
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
       return;
@@ -474,12 +506,9 @@ export function useShipPhysics({
       });
     }
 
-    velocity.current.y = 0;
-    physicsPosition.current.y = 0;
-    groupRef.current.position.y = 0;
+    clampShipToWorldXZPlane(groupRef.current, physicsPosition.current, velocity.current);
 
-    shipPosRef.current.copy(physicsPosition.current);
-    minimapShipPosition.copy(physicsPosition.current);
+    syncShipWorldRefs(groupRef.current);
   }, -1);
 
   return {

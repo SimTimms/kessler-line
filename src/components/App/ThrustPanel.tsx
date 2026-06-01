@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { thrustMultiplier, MAX_THRUST_MULTIPLIER } from '../../context/ShipState';
 import {
@@ -9,14 +9,23 @@ import {
 } from '../../config/keybindings';
 
 interface ThrustPanelProps {
-  thrustLevel: number;
-  setThrustLevel: Dispatch<SetStateAction<number>>;
+  thrustLevel?: number;
+  setThrustLevel?: Dispatch<SetStateAction<number>>;
+  /** Renders inside helmet controls column (no fixed screen position). */
+  embedded?: boolean;
 }
 
 const THRUST_STEP = 0.5;
 const THRUST_MIN = 0.5;
 
-const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: ThrustPanelProps) {
+const ThrustPanel = memo(function ThrustPanel({
+  thrustLevel: thrustLevelProp,
+  setThrustLevel: setThrustLevelProp,
+  embedded = false,
+}: ThrustPanelProps) {
+  const [internalLevel, setInternalLevel] = useState(() => thrustMultiplier.current);
+  const thrustLevel = thrustLevelProp ?? internalLevel;
+  const setThrustLevel = setThrustLevelProp ?? setInternalLevel;
   const isDanger = thrustLevel >= 2;
 
   useEffect(() => {
@@ -39,16 +48,15 @@ const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: T
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setThrustLevel]);
 
-  return (
-    <div
-      className="thrust-panel"
-      style={{
-        position: 'fixed',
+  const panelStyle = embedded
+    ? undefined
+    : {
+        position: 'fixed' as const,
         bottom: 8,
         right: '140px',
         transform: 'translateX(-50%)',
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'column' as const,
         alignItems: 'center',
         gap: 5,
         fontFamily: 'monospace',
@@ -57,9 +65,44 @@ const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: T
         backdropFilter: 'blur(10px)',
         padding: '8px 16px',
         border: `1px solid ${isDanger ? 'rgba(255,40,140,0.25)' : 'rgba(0,200,255,0.23)'}`,
-        userSelect: 'none',
-      }}
-    >
+        userSelect: 'none' as const,
+      };
+
+  const sliderClassName = `thrust-slider${isDanger ? ' danger' : ''}${embedded ? ' thrust-slider--vertical' : ''}`;
+
+  if (embedded) {
+    return (
+      <div className="thrust-panel thrust-panel--embedded" aria-label="Thrust multiplier">
+        <div
+          className={`thrust-label-text${isDanger ? ' thrust-label-text--danger' : ''}`}
+        >
+          {thrustLevel.toFixed(1)}×{isDanger ? ' ⚠' : ''}
+        </div>
+        <div className="thrust-slider-column">
+          <span className="thrust-tick thrust-tick--max">{MAX_THRUST_MULTIPLIER}×</span>
+          <div className="thrust-slider-wrap">
+            <input
+              type="range"
+              min={THRUST_MIN}
+              max={MAX_THRUST_MULTIPLIER}
+              step={THRUST_STEP}
+              value={thrustLevel}
+              className={sliderClassName}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setThrustLevel(v);
+                thrustMultiplier.current = v;
+              }}
+            />
+          </div>
+          <span className="thrust-tick thrust-tick--min">{THRUST_MIN}×</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="thrust-panel" style={panelStyle}>
       <div
         className="thrust-label-text"
         style={{
@@ -76,7 +119,7 @@ const ThrustPanel = memo(function ThrustPanel({ thrustLevel, setThrustLevel }: T
         max={MAX_THRUST_MULTIPLIER}
         step={THRUST_STEP}
         value={thrustLevel}
-        className={isDanger ? 'thrust-slider danger' : 'thrust-slider'}
+        className={sliderClassName}
         onChange={(e) => {
           const v = parseFloat(e.target.value);
           setThrustLevel(v);

@@ -4,9 +4,11 @@ import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
 import TutorialStepWatcher from '../TutorialShared/TutorialStepWatcher';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
+import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator';
 import { shipPosRef } from '../../context/ShipPos';
 import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import DefaultLighting from '../DefaultLighting';
+import PlanetSurfaceImpactDust from '../Environment/PlanetSurfaceImpactDust';
 import LunarLandscape from '../LunarLandscape/LunarLandscape';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import {
@@ -51,6 +53,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
           position={[0, 4000, 40000]}
         />
         <TutorialFollowCamera followTarget={shipPosRef} followOffset={TUTORIAL_FOLLOW_OFFSET} />
+        <PlanetSurfaceImpactDust />
         <TutorialStepWatcher onStepAdvance={onStepAdvance} />
         <Suspense fallback={null}>
           <LunarLandscape />
@@ -69,6 +72,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
             }}
           />
           <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+          <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
           <ProximityHighlight />
           <ScannerRangeRings />
           <ContainerBritish

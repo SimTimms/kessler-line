@@ -7,6 +7,7 @@ import { shipPosRef } from '../../context/ShipPos';
 import { scrapperIntroActive } from '../../context/CinematicState';
 import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
+import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator';
 import { SpaceStation } from '../SpaceStation';
 import DefaultEnvironment from '../Environment';
 import StationDrones from '../StationDrones/StationDrones';
@@ -141,6 +142,7 @@ export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props
           scale={1}
         />
         <LaserRay shipGroupRef={spaceshipGroupRef} />
+        <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
       </Suspense>
       <CollisionDebug />
     </Canvas>

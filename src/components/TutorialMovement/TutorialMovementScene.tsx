@@ -6,7 +6,9 @@ import TutorialStepWatcher from '../TutorialShared/TutorialStepWatcher';
 import { shipPosRef } from '../../context/ShipPos';
 import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
+import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator';
 import DefaultLighting from '../DefaultLighting';
+import PlanetSurfaceImpactDust from '../Environment/PlanetSurfaceImpactDust';
 import LunarLandscape from '../LunarLandscape/LunarLandscape';
 import LunarSettlement from '../LunarLandscape/LunarSettlement';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
@@ -49,6 +51,7 @@ export default memo(function TutorialMovementScene({ onStepAdvance }: LunarTutor
           position={[0, 4000, 40000]}
         />
         <TutorialFollowCamera followTarget={shipPosRef} followOffset={TUTORIAL_FOLLOW_OFFSET} />
+        <PlanetSurfaceImpactDust />
         <TutorialStepWatcher onStepAdvance={onStepAdvance} />
         <Suspense fallback={null}>
           <LunarLandscape />
@@ -66,6 +69,7 @@ export default memo(function TutorialMovementScene({ onStepAdvance }: LunarTutor
               speedGateMax: SHIP_PARTICLE_SPEED_MAX,
             }}
           />
+          <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
           <ScannerRangeRings />
         </Suspense>
         <CollisionDebug />

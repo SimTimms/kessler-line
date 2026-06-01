@@ -1,0 +1,122 @@
+.helmet-ship-controls {
+  flex: 0 0 48px;
+  width: 48px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 6px;
+  background: var(--helmet-bg);
+  border: 1px solid var(--helmet-panel-border);
+  backdrop-filter: var(--helmet-panel-blur);
+  font-family: var(--helmet-font);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  min-height: 0;
+}
+
+.helmet-ship-controls-head {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: var(--helmet-muted);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.12);
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.helmet-ship-controls .thrust-panel--embedded {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
+  user-select: none;
+}
+
+.helmet-ship-controls .thrust-panel--embedded .thrust-label-text {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--helmet-accent);
+  text-align: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.helmet-ship-controls .thrust-panel--embedded .thrust-label-text--danger {
+  color: rgba(255, 60, 140, 0.95);
+}
+
+.helmet-ship-controls .thrust-slider-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-height: 56px;
+  width: 100%;
+}
+
+.helmet-ship-controls .thrust-tick {
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  color: var(--helmet-muted);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.helmet-ship-controls .thrust-slider-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  width: 100%;
+}
+
+.helmet-ship-controls .thrust-slider--vertical {
+  -webkit-appearance: slider-vertical;
+  appearance: auto;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 10px;
+  height: 100%;
+  min-height: 48px;
+  max-height: 96px;
+  margin: 0;
+  cursor: pointer;
+  background: linear-gradient(
+    to top,
+    rgba(0, 200, 255, 0.75) 55%,
+    rgba(0, 0, 0, 0.65) 55%,
+    rgba(255, 40, 140, 0.8) 100%
+  );
+  border-radius: 4px;
+}
+
+.helmet-ship-controls .thrust-slider--vertical::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00cfff;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.helmet-ship-controls .thrust-slider--vertical.danger::-webkit-slider-thumb {
+  background: rgba(255, 40, 140, 0.9);
+  box-shadow: 0 0 6px rgba(255, 50, 50, 0.85);
+}
+
+.helmet-ship-controls .thrust-slider--vertical::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00cfff;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.helmet-ship-controls .thrust-slider--vertical.danger::-moz-range-thumb {
+  background: rgba(255, 40, 140, 0.9);
+}

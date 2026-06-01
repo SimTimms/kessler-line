@@ -22,8 +22,10 @@ import { clearSelectedTarget } from './context/TargetSelection';
 import { disableAutopilot } from './context/AutopilotState';
 import StartOverlay from './components/App/StartOverlay';
 import { GAME_MODES, type GameMode, type TutorialMenuSelection } from './config/gameModes';
+import { applyTutorialOrbitalSpawn } from './config/tutorialOrbitalConfig';
 import TutorialAir from './components/TutorialAir/TutorialAir';
 import TutorialRadio from './components/TutorialRadio/TutorialRadio';
+import TutorialOrbital from './components/TutorialOrbital/TutorialOrbital';
 
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
@@ -59,6 +61,9 @@ function App() {
     clearSelectedTarget();
     disableAutopilot();
     tutorialStepRef.current = 0;
+    if (selection === GAME_MODES.orbitalManagement) {
+      applyTutorialOrbitalSpawn();
+    }
     setTutorialMode(selection);
     setMode(selection);
   }, []);
@@ -85,6 +90,8 @@ function App() {
       return <TutorialAir onComplete={handleTutorialComplete} />;
     case GAME_MODES.radioManagement:
       return <TutorialRadio onComplete={handleTutorialComplete} />;
+    case GAME_MODES.orbitalManagement:
+      return <TutorialOrbital onComplete={handleTutorialComplete} />;
     case GAME_MODES.game:
       return (
         <AppShell

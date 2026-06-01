@@ -1,15 +1,4 @@
-/**
- * Criteria that determines when a tutorial step auto-advances.
- *
- * - continue      — manual Continue button only
- * - keydown       — any key in `codes` is pressed
- * - event         — a named window CustomEvent fires (e.g. 'ShipUndocked')
- * - mouseOrbit    — user holds left mouse button and drags past a movement threshold
- * - mouseScroll   — user turns the scroll wheel at least once
- * - speed         — ship speed exceeds `min` (m/s) at least once
- * - angular       — ship angular velocity exceeds `min` at least once
- * - all           — every sub-criterion in `criteria` must be met (AND gate)
- */
+import type { TutorialKeyHint } from '../TutorialMovement/tutorialMovementSteps';
 
 export type CompletionCriteria =
   | { type: 'continue' }
@@ -20,3 +9,18 @@ export type CompletionCriteria =
   | { type: 'speed'; min: number }
   | { type: 'angular'; min: number }
   | { type: 'all'; criteria: CompletionCriteria[] };
+
+export interface TutorialStep {
+  id: string;
+  title: string;
+  prompt: string;
+  keys: string[];
+  /** Rich icons for the control strip — keyboard caps, mouse buttons, scroll. */
+  keyHints?: TutorialKeyHint[];
+  /** When present, drives step advancement in TutorialStepWatcher. */
+  completionCriteria?: CompletionCriteria;
+  /** Legacy flag for docking steps — shows the Continue button without criteria. */
+  requiresContinue?: boolean;
+  continueLabel?: string;
+  detail?: string;
+}

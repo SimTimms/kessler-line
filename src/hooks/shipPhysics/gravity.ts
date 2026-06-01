@@ -103,13 +103,8 @@ export function applyGravityStep({
     orbitStatusRef.current.surfaceRadius = primaryBody.surfaceRadius;
     orbitStatusRef.current.radialVelocity = radialVelocity;
     orbitStatusRef.current.hyperbolicPeriapsis = hyperbolicPeriapsis;
-    if (isOrbiting && !anyThrusting && orbitStatusRef.current.bodyId === primaryBodyId) {
-      orbitStatusRef.current.periapsis = orbitStatusRef.current.periapsis || periapsis;
-      orbitStatusRef.current.apoapsis = orbitStatusRef.current.apoapsis || apoapsis;
-    } else {
-      orbitStatusRef.current.periapsis = periapsis;
-      orbitStatusRef.current.apoapsis = apoapsis;
-    }
+    orbitStatusRef.current.periapsis = periapsis;
+    orbitStatusRef.current.apoapsis = apoapsis;
   } else {
     orbitStatusRef.current.bodyId = null;
     orbitStatusRef.current.isOrbiting = false;

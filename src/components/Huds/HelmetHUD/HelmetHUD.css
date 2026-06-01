@@ -232,7 +232,7 @@
 /* ── Nav + scanner stack (bottom-left) ───────────────────────────────────── */
 
 .helmet-sensor-stack {
-  --helmet-sensor-stack-width: min(248px, 52vw);
+  --helmet-sensor-stack-width: min(296px, 58vw);
   position: fixed;
   left: 12px;
   bottom: 14px;
@@ -521,6 +521,22 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* ── Scanner + ship controls (below nav) ─────────────────────────────────── */
+
+.helmet-scanner-controls-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  min-height: 0;
+}
+
+.helmet-scanner-controls-row .helmet-scanner-deck {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* ── Scanner deck (in sensor stack, below nav) ───────────────────────────── */

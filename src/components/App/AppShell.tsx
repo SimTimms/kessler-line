@@ -6,7 +6,6 @@ import OverlayLayer from './OverlayLayer';
 import HudLayer from './HudLayer';
 import DialogLayer from './DialogLayer';
 import AudioLayer from './AudioLayer';
-import ControlLayer from './ControlLayer';
 import NavHudKeyBinding from './NavHudKeyBinding';
 import StartOverlay from './StartOverlay';
 import ShipTitleCard from './ShipTitleCard';
@@ -105,6 +104,8 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
         radioOn={radioOn}
         setRadioOn={setRadioOn}
         showMinimap={showMinimap}
+        thrustLevel={thrustLevel}
+        setThrustLevel={setThrustLevel}
       />
       <DialogLayer
         docked={docked}
@@ -124,7 +125,6 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
         setListeningToMessage={setListeningToMessage}
         activeAudioRef={activeAudioRef}
       />
-      <ControlLayer thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
       {showStartOverlay ? (
         <StartOverlay onStart={onStart} onTutorialSelect={onTutorial} />
       ) : (

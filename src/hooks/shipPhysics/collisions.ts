@@ -6,8 +6,11 @@ import {
   SHIP_COLLISION_ID,
   SHIP_RADIUS,
   damageHull,
+  shipDestroyed,
 } from '../../context/ShipState';
 import { SHIP_COLLISION_SAMPLES } from '../../config/shipConfig';
+import { PLANET_IMPACT_MIN_SPEED } from '../../config/planetImpactConfig';
+import { triggerShipDestruction } from './destruction';
 
 const _shipWorldPos = new THREE.Vector3();
 const _shipWorldQuat = new THREE.Quaternion();
@@ -23,6 +26,9 @@ const _closestPoint = new THREE.Vector3();
 const _localUp = new THREE.Vector3();
 const _capsuleA = new THREE.Vector3();
 const _capsuleB = new THREE.Vector3();
+const _surfacePoint = new THREE.Vector3();
+const _surfaceNormal = new THREE.Vector3();
+const _randomDir = new THREE.Vector3();
 
 function resolveEntryCollision(
   collidable: CollidableEntry,
@@ -117,6 +123,42 @@ function resolveEntryCollision(
 
   if (colliding) {
     const impactSpeed = velocity.dot(_collisionNormal);
+
+    if (
+      collidable.planetSurfaceImpact &&
+      !shipDestroyed.current &&
+      impactSpeed < -PLANET_IMPACT_MIN_SPEED
+    ) {
+      if (shape.type === 'sphere') {
+        _surfaceNormal.copy(_collisionNormal);
+        if (_surfaceNormal.lengthSq() < 1e-8) {
+          _surfaceNormal.subVectors(shipPos, _collidablePos);
+        }
+        _surfaceNormal.normalize();
+        _surfacePoint.copy(_collidablePos).addScaledVector(_surfaceNormal, shape.radius);
+      } else {
+        _surfacePoint.copy(shipPos);
+        _surfaceNormal.copy(_collisionNormal).normalize();
+      }
+
+      window.dispatchEvent(
+        new CustomEvent('PlanetSurfaceImpact', {
+          detail: {
+            position: _surfacePoint.clone(),
+            normal: _surfaceNormal.clone(),
+            planetId: collidable.id,
+            impactSpeed: Math.abs(impactSpeed),
+          },
+        })
+      );
+
+      group.position.addScaledVector(_collisionNormal, overlap);
+      shipPos.addScaledVector(_collisionNormal, overlap);
+      velocity.set(0, 0, 0);
+      triggerShipDestruction('planet');
+      return;
+    }
+
     if (impactSpeed < 0) {
       damageHull(Math.abs(impactSpeed) * DAMAGE_MULTIPLIER);
     }

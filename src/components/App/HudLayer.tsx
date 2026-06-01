@@ -27,6 +27,8 @@ interface HudLayerProps {
   radioOn: boolean;
   setRadioOn: Dispatch<SetStateAction<boolean>>;
   showMinimap: boolean;
+  thrustLevel: number;
+  setThrustLevel: Dispatch<SetStateAction<number>>;
 }
 
 const HudLayer = memo(function HudLayer({
@@ -41,6 +43,8 @@ const HudLayer = memo(function HudLayer({
   radioOn,
   setRadioOn,
   showMinimap,
+  thrustLevel,
+  setThrustLevel,
 }: HudLayerProps) {
   useEffect(() => {
     let raf: number;
@@ -75,6 +79,8 @@ const HudLayer = memo(function HudLayer({
         radioOn={radioOn}
         setRadioOn={setRadioOn}
         radioOnRef={radioOnRef}
+        thrustLevel={thrustLevel}
+        setThrustLevel={setThrustLevel}
       />
 
       <MagneticHUD />

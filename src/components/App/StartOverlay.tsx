@@ -45,6 +45,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
   { id: 'air-management', label: 'Air Management', selection: GAME_MODES.airManagement },
   { id: 'radio-management', label: 'Radio Management', selection: GAME_MODES.radioManagement },
+  { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: GAME_MODES.orbitalManagement },
 ];
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {

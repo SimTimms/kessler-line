@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useTutorialThrustersHighlighted } from '../TutorialMovement/useTutorialThrustersHighlighted';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -135,6 +135,11 @@ export default function Spaceship({
     releaseParticleTrigger,
     thrusterLightRefs,
   } = useShipPhysics({ groupRef, dockingPortRef, initialDockedTo, initialVelocity });
+
+  useLayoutEffect(() => {
+    if (!initialPosition || !groupRef.current) return;
+    groupRef.current.position.set(...initialPosition);
+  }, [initialPosition]);
 
   const thrustersHighlighted = useTutorialThrustersHighlighted();
 

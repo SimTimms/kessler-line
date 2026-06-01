@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   hullIntegrity,
+  setHullIntegrity,
   shipDestroyed,
   mainEngineDisabled,
   cinematicThrustForward,
@@ -8,6 +9,16 @@ import {
 } from '../../context/ShipState';
 import { cinematicAutopilotActive } from '../../context/CinematicState';
 import { radiationExposureRef } from '../../context/RadiationScan';
+
+export function triggerShipDestruction(cause: string) {
+  if (shipDestroyed.current) return;
+  shipDestroyed.current = true;
+  setHullIntegrity(0);
+  cinematicAutopilotActive.current = false;
+  cinematicThrustForward.current = false;
+  cinematicThrustReverse.current = false;
+  window.dispatchEvent(new CustomEvent('ShipDestroyed', { detail: { cause } }));
+}
 
 export function checkShipDestruction({
   destroyedFired,
@@ -38,10 +49,8 @@ export function checkShipDestruction({
 }): void {
   if (hullIntegrity <= 0 && !destroyedFired.current) {
     destroyedFired.current = true;
-    shipDestroyed.current = true;
-    cinematicAutopilotActive.current = false;
-    cinematicThrustForward.current = false;
-    cinematicThrustReverse.current = false;
+    const cause = radiationExposureRef.current > 0 ? 'radiation' : 'hull';
+    triggerShipDestruction(cause);
     thrustForward.current = false;
     thrustReverse.current = false;
     thrustLeft.current = false;
@@ -61,7 +70,5 @@ export function checkShipDestruction({
         (Math.random() * 2 - 1) * 0.6
       );
     }
-    const cause = radiationExposureRef.current > 0 ? 'radiation' : 'hull';
-    window.dispatchEvent(new CustomEvent('ShipDestroyed', { detail: { cause } }));
   }
 }

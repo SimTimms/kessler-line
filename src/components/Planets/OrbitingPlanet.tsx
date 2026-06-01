@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { gravityBodies } from '../../context/GravityRegistry';
+import { useRegisterPlanetCollider } from '../../hooks/useRegisterPlanetCollider';
 
 // Colony light locations: [longitude (-180..180), latitude (-90..90), cluster radius px, brightness 0..1]
 type ColonyPoint = [number, number, number, number];
@@ -447,6 +448,8 @@ export default function OrbitingPlanet({
   const glowSpriteRef = useRef<THREE.Sprite>(null);
   const prevWorldPosRef = useRef(new THREE.Vector3());
   const hasPrevWorldPosRef = useRef(false);
+
+  useRegisterPlanetCollider(planetCenterRef, planetName, gravitySurfaceRadius);
   const texture = useTexture(
     textureUrl ??
       'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO9L5bQAAAAASUVORK5CYII='

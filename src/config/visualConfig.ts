@@ -14,6 +14,11 @@ export const CAMERA_SHAKE_FREQUENCIES = [23.7, 11.3, 17.9, 8.1] as const;
 /** Default camera follow offset from ship [x, y, z] in local ship space. */
 export const CAMERA_ATTACH_OFFSET: [number, number, number] = [0, 14, -40];
 
+/** Tutorial nav-view ship heading triangle — target height on screen in pixels. */
+export const NAV_SHIP_INDICATOR_SCREEN_PX = 22;
+/** Nav-view thruster dots — target diameter on screen in pixels. */
+export const NAV_SHIP_THRUSTER_SCREEN_PX = 6;
+
 // ── Scene rendering ──────────────────────────────────────────────────────
 /** Exponential fog color (hex). */
 export const FOG_COLOR = 0x000000;
