@@ -41,6 +41,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
   selection?: TutorialMenuSelection;
   placeholder?: boolean;
 }> = [
+  { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
   { id: 'air-management', label: 'Air Management', selection: GAME_MODES.airManagement },

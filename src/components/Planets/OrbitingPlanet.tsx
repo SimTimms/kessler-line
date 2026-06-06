@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useState, Suspense } from 'react';
 import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -399,12 +399,156 @@ const _planetWorldPos = new THREE.Vector3();
 const _camPos = new THREE.Vector3();
 const VISIBILITY_DIST = 15_000_000; // world-space units; ~15M covers cross-system visibility
 
+function buildProceduralGlowTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.4, 'rgba(255,255,255,0.35)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+interface PlanetGlowSpriteProps {
+  glowTextureUrl?: string;
+  radius: number;
+  tint: string;
+  opacity: number;
+}
+
+function PlanetGlowSprite({ glowTextureUrl, radius, tint, opacity }: PlanetGlowSpriteProps) {
+  const fallbackMap = useMemo(() => buildProceduralGlowTexture(), []);
+  const loadedMapRef = useRef<THREE.Texture | null>(null);
+  const [map, setMap] = useState<THREE.Texture | null>(() => (glowTextureUrl ? null : fallbackMap));
+
+  useEffect(() => {
+    if (!glowTextureUrl) {
+      if (loadedMapRef.current) {
+        loadedMapRef.current.dispose();
+        loadedMapRef.current = null;
+      }
+      setMap(fallbackMap);
+      return;
+    }
+
+    let cancelled = false;
+    setMap(null);
+
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      glowTextureUrl,
+      (tex) => {
+        if (cancelled) {
+          tex.dispose();
+          return;
+        }
+        const img = tex.image as HTMLImageElement;
+        if (!img?.width || !img?.height) {
+          tex.dispose();
+          console.warn(`[PlanetGlow] Invalid image for "${glowTextureUrl}"`);
+          setMap(fallbackMap);
+          return;
+        }
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        if (loadedMapRef.current) loadedMapRef.current.dispose();
+        loadedMapRef.current = tex;
+        setMap(tex);
+      },
+      undefined,
+      () => {
+        if (cancelled) return;
+        console.warn(`[PlanetGlow] Failed to load "${glowTextureUrl}", using procedural fallback.`);
+        setMap(fallbackMap);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [glowTextureUrl, fallbackMap]);
+
+  useEffect(
+    () => () => {
+      loadedMapRef.current?.dispose();
+      loadedMapRef.current = null;
+    },
+    []
+  );
+
+  if (!map) return null;
+
+  return (
+    <sprite scale={[radius * 65, radius * 65, 1]} frustumCulled={false}>
+      <spriteMaterial
+        map={map}
+        color={tint}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        transparent
+        opacity={opacity}
+        fog={false}
+      />
+    </sprite>
+  );
+}
+
+interface PlanetSurfaceMaterialProps {
+  textureUrl: string;
+  color: string;
+  emissive: string;
+  emissiveMap: THREE.Texture | null;
+  emissiveIntensity: number;
+  roughness: number;
+  bumpMap: THREE.Texture | null;
+  bumpScale: number;
+}
+
+function PlanetSurfaceMaterial({
+  textureUrl,
+  color,
+  emissive,
+  emissiveMap,
+  emissiveIntensity,
+  roughness,
+  bumpMap,
+  bumpScale,
+}: PlanetSurfaceMaterialProps) {
+  const map = useTexture(textureUrl);
+  map.colorSpace = THREE.SRGBColorSpace;
+  return (
+    <meshStandardMaterial
+      color={color}
+      emissive={emissive}
+      emissiveMap={emissiveMap}
+      emissiveIntensity={emissiveIntensity}
+      roughness={roughness}
+      map={map}
+      bumpMap={bumpMap}
+      bumpScale={bumpScale}
+      fog={false}
+    />
+  );
+}
+
 interface OrbitingPlanetProps {
   planetName: string;
   orbitRadius: number;
   radius: number; // world-space sphere radius (in SolarSystem local space)
   color: string;
   glowColor?: string; // tint for the background glow sprite (defaults to color)
+  /** White/grayscale radial PNG in public/ — replaces the procedural glow when set. */
+  glowTextureUrl?: string;
   textureUrl?: string;
   emissive?: string;
   orbitalSpeed: number; // rad/s
@@ -426,6 +570,7 @@ export default function OrbitingPlanet({
   radius,
   color,
   glowColor,
+  glowTextureUrl,
   textureUrl,
   emissive = '#000000',
   orbitalSpeed,
@@ -445,15 +590,10 @@ export default function OrbitingPlanet({
   const planetCenterRef = useRef<THREE.Group>(null);
   const meshVisRef = useRef<THREE.Group>(null);
   const planetMeshRef = useRef<THREE.Mesh>(null);
-  const glowSpriteRef = useRef<THREE.Sprite>(null);
   const prevWorldPosRef = useRef(new THREE.Vector3());
   const hasPrevWorldPosRef = useRef(false);
 
   useRegisterPlanetCollider(planetCenterRef, planetName, gravitySurfaceRadius);
-  const texture = useTexture(
-    textureUrl ??
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO9L5bQAAAAASUVORK5CYII='
-  );
 
   const soiRing = useMemo(() => {
     if (gravitySoiRadius === undefined || gravitySurfaceRadius === undefined) return null;
@@ -498,7 +638,8 @@ export default function OrbitingPlanet({
   const materialEmissiveIntensity = showColonies ? 1.5 : isNeptune ? 1.15 : 1.0;
   const materialRoughness = isNeptune ? 0.62 : 0.8;
   const materialBumpScale = useBumpMap ? (isNeptune ? -0.35 : -0.6) : 0;
-  const glowOpacity = isNeptune ? 0.028 : 0.01;
+  const glowOpacity = glowTextureUrl ? 0.04 : isNeptune ? 0.028 : 0.005;
+  const glowTint = glowColor ?? color;
   const neptuneRimMaterial = useMemo(() => {
     if (!isNeptune) return null;
     return new THREE.ShaderMaterial({
@@ -531,23 +672,6 @@ export default function OrbitingPlanet({
       fog: false,
     });
   }, [isNeptune]);
-
-  const glowTexture = useMemo(() => {
-    const size = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
-    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.4, 'rgba(255,255,255,0.35)');
-    gradient.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.needsUpdate = true;
-    return tex;
-  }, []);
 
   useEffect(() => {
     if (orbitRef.current) orbitRef.current.rotation.y = initialAngle;
@@ -630,17 +754,12 @@ export default function OrbitingPlanet({
     <group ref={orbitRef}>
       <group ref={planetCenterRef} position={[orbitRadius, 0, 0]}>
         {/* Background glow billboard — always faces camera, additive blending, never culled */}
-        <sprite ref={glowSpriteRef} scale={[radius * 65, radius * 65, 1]} frustumCulled={false}>
-          <spriteMaterial
-            map={glowTexture}
-            color={glowColor ?? color}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            transparent
-            opacity={glowOpacity}
-            fog={false}
-          />
-        </sprite>
+        <PlanetGlowSprite
+          glowTextureUrl={glowTextureUrl}
+          radius={radius}
+          tint={glowTint}
+          opacity={glowOpacity}
+        />
 
         <group ref={meshVisRef}>
           {/* Axial tilt applied once; spin group rotates around the tilted axis */}
@@ -648,17 +767,44 @@ export default function OrbitingPlanet({
             <group ref={spinRef}>
               <mesh ref={planetMeshRef}>
                 <sphereGeometry args={[radius, 64, 64]} />
-                <meshStandardMaterial
-                  color={materialColor}
-                  emissive={materialEmissive}
-                  emissiveMap={coloniesTexture}
-                  emissiveIntensity={materialEmissiveIntensity}
-                  roughness={materialRoughness}
-                  map={textureUrl ? texture : null}
-                  bumpMap={bumpTexture}
-                  bumpScale={materialBumpScale}
-                  fog={false}
-                />
+                {textureUrl ? (
+                  <Suspense
+                    fallback={
+                      <meshStandardMaterial
+                        color={materialColor}
+                        emissive={materialEmissive}
+                        emissiveMap={coloniesTexture}
+                        emissiveIntensity={materialEmissiveIntensity}
+                        roughness={materialRoughness}
+                        bumpMap={bumpTexture}
+                        bumpScale={materialBumpScale}
+                        fog={false}
+                      />
+                    }
+                  >
+                    <PlanetSurfaceMaterial
+                      textureUrl={textureUrl}
+                      color={materialColor}
+                      emissive={materialEmissive}
+                      emissiveMap={coloniesTexture}
+                      emissiveIntensity={materialEmissiveIntensity}
+                      roughness={materialRoughness}
+                      bumpMap={bumpTexture}
+                      bumpScale={materialBumpScale}
+                    />
+                  </Suspense>
+                ) : (
+                  <meshStandardMaterial
+                    color={materialColor}
+                    emissive={materialEmissive}
+                    emissiveMap={coloniesTexture}
+                    emissiveIntensity={materialEmissiveIntensity}
+                    roughness={materialRoughness}
+                    bumpMap={bumpTexture}
+                    bumpScale={materialBumpScale}
+                    fog={false}
+                  />
+                )}
               </mesh>
               {isNeptune && neptuneRimMaterial && (
                 <mesh scale={[1.018, 1.018, 1.018]}>

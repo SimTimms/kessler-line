@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { PLANETS } from '../components/Planets/SolarSystem';
-import { SOLAR_SYSTEM_SCALE } from './solarConfig';
+import { getPlanetPosition } from './planetPosition';
 
 export interface RadiationZoneDef {
   id: string;
@@ -13,14 +12,8 @@ export interface RadiationZoneDef {
   intensity: number; // 0–1 scalar; drives hull drain rate and exposure depth
 }
 
-// ── Fixed position helper ──────────────────────────────────────────────────
-// Computes a planet's initial world position using the same formula as useShipInit.
 function planetInitialPos(name: string, offsetX = 0, offsetZ = 0): THREE.Vector3 {
-  const p = PLANETS.find((pl) => pl.name === name);
-  if (!p) return new THREE.Vector3(offsetX, 0, offsetZ);
-  const x = Math.cos(p.initialAngle) * p.orbitRadius * SOLAR_SYSTEM_SCALE;
-  const z = -Math.sin(p.initialAngle) * p.orbitRadius * SOLAR_SYSTEM_SCALE;
-  return new THREE.Vector3(x + offsetX, 0, z + offsetZ);
+  return getPlanetPosition(name).add(new THREE.Vector3(offsetX, 0, offsetZ));
 }
 
 export const RADIATION_ZONES: RadiationZoneDef[] = [

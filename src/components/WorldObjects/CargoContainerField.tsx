@@ -78,11 +78,7 @@ function generateContainerEntries(): ContainerEntry[] {
     const x = dist * Math.sin(phi) * Math.cos(theta);
     const y = (rng() - 0.5) * 2 * CONTAINER_SPAWN_Y_SPREAD;
     const z = dist * Math.sin(phi) * Math.sin(theta);
-    const euler = new THREE.Euler(
-      rng() * Math.PI * 2,
-      rng() * Math.PI * 2,
-      rng() * Math.PI * 2,
-    );
+    const euler = new THREE.Euler(rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2);
     entries.push({
       id: `cargo-container-${i}`,
       initPosition: new THREE.Vector3(x, y, z),
@@ -160,8 +156,8 @@ function ContainerInstance({ entry, scene, halfExtents }: ContainerInstanceProps
       unregisterMagnetic(entry.id);
       window.removeEventListener('CargoRelease', onRelease);
     };
-  // halfExtents is a stable useMemo ref — intentionally omitted from deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // halfExtents is a stable useMemo ref — intentionally omitted from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry.id]);
 
   useFrame((_, delta) => {
@@ -171,7 +167,7 @@ function ContainerInstance({ entry, scene, halfExtents }: ContainerInstanceProps
         .set(
           CONTAINER_DOCK_OFFSET_X,
           CONTAINER_DOCK_OFFSET_Y,
-          DOCKING_PORT_LOCAL_Z + CONTAINER_DOCK_OFFSET_Z,
+          DOCKING_PORT_LOCAL_Z + CONTAINER_DOCK_OFFSET_Z
         )
         .applyQuaternion(shipQuaternion)
         .add(shipPosRef.current);

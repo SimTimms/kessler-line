@@ -47,7 +47,7 @@ export const TUTORIAL_ORBITAL_CAMERA_ZOOM_MAX = TUTORIAL_ORBITAL_SHIP_SURFACE_CL
  * When inbound below this altitude, the follow camera stops moving closer to the
  * primary body (stays on this surface-altitude shell) but keeps looking at the ship.
  */
-export const TUTORIAL_ORBITAL_CAMERA_HOLD_MAX_ALTITUDE = 3_000;
+export const TUTORIAL_ORBITAL_CAMERA_HOLD_MAX_ALTITUDE = 30_000;
 
 const MOON_MU = MOON_SURFACE_GRAVITY * LUNAR_MOON_RADIUS * LUNAR_MOON_RADIUS;
 

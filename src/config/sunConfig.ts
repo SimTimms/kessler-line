@@ -4,7 +4,7 @@
 // where 4 is the authored baseline scale.
 
 /** Base intensity for the sun's point light at scale=4. */
-export const SUN_LIGHT_INTENSITY_BASE = 1_000_000;
+export const SUN_LIGHT_INTENSITY_BASE = 5_000;
 /** Base range (world units) for the sun's point light at scale=4. */
 export const SUN_LIGHT_DISTANCE_BASE = 1_000_000;
 
@@ -32,11 +32,11 @@ export const LENS_FLARE_ELEMENTS: {
   distance: number;
   color: [number, number, number];
 }[] = [
-  { textureType: 'glow',  size: 700, distance: 0.0,  color: [1.0, 0.95, 0.82] },
-  { textureType: 'ring',  size: 80,  distance: 0.4,  color: [0.5, 0.7,  1.0 ] },
-  { textureType: 'ghost', size: 55,  distance: 0.55, color: [1.0, 0.85, 0.3 ] },
-  { textureType: 'ring',  size: 95,  distance: 0.65, color: [0.9, 0.4,  0.9 ] },
-  { textureType: 'ghost', size: 45,  distance: 0.75, color: [0.3, 0.9,  0.6 ] },
-  { textureType: 'ring',  size: 130, distance: 0.85, color: [1.0, 0.5,  0.2 ] },
-  { textureType: 'ghost', size: 70,  distance: 1.0,  color: [0.6, 0.5,  1.0 ] },
+  { textureType: 'glow', size: 700, distance: 0.0, color: [1.0, 0.95, 0.82] },
+  { textureType: 'ring', size: 80, distance: 0.4, color: [0.5, 0.7, 1.0] },
+  { textureType: 'ghost', size: 55, distance: 0.55, color: [1.0, 0.85, 0.3] },
+  { textureType: 'ring', size: 95, distance: 0.65, color: [0.9, 0.4, 0.9] },
+  { textureType: 'ghost', size: 45, distance: 0.75, color: [0.3, 0.9, 0.6] },
+  { textureType: 'ring', size: 130, distance: 0.85, color: [1.0, 0.5, 0.2] },
+  { textureType: 'ghost', size: 70, distance: 1.0, color: [0.6, 0.5, 1.0] },
 ];

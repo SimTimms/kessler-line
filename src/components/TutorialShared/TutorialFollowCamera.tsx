@@ -53,13 +53,9 @@ const _shipUp = new THREE.Vector3();
 const _flatForward = new THREE.Vector3();
 const _worldUp = new THREE.Vector3(0, 1, 0);
 const _desiredCameraPos = new THREE.Vector3();
-const _smoothedLookAt = new THREE.Vector3();
 const _shipForward = new THREE.Vector3(0, 0, 1);
-const CAMERA_POSITION_LERP_SPEED = 8;
-const CAMERA_LOOKAT_LERP_SPEED = 10;
 const NAVVIEW_HEIGHT = 50000;
 const NAVVIEW_POSITION_LERP_SPEED = 4.2;
-const NAVVIEW_LOOKAT_LERP_SPEED = 5.2;
 const NAVVIEW_MIN_HEIGHT = 600;
 const NAVVIEW_MAX_HEIGHT = 250000;
 const NAVVIEW_TOPDOWN_PHI = 0.02;
@@ -245,44 +241,34 @@ export default function TutorialFollowCamera({
 
     const rollViewWithShip = followShipOrientation && !tutorialNavViewModeRef.current;
 
-    if (!didInitCameraPose.current) {
+    if (tutorialNavViewModeRef.current) {
+      if (!didInitCameraPose.current) {
+        camera.position.copy(_desiredCameraPos);
+        didInitCameraPose.current = true;
+      } else {
+        const posAlpha = 1 - Math.exp(-NAVVIEW_POSITION_LERP_SPEED * delta);
+        camera.position.lerp(_desiredCameraPos, posAlpha);
+      }
+    } else {
+      // Snap pose each frame (same as OrbitCamera disableCinematics) so mouse orbit
+      // and fast translation stay locked to the ship — position lerp breaks orbit geometry.
       camera.position.copy(_desiredCameraPos);
-      _smoothedLookAt.copy(_target);
       if (rollViewWithShip) {
         _shipUp.set(0, 1, 0).applyQuaternion(_followQuat);
         smoothedCameraUp.current.copy(_shipUp);
         camera.up.copy(_shipUp);
       }
       didInitCameraPose.current = true;
-    } else {
-      const posAlpha =
-        1 -
-        Math.exp(
-          -(tutorialNavViewModeRef.current
-            ? NAVVIEW_POSITION_LERP_SPEED
-            : CAMERA_POSITION_LERP_SPEED) * delta
-        );
-      const lookAlpha =
-        1 -
-        Math.exp(
-          -(tutorialNavViewModeRef.current ? NAVVIEW_LOOKAT_LERP_SPEED : CAMERA_LOOKAT_LERP_SPEED) *
-            delta
-        );
-      camera.position.lerp(_desiredCameraPos, posAlpha);
-      _smoothedLookAt.lerp(_target, lookAlpha);
-      if (rollViewWithShip) {
-        _shipUp.set(0, 1, 0).applyQuaternion(_followQuat);
-        smoothedCameraUp.current.lerp(_shipUp, lookAlpha);
-        camera.up.copy(smoothedCameraUp.current);
-      }
     }
 
     if (rollViewWithShip) {
-      camera.lookAt(_smoothedLookAt);
+      camera.lookAt(_target);
     } else {
       camera.up.copy(_worldUp);
-      camera.lookAt(_smoothedLookAt);
+      camera.lookAt(_target);
     }
+
+    camera.updateMatrixWorld();
 
   }, framePriority);
 

@@ -51,7 +51,7 @@ export const SCANNER_RANGE_CONFIG: Record<ScannerRangeId, ScannerRangeConfig> = 
   },
   drive: {
     id: 'drive',
-    ranges: [0, 1_000, 5_000, 2_000_000, 4_000_000],
+    ranges: [0, 1_000, 5_000, 2_000_000, 400_000_000],
     ring: { color: HUD_SCANNER_ACCENT, opacity: 0.35, yOffset: 1 },
   },
   radio: {

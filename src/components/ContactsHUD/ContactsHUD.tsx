@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
 import { radioOnRef, radioRangeRef } from '../../context/RadioState';
-import { getDriveSignatures } from '../../context/DriveSignatureRegistry';
 import { shipPosRef } from '../../context/ShipPos';
 import {
   messageStore,
@@ -20,16 +18,15 @@ import {
   dismissIncomingHail,
   type IncomingHailEventDetail,
 } from '../../context/IncomingHailState';
-import {
-  getRadioBroadcasts,
-  type RadioBroadcastEntry,
-} from '../../context/RadioBroadcastRegistry';
+import { getRadioBroadcasts, type RadioBroadcastEntry } from '../../context/RadioBroadcastRegistry';
 import { ContactsHudDialog } from './ContactsHudDialog/ContactsHudDialog';
 import type { SelectionItem } from './ContactsHudDialog/ContactsHudDialog';
 import CommsChat from '../CommsChat/CommsChat';
 import './ContactsHUD.css';
 
-interface DriveContact {
+import { setDriveSignaturesToRadio } from './helpers/setDriveSignaturesToRadio';
+
+export interface DriveContact {
   id: string;
   name: string;
   distanceLabel: string;
@@ -153,10 +150,8 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   const [hailOffers, setHailOffers] = useState<Map<string, HailOffer>>(new Map());
   const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
 
-  const prevSigRef = useRef('');
   const prevBcastSigRef = useRef('');
   const fuelStationHailFiredRef = useRef(false);
-  const tmpVec = useRef(new THREE.Vector3());
   const bcastVec = useRef(new THREE.Vector3());
 
   // rAF loop: detect drive-signature ships and compute broadcast station distances
@@ -166,45 +161,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
       const ship = shipPosRef.current;
 
       // Drive signatures
-      if (driveSignatureOnRef.current) {
-        const range = driveSignatureRangeRef.current;
-        const sigs = getDriveSignatures();
-        const inRange: DriveContact[] = [];
-
-        for (const sig of sigs) {
-          sig.getPosition(tmpVec.current);
-          const dist = tmpVec.current.distanceTo(ship);
-          if (dist <= range) {
-            const km = dist * KM_PER_UNIT;
-            const distLabel =
-              km >= 1_000_000
-                ? `${(km / 1_000_000).toFixed(2)} Gm`
-                : km >= 1_000
-                  ? `${(km / 1_000).toFixed(1)} Mm`
-                  : `${km.toFixed(0)} km`;
-            const radioActive = radioOnRef.current && dist <= radioRangeRef.current;
-            inRange.push({
-              id: sig.id,
-              name: sig.label,
-              distanceLabel: distLabel,
-              distanceRaw: dist,
-              radioActive,
-            });
-          }
-        }
-
-        const sig = inRange
-          .map((c) => `${c.id}:${c.radioActive ? 1 : 0}`)
-          .sort()
-          .join('|');
-        if (sig !== prevSigRef.current) {
-          prevSigRef.current = sig;
-          setInRangeDrives(inRange);
-        }
-      } else if (prevSigRef.current !== '') {
-        prevSigRef.current = '';
-        setInRangeDrives([]);
-      }
+      setDriveSignaturesToRadio({ shipPos: ship, setInRangeDrives: setInRangeDrives });
 
       // Broadcast stations — only objects that registered in the scene
       {
@@ -381,20 +338,20 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   const staticContactItems: SelectionItem[] = sceneRadioContactsOnly
     ? []
     : STATIC_CONTACTS.map((c) => {
-      const isIncoming = incomingHails.has(c.id);
-      const hasUnread =
-        !isIncoming &&
-        unreadCount > 0 &&
-        messageStore.current.some((m) => c.relatedMessageIds.includes(m.id) && !m.read);
-      return {
-        id: c.id,
-        label: c.name,
-        sublabel: c.role,
-        statusLine: isIncoming ? commsStatus.incoming : undefined,
-        statusPulse: isIncoming ? true : undefined,
-        statusIcon: hasUnread ? PLATFORM_UI[activePlatform].unreadIcon : undefined,
-      };
-    });
+        const isIncoming = incomingHails.has(c.id);
+        const hasUnread =
+          !isIncoming &&
+          unreadCount > 0 &&
+          messageStore.current.some((m) => c.relatedMessageIds.includes(m.id) && !m.read);
+        return {
+          id: c.id,
+          label: c.name,
+          sublabel: c.role,
+          statusLine: isIncoming ? commsStatus.incoming : undefined,
+          statusPulse: isIncoming ? true : undefined,
+          statusIcon: hasUnread ? PLATFORM_UI[activePlatform].unreadIcon : undefined,
+        };
+      });
 
   const savedItems: SelectionItem[] = [
     ...staticContactItems,

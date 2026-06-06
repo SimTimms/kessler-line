@@ -21,6 +21,14 @@ function seededRandom(seed: number): () => number {
   };
 }
 
+const NARRATIVE_SHIPS: GhostShipDef[] = [
+  {
+    id: 'speckled-sky',
+    label: 'SPECKLED SKY',
+    position: new THREE.Vector3(0, 0, 0),
+  },
+];
+
 function buildGhostFleet(): GhostShipDef[] {
   const rand = seededRandom(42);
   const ships: GhostShipDef[] = [];
@@ -33,17 +41,12 @@ function buildGhostFleet(): GhostShipDef[] {
       position: new THREE.Vector3(Math.cos(angle) * r, 0, Math.sin(angle) * r),
     });
   }
-  return ships;
+  return [...NARRATIVE_SHIPS, ...ships];
 }
 
 // Built once at module load; positions are stable for the lifetime of the session
 const GHOST_FLEET: readonly GhostShipDef[] = buildGhostFleet();
 
-/**
- * Non-rendering component. Registers 100 ghost ships into DriveSignatureRegistry
- * on mount so the DriveSignatureHUD can display them when the scanner is active
- * and the ship is within range — without ever rendering 3D models for them.
- */
 export default function GhostFleet() {
   useEffect(() => {
     for (const ship of GHOST_FLEET) {

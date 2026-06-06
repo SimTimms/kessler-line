@@ -30,3 +30,9 @@ export const CANVAS_NEAR = 0.01;
 export const CANVAS_FAR = 100_000_000;
 /** ACESFilmic tone mapping exposure. */
 export const TONE_MAPPING_EXPOSURE = 0.9;
+
+/**
+ * Optional radial glow sprite for planets (white/grayscale PNG in public/).
+ * Tinted by each planet's glowColor. Leave undefined to use the procedural fallback.
+ */
+export const PLANET_GLOW_TEXTURE_URL: string | undefined = undefined;

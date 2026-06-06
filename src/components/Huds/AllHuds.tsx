@@ -1,0 +1,72 @@
+import HelmetHUD from './HelmetHUD/HelmetHUD';
+import MagneticHUD from './MagneticHUD';
+import DriveSignatureHUD from './DriveSignatureHUD';
+import ProximityHUD from '../Proximity/ProximityHUD';
+import RadiationHUD from '../RadiationHUD';
+import { spotlightOnRef } from '../../context/SpotlightState';
+import { magneticOnRef } from '../../context/MagneticScan';
+import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
+import { proximityScanOnRef } from '../../context/ProximityScan';
+import { radioOnRef } from '../../context/RadioState';
+import { SANDBOX_PLANETARY_NAV_TARGETS } from '../../config/planetaryNavTargets';
+import type { Dispatch, SetStateAction } from 'react';
+
+interface AllHudsProps {
+  spotlightOn: boolean;
+  setSpotlightOn: Dispatch<SetStateAction<boolean>>;
+  magneticOn: boolean;
+  setMagneticOn: Dispatch<SetStateAction<boolean>>;
+  driveSignatureOn: boolean;
+  setDriveSignatureOn: Dispatch<SetStateAction<boolean>>;
+  proximity: boolean;
+  setProximity: Dispatch<SetStateAction<boolean>>;
+  radioOn: boolean;
+  setRadioOn: Dispatch<SetStateAction<boolean>>;
+  activeHudElementsState?: string[];
+  disabledHudElementsState?: string[];
+}
+
+export default function AllHuds({
+  spotlightOn,
+  setSpotlightOn,
+  magneticOn,
+  setMagneticOn,
+  driveSignatureOn,
+  setDriveSignatureOn,
+  proximity,
+  setProximity,
+  radioOn,
+  setRadioOn,
+  activeHudElementsState,
+  disabledHudElementsState,
+}: AllHudsProps) {
+  return (
+    <div>
+      <HelmetHUD
+        spotlightOn={spotlightOn}
+        setSpotlightOn={setSpotlightOn}
+        spotlightOnRef={spotlightOnRef}
+        magneticOn={magneticOn}
+        setMagneticOn={setMagneticOn}
+        magneticOnRef={magneticOnRef}
+        driveSignatureOn={driveSignatureOn}
+        setDriveSignatureOn={setDriveSignatureOn}
+        driveSignatureOnRef={driveSignatureOnRef}
+        proximity={proximity}
+        setProximity={setProximity}
+        proximityScanOnRef={proximityScanOnRef}
+        radioOn={radioOn}
+        setRadioOn={setRadioOn}
+        radioOnRef={radioOnRef}
+        focusElements={activeHudElementsState}
+        disableElements={disabledHudElementsState}
+        sceneRadioContactsOnly
+        customPlanetaryTargets={SANDBOX_PLANETARY_NAV_TARGETS}
+      />
+      <MagneticHUD />
+      <DriveSignatureHUD />
+      <ProximityHUD />
+      <RadiationHUD />
+    </div>
+  );
+}

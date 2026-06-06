@@ -10,31 +10,13 @@ import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { gravityBodies } from '../../context/GravityRegistry';
-import { SOLAR_SYSTEM_SCALE } from './SolarSystem';
+import { getPlanet, SOLAR_SYSTEM_SCALE } from './SolarSystem';
 
-// ── Scale helpers ──────────────────────────────────────────────────────────
-// Same power-law as SolarSystem.tsx, expressed in world-space units.
-const rW = (realKm: number) => Math.pow(realKm / 696_340, 0.2) * 100 * SOLAR_SYSTEM_SCALE;
-
-const MARS_R = rW(3_390); // ~138 world units
-
-// Moons: use the formula but clamp to minimum visible size, then scale to 10%
-const PHOBOS_R = Math.max(rW(11.267), 18) * 0.15;
-const DEIMOS_R = Math.max(rW(6.2), 12) * 0.15;
-
-// Orbital radii maintain real moon:Mars radius ratios
-const PHOBOS_ORBIT = (9_376 / 3_390) * MARS_R * 3; // ×3 visual separation
-const DEIMOS_ORBIT = (23_459 / 3_390) * MARS_R * 3; // ×3 visual separation
-
-// Real inclinations to the Mars equatorial plane (nearly zero)
-const PHOBOS_INC = 1.093 * (Math.PI / 180);
-const DEIMOS_INC = 0.93 * (Math.PI / 180);
-
-// Physically derived for 1 Earth year = 6 real hours (21,600 s):
-//   Phobos period = 7.65 h  → game period = 21600 / (8766/7.65)  ≈ 18.8 s
-//   Deimos period = 30.3 h  → game period = 21600 / (8766/30.3)  ≈ 74.7 s
-const PHOBOS_ORBIT_SPEED = ((2 * Math.PI) / 18.8) * 0.1; // 10% of physically correct
-const DEIMOS_ORBIT_SPEED = ((2 * Math.PI) / 74.7) * 0.1; // 10% of physically correct
+const marsConfig = getPlanet('Mars');
+const marsMoons = marsConfig?.moons ?? [];
+const phobosConfig = marsMoons.find((m) => m.name === 'Phobos');
+const deimosConfig = marsMoons.find((m) => m.name === 'Deimos');
+const MARS_R = (marsConfig?.radius ?? 0) * SOLAR_SYSTEM_SCALE;
 
 // Gravity — artificially boosted (same approach as PLANETS in SolarSystem.tsx)
 const MOON_SURFACE_G = 2.0;
@@ -335,19 +317,25 @@ export default function MarsSystem() {
 
   // Register gravity bodies once on mount
   useEffect(() => {
-    if (phobosOrbitRef.current) phobosOrbitRef.current.rotation.y = 0.5;
-    if (deimosOrbitRef.current) deimosOrbitRef.current.rotation.y = 2.1;
+    if (phobosOrbitRef.current && phobosConfig)
+      phobosOrbitRef.current.rotation.y = phobosConfig.initialPhase;
+    if (deimosOrbitRef.current && deimosConfig)
+      deimosOrbitRef.current.rotation.y = deimosConfig.initialPhase;
 
-    gravityBodies.set('Phobos', {
-      position: new THREE.Vector3(),
-      velocity: new THREE.Vector3(),
-      ...moonGravParams(PHOBOS_R),
-    });
-    gravityBodies.set('Deimos', {
-      position: new THREE.Vector3(),
-      velocity: new THREE.Vector3(),
-      ...moonGravParams(DEIMOS_R),
-    });
+    if (phobosConfig) {
+      gravityBodies.set('Phobos', {
+        position: new THREE.Vector3(),
+        velocity: new THREE.Vector3(),
+        ...moonGravParams(phobosConfig.radius),
+      });
+    }
+    if (deimosConfig) {
+      gravityBodies.set('Deimos', {
+        position: new THREE.Vector3(),
+        velocity: new THREE.Vector3(),
+        ...moonGravParams(deimosConfig.radius),
+      });
+    }
 
     return () => {
       gravityBodies.delete('Phobos');
@@ -363,8 +351,10 @@ export default function MarsSystem() {
     }
 
     // Advance orbits
-    if (phobosOrbitRef.current) phobosOrbitRef.current.rotation.y += PHOBOS_ORBIT_SPEED * delta;
-    if (deimosOrbitRef.current) deimosOrbitRef.current.rotation.y += DEIMOS_ORBIT_SPEED * delta;
+    if (phobosOrbitRef.current && phobosConfig)
+      phobosOrbitRef.current.rotation.y += phobosConfig.orbitalSpeed * delta;
+    if (deimosOrbitRef.current && deimosConfig)
+      deimosOrbitRef.current.rotation.y += deimosConfig.orbitalSpeed * delta;
 
     // Update Phobos world position + velocity for gravity system
     const phobosBody = gravityBodies.get('Phobos');
@@ -397,8 +387,8 @@ export default function MarsSystem() {
     }
   });
 
-  const phobosSoiWorld = moonGravParams(PHOBOS_R).soiRadius;
-  const deimosSoiWorld = moonGravParams(DEIMOS_R).soiRadius;
+  const phobosSoiWorld = phobosConfig ? moonGravParams(phobosConfig.radius).soiRadius : 0;
+  const deimosSoiWorld = deimosConfig ? moonGravParams(deimosConfig.radius).soiRadius : 0;
 
   return (
     <group ref={rootRef}>
@@ -428,13 +418,11 @@ export default function MarsSystem() {
         inclinationX={0.2}
       />
 
-      {/* ── Phobos ─────────────────────────────────────────────────────── */}
-      {/* Inclination ~1.1° to Mars equatorial plane */}
-      <group rotation-x={PHOBOS_INC} ref={phobosOrbitRef}>
-        <group ref={phobosCenterRef} position={[PHOBOS_ORBIT, 0, 0]}>
-          {/* Surface sphere */}
-          <mesh>
-            <sphereGeometry args={[PHOBOS_R, 48, 48]} />
+      {phobosConfig && (
+        <group rotation-x={phobosConfig.inclination} ref={phobosOrbitRef}>
+          <group ref={phobosCenterRef} position={[phobosConfig.orbitRadius, 0, 0]}>
+            <mesh>
+              <sphereGeometry args={[phobosConfig.radius, 48, 48]} />
             <meshStandardMaterial
               color="#ffffff"
               map={phobosMap}
@@ -450,21 +438,20 @@ export default function MarsSystem() {
           <SoiRing radius={phobosSoiWorld} />
           {/* Satellite in low Phobos orbit */}
           <Satellite
-            orbitRadius={PHOBOS_R * 3.0}
+            orbitRadius={phobosConfig.radius * 3.0}
             orbitSpeed={1.4}
             orbitPhase={0.8}
             inclinationZ={0.3}
           />
         </group>
       </group>
+      )}
 
-      {/* ── Deimos ─────────────────────────────────────────────────────── */}
-      {/* Inclination ~0.9° to Mars equatorial plane */}
-      <group rotation-x={DEIMOS_INC} ref={deimosOrbitRef}>
-        <group ref={deimosCenterRef} position={[DEIMOS_ORBIT, 0, 0]}>
-          {/* Surface sphere */}
-          <mesh>
-            <sphereGeometry args={[DEIMOS_R, 48, 48]} />
+      {deimosConfig && (
+        <group rotation-x={deimosConfig.inclination} ref={deimosOrbitRef}>
+          <group ref={deimosCenterRef} position={[deimosConfig.orbitRadius, 0, 0]}>
+            <mesh>
+              <sphereGeometry args={[deimosConfig.radius, 48, 48]} />
             <meshStandardMaterial
               color="#ffffff"
               map={deimosMap}
@@ -480,13 +467,14 @@ export default function MarsSystem() {
           <SoiRing radius={deimosSoiWorld} />
           {/* Satellite in low Deimos orbit */}
           <Satellite
-            orbitRadius={DEIMOS_R * 3.0}
+            orbitRadius={deimosConfig.radius * 3.0}
             orbitSpeed={0.9}
             orbitPhase={1.5}
             inclinationZ={-0.4}
           />
         </group>
       </group>
+      )}
     </group>
   );
 }

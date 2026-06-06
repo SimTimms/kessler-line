@@ -1,12 +1,12 @@
 import { useRef } from 'react';
-import * as THREE from 'three';
-import { PLANETS } from '../components/Planets/SolarSystem';
-import { SOLAR_SYSTEM_SCALE, ORBIT_ALTITUDE_MULTIPLIER } from '../config/solarConfig';
+import { ORBIT_ALTITUDE_MULTIPLIER, SOLAR_SYSTEM_SCALE } from '../config/solarConfig';
 import {
   START_DISTANCE_FROM_PLANET,
   FUEL_STATION_ORBIT_SPEED,
   START_PLANET,
 } from '../config/spawnConfig';
+import { getPlanet } from '../components/Planets/SolarSystem';
+import { getShipSpawnNearPlanet } from '../config/planetPosition';
 import { loadSlot, AUTOSAVE_SLOT } from '../context/SaveStore';
 import { apply, savedQuaternionToEuler } from '../context/SaveManager';
 import { shipPosRef } from '../context/ShipPos';
@@ -19,28 +19,19 @@ export interface ShipInitResult {
   fuelStationOrbitSpeed: number;
 }
 
+function resolveStartPlanetName(): string {
+  if (DEV_MARS_TEST) return 'Mars';
+  if (DEV_JUPITER_TEST) return 'Jupiter';
+  return START_PLANET;
+}
+
 export function useShipInit(): ShipInitResult {
-  const startPlanet = PLANETS.find((p) => p.name === START_PLANET);
-
-  const startPlanetX = startPlanet
-    ? Math.cos(startPlanet.initialAngle) * startPlanet.orbitRadius * SOLAR_SYSTEM_SCALE
-    : 0;
-  const startPlanetZ = startPlanet
-    ? -Math.sin(startPlanet.initialAngle) * startPlanet.orbitRadius * SOLAR_SYSTEM_SCALE
-    : 0;
-
-  const defaultStart: [number, number, number] = [
-    startPlanetX + START_DISTANCE_FROM_PLANET,
-    0,
-    startPlanetZ,
-  ];
-
-  const startDirection = new THREE.Vector3(
-    startPlanetX - defaultStart[0],
-    0,
-    startPlanetZ - defaultStart[2]
-  ).normalize();
-  const startYaw = Math.atan2(startDirection.x, startDirection.z);
+  const startPlanetName = resolveStartPlanetName();
+  const startPlanet = getPlanet(startPlanetName);
+  const { position: defaultStart, yaw: startYaw } = getShipSpawnNearPlanet(
+    startPlanetName,
+    START_DISTANCE_FROM_PLANET,
+  );
 
   const didInitRef = useRef(false);
   const savedInitRef = useRef<{
@@ -62,12 +53,12 @@ export function useShipInit(): ShipInitResult {
     didInitRef.current = true;
   }
 
-  const neptuneWorldRadius = (startPlanet?.radius ?? 0) * SOLAR_SYSTEM_SCALE;
+  const startPlanetWorldRadius = (startPlanet?.radius ?? 0) * SOLAR_SYSTEM_SCALE;
 
   return {
     shipInitPos: savedInitRef.current?.position ?? defaultStart,
     shipInitRot: savedInitRef.current?.rotation ?? ([0, startYaw, 0] as [number, number, number]),
-    fuelStationOrbitRadius: neptuneWorldRadius * (1 + ORBIT_ALTITUDE_MULTIPLIER),
+    fuelStationOrbitRadius: startPlanetWorldRadius * (1 + ORBIT_ALTITUDE_MULTIPLIER),
     fuelStationOrbitSpeed: FUEL_STATION_ORBIT_SPEED,
   };
 }

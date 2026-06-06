@@ -28,6 +28,7 @@ import {
   THRUSTER_LIGHT_DISTANCE,
   THRUSTER_LIGHT_DECAY,
 } from '../../config/shipConfig';
+import PlanetSurfaceImpactDust from '../Environment/PlanetSurfaceImpactDust';
 
 /** Order must match `thrusterLight.ts` slot indices and `useShipPhysics` actives. */
 const THRUSTER_LIGHT_SLOTS: { key: string; position: [number, number, number] }[] = [
@@ -146,6 +147,8 @@ export default function Spaceship({
   return (
     <>
       <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
+        <PlanetSurfaceImpactDust />
+
         <primitive
           object={gltf.scene}
           scale={scale}

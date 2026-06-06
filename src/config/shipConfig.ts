@@ -24,7 +24,7 @@ export const SHIP_COLLISION_SAMPLES: ReadonlyArray<{
 /** Collision restitution: 0 = dead stop, 1 = fully elastic. */
 export const RESTITUTION = 0.4;
 /** Global cap on thrust multiplier (player slider and autopilot). */
-export const MAX_THRUST_MULTIPLIER = 3;
+export const MAX_THRUST_MULTIPLIER = 1000; // TODO: revert to 3
 /** Duration of the hull-impact visual pulse in milliseconds. */
 export const SHIP_IMPACT_PULSE_MS = 1200;
 

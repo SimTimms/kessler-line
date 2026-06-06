@@ -26,6 +26,7 @@ import { applyTutorialOrbitalSpawn } from './config/tutorialOrbitalConfig';
 import TutorialAir from './components/TutorialAir/TutorialAir';
 import TutorialRadio from './components/TutorialRadio/TutorialRadio';
 import TutorialOrbital from './components/TutorialOrbital/TutorialOrbital';
+import Sandbox from './components/Sandbox/Sandbox';
 
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
@@ -82,6 +83,8 @@ function App() {
   switch (mode) {
     case GAME_MODES.menu:
       return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} />;
+    case GAME_MODES.sandbox:
+      return <Sandbox onComplete={handleTutorialComplete} />;
     case GAME_MODES.tutorial:
       return <TutorialMovement onComplete={handleTutorialComplete} tutorialMode={tutorialMode} />;
     case GAME_MODES.resources:
