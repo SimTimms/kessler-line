@@ -15,7 +15,7 @@ type DisplayRow = {
 
 interface DialogMessagesProps {
   isPreHail: boolean;
-  isIncoming: boolean;
+  showHailPrompt: boolean;
   effectiveHailStatus: HailStatus;
   isRadioActive: boolean;
   hailOfferContent?: { header: string; body: string };
@@ -30,7 +30,7 @@ interface DialogMessagesProps {
 }
 export default function DialogMessages({
   isPreHail,
-  isIncoming,
+  showHailPrompt,
   effectiveHailStatus,
   isRadioActive,
   hailOfferContent,
@@ -51,16 +51,12 @@ export default function DialogMessages({
     <div className="comms-chat-messages">
       {isPreHail ? (
         <>
-          {isIncoming && (
+          {showHailPrompt && (
             <div className="comms-chat-prehail">
-              {hailOfferContent ? (
-                <div className="comms-chat-offer">
-                  <div className="comms-chat-offer-header">{hailOfferContent.header}</div>
-                  <div className="comms-chat-offer-body">{hailOfferContent.body}</div>
-                </div>
-              ) : (
-                <div className="comms-chat-incoming-label">⊛ INCOMING HAIL</div>
-              )}
+              <div className="comms-chat-offer">
+                <div className="comms-chat-offer-header">INCOMING HAIL</div>
+                <div className="comms-chat-offer-body">{shipName}</div>
+              </div>
               <div className="comms-chat-hail-actions">
                 <button className="comms-chat-accept-btn" onClick={handleAcceptHail}>
                   ACCEPT
@@ -71,26 +67,42 @@ export default function DialogMessages({
               </div>
             </div>
           )}
-          {!isIncoming && effectiveHailStatus === 'none' && isRadioActive && (
+          {!showHailPrompt && hailOfferContent && (
+            <div className="comms-chat-prehail">
+              <div className="comms-chat-offer">
+                <div className="comms-chat-offer-header">{hailOfferContent.header}</div>
+                <div className="comms-chat-offer-body">{hailOfferContent.body}</div>
+              </div>
+              <div className="comms-chat-hail-actions">
+                <button className="comms-chat-accept-btn" onClick={handleAcceptHail}>
+                  ACCEPT
+                </button>
+                <button className="comms-chat-decline-btn" onClick={handleDeclineHail}>
+                  DECLINE
+                </button>
+              </div>
+            </div>
+          )}
+          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && isRadioActive && (
             <div className="comms-chat-prehail">
               <button className="comms-chat-hail-btn" onClick={handleHail}>
                 HAIL {shipName.toUpperCase()}
               </button>
             </div>
           )}
-          {!isIncoming && effectiveHailStatus === 'none' && !isRadioActive && (
+          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && !isRadioActive && (
             <div className="comms-chat-prehail">
               <div className="comms-chat-status-line">○ OUT OF RADIO RANGE</div>
             </div>
           )}
-          {!isIncoming && effectiveHailStatus === 'pending' && (
+          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'pending' && (
             <div className="comms-chat-prehail">
               <div className="comms-chat-status-line comms-chat-status-line--pulse">
                 ◈ AWAITING RESPONSE...
               </div>
             </div>
           )}
-          {!isIncoming && effectiveHailStatus === 'rejected' && (
+          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'rejected' && (
             <div className="comms-chat-prehail">
               <div className="comms-chat-status-line comms-chat-status-line--rejected">
                 ✕ HAIL DECLINED

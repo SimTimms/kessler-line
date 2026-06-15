@@ -11,9 +11,12 @@ import {
   SHIP_PARTICLE_SPEED_MAX,
 } from '../../config/particleConfig';
 import { getPlanetWorldRadius, getShipSpawnInPlanetOrbit } from '../../config/planetPosition';
+import type { RadioBroadcastDef } from '../../config/worldConfig';
 import { shipPosRef } from '../../context/ShipPos';
+import { MINERAL_ASTEROID_HAIL_TREE_ID } from '../../narrative/broadcastDialogues';
+import type { BodyOrbitParams } from '../../utils/bodyOrbit';
 
-const SANDBOX_SPAWN_PLANET = 'Neptune';
+const SANDBOX_SPAWN_PLANET = 'Mars';
 const spawnWorldRadius = getPlanetWorldRadius(SANDBOX_SPAWN_PLANET);
 
 /** Altitude above Mars surface, in multiples of Mars world radius — scales with SOLAR_SYSTEM_SCALE. */
@@ -30,6 +33,29 @@ const sandboxInitialVelocity: [number, number, number] = [
 ];
 
 const TUTORIAL_FOLLOW_OFFSET: [number, number, number] = [-40, 50, 50];
+
+/** Kinematic orbit for sandbox props (e.g. asteroid belt objects near Mars). */
+export const SANDBOX_ASTEROID_ORBIT: BodyOrbitParams = {
+  body: 'Mars',
+  radius: 100000,
+  speed: 200,
+  speedMode: 'tangential',
+  initialAngleDeg: 160,
+};
+
+/** Radio contact for the sandbox mineral asteroid (position follows the orbiting mesh). */
+export const SANDBOX_ASTEROID_RADIO: RadioBroadcastDef = {
+  id: 'mineral-asteroid',
+  label: 'AST-47718',
+  position: [0, 0, 0],
+  hailRange: 100_000,
+  dialogueTreeId: MINERAL_ASTEROID_HAIL_TREE_ID,
+  dialogue: [
+    'AUTOMATED BEACON — AST-47718.',
+    'MINERAL SCAN: IRON ORE SIGNATURE DETECTED.',
+    'NO CREW RESPONSE. SIGNAL REPEATING.',
+  ],
+};
 
 const spawnCameraPosition = new THREE.Vector3(...sandboxShipInitialPosition).add(
   new THREE.Vector3(...TUTORIAL_FOLLOW_OFFSET)

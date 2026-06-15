@@ -17,6 +17,7 @@ export interface SelectionItem {
 
 interface ContactsHudDialogProps {
   title: string;
+  incomingItems?: SelectionItem[];
   savedItems: SelectionItem[];
   inRangeItems: SelectionItem[];
   onSave: (id: string) => void;
@@ -28,6 +29,7 @@ interface ContactsHudDialogProps {
 
 export function ContactsHudDialog({
   title,
+  incomingItems = [],
   savedItems,
   inRangeItems,
   onSave,
@@ -111,6 +113,12 @@ export function ContactsHudDialog({
       >
         <div className="chd-title">{title}</div>
         <div className="chd-list">
+          {incomingItems.length > 0 && (
+            <section>
+              <div className="chd-section-header">INCOMING HAIL</div>
+              {incomingItems.map((item) => renderItem(item, false))}
+            </section>
+          )}
           {savedItems.length > 0 && (
             <section>
               <div className="chd-section-header">SAVED CONTACTS</div>
@@ -123,7 +131,7 @@ export function ContactsHudDialog({
               {inRangeItems.map((item) => renderItem(item, true))}
             </section>
           )}
-          {savedItems.length === 0 && inRangeItems.length === 0 && (
+          {savedItems.length === 0 && inRangeItems.length === 0 && incomingItems.length === 0 && (
             <div className="chd-empty">— NO CONTACTS —</div>
           )}
         </div>

@@ -7,6 +7,8 @@ export interface RadioBroadcastEntry {
   label: string;
   getPosition: (target: THREE.Vector3) => THREE.Vector3;
   dialogue: string[];
+  hailRange?: number;
+  dialogueTreeId?: string;
   dockable?: boolean;
   dockingBay?: string;
 }
@@ -37,6 +39,8 @@ export function registerRadioBroadcastFromDef(
     label: def.label,
     getPosition,
     dialogue: def.dialogue,
+    hailRange: def.hailRange,
+    dialogueTreeId: def.dialogueTreeId,
     dockable: def.dockable,
     dockingBay: def.dockingBay,
   });

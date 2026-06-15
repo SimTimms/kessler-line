@@ -17,6 +17,7 @@ import type { HailStatus } from '../../context/HailState';
 import DialogueThread from './DialogueThread';
 import './CommsChat.css';
 import { DIALOGUE_TREES } from '../../narrative/npcDialogues';
+import { getRadioBroadcasts } from '../../context/RadioBroadcastRegistry';
 import type { StaticContact } from '../../narrative/contacts';
 
 interface CommsChatProps {
@@ -25,7 +26,8 @@ interface CommsChatProps {
   onClose: () => void;
   hailStatus?: HailStatus;
   radioActive?: boolean;
-  incomingHail?: boolean;
+  /** Show accept/decline hail prompt (incoming or re-offer while still broadcasting). */
+  showHailPrompt?: boolean;
   hailOfferContent?: { header: string; body: string };
   onHail?: () => void;
   onAcceptHail?: () => void;
@@ -39,7 +41,7 @@ export default function CommsChat({
   onClose,
   hailStatus,
   radioActive,
-  incomingHail,
+  showHailPrompt = false,
   hailOfferContent,
   onHail,
   onAcceptHail,
@@ -51,7 +53,6 @@ export default function CommsChat({
   const threadInitRef = useRef(false);
 
   const effectiveHailStatus: HailStatus = hailStatus ?? 'accepted';
-  const isIncoming = incomingHail ?? false;
   const isRadioActive = radioActive ?? true;
 
   // Sync from store whenever ChatUpdated fires for this ship
@@ -83,8 +84,8 @@ export default function CommsChat({
       const tree = getOrAssignDialogueTree(shipId, record);
       t = createThread(
         shipId,
-        shipName,
-        getOrAssignCaptainName(shipId),
+        tree.vesselName || shipName,
+        tree.captainName || getOrAssignCaptainName(shipId),
         tree.id,
         tree.openingTurnId
       );
@@ -187,20 +188,26 @@ export default function CommsChat({
             text: npcText,
             timestamp: Date.now(),
           });
-          setChatTurn(shipId, option.nextTurnId!, false);
+          const isTerminal = nextTurn.playerOptions.length === 0;
+          setChatTurn(shipId, isTerminal ? null : option.nextTurnId!, false);
           speakNpcLine(npcText, dialogueTree.id);
         }, delay);
       }
     }
   };
 
+  const isBroadcastContact = getRadioBroadcasts().some(
+    (e) => e.id === shipId && e.dialogueTreeId
+  );
+
   return (
     <DialogueThread
       shipId={shipId}
       shipName={shipName}
       contact={staticContact}
+      hideShipProfile={isBroadcastContact}
       effectiveHailStatus={effectiveHailStatus}
-      isIncoming={isIncoming}
+      showHailPrompt={showHailPrompt}
       isRadioActive={isRadioActive}
       hailOfferContent={hailOfferContent}
       onHail={onHail}

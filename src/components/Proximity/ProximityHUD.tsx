@@ -135,7 +135,8 @@ export default function ProximityHUD() {
         const distText = dist >= 1000 ? `${(dist / 1000).toFixed(1)}km` : `${Math.round(dist)}m`;
 
         marker.root.style.display = 'block';
-        marker.label.textContent = `${getLabelFromId(entry.id)} [${distText}]`;
+        const displayLabel = entry.label ?? getLabelFromId(entry.id);
+        marker.label.textContent = `${displayLabel} [${distText}]`;
         marker.label.style.color = color;
         marker.label.style.textShadow = `0 0 4px ${color}cc`;
 

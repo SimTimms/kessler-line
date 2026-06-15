@@ -2,11 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import AppContainer from '../App/AppContainer';
 import SandboxScene from './SandboxScene';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
-import { spotlightOnRef } from '../../context/SpotlightState';
-import { magneticOnRef } from '../../context/MagneticScan';
-import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
-import { proximityScanOnRef } from '../../context/ProximityScan';
-import { radioOnRef } from '../../context/RadioState';
+import { resetScannerRefs } from '../../context/resetScannerRefs';
+import { clearAllIncomingHails } from '../../context/IncomingHailState';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 import { resetTutorialAirRun } from './resetSandboxRun';
 import AllHuds from '../Huds/AllHuds';
@@ -29,20 +26,19 @@ export default function Sandbox() {
     clearSelectedTarget();
     disableAutopilot();
     tutorialNavViewModeRef.current = false;
+    resetScannerRefs();
+    clearAllIncomingHails();
   }, []);
 
   const restartTutorial = useCallback(() => {
     resetTutorialAirRun();
+    resetScannerRefs();
+    clearAllIncomingHails();
     setSpotlightOn(false);
     setMagneticOn(false);
     setDriveSignatureOn(false);
     setProximity(false);
     setRadioOn(false);
-    spotlightOnRef.current = false;
-    magneticOnRef.current = false;
-    driveSignatureOnRef.current = false;
-    proximityScanOnRef.current = false;
-    radioOnRef.current = false;
     setDeathOverlayKey((k) => k + 1);
   }, []);
 

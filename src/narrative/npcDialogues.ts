@@ -4,6 +4,7 @@
 import type { ShipClass, ShipFaction, ShipAgenda, ShipRegion, ShipRecord } from './shipRegistry';
 import { getPlayerRegion } from './shipRegistry';
 import type { MessagePlatform, InboxMessage, ReplyOption } from '../context/MessageStore';
+import { BROADCAST_DIALOGUE_TREES } from './broadcastDialogues';
 
 export interface PlayerOption {
   id: string;
@@ -39,9 +40,10 @@ export interface DialogueTree {
   audioFile?: string;
   /**
    * 'inbox' — narrative inbox message; excluded from NPC ship assignment.
+   * 'broadcast' — fixed world-object hail trees; excluded from random NPC assignment.
    * 'radio' / undefined — real-time radio conversation.
    */
-  kind?: 'radio' | 'inbox';
+  kind?: 'radio' | 'inbox' | 'broadcast';
   /** Inbox message metadata — only used when kind === 'inbox'. */
   from?: string;
   subject?: string;
@@ -1317,8 +1319,8 @@ export const DIALOGUE_TREES: DialogueTree[] = [
 // conditions against the ship's profile. Without a record, falls back to
 // sequential round-robin. Assignment is cached per shipId.
 
-/** Radio-conversation trees only — inbox trees (kind:'inbox') are excluded. */
-const RADIO_TREES = DIALOGUE_TREES.filter((t) => t.kind !== 'inbox');
+/** Radio-conversation trees only — inbox and broadcast trees are excluded from random assignment. */
+const RADIO_TREES = DIALOGUE_TREES.filter((t) => t.kind !== 'inbox' && t.kind !== 'broadcast');
 
 const _shipAssignments = new Map<string, string>();
 let _nextTreeIndex = 0;
@@ -1340,10 +1342,28 @@ function scoreTree(tree: DialogueTree, record: ShipRecord): number {
   return score;
 }
 
+export function getDialogueTreeById(treeId: string): DialogueTree | undefined {
+  return (
+    DIALOGUE_TREES.find((t) => t.id === treeId) ??
+    BROADCAST_DIALOGUE_TREES.find((t) => t.id === treeId)
+  );
+}
+
+/** Pin a fixed dialogue tree to an entity id (broadcast contacts, scripted hails). */
+export function assignDialogueTree(entityId: string, treeId: string): DialogueTree {
+  const tree = getDialogueTreeById(treeId);
+  if (!tree) throw new Error(`Dialogue tree not found: ${treeId}`);
+  _shipAssignments.set(entityId, tree.id);
+  if (tree.captainName) {
+    _captainAssignments.set(entityId, tree.captainName);
+  }
+  return tree;
+}
+
 export function getOrAssignDialogueTree(shipId: string, record?: ShipRecord): DialogueTree {
   if (_shipAssignments.has(shipId)) {
     const treeId = _shipAssignments.get(shipId)!;
-    return DIALOGUE_TREES.find((t) => t.id === treeId) ?? RADIO_TREES[0];
+    return getDialogueTreeById(treeId) ?? RADIO_TREES[0];
   }
 
   let tree: DialogueTree;

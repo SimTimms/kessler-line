@@ -1,9 +1,15 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
-import type { ScannableRegistrationOptions } from '../config/scannableSignature';
+import {
+  resolveScannerLabel,
+  type ScannableRegistrationOptions,
+} from '../config/scannableSignature';
 import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
 import { registerMagnetic, unregisterMagnetic } from '../context/MagneticRegistry';
-import { registerDriveSignature, unregisterDriveSignature } from '../context/DriveSignatureRegistry';
+import {
+  registerDriveSignature,
+  unregisterDriveSignature,
+} from '../context/DriveSignatureRegistry';
 
 const DEFAULT_PROXIMITY_SHAPE = { type: 'sphere' as const, radius: 50 };
 
@@ -21,6 +27,10 @@ export function useScannableRegistration({
   proximity = false,
   proximityShape = DEFAULT_PROXIMITY_SHAPE,
 }: ScannableRegistrationOptions): void {
+  const magnetLabel = resolveScannerLabel(magnet, label);
+  const driveSignatureLabel = resolveScannerLabel(driveSignature, label);
+  const proximityLabel = resolveScannerLabel(proximity, label);
+
   const getPosition = (target: THREE.Vector3) => {
     if (groupRef.current) groupRef.current.getWorldPosition(target);
     else target.set(0, 0, 0);
@@ -36,9 +46,10 @@ export function useScannableRegistration({
   useEffect(() => {
     if (!scannable) return;
 
-    if (proximity) {
+    if (proximityLabel !== null) {
       registerCollidable({
         id,
+        label: proximityLabel,
         getWorldPosition: getPosition,
         getWorldQuaternion,
         shape: proximityShape,
@@ -46,19 +57,27 @@ export function useScannableRegistration({
       });
     }
 
-    if (magnet) {
-      registerMagnetic({ id, label, getPosition });
+    if (magnetLabel !== null) {
+      registerMagnetic({ id, label: magnetLabel, getPosition });
     }
 
-    if (driveSignature) {
-      registerDriveSignature({ id, label, getPosition });
+    if (driveSignatureLabel !== null) {
+      registerDriveSignature({ id, label: driveSignatureLabel, getPosition });
     }
 
     return () => {
-      if (proximity) unregisterCollidable(id);
-      if (magnet) unregisterMagnetic(id);
-      if (driveSignature) unregisterDriveSignature(id);
+      if (proximityLabel !== null) unregisterCollidable(id);
+      if (magnetLabel !== null) unregisterMagnetic(id);
+      if (driveSignatureLabel !== null) unregisterDriveSignature(id);
     };
     // proximityShape must be referentially stable (useMemo at call site if not default)
-  }, [id, label, scannable, magnet, driveSignature, proximity, proximityShape]);
+  }, [
+    id,
+    label,
+    magnetLabel,
+    driveSignatureLabel,
+    proximityLabel,
+    scannable,
+    proximityShape,
+  ]);
 }

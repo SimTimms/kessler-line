@@ -30,16 +30,14 @@ export function ShipDepthOfField({ saturation }: ShipDepthOfFieldProps) {
 
   return (
     <EffectComposer>
-      <primitive object={dofEffect} />
       <Bloom
         enabled={bloomEnabled}
         radius={0.0002}
         mipmapBlur
         luminanceThreshold={0.0}
         luminanceSmoothing={0.8}
-        intensity={1}
+        intensity={0.3}
       />
-      <primitive object={noiseEffect} />
       <HueSaturation saturation={saturation ?? -1} />
     </EffectComposer>
   );

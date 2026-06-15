@@ -12,7 +12,9 @@ import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import SolarSystem from '../Planets/SolarSystem';
 import SunGravity from '../Environment/SunGravity';
-import { SANDBOX_CONFIG } from './sandboxConfig';
+import { BodyOrbit } from '../BodyOrbit';
+import { SANDBOX_ASTEROID_ORBIT, SANDBOX_ASTEROID_RADIO, SANDBOX_CONFIG } from './sandboxConfig';
+import { Asteroid } from '../TutorialResources/Asteroid';
 
 export default function SandboxScene() {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
@@ -61,12 +63,12 @@ export default function SandboxScene() {
         }}
         shadows={true}
       >
-        <fogExp2 attach="fog" args={[fogColor, 0.00005]} />
+        <fogExp2 attach="fog" args={[fogColor, 0.0000005]} />
         <DefaultLighting
           color={lightColor}
           intensity={2}
-          ambientIntensity={0.02}
-          position={[0, 4000, 40000]}
+          ambientIntensity={0.0002}
+          position={[0, 0, -10000]}
         />
         <TutorialFollowCamera
           followTarget={shipPosRef}
@@ -99,7 +101,10 @@ export default function SandboxScene() {
         <SunGravity />
         <ProximityHighlight />
         <ScannerRangeRings />
-        <ShipDepthOfField saturation={0} />
+        <ShipDepthOfField saturation={-0.8} />
+        <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
+          <Asteroid scale={1000} radioBroadcast={SANDBOX_ASTEROID_RADIO} />
+        </BodyOrbit>
       </Canvas>
     </>
   );

@@ -271,7 +271,12 @@ export interface RadioBroadcastDef {
   label: string;
   position: [number, number, number];
   audioFile?: string;
+  /** Passive repeating broadcast lines (Radio HUD beacon listen). */
   dialogue: string[];
+  /** World units — hail the player when within this distance and radio is in range. */
+  hailRange?: number;
+  /** Dialogue tree id from {@link broadcastDialogues} or {@link npcDialogues}. */
+  dialogueTreeId?: string;
   dockable?: boolean;
   dockingBay?: string;
 }

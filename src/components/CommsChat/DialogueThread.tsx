@@ -62,9 +62,11 @@ interface DialogueThreadProps {
   shipName: string;
   // Inbox mode (static contact)
   contact?: StaticContact;
+  /** Broadcast / world-object hail — hide random NPC ship profile line. */
+  hideShipProfile?: boolean;
   // Pre-hail
+  showHailPrompt?: boolean;
   effectiveHailStatus: HailStatus;
-  isIncoming: boolean;
   isRadioActive: boolean;
   hailOfferContent?: { header: string; body: string };
   onHail?: () => void;
@@ -83,8 +85,9 @@ export default function DialogueThread({
   shipId,
   shipName,
   contact,
+  hideShipProfile = false,
+  showHailPrompt = false,
   effectiveHailStatus,
-  isIncoming,
   isRadioActive,
   hailOfferContent,
   onHail,
@@ -127,10 +130,10 @@ export default function DialogueThread({
   useEffect(() => {
     if (contact) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    } else if (effectiveHailStatus === 'accepted' && !isIncoming) {
+    } else if (effectiveHailStatus === 'accepted') {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [msgs.length, thread?.messages.length, contact, effectiveHailStatus, isIncoming]);
+  }, [msgs.length, thread?.messages.length, contact, effectiveHailStatus]);
 
   function handleReply(msg: InboxMessage, replyId: string) {
     if (!contact) return;
@@ -208,7 +211,7 @@ export default function DialogueThread({
       }));
 
   // ── Footer options ─────────────────────────────────────────────────────────
-  const isPreHail = !contact && (effectiveHailStatus !== 'accepted' || isIncoming);
+  const isPreHail = !contact && effectiveHailStatus !== 'accepted';
   const pendingReplyMsg = contact ? msgs.find((m) => !m.repliedWith && m.replies?.length) : null;
 
   const handleFooterOption = (optionId: string) => {
@@ -234,7 +237,7 @@ export default function DialogueThread({
           <div className="comms-chat-captain">
             {thread ? `${thread.captainName.toUpperCase()} · OPENLINE` : 'OPENLINE'}
           </div>
-          {thread && (
+          {thread && !hideShipProfile && (
             <div className="comms-chat-profile">
               {formatShipClass(record.shipClass)} · {formatAgenda(record.agenda)}
               {record.destination !== 'none' ? ` → ${record.destination.toUpperCase()}` : ''}
@@ -247,7 +250,7 @@ export default function DialogueThread({
 
       <DialogMessages
         isPreHail={isPreHail}
-        isIncoming={isIncoming}
+        showHailPrompt={showHailPrompt}
         isRadioActive={isRadioActive}
         effectiveHailStatus={effectiveHailStatus}
         hailOfferContent={hailOfferContent}

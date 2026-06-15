@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { radioOnRef, radioRangeRef } from '../../context/RadioState';
+import { isWithinRadioRange } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
 import {
   messageStore,
@@ -12,13 +12,14 @@ import {
 import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
 import { KM_PER_UNIT } from '../../config/commsConfig';
 import { STATIC_CONTACTS } from '../../narrative/contacts';
-import { type HailStatus, setHailStatus } from '../../context/HailState';
+import { type HailStatus, setHailStatus, markHailDeclined } from '../../context/HailState';
 import {
   setIncomingHail,
   dismissIncomingHail,
   type IncomingHailEventDetail,
 } from '../../context/IncomingHailState';
 import { getRadioBroadcasts, type RadioBroadcastEntry } from '../../context/RadioBroadcastRegistry';
+import { assignDialogueTree } from '../../narrative/npcDialogues';
 import { ContactsHudDialog } from './ContactsHudDialog/ContactsHudDialog';
 import type { SelectionItem } from './ContactsHudDialog/ContactsHudDialog';
 import CommsChat from '../CommsChat/CommsChat';
@@ -170,7 +171,12 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
           entry.getPosition(bcastVec.current);
           const dist = bcastVec.current.distanceTo(ship);
 
-          if (entry.id === 'fuel-station' && !fuelStationHailFiredRef.current && dist <= 10000) {
+          if (
+            entry.id === 'fuel-station' &&
+            !fuelStationHailFiredRef.current &&
+            dist <= 10000 &&
+            isWithinRadioRange(dist)
+          ) {
             fuelStationHailFiredRef.current = true;
             setIncomingHail('fuel-station');
             queueMessage(
@@ -192,7 +198,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
               : km >= 1_000
                 ? `${(km / 1_000).toFixed(1)} Mm`
                 : `${km.toFixed(0)} km`;
-          const inRadioRange = radioOnRef.current && dist <= radioRangeRef.current;
+          const inRadioRange = isWithinRadioRange(dist);
           newBcasts.push({ entry, distanceLabel: distLabel, distanceRaw: dist, inRadioRange });
         }
 
@@ -254,13 +260,25 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
 
   const handleSelect = (id: string) => {
     setChatShipId(id);
-    if (incomingHails.has(id)) dismissIncomingHail(id);
     setOpen(false);
   };
 
   const saveContact = (id: string) => {
     setSavedContactIds((prev) => new Set(prev).add(id));
   };
+
+  function isBroadcastHailEligible(shipId: string): boolean {
+    const b = broadcastContacts.find((x) => x.entry.id === shipId);
+    if (!b?.entry.hailRange || !b.entry.dialogueTreeId) return false;
+    return b.inRadioRange && b.distanceRaw <= b.entry.hailRange;
+  }
+
+  function shouldShowHailPrompt(shipId: string): boolean {
+    const status = hailStates.get(shipId) ?? 'none';
+    if (status === 'accepted') return false;
+    if (incomingHails.has(shipId)) return true;
+    return isBroadcastHailEligible(shipId);
+  }
 
   function handleAcceptHailOffer(shipId: string) {
     const offer = hailOffers.get(shipId);
@@ -301,10 +319,19 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
       dismissIncomingHail(shipId);
       setChatShipId(null);
     } else {
-      // Regular incoming hail: open dialogue tree
+      const entry = getRadioBroadcasts().find((e) => e.id === shipId);
+      if (entry?.dialogueTreeId) {
+        assignDialogueTree(shipId, entry.dialogueTreeId);
+      }
       setHailStatus(shipId, 'accepted');
       dismissIncomingHail(shipId);
     }
+  }
+
+  function handleDeclineHailOffer(shipId: string) {
+    markHailDeclined(shipId);
+    dismissIncomingHail(shipId);
+    setChatShipId(null);
   }
 
   // Build contact lists for ContactsHudDialog
@@ -359,12 +386,17 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
     ...broadcastContacts.filter((b) => savedContactIds.has(b.entry.id)).map(broadcastItem),
   ];
 
+  const incomingItems: SelectionItem[] = [
+    ...inRangeDrives.filter((d) => incomingHails.has(d.id)).map(driveItem),
+    ...broadcastContacts.filter((b) => incomingHails.has(b.entry.id)).map(broadcastItem),
+  ];
+
   const inRangeItems: SelectionItem[] = [
     ...inRangeDrives
-      .filter((d) => !savedContactIds.has(d.id))
+      .filter((d) => !savedContactIds.has(d.id) && !incomingHails.has(d.id))
       .map((d) => ({ ...driveItem(d), saveable: true })),
     ...broadcastContacts
-      .filter((b) => !savedContactIds.has(b.entry.id))
+      .filter((b) => !savedContactIds.has(b.entry.id) && !incomingHails.has(b.entry.id))
       .map((b) => ({ ...broadcastItem(b), saveable: true })),
   ];
 
@@ -412,6 +444,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
       {open && (
         <ContactsHudDialog
           title="CONTACTS"
+          incomingItems={incomingItems}
           savedItems={savedItems}
           inRangeItems={inRangeItems}
           onSave={saveContact}
@@ -440,14 +473,11 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
               shipName={chatShipName}
               hailStatus={hailStates.get(chatShipId) ?? 'none'}
               radioActive={chatRadioActive}
-              incomingHail={incomingHails.has(chatShipId)}
+              showHailPrompt={shouldShowHailPrompt(chatShipId)}
               hailOfferContent={getChatOfferContent()}
               onHail={() => sendHailContact(chatShipId, chatShipName)}
               onAcceptHail={() => handleAcceptHailOffer(chatShipId)}
-              onDeclineHail={() => {
-                dismissIncomingHail(chatShipId);
-                setChatShipId(null);
-              }}
+              onDeclineHail={() => handleDeclineHailOffer(chatShipId)}
               onClose={() => setChatShipId(null)}
             />
           );

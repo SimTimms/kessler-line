@@ -2,6 +2,14 @@ import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import * as THREE from 'three';
 import type { RadioBroadcastDef } from '../config/worldConfig';
+import { shipPosRef } from '../context/ShipPos';
+import { isWithinRadioRange } from '../context/RadioState';
+import {
+  dismissIncomingHail,
+  hasIncomingHail,
+  setIncomingHail,
+} from '../context/IncomingHailState';
+import { canOfferHailAgain, getHailStatus } from '../context/HailState';
 import {
   registerRadioBroadcastFromDef,
   unregisterRadioBroadcast,
@@ -22,5 +30,43 @@ export function useRegisterRadioBroadcast(
     });
 
     return () => unregisterRadioBroadcast(def.id);
+  }, [def, groupRef]);
+
+  useEffect(() => {
+    if (!def?.hailRange) return;
+
+    let raf = 0;
+    const worldPos = new THREE.Vector3();
+
+    const tick = () => {
+      if (!groupRef.current) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      const status = getHailStatus(def.id);
+      if (status === 'accepted') {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      groupRef.current.getWorldPosition(worldPos);
+      const dist = shipPosRef.current.distanceTo(worldPos);
+      const inHailRange = dist <= def.hailRange!;
+      const inRadioRange = isWithinRadioRange(dist);
+
+      if (inHailRange && inRadioRange) {
+        if (canOfferHailAgain(def.id) && !hasIncomingHail(def.id)) {
+          setIncomingHail(def.id);
+        }
+      } else if (hasIncomingHail(def.id)) {
+        dismissIncomingHail(def.id);
+      }
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [def, groupRef]);
 }

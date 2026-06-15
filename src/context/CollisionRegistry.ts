@@ -17,6 +17,8 @@ export type ColliderShape =
 
 export interface CollidableEntry {
   id: string;
+  /** Proximity HUD label when registered via {@link useScannableRegistration}. */
+  label?: string;
   stationId?: string;
 
   /** Write current world position into `target` and return it. */
