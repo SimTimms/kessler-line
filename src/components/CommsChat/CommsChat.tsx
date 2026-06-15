@@ -17,8 +17,10 @@ import type { HailStatus } from '../../context/HailState';
 import DialogueThread from './DialogueThread';
 import './CommsChat.css';
 import { DIALOGUE_TREES } from '../../narrative/npcDialogues';
-import { getRadioBroadcasts } from '../../context/RadioBroadcastRegistry';
+import { getRadioBroadcasts, resolveRadioDialogueTreeId } from '../../context/RadioBroadcastRegistry';
 import type { StaticContact } from '../../narrative/contacts';
+import type { MessagePlatform } from '../../context/MessageStore';
+import { RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
 
 interface CommsChatProps {
   shipId: string;
@@ -26,6 +28,8 @@ interface CommsChatProps {
   onClose: () => void;
   hailStatus?: HailStatus;
   radioActive?: boolean;
+  /** Messaging client skin for the comms panel (REACH = cyan, OPENLINE = orange). */
+  platform?: MessagePlatform;
   /** Show accept/decline hail prompt (incoming or re-offer while still broadcasting). */
   showHailPrompt?: boolean;
   hailOfferContent?: { header: string; body: string };
@@ -43,6 +47,7 @@ export default function CommsChat({
   radioActive,
   showHailPrompt = false,
   hailOfferContent,
+  platform = RADIO_COMMS_PLATFORM,
   onHail,
   onAcceptHail,
   onDeclineHail,
@@ -197,8 +202,10 @@ export default function CommsChat({
   };
 
   const isBroadcastContact = getRadioBroadcasts().some(
-    (e) => e.id === shipId && e.dialogueTreeId
+    (e) => e.id === shipId && resolveRadioDialogueTreeId(e)
   );
+
+  const uiPlatform = (staticContact?.platform as MessagePlatform | undefined) ?? platform;
 
   return (
     <DialogueThread
@@ -206,6 +213,7 @@ export default function CommsChat({
       shipName={shipName}
       contact={staticContact}
       hideShipProfile={isBroadcastContact}
+      commsPlatform={uiPlatform}
       effectiveHailStatus={effectiveHailStatus}
       showHailPrompt={showHailPrompt}
       isRadioActive={isRadioActive}

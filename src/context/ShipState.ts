@@ -29,6 +29,9 @@ export function setPower(v: number) {
 export function setFuel(v: number) {
   fuel = v;
 }
+export function canUsePropulsion(): boolean {
+  return fuel > 0;
+}
 export function setO2(v: number) {
   o2 = v;
 }

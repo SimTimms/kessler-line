@@ -11,7 +11,8 @@ import {
   type InboxMessage,
   type MessagePlatform,
 } from '../../context/MessageStore';
-import { PRIORITY_PLATFORMS } from '../../config/commsConfig';
+import { PRIORITY_PLATFORMS, RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
+import { PLATFORM_UI } from '../../context/ActivePlatform';
 import {
   computeOneWayDelayMs,
   formatGameDuration,
@@ -20,9 +21,13 @@ import {
 import { ASTEROID_DOCK_DEF } from '../../config/worldConfig';
 import { waypointPromptDef } from '../../context/WaypointPrompt';
 import { getOrCreateShipRecord, formatShipClass, formatAgenda } from '../../narrative/shipRegistry';
+import { SETTLEMENT_BY_OBJECT_ID } from '../../config/settlementConfig';
 import DialogHeader from './DialogHeader';
 import DialogFooter from './DialogFooter';
 import DialogMessages from './DialogMessages';
+import SettlementInfoPanel from './SettlementInfoPanel';
+
+type CommsViewMode = 'messages' | 'info';
 
 const LINKABLE: { text: string; def: typeof ASTEROID_DOCK_DEF }[] = [
   { text: 'Asteroid Dock', def: ASTEROID_DOCK_DEF },
@@ -64,6 +69,7 @@ interface DialogueThreadProps {
   contact?: StaticContact;
   /** Broadcast / world-object hail — hide random NPC ship profile line. */
   hideShipProfile?: boolean;
+  commsPlatform?: MessagePlatform;
   // Pre-hail
   showHailPrompt?: boolean;
   effectiveHailStatus: HailStatus;
@@ -86,6 +92,7 @@ export default function DialogueThread({
   shipName,
   contact,
   hideShipProfile = false,
+  commsPlatform = RADIO_COMMS_PLATFORM,
   showHailPrompt = false,
   effectiveHailStatus,
   isRadioActive,
@@ -101,6 +108,8 @@ export default function DialogueThread({
   onClose,
 }: DialogueThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const hasSettlement = !contact && SETTLEMENT_BY_OBJECT_ID[shipId] !== undefined;
+  const [viewMode, setViewMode] = useState<CommsViewMode>('messages');
 
   const [msgs, setMsgs] = useState<InboxMessage[]>(() =>
     contact ? getContactMessages(contact) : []
@@ -119,6 +128,10 @@ export default function DialogueThread({
       return () => { audio.pause(); audio.currentTime = 0; };
     }
   }, [contact]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setViewMode('messages');
+  }, [shipId]);
 
   useEffect(() => {
     if (!contact) return;
@@ -227,15 +240,32 @@ export default function DialogueThread({
   const record = getOrCreateShipRecord(shipId, shipName);
 
   return (
-    <div className="comms-chat">
+    <div className="comms-chat" data-platform={commsPlatform}>
       {/* ── Header ── */}
       {contact ? (
         <DialogHeader contact={contact} />
       ) : (
         <div className="comms-chat-header">
-          <div className="comms-chat-vessel">{shipName}</div>
+          <div className="comms-chat-header-top">
+            <div className="comms-chat-vessel">{shipName}</div>
+            {hasSettlement && (
+              <button
+                type="button"
+                className="comms-chat-header-toggle"
+                onClick={() =>
+                  setViewMode((mode) => (mode === 'messages' ? 'info' : 'messages'))
+                }
+                title={viewMode === 'messages' ? 'Station info' : 'Messages'}
+                aria-label={viewMode === 'messages' ? 'Show station info' : 'Show messages'}
+              >
+                {viewMode === 'messages' ? 'ⓘ' : '✉'}
+              </button>
+            )}
+          </div>
           <div className="comms-chat-captain">
-            {thread ? `${thread.captainName.toUpperCase()} · OPENLINE` : 'OPENLINE'}
+            {thread
+              ? `${thread.captainName.toUpperCase()} · ${PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName}`
+              : PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName}
           </div>
           {thread && !hideShipProfile && (
             <div className="comms-chat-profile">
@@ -248,26 +278,30 @@ export default function DialogueThread({
         </div>
       )}
 
-      <DialogMessages
-        isPreHail={isPreHail}
-        showHailPrompt={showHailPrompt}
-        isRadioActive={isRadioActive}
-        effectiveHailStatus={effectiveHailStatus}
-        hailOfferContent={hailOfferContent}
-        onHail={onHail}
-        onAcceptHail={onAcceptHail}
-        onDeclineHail={onDeclineHail}
-        contact={contact ?? null}
-        displayRows={displayRows}
-        thread={thread}
-        shipName={shipName}
-        bottomRef={bottomRef}
-      />
+      {viewMode === 'info' && hasSettlement ? (
+        <SettlementInfoPanel objectId={shipId} />
+      ) : (
+        <DialogMessages
+          isPreHail={isPreHail}
+          showHailPrompt={showHailPrompt}
+          isRadioActive={isRadioActive}
+          effectiveHailStatus={effectiveHailStatus}
+          hailOfferContent={hailOfferContent}
+          onHail={onHail}
+          onAcceptHail={onAcceptHail}
+          onDeclineHail={onDeclineHail}
+          contact={contact ?? null}
+          displayRows={displayRows}
+          thread={thread}
+          shipName={shipName}
+          bottomRef={bottomRef}
+        />
+      )}
       <DialogFooter
         contact={contact ?? null}
         msgs={msgs}
         playerOptions={playerOptions}
-        showOptions={showOptions}
+        showOptions={viewMode === 'messages' && showOptions}
         isPreHail={isPreHail}
         isEnded={isEnded}
         onClose={onClose}

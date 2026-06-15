@@ -14,3 +14,6 @@ export const GAME_TIME_RATE = 600;
 
 // Platforms that bypass delay (priority trunk, arrives instantly).
 export const PRIORITY_PLATFORMS = ['HERALD'] as const;
+
+/** Platform for live radio hail and broadcast comms (header labels, hail inbox). */
+export const RADIO_COMMS_PLATFORM = 'REACH' as const;

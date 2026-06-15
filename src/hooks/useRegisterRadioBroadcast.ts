@@ -11,8 +11,10 @@ import {
 } from '../context/IncomingHailState';
 import { canOfferHailAgain, getHailStatus } from '../context/HailState';
 import {
+  getRadioBroadcasts,
   registerRadioBroadcastFromDef,
   unregisterRadioBroadcast,
+  isRadioHailEnabled,
 } from '../context/RadioBroadcastRegistry';
 
 /** Registers a scene radio broadcast while mounted (unregisters on unmount). */
@@ -54,8 +56,10 @@ export function useRegisterRadioBroadcast(
       const dist = shipPosRef.current.distanceTo(worldPos);
       const inHailRange = dist <= def.hailRange!;
       const inRadioRange = isWithinRadioRange(dist);
+      const broadcastEntry = getRadioBroadcasts().find((e) => e.id === def.id);
+      const hailAllowed = broadcastEntry ? isRadioHailEnabled(broadcastEntry) : true;
 
-      if (inHailRange && inRadioRange) {
+      if (inHailRange && inRadioRange && hailAllowed) {
         if (canOfferHailAgain(def.id) && !hasIncomingHail(def.id)) {
           setIncomingHail(def.id);
         }

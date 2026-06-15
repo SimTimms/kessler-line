@@ -40,7 +40,7 @@ export const SANDBOX_ASTEROID_ORBIT: BodyOrbitParams = {
   radius: 100000,
   speed: 200,
   speedMode: 'tangential',
-  initialAngleDeg: 160,
+  initialAngleDeg: 120,
 };
 
 /** Radio contact for the sandbox mineral asteroid (position follows the orbiting mesh). */

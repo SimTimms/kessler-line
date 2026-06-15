@@ -1,8 +1,8 @@
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { resourceRateRefs } from '../../context/ResourceRates';
-import { power, fuel, shipCrew, setFuel, setPower, setO2, o2 } from '../../context/ShipState';
-import { o2DrainRateForCrew } from '../../config/damageConfig';
+import { power, fuel, shipCrew, setFuel, setPower, setO2, o2, thrustMultiplier } from '../../context/ShipState';
+import { o2DrainRateForCrew, FUEL_BURN_RATE } from '../../config/damageConfig';
 
 interface DrainParams {
   keysHeld: number;
@@ -16,9 +16,12 @@ export function applyResourceDrain({ keysHeld, rawDelta }: DrainParams) {
   let fuelRate = 0;
 
   // Propulsion consumes propellant only; ship power is drained by systems (e.g. scanners).
+  // Burn scales with thrust multiplier so higher thrust costs proportionally more fuel.
   if (keysHeld > 0) {
-    fuelRate -= keysHeld;
-    setFuel(Math.max(0, fuel - keysHeld * rawDelta));
+    const thrustScale = thrustMultiplier.current;
+    const burnRate = keysHeld * thrustScale * FUEL_BURN_RATE;
+    fuelRate -= burnRate;
+    setFuel(Math.max(0, fuel - burnRate * rawDelta));
   }
   if (spotlightOnRef.current) {
     powerRate -= 1;

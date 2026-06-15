@@ -3,6 +3,7 @@ import AppContainer from '../App/AppContainer';
 import SandboxScene from './SandboxScene';
 import NavHudKeyBinding from '../App/NavHudKeyBinding';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
+import { resetAllSettlements } from '../../context/SettlementTracker';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 import { resetTutorialAirRun } from './resetSandboxRun';
@@ -28,12 +29,14 @@ export default function Sandbox() {
     tutorialNavViewModeRef.current = false;
     resetScannerRefs();
     clearAllIncomingHails();
+    resetAllSettlements();
   }, []);
 
   const restartTutorial = useCallback(() => {
     resetTutorialAirRun();
     resetScannerRefs();
     clearAllIncomingHails();
+    resetAllSettlements();
     setSpotlightOn(false);
     setMagneticOn(false);
     setDriveSignatureOn(false);

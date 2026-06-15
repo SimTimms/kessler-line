@@ -51,8 +51,8 @@ export function applyPhysicsStep({
   radOut,
   radIn,
 }: StepParams) {
-  if (yawLeft) angularVelocity.current -= YAW_THRUST * dt;
-  if (yawRight) angularVelocity.current += YAW_THRUST * dt;
+  if (yawLeft) angularVelocity.current -= YAW_THRUST * thrustMultiplier.current * dt;
+  if (yawRight) angularVelocity.current += YAW_THRUST * thrustMultiplier.current * dt;
   const yaw = getYawFromQuaternion(group.quaternion) + angularVelocity.current * dt;
   applyYawAndRoll(group, yaw, 0);
 
@@ -62,8 +62,8 @@ export function applyPhysicsStep({
     velocity.addScaledVector(_localForward, THRUST * thrustMultiplier.current * revScale * dt);
 
   _localRight.set(1, 0, 0).applyQuaternion(group.quaternion);
-  if (strL) velocity.addScaledVector(_localRight, -THRUST * dt);
-  if (strR) velocity.addScaledVector(_localRight, THRUST * dt);
+  if (strL) velocity.addScaledVector(_localRight, -THRUST * thrustMultiplier.current * dt);
+  if (strR) velocity.addScaledVector(_localRight, THRUST * thrustMultiplier.current * dt);
 
   if ((radOut || radIn) && primaryGravityId.current) {
     const body = gravityBodies.get(primaryGravityId.current);

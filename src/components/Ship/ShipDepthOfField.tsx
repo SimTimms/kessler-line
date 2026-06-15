@@ -3,7 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber';
 import { radiationExposureRef } from '../../context/RadiationScan';
 import { getGraphicsSettings } from '../../context/GraphicsState';
 import { shipPosRef } from '../../context/ShipPos';
-import { EffectComposer, Bloom, Vignette, HueSaturation } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, HueSaturation } from '@react-three/postprocessing';
 import { BlendFunction, NoiseEffect, DepthOfFieldEffect } from 'postprocessing';
 
 const NOISE_BASE = 0.00005;

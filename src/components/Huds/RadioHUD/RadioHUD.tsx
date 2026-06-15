@@ -4,7 +4,7 @@ import { radioOnRef, radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
 import { RADIO_BEACON_DEFS, SPACE_STATION_DEF } from '../../../config/worldConfig';
 import type { RadioBroadcastDef } from '../../../config/worldConfig';
-import { getRadioBroadcasts } from '../../../context/RadioBroadcastRegistry';
+import { getRadioBroadcasts, resolveRadioDialogue } from '../../../context/RadioBroadcastRegistry';
 import { solarPlanetPositions } from '../../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../../Planets/SolarSystem';
 import { SelectionDialog } from '../../SelectionDialog/SelectionDialog';
@@ -84,7 +84,7 @@ export const RadioHUD = () => {
             id: entry.id,
             label: entry.label,
             position: [broadcastPos.x, broadcastPos.y, broadcastPos.z],
-            dialogue: entry.dialogue,
+            dialogue: resolveRadioDialogue(entry),
             dockable: entry.dockable,
             dockingBay: entry.dockingBay,
           };

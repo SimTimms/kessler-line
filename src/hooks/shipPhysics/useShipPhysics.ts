@@ -13,6 +13,7 @@ import {
   shipControlDisabledUntil,
   thrustMultiplier,
   mainEngineDisabled,
+  canUsePropulsion,
   effectiveThrustFwd,
   effectiveThrustRev,
   effectiveYawLeft,
@@ -255,6 +256,12 @@ export function useShipPhysics({
     }
 
     const controlsLocked = performance.now() < shipControlDisabledUntil.current;
+
+    if (!canUsePropulsion() && autopilotActive.current) {
+      disableAutopilot();
+      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+    }
+
     updateAutopilotThrustOutputs(groupRef.current, velocity.current, {
       controlsLocked,
       shipDestroyed: shipDestroyed.current,
@@ -292,6 +299,19 @@ export function useShipPhysics({
       strR = false;
       radOut = false;
       radIn = false;
+    }
+
+    if (!canUsePropulsion()) {
+      yawLeft = false;
+      yawRight = false;
+      fwd = false;
+      rev = false;
+      strL = false;
+      strR = false;
+      radOut = false;
+      radIn = false;
+      cinematicThrustForward.current = false;
+      cinematicThrustReverse.current = false;
     }
 
     // Stabiliser (Space held): synthetically activates both keys of every cancel pair so the
@@ -493,7 +513,9 @@ export function useShipPhysics({
       (yawLeft ? 1 : 0) +
       (yawRight ? 1 : 0) +
       (strL ? 1 : 0) +
-      (strR ? 1 : 0);
+      (strR ? 1 : 0) +
+      (radOut ? 1 : 0) +
+      (radIn ? 1 : 0);
     applyResourceDrain({ keysHeld, rawDelta });
     applyRadiationDamage(physicsPosition.current, rawDelta);
 

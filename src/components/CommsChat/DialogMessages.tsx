@@ -55,7 +55,9 @@ export default function DialogMessages({
             <div className="comms-chat-prehail">
               <div className="comms-chat-offer">
                 <div className="comms-chat-offer-header">INCOMING HAIL</div>
-                <div className="comms-chat-offer-body">{shipName}</div>
+                <div className="comms-chat-offer-body">
+                  {hailOfferContent?.body ?? shipName}
+                </div>
               </div>
               <div className="comms-chat-hail-actions">
                 <button className="comms-chat-accept-btn" onClick={handleAcceptHail}>

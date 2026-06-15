@@ -23,3 +23,6 @@ export const HULL_STRESS_DAMAGE_INTERVAL = 100;
 // Refill rates while docked (units per second)
 export const FUEL_REFILL_RATE = 10;
 export const O2_REFILL_RATE = 10;
+
+/** Propellant drain per active thrust axis per second at thrust multiplier 1. */
+export const FUEL_BURN_RATE = 0.1;

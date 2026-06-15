@@ -5,11 +5,11 @@ import {
   getUnreadCount,
   isMessagePending,
   addMessage,
-} from '../../context/MessageStore';
-import type { InboxMessage } from '../../context/MessageStore';
-import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
-import { SelectionDialog } from '../SelectionDialog/SelectionDialog';
-import MessageDialog from '../MessageDialog/MessageDialog';
+} from '../../../context/MessageStore';
+import type { InboxMessage } from '../../../context/MessageStore';
+import { activePlatform, PLATFORM_UI } from '../../../context/ActivePlatform';
+import { SelectionDialog } from '../../SelectionDialog/SelectionDialog';
+import MessageDialog from '../../MessageDialog/MessageDialog';
 import './InboxHUD.css';
 
 const TRANSIENT_DURATION_MS = 2200;
@@ -139,7 +139,7 @@ export default function InboxHUD() {
       from: designation,
       subject: content.header,
       body: content.body,
-      platform: 'OPENLINE',
+      platform: 'REACH',
       replies: [
         {
           id: 'accept',

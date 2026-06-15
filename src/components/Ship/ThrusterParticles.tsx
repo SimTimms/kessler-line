@@ -21,6 +21,7 @@ import {
   effectiveYawRight,
   effectiveThrustStrL,
   effectiveThrustStrR,
+  canUsePropulsion,
   shipVelocity,
 } from '../../context/ShipState';
 import {
@@ -326,14 +327,16 @@ export default function ThrusterParticles({
   useFrame((_, delta) => {
     const m = thrustMultiplier.current;
     const emitRate = EMIT_RATE * Math.sqrt(m);
+    const propulsionAvailable = canUsePropulsion();
 
     // Main engines — both nozzles fire together on reverse thrust
     const reverseActive =
-      thrustReverse.current ||
-      mobileThrustReverse.current ||
-      cinematicThrustReverse.current ||
-      autopilotThrustReverse.current ||
-      effectiveThrustRev.current;
+      propulsionAvailable &&
+      (thrustReverse.current ||
+        mobileThrustReverse.current ||
+        cinematicThrustReverse.current ||
+        autopilotThrustReverse.current ||
+        effectiveThrustRev.current);
 
     if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
@@ -348,25 +351,49 @@ export default function ThrusterParticles({
       mainAccum.current.reverseA = mainAccum.current.reverseB = 0;
     }
 
-    // RCS thrusters — combine keyboard + mobile inputs
-    const combined = (a: { current: boolean }, b: { current: boolean }, c?: { current: boolean }) =>
-      ({ current: a.current || b.current || c?.current }) as { current: boolean };
     const rcsInputs: [RcsKey, { current: boolean }][] = [
       [
         'forward',
         {
           current:
-            thrustForward.current ||
-            mobileThrustForward.current ||
-            cinematicThrustForward.current ||
-            autopilotThrustForward.current ||
-            effectiveThrustFwd.current,
+            propulsionAvailable &&
+            (thrustForward.current ||
+              mobileThrustForward.current ||
+              cinematicThrustForward.current ||
+              autopilotThrustForward.current ||
+              effectiveThrustFwd.current),
         },
       ],
-      ['left', combined(thrustLeft, mobileThrustLeft, effectiveYawLeft)],
-      ['right', combined(thrustRight, mobileThrustRight, effectiveYawRight)],
-      ['strafeLeft', combined(thrustStrafeLeft, mobileThrustStrafeLeft, effectiveThrustStrL)],
-      ['strafeRight', combined(thrustStrafeRight, mobileThrustStrafeRight, effectiveThrustStrR)],
+      [
+        'left',
+        {
+          current:
+            propulsionAvailable && (thrustLeft.current || mobileThrustLeft.current || effectiveYawLeft.current),
+        },
+      ],
+      [
+        'right',
+        {
+          current:
+            propulsionAvailable && (thrustRight.current || mobileThrustRight.current || effectiveYawRight.current),
+        },
+      ],
+      [
+        'strafeLeft',
+        {
+          current:
+            propulsionAvailable &&
+            (thrustStrafeLeft.current || mobileThrustStrafeLeft.current || effectiveThrustStrL.current),
+        },
+      ],
+      [
+        'strafeRight',
+        {
+          current:
+            propulsionAvailable &&
+            (thrustStrafeRight.current || mobileThrustStrafeRight.current || effectiveThrustStrR.current),
+        },
+      ],
     ];
     for (const [key, ref] of rcsInputs) {
       if (ref.current) {
@@ -381,7 +408,7 @@ export default function ThrusterParticles({
     }
 
     // Hover thrusters — active at low speed (cuts off when in orbit / fast flight)
-    const hoverActive = shipVelocity.length() <= HOVER_CUTOFF_SPEED;
+    const hoverActive = propulsionAvailable && shipVelocity.length() <= HOVER_CUTOFF_SPEED;
 
     for (let hi = 0; hi < HOVER_EMITTERS.length; hi++) {
       if (!hoverActive) {

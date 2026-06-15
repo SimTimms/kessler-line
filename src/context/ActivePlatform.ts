@@ -4,8 +4,7 @@ import type { MessagePlatform } from './MessageStore';
 // BROADCAST is a degraded relay state, not an installable client.
 const SELECTABLE: MessagePlatform[] = ['REACH', 'HERALD', 'OPENLINE', 'MERIDIAN'];
 
-export const activePlatform: MessagePlatform =
-  SELECTABLE[Math.floor(Math.random() * SELECTABLE.length)];
+export const activePlatform: MessagePlatform = SELECTABLE[0];
 
 // ── Per-platform UI config ────────────────────────────────────────────────────
 

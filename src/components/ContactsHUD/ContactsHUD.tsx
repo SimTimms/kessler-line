@@ -10,7 +10,7 @@ import {
   getUnreadCount,
 } from '../../context/MessageStore';
 import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
-import { KM_PER_UNIT } from '../../config/commsConfig';
+import { KM_PER_UNIT, RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
 import { STATIC_CONTACTS } from '../../narrative/contacts';
 import { type HailStatus, setHailStatus, markHailDeclined } from '../../context/HailState';
 import {
@@ -18,8 +18,15 @@ import {
   dismissIncomingHail,
   type IncomingHailEventDetail,
 } from '../../context/IncomingHailState';
-import { getRadioBroadcasts, type RadioBroadcastEntry } from '../../context/RadioBroadcastRegistry';
+import {
+  getRadioBroadcasts,
+  isRadioHailEnabled,
+  resolveRadioDialogueTreeId,
+  type RadioBroadcastEntry,
+} from '../../context/RadioBroadcastRegistry';
 import { assignDialogueTree } from '../../narrative/npcDialogues';
+import { getSettlementByObjectId } from '../../context/SettlementTracker';
+import { getSettlementHailPreview } from '../../narrative/settlementRadio';
 import { ContactsHudDialog } from './ContactsHudDialog/ContactsHudDialog';
 import type { SelectionItem } from './ContactsHudDialog/ContactsHudDialog';
 import CommsChat from '../CommsChat/CommsChat';
@@ -185,7 +192,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
                 from: 'N51744X',
                 subject: 'INCOMING HAIL',
                 body: 'This is N51744X fuel depot. We have you on approach.\nIdentify your vessel and state your business.\n\n— N51744X COMMS',
-                platform: 'OPENLINE',
+                platform: RADIO_COMMS_PLATFORM,
               },
               2500
             );
@@ -269,7 +276,8 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
 
   function isBroadcastHailEligible(shipId: string): boolean {
     const b = broadcastContacts.find((x) => x.entry.id === shipId);
-    if (!b?.entry.hailRange || !b.entry.dialogueTreeId) return false;
+    if (!b?.entry.hailRange || !resolveRadioDialogueTreeId(b.entry)) return false;
+    if (!isRadioHailEnabled(b.entry)) return false;
     return b.inRadioRange && b.distanceRaw <= b.entry.hailRange;
   }
 
@@ -320,8 +328,9 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
       setChatShipId(null);
     } else {
       const entry = getRadioBroadcasts().find((e) => e.id === shipId);
-      if (entry?.dialogueTreeId) {
-        assignDialogueTree(shipId, entry.dialogueTreeId);
+      const treeId = entry ? resolveRadioDialogueTreeId(entry) : undefined;
+      if (treeId) {
+        assignDialogueTree(shipId, treeId);
       }
       setHailStatus(shipId, 'accepted');
       dismissIncomingHail(shipId);
@@ -415,9 +424,15 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   function getChatOfferContent(): { header: string; body: string } | undefined {
     if (!chatShipId) return undefined;
     const offer = hailOffers.get(chatShipId);
-    if (!offer) return undefined;
-    const typeContent = HAIL_CONTENT[offer.type];
-    return typeContent[chatShipId] ?? typeContent['0'];
+    if (offer) {
+      const typeContent = HAIL_CONTENT[offer.type];
+      return typeContent[chatShipId] ?? typeContent['0'];
+    }
+    const settlement = getSettlementByObjectId(chatShipId);
+    if (settlement) {
+      return getSettlementHailPreview(settlement);
+    }
+    return undefined;
   }
 
   return (
@@ -471,6 +486,11 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
             <CommsChat
               shipId={chatShipId}
               shipName={chatShipName}
+              platform={
+                getRadioBroadcasts().some((e) => e.id === chatShipId)
+                  ? RADIO_COMMS_PLATFORM
+                  : 'OPENLINE'
+              }
               hailStatus={hailStates.get(chatShipId) ?? 'none'}
               radioActive={chatRadioActive}
               showHailPrompt={shouldShowHailPrompt(chatShipId)}
