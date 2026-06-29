@@ -1,0 +1,81 @@
+/* Docked "people aboard" roster. Terminal styling matched to the comms panels. */
+
+.station-crew {
+  position: fixed;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: rgba(0, 8, 18, 0.92);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  box-shadow:
+    0 0 30px rgba(0, 200, 255, 0.1),
+    inset 0 0 40px rgba(0, 0, 0, 0.4);
+  font-family: monospace;
+  z-index: 60;
+  pointer-events: auto;
+}
+
+.station-crew-title {
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  color: rgba(0, 200, 255, 0.55);
+  padding: 2px 2px 8px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+  margin-bottom: 4px;
+}
+
+.station-crew-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px;
+  background: rgba(0, 200, 255, 0.05);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.station-crew-row:hover,
+.station-crew-row.is-active {
+  background: rgba(0, 200, 255, 0.13);
+  border-color: rgba(0, 200, 255, 0.6);
+}
+
+.station-crew-portrait {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  border-radius: 2px;
+  filter: grayscale(0.35) contrast(1.05);
+}
+
+.station-crew-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.station-crew-name {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #00cfff;
+}
+
+.station-crew-role {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: rgba(0, 200, 255, 0.5);
+  text-transform: uppercase;
+}

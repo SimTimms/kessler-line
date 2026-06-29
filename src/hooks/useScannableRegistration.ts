@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   resolveScannerLabel,
@@ -31,6 +32,13 @@ export function useScannableRegistration({
   const driveSignatureLabel = resolveScannerLabel(driveSignature, label);
   const proximityLabel = resolveScannerLabel(proximity, label);
 
+  // World velocity derived from frame-to-frame position delta, so kinematic
+  // movers (e.g. orbiting bodies) report their motion to the collision solver.
+  const velocityRef = useRef(new THREE.Vector3());
+  const prevPosRef = useRef(new THREE.Vector3());
+  const hasPrevRef = useRef(false);
+  const worldPosRef = useRef(new THREE.Vector3());
+
   const getPosition = (target: THREE.Vector3) => {
     if (groupRef.current) groupRef.current.getWorldPosition(target);
     else target.set(0, 0, 0);
@@ -43,6 +51,22 @@ export function useScannableRegistration({
     return target;
   };
 
+  const getWorldVelocity = (target: THREE.Vector3) => target.copy(velocityRef.current);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current || delta <= 0) return;
+    groupRef.current.getWorldPosition(worldPosRef.current);
+    if (hasPrevRef.current) {
+      velocityRef.current
+        .copy(worldPosRef.current)
+        .sub(prevPosRef.current)
+        .multiplyScalar(1 / delta);
+    } else {
+      hasPrevRef.current = true;
+    }
+    prevPosRef.current.copy(worldPosRef.current);
+  });
+
   useEffect(() => {
     if (!scannable) return;
 
@@ -52,6 +76,7 @@ export function useScannableRegistration({
         label: proximityLabel,
         getWorldPosition: getPosition,
         getWorldQuaternion,
+        getWorldVelocity,
         shape: proximityShape,
         getObject3D: () => groupRef.current,
       });

@@ -22,12 +22,13 @@ import { ASTEROID_DOCK_DEF } from '../../config/worldConfig';
 import { waypointPromptDef } from '../../context/WaypointPrompt';
 import { getOrCreateShipRecord, formatShipClass, formatAgenda } from '../../narrative/shipRegistry';
 import { SETTLEMENT_BY_OBJECT_ID } from '../../config/settlementConfig';
+import { ROLE_LABELS, type StationCharacter } from '../../narrative/stationCharacters';
 import DialogHeader from './DialogHeader';
 import DialogFooter from './DialogFooter';
 import DialogMessages from './DialogMessages';
 import SettlementInfoPanel from './SettlementInfoPanel';
 
-type CommsViewMode = 'messages' | 'info';
+type CommsViewMode = 'messages' | 'info' | 'dossier';
 
 const LINKABLE: { text: string; def: typeof ASTEROID_DOCK_DEF }[] = [
   { text: 'Asteroid Dock', def: ASTEROID_DOCK_DEF },
@@ -67,6 +68,8 @@ interface DialogueThreadProps {
   shipName: string;
   // Inbox mode (static contact)
   contact?: StaticContact;
+  /** Station-resident NPC — renders a portrait + dossier header instead of a ship profile. */
+  character?: StationCharacter;
   /** Broadcast / world-object hail — hide random NPC ship profile line. */
   hideShipProfile?: boolean;
   commsPlatform?: MessagePlatform;
@@ -91,6 +94,7 @@ export default function DialogueThread({
   shipId,
   shipName,
   contact,
+  character,
   hideShipProfile = false,
   commsPlatform = RADIO_COMMS_PLATFORM,
   showHailPrompt = false,
@@ -237,12 +241,36 @@ export default function DialogueThread({
     }
   };
 
-  const record = getOrCreateShipRecord(shipId, shipName);
+  // Skip the ship registry for station characters so their ids don't get
+  // assigned ship profiles / radio dialogue trees.
+  const record = contact || character ? null : getOrCreateShipRecord(shipId, shipName);
 
   return (
     <div className="comms-chat" data-platform={commsPlatform}>
       {/* ── Header ── */}
-      {contact ? (
+      {character ? (
+        <div className="comms-chat-header comms-chat-header--character">
+          <img className="comms-chat-portrait" src={character.portrait} alt={character.name} />
+          <div className="comms-chat-character-id">
+            <div className="comms-chat-header-top">
+              <div className="comms-chat-vessel">{character.name}</div>
+              <button
+                type="button"
+                className="comms-chat-header-toggle"
+                onClick={() => setViewMode((mode) => (mode === 'dossier' ? 'messages' : 'dossier'))}
+                title={viewMode === 'dossier' ? 'Conversation' : 'Dossier'}
+                aria-label={viewMode === 'dossier' ? 'Show conversation' : 'Show dossier'}
+              >
+                {viewMode === 'dossier' ? '✉' : 'ⓘ'}
+              </button>
+            </div>
+            <div className="comms-chat-captain">
+              {ROLE_LABELS[character.role].toUpperCase()}
+              {character.company ? ` · ${character.company.toUpperCase()}` : ' · INDEPENDENT'}
+            </div>
+          </div>
+        </div>
+      ) : contact ? (
         <DialogHeader contact={contact} />
       ) : (
         <div className="comms-chat-header">
@@ -267,7 +295,7 @@ export default function DialogueThread({
               ? `${thread.captainName.toUpperCase()} · ${PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName}`
               : PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName}
           </div>
-          {thread && !hideShipProfile && (
+          {thread && !hideShipProfile && record && (
             <div className="comms-chat-profile">
               {formatShipClass(record.shipClass)} · {formatAgenda(record.agenda)}
               {record.destination !== 'none' ? ` → ${record.destination.toUpperCase()}` : ''}
@@ -278,7 +306,31 @@ export default function DialogueThread({
         </div>
       )}
 
-      {viewMode === 'info' && hasSettlement ? (
+      {viewMode === 'dossier' && character ? (
+        <div className="comms-chat-dossier">
+          <div className="comms-dossier-row">
+            <span className="comms-dossier-key">NAME</span>
+            <span className="comms-dossier-val">{character.name}</span>
+          </div>
+          <div className="comms-dossier-row">
+            <span className="comms-dossier-key">AGE</span>
+            <span className="comms-dossier-val">{character.age}</span>
+          </div>
+          <div className="comms-dossier-row">
+            <span className="comms-dossier-key">BORN</span>
+            <span className="comms-dossier-val">{character.birthplace}</span>
+          </div>
+          <div className="comms-dossier-row">
+            <span className="comms-dossier-key">EMPLOYER</span>
+            <span className="comms-dossier-val">{character.company ?? 'Independent'}</span>
+          </div>
+          <div className="comms-dossier-row">
+            <span className="comms-dossier-key">ROLE</span>
+            <span className="comms-dossier-val">{ROLE_LABELS[character.role]}</span>
+          </div>
+          {character.bio && <p className="comms-dossier-bio">{character.bio}</p>}
+        </div>
+      ) : viewMode === 'info' && hasSettlement ? (
         <SettlementInfoPanel objectId={shipId} />
       ) : (
         <DialogMessages

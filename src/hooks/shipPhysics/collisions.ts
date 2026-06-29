@@ -17,6 +17,8 @@ const _shipWorldQuat = new THREE.Quaternion();
 const _localSample = new THREE.Vector3();
 const _samplePos = new THREE.Vector3();
 const _collidablePos = new THREE.Vector3();
+const _collidableVel = new THREE.Vector3();
+const _relVelocity = new THREE.Vector3();
 const _collisionNormal = new THREE.Vector3();
 const _impulse = new THREE.Vector3();
 const _boxQuat = new THREE.Quaternion();
@@ -122,7 +124,16 @@ function resolveEntryCollision(
   }
 
   if (colliding) {
-    const impactSpeed = velocity.dot(_collisionNormal);
+    // Closing speed must be measured relative to the collidable. Kinematic
+    // movers (orbiting bodies, stations) carry their own world velocity; using
+    // the ship's absolute velocity here makes a body the ship is travelling
+    // alongside read as a high-speed impact and wrongly destroys the ship.
+    let approachVelocity = velocity;
+    if (collidable.getWorldVelocity) {
+      collidable.getWorldVelocity(_collidableVel);
+      approachVelocity = _relVelocity.subVectors(velocity, _collidableVel);
+    }
+    const impactSpeed = approachVelocity.dot(_collisionNormal);
 
     if (
       collidable.planetSurfaceImpact &&

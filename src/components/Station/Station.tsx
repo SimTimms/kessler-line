@@ -6,13 +6,12 @@ import type { ScannableSignature } from '../../config/scannableSignature';
 import { useRegisterRadioBroadcast } from '../../hooks/useRegisterRadioBroadcast';
 import { useRegisterSettlement } from '../../hooks/useRegisterSettlement';
 import { useScannableRegistration } from '../../hooks/useScannableRegistration';
-import DockingBay from '../WorldObjects/DockingBay';
 
-const OBJECT_ID = 'mineral-asteroid';
-const MAGNET_LABEL = 'Iron Raw';
-const OBJECT_LABEL = 'AST-47718';
+const OBJECT_ID = 'OPS-Station';
+const MAGNET_LABEL = 'Steel | Iron | Composite';
+const OBJECT_LABEL = 'OPS Depot';
 
-export interface AsteroidProps extends ScannableSignature {
+export interface StationProps extends ScannableSignature {
   scale?: number;
   id?: string;
   label?: string;
@@ -20,7 +19,7 @@ export interface AsteroidProps extends ScannableSignature {
   radioBroadcast?: RadioBroadcastDef;
 }
 
-export function Asteroid({
+export function Station({
   scale = 1,
   id = OBJECT_ID,
   label = OBJECT_LABEL,
@@ -28,9 +27,9 @@ export function Asteroid({
   magnet = { label: MAGNET_LABEL },
   proximity = true,
   radioBroadcast,
-}: AsteroidProps) {
+}: StationProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const gltf = useGLTF('/asteroid_with_minerals.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/station-two.glb') as unknown as { scene: THREE.Group };
 
   useRegisterRadioBroadcast(groupRef, radioBroadcast);
   useRegisterSettlement(id);
@@ -48,17 +47,8 @@ export function Asteroid({
   });
 
   return (
-    <group ref={groupRef} position={[0, -0.88 * scale, 0]}>
+    <group ref={groupRef} position={[0, -20.88 * scale, 0]}>
       <primitive object={gltf.scene} scale={scale} position={[0, 0, 0]} />
-      <group position={[-276, 883, -50]} rotation={[0, Math.PI * 0.43, 0]}>
-        <DockingBay stationId="asteroid-dock" dimensions={new THREE.Vector3(50, 10, 0.1)}
-        partner={{
-          label: 'Asteroid Dock', fuel: { amount: 100, capacity: 100 },
-          o2: { amount: 100, capacity: 100 },
-          power: { amount: 100, capacity: 100 },
-          crew: { amount: 100, capacity: 100 },
-        }}/>
-      </group>
     </group>
   );
 }

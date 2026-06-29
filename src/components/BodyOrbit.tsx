@@ -14,3 +14,4 @@ export function BodyOrbit({ children, ...orbitParams }: BodyOrbitProps) {
 
   return <group ref={groupRef}>{children}</group>;
 }
+ 

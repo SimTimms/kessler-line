@@ -10,7 +10,6 @@ import {
 import { boxColliderFromObject } from '../../utils/colliderFromObject';
 import { containerInventoryToPartner } from '../../config/containerInventoryConfig';
 import type { ContainerInventory } from '../../config/containerInventoryConfig';
-import { useRegisterDockablePartner } from '../../hooks/useRegisterDockablePartner';
 import type { RadioBroadcastDef } from '../../config/worldConfig';
 import { useRegisterRadioBroadcast } from '../../hooks/useRegisterRadioBroadcast';
 
@@ -58,8 +57,13 @@ export default function ContainerBritish({
   );
   useRegisterWorldObject(bodyRef, registration);
 
-  const partnerConfig = useMemo(() => containerInventoryToPartner(inventory), [inventory]);
-  useRegisterDockablePartner(partnerConfig);
+  // Derive the bay's transferable resources straight from the inventory; the
+  // DockingBay registers them itself (keyed by its stationId), so the partner id
+  // and the docking bay id can never drift apart.
+  const { partnerId: _partnerId, ...dockPartner } = useMemo(
+    () => containerInventoryToPartner(inventory),
+    [inventory]
+  );
 
   const dockDimensions = new THREE.Vector3(12, 1, 1);
   return (
@@ -78,7 +82,11 @@ export default function ContainerBritish({
           </group>
         </group>
         <group position={[0, 0, -36]} rotation={[0, Math.PI, 0]}>
-          <DockingBay stationId={inventory.dockingBayId} dimensions={dockDimensions} />
+          <DockingBay
+            stationId={inventory.dockingBayId}
+            dimensions={dockDimensions}
+            partner={dockPartner}
+          />
         </group>
       </group>
     </>

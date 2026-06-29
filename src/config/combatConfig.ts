@@ -15,6 +15,26 @@ export const LASER_SPOTLIGHT_DECAY = 0.2;
  */
 export const LASER_SPOTLIGHT_DISTANCE = 0;
 
+// ── Particle cannon (hold "G" to fire) ─────────────────────────────────────
+/** Maximum bullets alive at once (ring-buffer pool size). */
+export const CANNON_MAX_BULLETS = 400;
+/** Rounds fired per second while the trigger is held. */
+export const CANNON_FIRE_RATE = 104;
+/** Muzzle speed in world units/second (relative to the ship). */
+export const CANNON_BULLET_SPEED = 4000;
+/** How long a bullet lives before despawning (seconds). */
+export const CANNON_BULLET_LIFETIME = 2.0;
+/** Rendered size of the glowing bullet head (world units, size-attenuated). */
+export const CANNON_BULLET_SIZE = 6;
+/** Length of the tracer streak drawn behind each bullet (world units, ship frame). */
+export const CANNON_TRACER_LENGTH = 90;
+/** Random angular spread applied to each shot (radians of jitter per axis). */
+export const CANNON_SPREAD = 0.005;
+/** Bullet / tracer head colour. */
+export const CANNON_BULLET_COLOR = '#ffd27f';
+/** Power drained per second while the cannon is firing. */
+export const CANNON_POWER_DRAIN = 1.2;
+
 // ── Railgun beam geometry ─────────────────────────────────────────────────
 /** Outer radius of the railgun beam cylinder (world units). */
 export const RAILGUN_BEAM_OUTER_RADIUS = 0.03;

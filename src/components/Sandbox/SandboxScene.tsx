@@ -7,15 +7,21 @@ import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator
 import { shipPosRef } from '../../context/ShipPos';
 import DefaultLighting from '../DefaultLighting';
 import LaserRay from '../Combat/LaserRay';
+import PlayerBullets from '../Combat/PlayerBullets';
 import ProximityHighlight from '../Proximity/ProximityHighlight';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import SolarSystem from '../Planets/SolarSystem';
 import SunGravity from '../Environment/SunGravity';
 import { BodyOrbit } from '../BodyOrbit';
-import { SANDBOX_ASTEROID_ORBIT, SANDBOX_ASTEROID_RADIO, SANDBOX_CONFIG } from './sandboxConfig';
+import { SANDBOX_ASTEROID_ORBIT, SANDBOX_ASTEROID_RADIO, SANDBOX_CONFIG, SANDBOX_BATTLESHIP_ORBIT  } from './sandboxConfig';
 import { Asteroid } from '../TutorialResources/Asteroid';
-
+import { Station } from '../Station/Station';
+import DustCloud from '../DustCloud/DustCloud';
+import {getPlanetPosition, } from '../../config/planetPosition';
+import BattleshipBritish from '../BattleshipBritish/BattleshipBritish';
+import { TUTORIAL_BATTLESHIP_SCAN,  } from '../../config/battleshipScanConfig';
+import { TUTORIAL_BATTLESHIP_RADIO_BROADCAST } from '../TutorialRadio/tutorialRadioConfig';
 export default function SandboxScene() {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const {
@@ -42,6 +48,8 @@ export default function SandboxScene() {
     applySandboxSpawn(spaceshipGroupRef.current);
   }, [tutorialShipOrbitRadius]);
 
+  const marsPosition = getPlanetPosition('Mars');
+  const dustPosition = new THREE.Vector3(marsPosition.x, -1000000, marsPosition.z);
   return (
     <>
       <Canvas
@@ -95,6 +103,7 @@ export default function SandboxScene() {
             }}
           />
           <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+          <PlayerBullets shipGroupRef={spaceshipGroupRef} />
           <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
           <SolarSystem scale={solarSystemScale} />
         </Suspense>
@@ -105,6 +114,18 @@ export default function SandboxScene() {
         <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
           <Asteroid scale={1000} radioBroadcast={SANDBOX_ASTEROID_RADIO} />
         </BodyOrbit>
+        <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
+          <Station scale={2000} radioBroadcast={SANDBOX_ASTEROID_RADIO} />
+        </BodyOrbit>
+        <group position={dustPosition}>
+          <DustCloud  yInitial={-100000}/>
+        </group>
+          <BodyOrbit {...SANDBOX_BATTLESHIP_ORBIT}>
+          <BattleshipBritish
+            scan={TUTORIAL_BATTLESHIP_SCAN}
+            radioBroadcast={TUTORIAL_BATTLESHIP_RADIO_BROADCAST}
+          />
+          </BodyOrbit>
       </Canvas>
     </>
   );

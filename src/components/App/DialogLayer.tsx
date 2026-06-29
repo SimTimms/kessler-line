@@ -1,7 +1,9 @@
 import { memo } from 'react';
 import DockingDialog from '../WorldObjects/DockingDialog';
+import StationCrewPanel from '../Station/StationCrewPanel';
 import type { MissionId } from '../../hooks/useMissionState';
 import { hasDockablePartner } from '../../context/DockablePartnerStore';
+import { getStationResidents } from '../../narrative/stationCharacters';
 
 interface DialogLayerProps {
   docked: boolean;
@@ -29,6 +31,7 @@ const DialogLayer = memo(function DialogLayer({
   onMissionComplete,
 }: DialogLayerProps) {
   const showStationDialog = docked && !hasDockablePartner(dockedStation);
+  const showCrew = docked && getStationResidents(dockedStation).length > 0;
 
   return (
     <>
@@ -45,6 +48,7 @@ const DialogLayer = memo(function DialogLayer({
           onMissionComplete={onMissionComplete}
         />
       )}
+      {showCrew && <StationCrewPanel key={dockedStation} dockedStation={dockedStation} />}
     </>
   );
 });

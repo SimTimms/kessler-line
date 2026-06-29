@@ -13,6 +13,7 @@ import {
   LASER_SPOTLIGHT_DISTANCE,
 } from '../../config/combatConfig';
 import { spotlightOnRef } from '../../context/SpotlightState';
+import { laserAimRef } from '../../context/LaserAim';
 
 interface LaserRayProps {
   shipGroupRef: { current: THREE.Group | null };
@@ -111,6 +112,15 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
     // Target: project camera ray through mouse cursor 1000 units into world space.
     _camRaycaster.setFromCamera(mouseNDC.current, camera);
     _target.copy(_camRaycaster.ray.origin).addScaledVector(_camRaycaster.ray.direction, 1000);
+
+    // Publish the aim every frame (even when not firing) so weapons can travel along the beam.
+    _dir.subVectors(_target, _origin);
+    const aimLen = _dir.length();
+    if (aimLen > 0.001) {
+      laserAimRef.origin.copy(_origin);
+      laserAimRef.direction.copy(_dir).divideScalar(aimLen);
+      laserAimRef.valid = true;
+    }
 
     const spotlightActive = spotlightOnRef.current;
     spotLightRef.current.intensity = spotlightActive ? LASER_SPOTLIGHT_INTENSITY : 0;

@@ -43,6 +43,23 @@ export const SANDBOX_ASTEROID_ORBIT: BodyOrbitParams = {
   initialAngleDeg: 120,
 };
 
+/** Kinematic orbit for sandbox props (e.g. asteroid belt objects near Mars). */
+export const SANDBOX_FOG_ORBIT: BodyOrbitParams = {
+  body: 'Mars',
+  radius: 100000,
+  speed: 0,
+  speedMode: 'angular',
+  initialAngleDeg: 120,
+};
+
+/** Kinematic orbit for sandbox props (e.g. asteroid belt objects near Mars). */
+export const SANDBOX_BATTLESHIP_ORBIT: BodyOrbitParams = {
+  body: 'Mars',
+  radius: 100000,
+  speed: 0,
+  speedMode: 'angular',
+  initialAngleDeg: 120,
+};
 /** Radio contact for the sandbox mineral asteroid (position follows the orbiting mesh). */
 export const SANDBOX_ASTEROID_RADIO: RadioBroadcastDef = {
   id: 'mineral-asteroid',
