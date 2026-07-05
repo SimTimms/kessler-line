@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { getCollidables, type CollidableEntry } from '../../context/CollisionRegistry';
+import { gravityBodies } from '../../context/GravityRegistry';
 import {
   DAMAGE_MULTIPLIER,
   RESTITUTION,
@@ -32,6 +33,28 @@ const _surfacePoint = new THREE.Vector3();
 const _surfaceNormal = new THREE.Vector3();
 const _randomDir = new THREE.Vector3();
 
+function isDockingBayCollidable(id: string): boolean {
+  return id.startsWith('docking-bay-');
+}
+
+function shouldResolvePhysicalCollision(collidable: CollidableEntry): boolean {
+  if (collidable.id === SHIP_COLLISION_ID) return false;
+  if (isDockingBayCollidable(collidable.id)) return false;
+  if (collidable.physicalCollision === false) return false;
+  return true;
+}
+
+function getCollidableWorldVelocity(collidable: CollidableEntry, target: THREE.Vector3): THREE.Vector3 {
+  if (collidable.getWorldVelocity) {
+    return collidable.getWorldVelocity(target);
+  }
+  if (collidable.id.startsWith('planet-surface-')) {
+    const body = gravityBodies.get(collidable.id.slice('planet-surface-'.length));
+    return body ? target.copy(body.velocity) : target.set(0, 0, 0);
+  }
+  return target.set(0, 0, 0);
+}
+
 function resolveEntryCollision(
   collidable: CollidableEntry,
   shipPos: THREE.Vector3,
@@ -39,6 +62,9 @@ function resolveEntryCollision(
   group: THREE.Object3D,
   sampleRadius = SHIP_RADIUS
 ) {
+  // Docking bays are capture volumes, not solid walls — `checkDockingPort` handles attach.
+  if (isDockingBayCollidable(collidable.id)) return;
+
   const shape = collidable.shape;
   let colliding = false;
   let overlap = 0;
@@ -128,11 +154,8 @@ function resolveEntryCollision(
     // movers (orbiting bodies, stations) carry their own world velocity; using
     // the ship's absolute velocity here makes a body the ship is travelling
     // alongside read as a high-speed impact and wrongly destroys the ship.
-    let approachVelocity = velocity;
-    if (collidable.getWorldVelocity) {
-      collidable.getWorldVelocity(_collidableVel);
-      approachVelocity = _relVelocity.subVectors(velocity, _collidableVel);
-    }
+    getCollidableWorldVelocity(collidable, _collidableVel);
+    const approachVelocity = _relVelocity.subVectors(velocity, _collidableVel);
     const impactSpeed = approachVelocity.dot(_collisionNormal);
 
     if (
@@ -191,7 +214,7 @@ export function resolveCollisions(group: THREE.Object3D, velocity: THREE.Vector3
   group.getWorldQuaternion(_shipWorldQuat);
 
   for (const collidable of getCollidables()) {
-    if (collidable.id === SHIP_COLLISION_ID) continue;
+    if (!shouldResolvePhysicalCollision(collidable)) continue;
     collidable.getWorldPosition(_collidablePos);
 
     for (const sample of SHIP_COLLISION_SAMPLES) {

@@ -28,6 +28,7 @@ import {
   isDockingTutorialShipKeyAllowed,
   isDockingTutorialUndockAllowed,
 } from '../../tutorial/tutorialDockingInputGate';
+import { detachShipFromDock } from './docking';
 
 export interface InputListenersResult {
   thrustForward: React.MutableRefObject<boolean>;
@@ -46,10 +47,14 @@ export function useInputListeners({
   dockedTo,
   velocity,
   groupRef,
+  scene,
+  physicsPosition,
 }: {
   dockedTo: React.MutableRefObject<string | null>;
   velocity: React.MutableRefObject<THREE.Vector3>;
   groupRef: React.RefObject<THREE.Group>;
+  scene: THREE.Object3D;
+  physicsPosition: React.MutableRefObject<THREE.Vector3>;
 }): InputListenersResult {
   const thrustForward = useRef(false);
   const thrustReverse = useRef(false);
@@ -66,26 +71,34 @@ export function useInputListeners({
   useEffect(() => {
     const performShipUndock = (): boolean => {
       if (!dockedTo.current) return false;
+      const previousDockId = dockedTo.current;
       dockedTo.current = null;
       window.dispatchEvent(new CustomEvent('ShipUndocked'));
       if (groupRef.current) {
+        detachShipFromDock(groupRef.current, scene);
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
         const releaseDir = forward.multiplyScalar(-1);
         groupRef.current.position.addScaledVector(releaseDir, 1); // ensure clear separation from bay
         // Push away from the docking bay, not toward it.
-        velocity.current.copy(releaseDir.multiplyScalar(8)); // 8 m/s release velocity
+        const releaseSpeed = previousDockId.startsWith('docking-bay-rendezvous-') ? 2.5 : 8;
+        velocity.current.copy(releaseDir.multiplyScalar(releaseSpeed));
+        groupRef.current.getWorldPosition(physicsPosition.current);
       }
       releaseParticleTrigger.current = true;
       return true;
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (DOCKING_TUTORIAL_ALL_FLIGHT_KEYS.has(e.code) && !isDockingTutorialShipKeyAllowed(e.code)) {
+      if (
+        DOCKING_TUTORIAL_ALL_FLIGHT_KEYS.has(e.code) &&
+        !isDockingTutorialShipKeyAllowed(e.code)
+      ) {
         e.preventDefault();
         return;
       }
-      if (e.code === KEY_THRUST_FORWARD) thrustForward.current = true;
-      if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = true;
+      // Treat thrust keybindings in reverse so gameplay remains W=forward, S=reverse.
+      if (e.code === KEY_THRUST_REVERSE) thrustForward.current = true;
+      if (e.code === KEY_THRUST_FORWARD) thrustReverse.current = true;
       if (e.code === KEY_YAW_LEFT) thrustLeft.current = true;
       if (e.code === KEY_YAW_RIGHT) thrustRight.current = true;
       if (e.code === KEY_STRAFE_RIGHT) thrustStrafeLeft.current = true;
@@ -119,8 +132,8 @@ export function useInputListeners({
       thrustRadialIn.current = false;
     };
     const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === KEY_THRUST_FORWARD) thrustForward.current = false;
-      if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = false;
+      if (e.code === KEY_THRUST_REVERSE) thrustForward.current = false;
+      if (e.code === KEY_THRUST_FORWARD) thrustReverse.current = false;
       if (e.code === KEY_YAW_LEFT) thrustLeft.current = false;
       if (e.code === KEY_YAW_RIGHT) thrustRight.current = false;
       if (e.code === KEY_STRAFE_RIGHT) thrustStrafeLeft.current = false;

@@ -303,6 +303,7 @@ export default function SolarSystem({
           axialTilt={p.axialTilt}
           initialAngle={p.initialAngle}
           rings={'rings' in p ? p.rings : false}
+          showGlowSprite={false}
           showColonies={p.name === 'Mars'}
           useBumpMap={p.name === 'Mars' || p.name === 'Neptune'}
           {...gravParams(p.radius, p.surfaceGravity ?? DEFAULT_PLANET_SURFACE_GRAVITY)}

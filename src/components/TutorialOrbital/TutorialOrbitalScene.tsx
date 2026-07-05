@@ -14,6 +14,7 @@ import {
   SHIP_PARTICLE_SPEED_MAX,
 } from '../../config/particleConfig';
 import LaserRay from '../Combat/LaserRay';
+import HoverSceneTools from '../HoverSceneTools';
 import ProximityHighlight from '../Proximity/ProximityHighlight';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
@@ -102,6 +103,7 @@ export default function TutorialOrbitalScene({ onStepAdvance }: TutorialOrbitalS
             <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
           </Suspense>
         </TutorialOrbitalSolarSystem>
+        <HoverSceneTools />
         <ProximityHighlight />
         <ScannerRangeRings />
         <ShipDepthOfField saturation={-1} />

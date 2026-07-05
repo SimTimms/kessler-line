@@ -1,8 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { radiationExposureRef } from '../../context/RadiationScan';
-import { getGraphicsSettings } from '../../context/GraphicsState';
 import { shipPosRef } from '../../context/ShipPos';
+import {
+  floatingOriginActiveRef,
+  simulationToRenderSpace,
+} from '../../context/FloatingOrigin';
 import { EffectComposer, Bloom, HueSaturation } from '@react-three/postprocessing';
 import { BlendFunction, NoiseEffect, DepthOfFieldEffect } from 'postprocessing';
 
@@ -20,12 +24,18 @@ export function ShipDepthOfField({ saturation }: ShipDepthOfFieldProps) {
     () => new DepthOfFieldEffect(camera, { focusDistance: 70, focusRange: 100, bokehScale: 2 }),
     [camera]
   );
-  const bloomEnabled = getGraphicsSettings().bloomEnabled;
+  const bloomEnabled = false; //getGraphicsSettings().bloomEnabled;
+  const dofTarget = useRef(new THREE.Vector3());
 
   useFrame(() => {
     noiseEffect.blendMode.opacity.value =
       NOISE_BASE + radiationExposureRef.current * (NOISE_MAX - NOISE_BASE);
-    dofEffect.target = shipPosRef.current;
+    if (floatingOriginActiveRef.current) {
+      simulationToRenderSpace(shipPosRef.current, dofTarget.current);
+    } else {
+      dofTarget.current.copy(shipPosRef.current);
+    }
+    dofEffect.target = dofTarget.current;
   });
 
   return (

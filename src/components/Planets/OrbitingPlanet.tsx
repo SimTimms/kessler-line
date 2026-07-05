@@ -556,6 +556,7 @@ interface OrbitingPlanetProps {
   axialTilt: number; // radians
   initialAngle: number; // radians
   rings?: boolean;
+  showGlowSprite?: boolean;
   showColonies?: boolean; // render procedural colony-lights emissive map
   useBumpMap?: boolean; // render procedural crater bump map
   gravityMu?: number; // GM in world-space units (optional)
@@ -578,6 +579,7 @@ export default function OrbitingPlanet({
   axialTilt,
   initialAngle,
   rings = false,
+  showGlowSprite = true,
   showColonies = false,
   useBumpMap = false,
   gravityMu,
@@ -753,13 +755,14 @@ export default function OrbitingPlanet({
   return (
     <group ref={orbitRef}>
       <group ref={planetCenterRef} position={[orbitRadius, 0, 0]}>
-        {/* Background glow billboard — always faces camera, additive blending, never culled */}
-        <PlanetGlowSprite
-          glowTextureUrl={glowTextureUrl}
-          radius={radius}
-          tint={glowTint}
-          opacity={glowOpacity}
-        />
+        {showGlowSprite && (
+          <PlanetGlowSprite
+            glowTextureUrl={glowTextureUrl}
+            radius={radius}
+            tint={glowTint}
+            opacity={glowOpacity}
+          />
+        )}
 
         <group ref={meshVisRef}>
           {/* Axial tilt applied once; spin group rotates around the tilted axis */}

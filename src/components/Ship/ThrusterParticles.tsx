@@ -35,6 +35,8 @@ const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.04; // seconds — short, intense burn (jittered ±30%)
 const BASE_SPEED = 100; // world units/second (jittered ±30%)
 const TAPER_STRENGTH = 12; // how aggressively particles converge toward axis as they age
+const RCS_VISUAL_MULTIPLIER = 1; // keep RCS visuals at 1x regardless of thrust multiplier
+const MAX_THRUSTER_VISUAL_MULTIPLIER = 3;
 
 // ── Main engine emitters (two front nozzles — reverse thrust) ────────────
 // Spaced apart on the X axis; tune offsets to match model nozzle positions.
@@ -325,23 +327,24 @@ export default function ThrusterParticles({
   }
 
   useFrame((_, delta) => {
-    const m = thrustMultiplier.current;
-    const emitRate = EMIT_RATE * Math.sqrt(m);
+    const m = Math.min(thrustMultiplier.current, MAX_THRUSTER_VISUAL_MULTIPLIER);
+    const mainEmitRate = EMIT_RATE * Math.sqrt(m);
+    const rcsEmitRate = EMIT_RATE * Math.sqrt(RCS_VISUAL_MULTIPLIER);
     const propulsionAvailable = canUsePropulsion();
 
-    // Main engines — both nozzles fire together on reverse thrust
+    // Main engines — map to player forward thrust (W).
     const reverseActive =
       propulsionAvailable &&
-      (thrustReverse.current ||
-        mobileThrustReverse.current ||
-        cinematicThrustReverse.current ||
-        autopilotThrustReverse.current ||
-        effectiveThrustRev.current);
+      (thrustForward.current ||
+        mobileThrustForward.current ||
+        cinematicThrustForward.current ||
+        autopilotThrustForward.current ||
+        effectiveThrustFwd.current);
 
     if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
         if (mainEngineDisabled[key].current) continue;
-        mainAccum.current[key] += emitRate * delta;
+        mainAccum.current[key] += mainEmitRate * delta;
         const count = Math.floor(mainAccum.current[key]);
         mainAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
@@ -357,11 +360,11 @@ export default function ThrusterParticles({
         {
           current:
             propulsionAvailable &&
-            (thrustForward.current ||
-              mobileThrustForward.current ||
-              cinematicThrustForward.current ||
-              autopilotThrustForward.current ||
-              effectiveThrustFwd.current),
+            (thrustReverse.current ||
+              mobileThrustReverse.current ||
+              cinematicThrustReverse.current ||
+              autopilotThrustReverse.current ||
+              effectiveThrustRev.current),
         },
       ],
       [
@@ -397,11 +400,18 @@ export default function ThrusterParticles({
     ];
     for (const [key, ref] of rcsInputs) {
       if (ref.current) {
-        rcsAccum.current[key] += emitRate * delta;
+        rcsAccum.current[key] += rcsEmitRate * delta;
         const count = Math.floor(rcsAccum.current[key]);
         rcsAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
-          spawnInto(RCS_EMITTERS, key, rcsPool.current, RCS_MAX, rcsSlot, m);
+          spawnInto(
+            RCS_EMITTERS,
+            key,
+            rcsPool.current,
+            RCS_MAX,
+            rcsSlot,
+            RCS_VISUAL_MULTIPLIER
+          );
       } else {
         rcsAccum.current[key] = 0;
       }
@@ -449,7 +459,7 @@ export default function ThrusterParticles({
 
     // Scale point size with sqrt(multiplier) so particles visually swell at high thrust
     if (mainMatRef.current) mainMatRef.current.size = 1.4 * Math.sqrt(m);
-    if (rcsMatRef.current) rcsMatRef.current.size = 0.18 * Math.sqrt(m);
+    if (rcsMatRef.current) rcsMatRef.current.size = 0.18;
     if (hoverMatRef.current) hoverMatRef.current.size = 0.15;
 
     tickPool(mainPool.current, MAIN_MAX, mainPos, mainCol, delta, mainGeoRef);

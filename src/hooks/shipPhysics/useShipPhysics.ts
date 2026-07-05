@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   THRUST,
@@ -23,7 +23,7 @@ import {
 } from '../../context/ShipState';
 import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
-import { applyDockedState, checkDockingPort } from './docking';
+import { applyDockedResources, attachShipToDock, checkDockingPort } from './docking';
 import { applyPhysicsStep } from './step';
 import { applyResourceDrain } from './resourceDrain';
 import { getCombinedInputs, getManualInput } from './inputs';
@@ -44,6 +44,10 @@ import {
   scrapperWorldQuat,
 } from '../../context/CinematicState';
 import { shipPosRef } from '../../context/ShipPos';
+import {
+  floatingOriginActiveRef,
+  floatingOriginOffsetRef,
+} from '../../context/FloatingOrigin';
 import {
   SCRAPPER_PLAYER_OFFSET_X,
   SCRAPPER_PLAYER_OFFSET_Y,
@@ -86,12 +90,18 @@ function clampShipToWorldXZPlane(
 
 /** HUD/camera follow world position (required when the ship group has a moving parent). */
 function syncShipWorldRefs(group: THREE.Group) {
-  group.getWorldPosition(shipPosRef.current);
-  minimapShipPosition.copy(shipPosRef.current);
+  group.getWorldPosition(minimapShipPosition);
+  shipPosRef.current.copy(minimapShipPosition);
+  // FloatingOrigin rebases the scene graph; getWorldPosition is render-space. Keep
+  // shipPosRef in simulation space for gravity, comms range, and FO focus.
+  if (floatingOriginActiveRef.current) {
+    shipPosRef.current.sub(floatingOriginOffsetRef.current);
+  }
 }
 
 const CANCEL_LINEAR_EPS = 1.1; // units/s deadzone
 const CANCEL_YAW_EPS = 0.03; // rad/s deadzone
+const MAX_VISUAL_THRUST_MULTIPLIER = 3;
 
 interface UseShipPhysicsParams {
   groupRef: React.RefObject<THREE.Group>;
@@ -120,6 +130,7 @@ export function useShipPhysics({
   initialDockedTo = null,
   initialVelocity,
 }: UseShipPhysicsParams): UseShipPhysicsResult {
+  const { scene } = useThree();
   const velocity = useRef(new THREE.Vector3());
   const physicsPosition = useRef(new THREE.Vector3());
   const renderPosition = useRef(new THREE.Vector3());
@@ -149,7 +160,7 @@ export function useShipPhysics({
     thrustRadialIn,
     releaseParticleTrigger,
     stabilizerActive,
-  } = useInputListeners({ dockedTo, velocity, groupRef });
+  } = useInputListeners({ dockedTo, velocity, groupRef, scene, physicsPosition });
 
   // Spawn already docked (e.g. docking tutorial): physics sets dockedTo before any bay overlap,
   // so we must sync HUD / useDockingState with the same ShipDocked path as live docking.
@@ -207,26 +218,20 @@ export function useShipPhysics({
       didInitPositions.current = true;
     }
     // Ensure physics runs on the authoritative position, not a smoothed render pose.
-    groupRef.current.position.copy(physicsPosition.current);
+    if (!dockedTo.current) {
+      groupRef.current.position.copy(physicsPosition.current);
+    }
     if (shipDestroyed.current) {
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
     }
 
-    const docked = applyDockedState({
-      group: groupRef.current,
-      dockedTo,
-      thrusterLightRefs,
-      thrusterLightIntensities,
-      rawDelta,
-    });
-    if (docked) {
+    if (dockedTo.current) {
+      applyDockedResources({
+        thrusterLightRefs,
+        thrusterLightIntensities,
+        rawDelta,
+      });
       didApplyInitialVelocity.current = true;
-      // Keep authoritative refs synced while docked so follow camera and
-      // undock handoff use the actual docked transform (no snap to stale spawn).
-      physicsPosition.current.copy(groupRef.current.position);
-      syncShipWorldRefs(groupRef.current);
-      groupRef.current.getWorldQuaternion(shipQuaternion);
-      shipAngularVelocity.current = 0;
       updateEngineAudio({ mainThrust: false, rcsThrust: false });
       effectiveThrustFwd.current = false;
       effectiveThrustRev.current = false;
@@ -234,6 +239,7 @@ export function useShipPhysics({
       effectiveYawRight.current = false;
       effectiveThrustStrL.current = false;
       effectiveThrustStrR.current = false;
+      shipAngularVelocity.current = 0;
       return;
     }
 
@@ -424,9 +430,9 @@ export function useShipPhysics({
     }
 
     const thrusterLightActives: ThrusterLightActives = {
-      reverseA: rev && !mainEngineDisabled.reverseA.current,
-      reverseB: rev && !mainEngineDisabled.reverseB.current,
-      forward: fwd,
+      reverseA: fwd && !mainEngineDisabled.reverseA.current,
+      reverseB: fwd && !mainEngineDisabled.reverseB.current,
+      forward: rev,
       left: yawLeft,
       right: yawRight,
       strafeLeft: strL,
@@ -505,33 +511,56 @@ export function useShipPhysics({
     groupRef.current.getWorldQuaternion(shipQuaternion);
 
     const isLinearThrusting = fwd || rev || strL || strR;
-    shipAcceleration.current = isLinearThrusting ? THRUST * thrustMultiplier.current : 0;
+    const visualThrustMultiplier = Math.min(thrustMultiplier.current, MAX_VISUAL_THRUST_MULTIPLIER);
+    shipAcceleration.current = isLinearThrusting ? THRUST * visualThrustMultiplier : 0;
 
-    const keysHeld =
-      (fwd ? 1 : 0) +
-      (rev ? 1 : 0) +
-      (yawLeft ? 1 : 0) +
-      (yawRight ? 1 : 0) +
-      (strL ? 1 : 0) +
-      (strR ? 1 : 0) +
-      (radOut ? 1 : 0) +
-      (radIn ? 1 : 0);
-    applyResourceDrain({ keysHeld, rawDelta });
+    applyResourceDrain({
+      fwd,
+      rev,
+      yawLeft,
+      yawRight,
+      strL,
+      strR,
+      radOut,
+      radIn,
+      rawDelta,
+    });
     applyRadiationDamage(physicsPosition.current, rawDelta);
-
-    if (!neptuneNoFlyZoneActive.current) {
-      checkDockingPort({
-        group: groupRef.current,
-        dockingPort: dockingPortRef.current,
-        dockedTo,
-        velocity: velocity.current,
-      });
-    }
 
     clampShipToWorldXZPlane(groupRef.current, physicsPosition.current, velocity.current);
 
     syncShipWorldRefs(groupRef.current);
   }, -1);
+
+  // Priority 2: after BodyOrbit (0) — parent to dock and sync world refs for camera/HUD.
+  useFrame(() => {
+    if (!groupRef.current) return;
+    const group = groupRef.current;
+
+    if (dockedTo.current) {
+      const entry = getCollidables().find((c) => c.id === dockedTo.current);
+      if (entry) {
+        attachShipToDock(group, entry);
+      }
+      group.getWorldPosition(physicsPosition.current);
+      syncShipWorldRefs(group);
+      group.getWorldQuaternion(shipQuaternion);
+      return;
+    }
+
+    if (neptuneNoFlyZoneActive.current) return;
+    checkDockingPort({
+      group,
+      dockingPort: dockingPortRef.current,
+      dockedTo,
+      velocity: velocity.current,
+    });
+    if (dockedTo.current) {
+      group.getWorldPosition(physicsPosition.current);
+      syncShipWorldRefs(group);
+      group.getWorldQuaternion(shipQuaternion);
+    }
+  }, 2);
 
   return {
     thrustForward,

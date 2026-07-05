@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { isWithinRadioRange } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
+import { renderToSimulationSpace } from '../../context/FloatingOrigin';
 import {
   messageStore,
   addMessage,
@@ -16,6 +17,7 @@ import { type HailStatus, setHailStatus, markHailDeclined } from '../../context/
 import {
   setIncomingHail,
   dismissIncomingHail,
+  getIncomingHails,
   type IncomingHailEventDetail,
 } from '../../context/IncomingHailState';
 import {
@@ -24,7 +26,8 @@ import {
   resolveRadioDialogueTreeId,
   type RadioBroadcastEntry,
 } from '../../context/RadioBroadcastRegistry';
-import { assignDialogueTree } from '../../narrative/npcDialogues';
+import { setDriveSignaturesToRadio } from './helpers/setDriveSignaturesToRadio';
+import { assignDialogueTree, SATURN_STARTER_DIALOGUE_TREE_ID } from '../../narrative/npcDialogues';
 import { getSettlementByObjectId } from '../../context/SettlementTracker';
 import { getSettlementHailPreview } from '../../narrative/settlementRadio';
 import { ContactsHudDialog } from './ContactsHudDialog/ContactsHudDialog';
@@ -32,7 +35,24 @@ import type { SelectionItem } from './ContactsHudDialog/ContactsHudDialog';
 import CommsChat from '../CommsChat/CommsChat';
 import './ContactsHUD.css';
 
-import { setDriveSignaturesToRadio } from './helpers/setDriveSignaturesToRadio';
+import {
+  dockContactThreadId,
+  dockJobThreadId,
+  DOCK_ROLE_LABELS,
+  parseDockThreadId,
+  type DockContact,
+  type DockDialogueTree,
+} from '../../config/dockConfig';
+import {
+  getDock,
+  getDockContact,
+  getDockContacts,
+  getDockJob,
+  getDockJobs,
+  hasDockablePartner,
+} from '../../context/DockablePartnerStore';
+import DockInteriorDialogue from '../Station/StationDialogue';
+import { getThread } from '../../context/ChatStore';
 
 export interface DriveContact {
   id: string;
@@ -52,11 +72,32 @@ interface BroadcastContact {
 interface HailOffer {
   shipId: string;
   type: 'trade' | 'mission';
+  header?: string;
+  body?: string;
+  dialogueTreeId?: string;
 }
 
 const SHIP_DESIGNATIONS: Record<string, string> = {
   '0': 'HEKTOR-7',
+  'fleet-mars-1': 'RN-11 RED DUSK',
+  'fleet-earth-1': 'RN-08 HALCYON',
+  'fleet-jupiter-1': 'RN-22 AURORA KNIFE',
+  'fleet-saturn-1': 'RN-14 NIGHTGLASS',
+  'fleet-neptune-1': 'RN-31 GREYWATER',
+  'fleet-roamer-1': 'RN-03 FARLINE',
 };
+
+const STARTER_FLEET_CONTACT_IDS = new Set([
+  'fleet-mars-1',
+  'fleet-earth-1',
+  'fleet-jupiter-1',
+  'fleet-saturn-1',
+  'fleet-neptune-1',
+  'fleet-roamer-1',
+]);
+
+// Session-persistent communication history (survives component remounts).
+const HISTORICAL_CONTACT_IDS = new Set<string>();
 
 const HAIL_CONTENT: Record<
   'trade' | 'mission',
@@ -72,6 +113,30 @@ const HAIL_CONTENT: Record<
     '0': {
       header: 'ESCORT CONTRACT',
       body: "Our drive is cycling wrong — diagnostics point to a thermal regulator but we can't fix it out here. Three days to the station at reduced thrust. We just need another ship in proximity while we limp in. Standard rate on arrival.",
+    },
+    'fleet-mars-1': {
+      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
+      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
+    },
+    'fleet-earth-1': {
+      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
+      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
+    },
+    'fleet-jupiter-1': {
+      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
+      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
+    },
+    'fleet-saturn-1': {
+      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
+      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
+    },
+    'fleet-neptune-1': {
+      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
+      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
+    },
+    'fleet-roamer-1': {
+      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
+      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
     },
   },
 };
@@ -147,14 +212,51 @@ interface ContactsHUDProps {
   sceneRadioContactsOnly?: boolean;
 }
 
+function resolveDockInteriorChat(threadId: string): {
+  contact: DockContact;
+  dialogue: DockDialogueTree;
+} | null {
+  const parsed = parseDockThreadId(threadId);
+  if (!parsed) return null;
+
+  if (parsed.jobId) {
+    const job = getDockJob(parsed.dockId, parsed.jobId);
+    if (!job?.dialogue) return null;
+    return {
+      contact: {
+        id: parsed.jobId,
+        name: job.title,
+        role: 'official',
+        portrait: '/Image_0.jpg',
+        bio: job.summary,
+        platform: 'HERALD',
+        dialogue: job.dialogue,
+      },
+      dialogue: job.dialogue,
+    };
+  }
+
+  if (parsed.contactId) {
+    const contact = getDockContact(parsed.dockId, parsed.contactId);
+    if (!contact) return null;
+    return { contact, dialogue: contact.dialogue };
+  }
+
+  return null;
+}
+
 export default function ContactsHUD({ sceneRadioContactsOnly = false }: ContactsHUDProps) {
   const [open, setOpen] = useState(false);
   const [chatShipId, setChatShipId] = useState<string | null>(null);
+  const [dockedPartnerId, setDockedPartnerId] = useState<string | null>(null);
   const [inRangeDrives, setInRangeDrives] = useState<DriveContact[]>([]);
   const [broadcastContacts, setBroadcastContacts] = useState<BroadcastContact[]>([]);
   const [hailStates, setHailStates] = useState<Map<string, HailStatus>>(new Map());
-  const [incomingHails, setIncomingHails] = useState<Set<string>>(new Set());
+  const [incomingHails, setIncomingHails] = useState<Set<string>>(() => new Set(getIncomingHails()));
   const [savedContactIds, setSavedContactIds] = useState<Set<string>>(new Set());
+  const [historyContactIds, setHistoryContactIds] = useState<Set<string>>(
+    () => new Set(HISTORICAL_CONTACT_IDS)
+  );
   const [hailOffers, setHailOffers] = useState<Map<string, HailOffer>>(new Map());
   const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
 
@@ -176,6 +278,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
         const newBcasts: BroadcastContact[] = [];
         for (const entry of getRadioBroadcasts()) {
           entry.getPosition(bcastVec.current);
+          renderToSimulationSpace(bcastVec.current, bcastVec.current);
           const dist = bcastVec.current.distanceTo(ship);
 
           if (
@@ -222,6 +325,24 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // Track docked partner for interior comms contacts
+  useEffect(() => {
+    const onDocked = (e: Event) => {
+      const id = (e as CustomEvent<{ stationId: string | null }>).detail?.stationId ?? null;
+      setDockedPartnerId(hasDockablePartner(id) ? id : null);
+    };
+    const onUndocked = () => {
+      setDockedPartnerId(null);
+      setChatShipId((current) => (current && parseDockThreadId(current) ? null : current));
+    };
+    window.addEventListener('ShipDocked', onDocked);
+    window.addEventListener('ShipUndocked', onUndocked);
+    return () => {
+      window.removeEventListener('ShipDocked', onDocked);
+      window.removeEventListener('ShipUndocked', onUndocked);
+    };
+  }, []);
+
   // Listen for hail state changes
   useEffect(() => {
     const onHailUpdate = (e: Event) => {
@@ -250,12 +371,26 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   // Handle NPCHailRequest (moved from InboxHUD)
   useEffect(() => {
     const onHailRequest = (e: Event) => {
-      const { shipId, type } = (e as CustomEvent<HailOffer>).detail;
+      const { shipId, type, header, body, dialogueTreeId } = (e as CustomEvent<HailOffer>).detail;
       setIncomingHail(shipId);
-      setHailOffers((prev) => new Map(prev).set(shipId, { shipId, type }));
+      setIncomingHails((prev) => new Set(prev).add(shipId));
+      setHailOffers((prev) =>
+        new Map(prev).set(shipId, { shipId, type, header, body, dialogueTreeId })
+      );
+      rememberContact(shipId);
     };
     window.addEventListener('NPCHailRequest', onHailRequest);
     return () => window.removeEventListener('NPCHailRequest', onHailRequest);
+  }, []);
+
+  useEffect(() => {
+    const onChatUpdate = (e: Event) => {
+      const shipId = (e as CustomEvent<{ shipId: string }>).detail?.shipId;
+      if (!shipId) return;
+      rememberContact(shipId);
+    };
+    window.addEventListener('ChatUpdated', onChatUpdate);
+    return () => window.removeEventListener('ChatUpdated', onChatUpdate);
   }, []);
 
   // Handle InboxUpdated — re-render message lists and unread indicators
@@ -266,13 +401,21 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   }, []);
 
   const handleSelect = (id: string) => {
+    rememberContact(id);
     setChatShipId(id);
     setOpen(false);
   };
 
   const saveContact = (id: string) => {
+    rememberContact(id);
     setSavedContactIds((prev) => new Set(prev).add(id));
   };
+
+  function rememberContact(id: string) {
+    if (!id || parseDockThreadId(id) || STATIC_CONTACTS.some((c) => c.id === id)) return;
+    HISTORICAL_CONTACT_IDS.add(id);
+    setHistoryContactIds((prev) => new Set(prev).add(id));
+  }
 
   function isBroadcastHailEligible(shipId: string): boolean {
     const b = broadcastContacts.find((x) => x.entry.id === shipId);
@@ -289,12 +432,28 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   }
 
   function handleAcceptHailOffer(shipId: string) {
+    rememberContact(shipId);
     const offer = hailOffers.get(shipId);
     if (offer) {
+      if (offer.dialogueTreeId) {
+        assignDialogueTree(shipId, offer.dialogueTreeId);
+        setHailStatus(shipId, 'accepted');
+        setHailOffers((prev) => {
+          const next = new Map(prev);
+          next.delete(shipId);
+          return next;
+        });
+        dismissIncomingHail(shipId);
+        return;
+      }
+
       // NPCHailRequest case: create inbox message and open it
       const designation = SHIP_DESIGNATIONS[shipId] ?? `VESSEL-${shipId.toUpperCase()}`;
       const typeContent = HAIL_CONTENT[offer.type];
-      const content = typeContent[shipId] ?? typeContent['0'];
+      const content = {
+        header: offer.header ?? (typeContent[shipId] ?? typeContent['0']).header,
+        body: offer.body ?? (typeContent[shipId] ?? typeContent['0']).body,
+      };
       const msgId = `npc-hail-${shipId}-${Date.now()}`;
       addMessage({
         id: msgId,
@@ -327,6 +486,12 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
       dismissIncomingHail(shipId);
       setChatShipId(null);
     } else {
+      if (STARTER_FLEET_CONTACT_IDS.has(shipId)) {
+        assignDialogueTree(shipId, SATURN_STARTER_DIALOGUE_TREE_ID);
+        setHailStatus(shipId, 'accepted');
+        dismissIncomingHail(shipId);
+        return;
+      }
       const entry = getRadioBroadcasts().find((e) => e.id === shipId);
       const treeId = entry ? resolveRadioDialogueTreeId(entry) : undefined;
       if (treeId) {
@@ -338,6 +503,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   }
 
   function handleDeclineHailOffer(shipId: string) {
+    rememberContact(shipId);
     markHailDeclined(shipId);
     dismissIncomingHail(shipId);
     setChatShipId(null);
@@ -393,11 +559,40 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
     ...staticContactItems,
     ...inRangeDrives.filter((d) => savedContactIds.has(d.id)).map(driveItem),
     ...broadcastContacts.filter((b) => savedContactIds.has(b.entry.id)).map(broadcastItem),
+    ...Array.from(savedContactIds)
+      .filter(
+        (id) =>
+          !STATIC_CONTACTS.some((c) => c.id === id) &&
+          !inRangeDrives.some((d) => d.id === id) &&
+          !broadcastContacts.some((b) => b.entry.id === id)
+      )
+      .map((id) => {
+        const thread = getThread(id);
+        return {
+          id,
+          label: thread?.shipName ?? SHIP_DESIGNATIONS[id] ?? `VESSEL-${id.toUpperCase()}`,
+          sublabel: thread ? 'SAVED · LAST KNOWN CONTACT' : 'SAVED · KNOWN CONTACT',
+          statusLine: commsStatus.none,
+        };
+      }),
   ];
 
   const incomingItems: SelectionItem[] = [
     ...inRangeDrives.filter((d) => incomingHails.has(d.id)).map(driveItem),
     ...broadcastContacts.filter((b) => incomingHails.has(b.entry.id)).map(broadcastItem),
+    ...Array.from(incomingHails)
+      .filter(
+        (id) =>
+          !inRangeDrives.some((d) => d.id === id) &&
+          !broadcastContacts.some((b) => b.entry.id === id)
+      )
+      .map((id) => ({
+        id,
+        label: SHIP_DESIGNATIONS[id] ?? `VESSEL-${id.toUpperCase()}`,
+        sublabel: 'UNKNOWN CONTACT · LONG-RANGE HAIL',
+        statusLine: commsStatus.incoming,
+        statusPulse: true,
+      })),
   ];
 
   const inRangeItems: SelectionItem[] = [
@@ -409,8 +604,53 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
       .map((b) => ({ ...broadcastItem(b), saveable: true })),
   ];
 
+  const historyItems: SelectionItem[] = Array.from(historyContactIds)
+    .filter(
+      (id) =>
+        !incomingHails.has(id) &&
+        !savedContactIds.has(id) &&
+        !inRangeDrives.some((d) => d.id === id) &&
+        !broadcastContacts.some((b) => b.entry.id === id)
+    )
+    .map((id) => {
+      const thread = getThread(id);
+      return {
+        id,
+        label: thread?.shipName ?? SHIP_DESIGNATIONS[id] ?? `VESSEL-${id.toUpperCase()}`,
+        sublabel: thread ? 'COMMS LOGGED' : 'CONTACT LOGGED',
+        statusLine: thread && thread.currentTurnId === null ? 'LOGGED · CLOSED' : undefined,
+      };
+    });
+
+  const dockInteriorItems: SelectionItem[] = dockedPartnerId
+    ? [
+        ...getDockContacts(dockedPartnerId).map((contact) => ({
+          id: dockContactThreadId(dockedPartnerId, contact.id),
+          label: contact.name,
+          sublabel: DOCK_ROLE_LABELS[contact.role],
+          statusLine: commsStatus.accepted,
+        })),
+        ...getDockJobs(dockedPartnerId)
+          .filter((job) => job.dialogue)
+          .map((job) => ({
+            id: dockJobThreadId(dockedPartnerId, job.id),
+            label: job.title,
+            sublabel: 'JOB BOARD',
+            statusLine: commsStatus.accepted,
+          })),
+      ]
+    : [];
+
+  const dockInteriorLabel = dockedPartnerId
+    ? (getDock(dockedPartnerId)?.label ?? dockedPartnerId)
+    : undefined;
+
   const chatShipName = chatShipId
-    ? (inRangeDrives.find((d) => d.id === chatShipId)?.name ??
+    ? (resolveDockInteriorChat(chatShipId)?.contact.name ??
+      inRangeDrives.find((d) => d.id === chatShipId)?.name ??
+      (hailOffers.has(chatShipId)
+        ? SHIP_DESIGNATIONS[chatShipId] ?? `VESSEL-${chatShipId.toUpperCase()}`
+        : undefined) ??
       broadcastContacts.find((b) => b.entry.id === chatShipId)?.entry.label ??
       chatShipId)
     : '';
@@ -426,11 +666,19 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
     const offer = hailOffers.get(chatShipId);
     if (offer) {
       const typeContent = HAIL_CONTENT[offer.type];
-      return typeContent[chatShipId] ?? typeContent['0'];
+      const fallback = typeContent[chatShipId] ?? typeContent['0'];
+      return {
+        header: offer.header ?? fallback.header,
+        body: offer.body ?? fallback.body,
+      };
     }
     const settlement = getSettlementByObjectId(chatShipId);
     if (settlement) {
       return getSettlementHailPreview(settlement);
+    }
+    if (STARTER_FLEET_CONTACT_IDS.has(chatShipId)) {
+      const fallback = HAIL_CONTENT.mission[chatShipId] ?? HAIL_CONTENT.mission['fleet-roamer-1'];
+      return fallback;
     }
     return undefined;
   }
@@ -439,7 +687,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
     <>
       <div className="contacts-hud-wrapper">
         <button
-          className={`contacts-hud-btn${inRangeDrives.length > 0 ? ' contacts-hud-btn--active' : ''}`}
+          className={`contacts-hud-btn${inRangeDrives.length > 0 || dockInteriorItems.length > 0 ? ' contacts-hud-btn--active' : ''}`}
           onClick={() => setOpen(true)}
           title="Open contacts"
         >
@@ -447,8 +695,10 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
             ⊙
           </span>
           <span className="contacts-hud-label">CONTACTS</span>
-          {inRangeDrives.length > 0 && (
-            <span className="contacts-hud-badge">{inRangeDrives.length}</span>
+          {(inRangeDrives.length > 0 || dockInteriorItems.length > 0) && (
+            <span className="contacts-hud-badge">
+              {inRangeDrives.length + dockInteriorItems.length}
+            </span>
           )}
           {incomingHails.size > 0 && (
             <span className="contacts-hud-badge contacts-hud-badge--incoming">!</span>
@@ -459,7 +709,10 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
       {open && (
         <ContactsHudDialog
           title="CONTACTS"
+          dockInteriorItems={dockInteriorItems}
+          dockInteriorLabel={dockInteriorLabel}
           incomingItems={incomingItems}
+          historyItems={historyItems}
           savedItems={savedItems}
           inRangeItems={inRangeItems}
           onSave={saveContact}
@@ -468,9 +721,20 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
         />
       )}
 
-      {/* Comms chat — handles both static contacts (inbox mode) and live ships */}
       {chatShipId &&
         (() => {
+          const dockChat = resolveDockInteriorChat(chatShipId);
+          if (dockChat) {
+            return (
+              <DockInteriorDialogue
+                threadId={chatShipId}
+                contact={dockChat.contact}
+                dialogue={dockChat.dialogue}
+                onClose={() => setChatShipId(null)}
+              />
+            );
+          }
+
           const staticContact = STATIC_CONTACTS.find((c) => c.id === chatShipId);
           if (staticContact) {
             return (
@@ -479,6 +743,10 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
                 shipName={staticContact.name}
                 staticContact={staticContact}
                 onClose={() => setChatShipId(null)}
+                onBack={() => {
+                  setChatShipId(null);
+                  setOpen(true);
+                }}
               />
             );
           }
@@ -486,11 +754,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
             <CommsChat
               shipId={chatShipId}
               shipName={chatShipName}
-              platform={
-                getRadioBroadcasts().some((e) => e.id === chatShipId)
-                  ? RADIO_COMMS_PLATFORM
-                  : 'OPENLINE'
-              }
+              platform={RADIO_COMMS_PLATFORM}
               hailStatus={hailStates.get(chatShipId) ?? 'none'}
               radioActive={chatRadioActive}
               showHailPrompt={shouldShowHailPrompt(chatShipId)}
@@ -498,7 +762,13 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
               onHail={() => sendHailContact(chatShipId, chatShipName)}
               onAcceptHail={() => handleAcceptHailOffer(chatShipId)}
               onDeclineHail={() => handleDeclineHailOffer(chatShipId)}
+              isSavedContact={savedContactIds.has(chatShipId)}
+              onAddToContacts={() => saveContact(chatShipId)}
               onClose={() => setChatShipId(null)}
+              onBack={() => {
+                setChatShipId(null);
+                setOpen(true);
+              }}
             />
           );
         })()}

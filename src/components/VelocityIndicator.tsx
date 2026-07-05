@@ -22,6 +22,13 @@ const VELOCITY_X_OFFSET = 0;
 const TRAJECTORY_OPACITY_BASE = 0.42;
 const TRAJECTORY_OPACITY_HIGHLIGHT_MIN = 0.5;
 const TRAJECTORY_OPACITY_HIGHLIGHT_RANGE = 0.4;
+const TRAJECTORY_FADE_LAYERS = [
+  // Standard fade: bright near ship, darker farther away.
+  { endFraction: 1, opacityScale: 0.22 },
+  { endFraction: 0.72, opacityScale: 0.42 },
+  { endFraction: 0.5, opacityScale: 0.62 },
+  { endFraction: 0.3, opacityScale: 0.88 },
+] as const;
 
 // Module-level scratch — no GC per frame
 const _simPos = new THREE.Vector3();
@@ -104,7 +111,7 @@ export default function VelocityIndicator() {
     };
   }, []);
   const {
-    line,
+    trajectoryLines,
     sprite,
     spriteCtx,
     posArr,
@@ -115,22 +122,24 @@ export default function VelocityIndicator() {
     periMarker,
     apoMarker,
   } = useMemo(() => {
-    const geo = new THREE.BufferGeometry();
     const arr = new Float32Array(TRAJ_STEPS * 3);
-    geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
-
-    const mat = new THREE.LineDashedMaterial({
-      color: VELOCITY_ORANGE,
-      dashSize: 5,
-      gapSize: 1.2,
-      opacity: TRAJECTORY_OPACITY_BASE,
-      transparent: true,
-      depthTest: false,
-      blending: THREE.AdditiveBlending,
+    const layers = TRAJECTORY_FADE_LAYERS.map(() => {
+      const geo = new THREE.BufferGeometry();
+      const layerArr = new Float32Array(TRAJ_STEPS * 3);
+      geo.setAttribute('position', new THREE.BufferAttribute(layerArr, 3));
+      const mat = new THREE.LineDashedMaterial({
+        color: VELOCITY_ORANGE,
+        dashSize: 5,
+        gapSize: 1.2,
+        opacity: TRAJECTORY_OPACITY_BASE,
+        transparent: true,
+        depthTest: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const line = new THREE.Line(geo, mat);
+      line.frustumCulled = false;
+      return { line, posArr: layerArr };
     });
-
-    const l = new THREE.Line(geo, mat);
-    l.frustumCulled = false;
 
     const orbitGeo = new THREE.BufferGeometry();
     const orbitArr = new Float32Array(TRAJ_STEPS * 3);
@@ -184,7 +193,7 @@ export default function VelocityIndicator() {
     const apo = makeApsisSprite('#00e5ff');
 
     return {
-      line: l,
+      trajectoryLines: layers,
       sprite: s,
       spriteCtx: ctx,
       posArr: arr,
@@ -199,7 +208,7 @@ export default function VelocityIndicator() {
 
   useFrame(({ camera, size }) => {
     if (!navHudEnabledRef.current) {
-      line.visible = false;
+      for (const { line } of trajectoryLines) line.visible = false;
       sprite.visible = false;
       orbitLine.visible = false;
       orbitSprite.visible = false;
@@ -208,7 +217,7 @@ export default function VelocityIndicator() {
       return;
     }
     const speed = shipVelocity.length();
-    line.visible = speed > MIN_SPEED;
+    for (const { line } of trajectoryLines) line.visible = speed > MIN_SPEED;
     sprite.visible = speed > MIN_SPEED;
 
     const ship = shipPositionRef.current;
@@ -217,7 +226,9 @@ export default function VelocityIndicator() {
 
     // Anchor line at ship world position — geometry stored in ship-relative coords
     // so computeLineDistances works on small values (no float32 precision loss).
-    line.position.set(sx, 0, sz);
+    for (const { line } of trajectoryLines) {
+      line.position.set(sx, 0, sz);
+    }
 
     let primaryBody: (typeof gravityBodies extends Map<string, infer T> ? T : never) | null = null;
     let primaryBodyId: string | null = null;
@@ -400,9 +411,16 @@ export default function VelocityIndicator() {
       }
     }
 
-    const pos = line.geometry.attributes.position;
-    pos.needsUpdate = true;
-    line.computeLineDistances();
+    const activePointCount = orbitClosedAt >= 0 ? orbitClosedAt + 1 : TRAJ_STEPS;
+    for (let i = 0; i < trajectoryLines.length; i++) {
+      const layer = trajectoryLines[i]!;
+      layer.posArr.set(posArr);
+      const layerPos = layer.line.geometry.attributes.position;
+      layerPos.needsUpdate = true;
+      layer.line.computeLineDistances();
+      const count = Math.max(2, Math.floor(activePointCount * TRAJECTORY_FADE_LAYERS[i]!.endFraction));
+      layer.line.geometry.setDrawRange(0, count);
+    }
 
     // Publish trajectory-simulated apsides so other systems (e.g. autopilot status) can read them
     trajectoryApsisRef.current.periapsis =
@@ -411,14 +429,17 @@ export default function VelocityIndicator() {
       primaryBody && apoStep >= 0 && orbitClosedAt >= 0 ? apoDist : 0;
     trajectoryApsisRef.current.surfaceRadius = primaryBody?.surfaceRadius ?? 0;
 
-    const lineMat = line.material as THREE.LineDashedMaterial;
-    lineMat.dashSize = 6;
-    lineMat.gapSize = 6;
-    lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
-    lineMat.opacity = trajectoryHighlightRef.current
+    const fadeBaseOpacity = trajectoryHighlightRef.current
       ? TRAJECTORY_OPACITY_HIGHLIGHT_MIN +
         TRAJECTORY_OPACITY_HIGHLIGHT_RANGE * (0.25 + 0.25 * Math.sin(Date.now() * 0.004))
       : TRAJECTORY_OPACITY_BASE;
+    for (let i = 0; i < trajectoryLines.length; i++) {
+      const lineMat = trajectoryLines[i]!.line.material as THREE.LineDashedMaterial;
+      lineMat.dashSize = 6;
+      lineMat.gapSize = 6;
+      lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
+      lineMat.opacity = fadeBaseOpacity * TRAJECTORY_FADE_LAYERS[i]!.opacityScale;
+    }
 
     // Speed label at the midpoint of the active trajectory
     const activeEnd = orbitClosedAt >= 0 ? orbitClosedAt : TRAJ_STEPS - 1;
@@ -542,7 +563,9 @@ export default function VelocityIndicator() {
 
   return (
     <>
-      <primitive object={line} />
+      {trajectoryLines.map(({ line }, index) => (
+        <primitive key={`trajectory-layer-${index}`} object={line} />
+      ))}
       <primitive object={sprite} />
       <primitive object={orbitLine} />
       <primitive object={orbitSprite} />

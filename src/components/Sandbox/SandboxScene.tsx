@@ -1,4 +1,4 @@
-import { Suspense, useLayoutEffect, useRef } from 'react';
+import { Suspense, useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
@@ -8,48 +8,122 @@ import { shipPosRef } from '../../context/ShipPos';
 import DefaultLighting from '../DefaultLighting';
 import LaserRay from '../Combat/LaserRay';
 import PlayerBullets from '../Combat/PlayerBullets';
+import HoverSceneTools from '../HoverSceneTools';
 import ProximityHighlight from '../Proximity/ProximityHighlight';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import SolarSystem from '../Planets/SolarSystem';
 import SunGravity from '../Environment/SunGravity';
+import SpaceParticles from '../Environment/SpaceParticles';
+import { FloatingOrigin } from '../Environment/FloatingOrigin';
 import { BodyOrbit } from '../BodyOrbit';
-import { SANDBOX_ASTEROID_ORBIT, SANDBOX_ASTEROID_RADIO, SANDBOX_CONFIG, SANDBOX_BATTLESHIP_ORBIT  } from './sandboxConfig';
+import {
+  SANDBOX_ASTEROID_ORBIT,
+  SANDBOX_ASTEROID_RADIO,
+  SANDBOX_CONFIG,
+  SANDBOX_BATTLESHIP_ORBIT,
+} from './sandboxConfig';
 import { Asteroid } from '../TutorialResources/Asteroid';
+import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
 import { Station } from '../Station/Station';
 import DustCloud from '../DustCloud/DustCloud';
-import {getPlanetPosition, } from '../../config/planetPosition';
-import BattleshipBritish from '../BattleshipBritish/BattleshipBritish';
-import { TUTORIAL_BATTLESHIP_SCAN,  } from '../../config/battleshipScanConfig';
+import { getPlanetPosition } from '../../config/planetPosition';
+import { TUTORIAL_BATTLESHIP_SCAN } from '../../config/battleshipScanConfig';
 import { TUTORIAL_BATTLESHIP_RADIO_BROADCAST } from '../TutorialRadio/tutorialRadioConfig';
+import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
+import SandboxStarterMission from './SandboxStarterMission';
+import GhostFleet from '../NPCs/GhostFleet';
+import UBoat from '../UBoat/UBoat';
+/** Camera + post FX run after FloatingOrigin rebases the world (priority 3). */
+const SANDBOX_CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
+
 export default function SandboxScene() {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const {
-    spawnCameraPosition,
     fogColor,
     lightColor,
-    sandboxInitialVelocity,
     tutorialFollowOffset,
     canvasNear,
     canvasFar,
     toneMappingExposure,
     applySandboxSpawn,
-    tutorialShipOrbitRadius,
-    tutorialShipSurfaceClearance,
+    createSandboxSpawn,
     planetImpactCameraHoldMaxAltitude,
     tutorialCameraZoomMax,
-    tutorialShipInitialPosition,
-    tutorialShipInitialRotation,
     solarSystemScale,
     shipParticleCount,
   } = SANDBOX_CONFIG;
 
+  const sandboxSpawn = useMemo(() => createSandboxSpawn(), [createSandboxSpawn]);
+
   useLayoutEffect(() => {
-    applySandboxSpawn(spaceshipGroupRef.current);
-  }, [tutorialShipOrbitRadius]);
+    applySandboxSpawn(sandboxSpawn, spaceshipGroupRef.current);
+  }, [applySandboxSpawn, sandboxSpawn]);
 
   const marsPosition = getPlanetPosition('Mars');
   const dustPosition = new THREE.Vector3(marsPosition.x, -1000000, marsPosition.z);
+
+  const worldContent = (
+    <>
+      <DefaultLighting
+        color={lightColor}
+        intensity={0.001}
+        ambientIntensity={0.0002}
+        position={[0, 0, -10000]}
+      />
+      <SpaceParticles />
+      <Suspense fallback={null}>
+        <Spaceship
+          key={sandboxSpawn.presetId}
+          url="/shuttle-low-british.glb"
+          shipGroupRef={spaceshipGroupRef}
+          initialPosition={sandboxSpawn.position}
+          initialRotation={sandboxSpawn.rotation}
+          scale={1}
+          initialVelocity={sandboxSpawn.velocity}
+          shipParticleCloudProps={{
+            count: shipParticleCount,
+            enableSpeedGate: true,
+            speedGateMin: 100000,
+            speedGateMax: 100000,
+          }}
+        />
+        <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+        <PlayerBullets shipGroupRef={spaceshipGroupRef} />
+        <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+        <SolarSystem scale={solarSystemScale} />
+        <GhostFleet />
+      </Suspense>
+      <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
+        <Asteroid
+          scale={1000}
+          radioBroadcast={SANDBOX_ASTEROID_RADIO}
+          dock={ASTEROID_DOCK_CONFIG}
+        />
+      </BodyOrbit>
+      <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
+        <Station scale={2000} radioBroadcast={SANDBOX_ASTEROID_RADIO} />
+      </BodyOrbit>
+      <group position={dustPosition}>
+        <DustCloud
+          yInitial={-100000}
+          colors={[
+            new THREE.Color('#448888'),
+            new THREE.Color('#ccffff'),
+            new THREE.Color('#000000'),
+          ]}
+          opacity={0.025}
+        />
+      </group>
+      <BodyOrbit {...SANDBOX_BATTLESHIP_ORBIT}>
+        <UBoat
+          scan={TUTORIAL_BATTLESHIP_SCAN}
+          radioBroadcast={TUTORIAL_BATTLESHIP_RADIO_BROADCAST}
+        />
+      </BodyOrbit>
+    </>
+  );
+
   return (
     <>
       <Canvas
@@ -60,7 +134,7 @@ export default function SandboxScene() {
           touchAction: 'none',
         }}
         camera={{
-          position: [spawnCameraPosition.x, spawnCameraPosition.y, spawnCameraPosition.z],
+          position: [...tutorialFollowOffset],
           near: canvasNear,
           far: canvasFar,
         }}
@@ -72,12 +146,7 @@ export default function SandboxScene() {
         shadows={true}
       >
         <fogExp2 attach="fog" args={[fogColor, 0.0000005]} />
-        <DefaultLighting
-          color={lightColor}
-          intensity={2}
-          ambientIntensity={0.0002}
-          position={[0, 0, -10000]}
-        />
+        <SandboxStarterMission spawnPresetId={sandboxSpawn.presetId} />
         <TutorialFollowCamera
           followTarget={shipPosRef}
           followOffset={tutorialFollowOffset}
@@ -85,47 +154,18 @@ export default function SandboxScene() {
           attachTo={spaceshipGroupRef}
           flattenBanking
           planetImpactCameraHoldMaxAltitude={planetImpactCameraHoldMaxAltitude}
+          framePriority={SANDBOX_CAMERA_FRAME_PRIORITY}
         />
-        <Suspense fallback={null}>
-          <Spaceship
-            key={`${tutorialShipOrbitRadius}-${tutorialShipSurfaceClearance}`}
-            url="/shuttle-low-british.glb"
-            shipGroupRef={spaceshipGroupRef}
-            initialPosition={tutorialShipInitialPosition}
-            initialRotation={tutorialShipInitialRotation}
-            scale={1}
-            initialVelocity={sandboxInitialVelocity}
-            shipParticleCloudProps={{
-              count: shipParticleCount,
-              enableSpeedGate: true,
-              speedGateMin: 100000,
-              speedGateMax: 100000,
-            }}
-          />
-          <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
-          <PlayerBullets shipGroupRef={spaceshipGroupRef} />
-          <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
-          <SolarSystem scale={solarSystemScale} />
-        </Suspense>
+        {SANDBOX_USE_FLOATING_ORIGIN ? (
+          <FloatingOrigin>{worldContent}</FloatingOrigin>
+        ) : (
+          worldContent
+        )}
         <SunGravity />
+        <HoverSceneTools />
         <ProximityHighlight />
         <ScannerRangeRings />
-        <ShipDepthOfField saturation={-0.8} />
-        <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
-          <Asteroid scale={1000} radioBroadcast={SANDBOX_ASTEROID_RADIO} />
-        </BodyOrbit>
-        <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
-          <Station scale={2000} radioBroadcast={SANDBOX_ASTEROID_RADIO} />
-        </BodyOrbit>
-        <group position={dustPosition}>
-          <DustCloud  yInitial={-100000}/>
-        </group>
-          <BodyOrbit {...SANDBOX_BATTLESHIP_ORBIT}>
-          <BattleshipBritish
-            scan={TUTORIAL_BATTLESHIP_SCAN}
-            radioBroadcast={TUTORIAL_BATTLESHIP_RADIO_BROADCAST}
-          />
-          </BodyOrbit>
+        <ShipDepthOfField saturation={-0.9} />
       </Canvas>
     </>
   );

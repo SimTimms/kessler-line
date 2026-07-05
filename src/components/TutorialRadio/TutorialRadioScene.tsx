@@ -17,6 +17,7 @@ import {
   SHIP_PARTICLE_SPEED_MAX,
 } from '../../config/particleConfig';
 import LaserRay from '../Combat/LaserRay';
+import HoverSceneTools from '../HoverSceneTools';
 import ProximityHighlight from '../Proximity/ProximityHighlight';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import ContainerBritish from '../Container/ContainerBritish';
@@ -82,6 +83,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
           />
           <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
           <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+          <HoverSceneTools />
           <ProximityHighlight />
           <ScannerRangeRings />
           <ContainerBritish

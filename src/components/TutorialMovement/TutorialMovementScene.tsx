@@ -13,6 +13,7 @@ import LunarLandscape from '../LunarLandscape/LunarLandscape';
 import LunarSettlement from '../LunarLandscape/LunarSettlement';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
+import HoverSceneTools from '../HoverSceneTools';
 import CollisionDebug from '../Debug/CollisionDebug';
 import {
   SHIP_PARTICLE_COUNT,
@@ -73,6 +74,7 @@ export default memo(function TutorialMovementScene({ onStepAdvance }: LunarTutor
           <ScannerRangeRings />
         </Suspense>
         <CollisionDebug />
+        <HoverSceneTools />
         <ShipDepthOfField saturation={-1} />
       </Canvas>
     </>

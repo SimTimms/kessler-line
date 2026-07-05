@@ -9,6 +9,11 @@ export function hasIncomingHail(id: string): boolean {
   return _incoming.has(id);
 }
 
+/** Snapshot of currently active incoming hail ids. */
+export function getIncomingHails(): string[] {
+  return Array.from(_incoming);
+}
+
 export function setIncomingHail(id: string): void {
   _incoming.add(id);
   window.dispatchEvent(

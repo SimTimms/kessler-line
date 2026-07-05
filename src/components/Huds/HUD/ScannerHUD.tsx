@@ -2,15 +2,25 @@ import { useState, useRef, useEffect, type CSSProperties } from 'react';
 import { Flashlight, Magnet, HardDrive, Radar, AudioLines, Radiation } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HudButton } from '../HudButton';
-import { proximityScanRangeRef } from '../../../context/ProximityScan';
-import { magneticScanRangeRef } from '../../../context/MagneticScan';
-import { driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
-import { radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
 import './ScannerHUD.css';
 import '../HelmetHUD/HelmetHUD.css';
-import { getScannerAccentColor, getScannerRange, SCANNER_ABBREV } from '../../../config/scanRanges';
-import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
+import {
+  getScannerAccentColor,
+  SCANNER_ABBREV,
+  type ScannerRangeId,
+} from '../../../config/scanRanges';
+import {
+  resetScannerRingHoverState,
+  setScannerRingHovered,
+} from '../../../context/ScannerRingHover';
+import {
+  setDriveScannerState,
+  setMagneticScannerState,
+  setProximityScannerState,
+  setRadioScannerState,
+  setRadiationScannerState,
+} from '../../../context/scannerStateMutators';
 // World-unit scan range for each power level (index = level - 1); level 1 = off
 
 export const ScannerHUDElements = {
@@ -25,6 +35,12 @@ export const ScannerHUDElements = {
 export type ScannerHUDElementId = (typeof ScannerHUDElements)[keyof typeof ScannerHUDElements];
 
 const POWER_LEVELS = [1, 2, 3, 4, 5] as const;
+const MIN_POWER_LEVEL = 1;
+const MAX_POWER_LEVEL = 5;
+
+function clampPowerLevel(level: number): number {
+  return Math.max(MIN_POWER_LEVEL, Math.min(MAX_POWER_LEVEL, Math.round(level)));
+}
 
 function HelmetScannerRow({
   id,
@@ -37,6 +53,7 @@ function HelmetScannerRow({
   highlight,
   onToggle,
   onPowerChange,
+  onHoverChange,
 }: {
   id: string;
   abbrev: string;
@@ -48,6 +65,7 @@ function HelmetScannerRow({
   highlight: boolean;
   onToggle: () => void;
   onPowerChange: (level: number) => void;
+  onHoverChange: (hovered: boolean) => void;
 }) {
   const levelDisplay = power > 1 ? String(power) : '—';
 
@@ -56,6 +74,8 @@ function HelmetScannerRow({
       className={`helmet-scanner-row${disabled ? ' helmet-scanner-row--disabled' : ''}${highlight ? ' helmet-scanner-row--highlight' : ''}${isActive ? ' helmet-scanner-row--on' : ''}`}
       style={{ '--scan-accent': accentColor } as CSSProperties}
       title={id}
+      onMouseEnter={() => onHoverChange(true)}
+      onMouseLeave={() => onHoverChange(false)}
     >
       <button
         type="button"
@@ -110,16 +130,47 @@ interface ScannerHUDProps {
   tutorialMagneticFocus?: boolean;
   focusElements?: string[];
   disableElements?: string[];
+  initialPowers?: Partial<Record<ScannerHUDElementId, number>>;
 }
 
 interface ButtonDef {
   id: string;
+  ringId: ScannerRangeId | null;
   icon: LucideIcon;
-  initialPower: number;
-  isActive: boolean;
-  /** Called whenever power changes. `on` = level > 1. */
-  onSideEffect: (on: boolean, level: number) => void;
 }
+
+const BUTTON_DEFS: ButtonDef[] = [
+  {
+    id: ScannerHUDElements.SPOTLIGHT,
+    ringId: null,
+    icon: Flashlight,
+  },
+  {
+    id: ScannerHUDElements.MAGNET,
+    ringId: 'magnet',
+    icon: Magnet,
+  },
+  {
+    id: ScannerHUDElements.DRIVE,
+    ringId: 'drive',
+    icon: HardDrive,
+  },
+  {
+    id: ScannerHUDElements.PROXIMITY,
+    ringId: 'proximity',
+    icon: Radar,
+  },
+  {
+    id: ScannerHUDElements.RADIO,
+    ringId: 'radio',
+    icon: AudioLines,
+  },
+  {
+    id: ScannerHUDElements.RADIATION,
+    ringId: 'radiation',
+    icon: Radiation,
+  },
+];
 
 export const ScannerHUD = ({
   layout = 'classic',
@@ -128,20 +179,18 @@ export const ScannerHUD = ({
   spotlightOnRef,
   magneticOn,
   setMagneticOn,
-  magneticOnRef,
   driveSignatureOn,
   setDriveSignatureOn,
-  driveSignatureOnRef,
   proximity,
   setProximity,
-  proximityScanOnRef,
   radioOn,
   setRadioOn,
-  radioOnRef,
   tutorialMagneticFocus = false,
   focusElements = [],
   disableElements = [],
+  initialPowers = {},
 }: ScannerHUDProps) => {
+  void tutorialMagneticFocus;
   const [radiationOn, setRadiationOn] = useState(false);
 
   // Coords display — mutated directly to avoid re-renders
@@ -159,92 +208,86 @@ export const ScannerHUD = ({
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // ── Button definitions ────────────────────────────────────────────────────
-  // To add a new HUD button, append an entry here. No other changes needed.
-  const buttonDefs: ButtonDef[] = [
-    {
-      id: ScannerHUDElements.SPOTLIGHT,
-      icon: Flashlight,
-      initialPower: 1,
-      isActive: spotlightOn,
-      onSideEffect: (on) => {
-        spotlightOnRef.current = on;
-        setSpotlightOn(on);
-      },
-    },
-    {
-      id: ScannerHUDElements.MAGNET,
-      icon: Magnet,
-      initialPower: 1,
-      isActive: magneticOn,
-      onSideEffect: (on, level) => {
-        magneticOnRef.current = on;
-        magneticScanRangeRef.current = getScannerRange('magnet', level);
-        setMagneticOn(on);
-        if (level === 5) window.dispatchEvent(new CustomEvent('MagnetScannerMaxed'));
-        if (!on) window.dispatchEvent(new CustomEvent('MagnetScannerOff'));
-      },
-    },
-    {
-      id: ScannerHUDElements.DRIVE,
-      icon: HardDrive,
-      initialPower: 1,
-      isActive: driveSignatureOn,
-      onSideEffect: (on, level) => {
-        driveSignatureOnRef.current = on;
-        driveSignatureRangeRef.current = getScannerRange('drive', level);
-        setDriveSignatureOn(on);
-        if (level === 5) window.dispatchEvent(new CustomEvent('DriveSignatureAt5'));
-      },
-    },
-    {
-      id: ScannerHUDElements.PROXIMITY,
-      icon: Radar,
-      initialPower: 1,
-      isActive: proximity,
-      onSideEffect: (on, level) => {
-        proximityScanOnRef.current = on;
-        proximityScanRangeRef.current = getScannerRange('proximity', level);
-        setProximity(on);
-      },
-    },
-    {
-      id: ScannerHUDElements.RADIO,
-      icon: AudioLines,
-      initialPower: 1,
-      isActive: radioOn,
-      onSideEffect: (on, level) => {
-        radioOnRef.current = on;
-        radioRangeRef.current = getScannerRange('radio', level);
-        setRadioOn(on);
-      },
-    },
-    {
-      id: ScannerHUDElements.RADIATION,
-      icon: Radiation,
-      initialPower: 1,
-      isActive: radiationOn,
-      onSideEffect: (on, level) => {
-        radiationOnRef.current = on;
-        radiationRangeRef.current = getScannerRange('radiation', level);
-        setRadiationOn(on);
-      },
-    },
-  ];
+  const initialPowerById: Record<string, number> = {
+    [ScannerHUDElements.SPOTLIGHT]: clampPowerLevel(initialPowers[ScannerHUDElements.SPOTLIGHT] ?? 1),
+    [ScannerHUDElements.MAGNET]: clampPowerLevel(initialPowers[ScannerHUDElements.MAGNET] ?? 1),
+    [ScannerHUDElements.DRIVE]: clampPowerLevel(initialPowers[ScannerHUDElements.DRIVE] ?? 1),
+    [ScannerHUDElements.PROXIMITY]: clampPowerLevel(initialPowers[ScannerHUDElements.PROXIMITY] ?? 1),
+    [ScannerHUDElements.RADIO]: clampPowerLevel(initialPowers[ScannerHUDElements.RADIO] ?? 1),
+    [ScannerHUDElements.RADIATION]: clampPowerLevel(initialPowers[ScannerHUDElements.RADIATION] ?? 1),
+  };
+
+  useEffect(() => {
+    return () => resetScannerRingHoverState();
+  }, []);
 
   // ── Single shared power state + last-power memory ─────────────────────────
   const [powers, setPowers] = useState<Record<string, number>>(() =>
-    Object.fromEntries(buttonDefs.map((b) => [b.id, b.initialPower]))
+    Object.fromEntries(BUTTON_DEFS.map((b) => [b.id, initialPowerById[b.id]]))
   );
   // Stores the last non-off level so toggling back on restores it; starts at 3
   const lastPowers = useRef<Record<string, number>>(
-    Object.fromEntries(buttonDefs.map((b) => [b.id, 3]))
+    Object.fromEntries(BUTTON_DEFS.map((b) => [b.id, initialPowerById[b.id] > 1 ? initialPowerById[b.id] : 3]))
   );
 
-  const handlePower = (id: string, level: number, onSideEffect: ButtonDef['onSideEffect']) => {
+  const applyPower = (id: string, level: number) => {
+    const on = level > 1;
+    switch (id) {
+      case ScannerHUDElements.SPOTLIGHT:
+        spotlightOnRef.current = on;
+        setSpotlightOn(on);
+        break;
+      case ScannerHUDElements.MAGNET:
+        setMagneticScannerState(on, level);
+        setMagneticOn(on);
+        if (level === 5) window.dispatchEvent(new CustomEvent('MagnetScannerMaxed'));
+        if (!on) window.dispatchEvent(new CustomEvent('MagnetScannerOff'));
+        break;
+      case ScannerHUDElements.DRIVE:
+        setDriveScannerState(on, level);
+        setDriveSignatureOn(on);
+        if (level === 5) window.dispatchEvent(new CustomEvent('DriveSignatureAt5'));
+        break;
+      case ScannerHUDElements.PROXIMITY:
+        setProximityScannerState(on, level);
+        setProximity(on);
+        break;
+      case ScannerHUDElements.RADIO:
+        setRadioScannerState(on, level);
+        setRadioOn(on);
+        break;
+      case ScannerHUDElements.RADIATION:
+        setRadiationScannerState(on, level);
+        setRadiationOn(on);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const getIsActive = (id: string): boolean => {
+    switch (id) {
+      case ScannerHUDElements.SPOTLIGHT:
+        return spotlightOn;
+      case ScannerHUDElements.MAGNET:
+        return magneticOn;
+      case ScannerHUDElements.DRIVE:
+        return driveSignatureOn;
+      case ScannerHUDElements.PROXIMITY:
+        return proximity;
+      case ScannerHUDElements.RADIO:
+        return radioOn;
+      case ScannerHUDElements.RADIATION:
+        return radiationOn;
+      default:
+        return false;
+    }
+  };
+
+  const handlePower = (id: string, level: number) => {
     if (level > 1) lastPowers.current[id] = level;
     setPowers((prev) => ({ ...prev, [id]: level }));
-    onSideEffect(level > 1, level);
+    applyPower(id, level);
   };
 
   if (layout === 'helmet') {
@@ -252,7 +295,7 @@ export const ScannerHUD = ({
       <div className="helmet-scanner-deck" aria-label="Sensors">
         <div className="helmet-scanner-deck-head">SCAN</div>
         <div className="helmet-scanner-grid">
-          {buttonDefs.map(({ id, icon, isActive, onSideEffect }) => {
+          {BUTTON_DEFS.map(({ id, ringId, icon }) => {
             const disabled = disableElements.includes(id);
             const highlight = focusElements.includes(id);
             return (
@@ -263,13 +306,15 @@ export const ScannerHUD = ({
                 icon={icon}
                 accentColor={getScannerAccentColor(id)}
                 power={powers[id]}
-                isActive={isActive}
+                isActive={getIsActive(id)}
                 disabled={disabled}
                 highlight={highlight}
-                onToggle={() =>
-                  handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id], onSideEffect)
-                }
-                onPowerChange={(level) => handlePower(id, level, onSideEffect)}
+                onHoverChange={(hovered) => {
+                  if (!ringId) return;
+                  setScannerRingHovered(ringId, hovered);
+                }}
+                onToggle={() => handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id])}
+                onPowerChange={(level) => handlePower(id, level)}
               />
             );
           })}
@@ -280,24 +325,30 @@ export const ScannerHUD = ({
 
   return (
     <div className="button-panel">
-      {buttonDefs.map(({ id, icon, isActive, onSideEffect }) => (
+      {BUTTON_DEFS.map(({ id, ringId, icon }) => (
         <div
           key={id}
           className={`flex-column blue ${disableElements.includes(id) ? 'hud-button-disabled' : ''}`}
+          onMouseEnter={() => {
+            if (!ringId) return;
+            setScannerRingHovered(ringId, true);
+          }}
+          onMouseLeave={() => {
+            if (!ringId) return;
+            setScannerRingHovered(ringId, false);
+          }}
         >
           <div className="power-hud-label">{id.toUpperCase()}</div>
           <HudButton
             icon={icon}
             name=""
             accentColor={getScannerAccentColor(id)}
-            isActive={isActive}
+            isActive={getIsActive(id)}
             power={powers[id]}
             highlight={focusElements.includes(id)}
             disabled={disableElements.includes(id)}
-            onClickEvent={() =>
-              handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id], onSideEffect)
-            }
-            onPowerChange={(level) => handlePower(id, level, onSideEffect)}
+            onClickEvent={() => handlePower(id, powers[id] > 1 ? 1 : lastPowers.current[id])}
+            onPowerChange={(level) => handlePower(id, level)}
           />
         </div>
       ))}

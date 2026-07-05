@@ -2,7 +2,7 @@
 /** Number of star particles in the wrapping starfield. */
 export const STARFIELD_COUNT = 1200;
 /** Half-extent of the wrapping cube — particles re-enter on the opposite side. */
-export const STARFIELD_HALF = 2500;
+export const STARFIELD_HALF = 120000;
 
 // ── Nebula ────────────────────────────────────────────────────────────────
 /** Total number of nebula puff sprites. */

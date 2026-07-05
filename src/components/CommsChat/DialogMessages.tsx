@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { formatTime } from './commsUtils';
 import type { ChatThread } from '../../context/ChatStore';
 import type { HailStatus } from '../../context/HailState';
@@ -43,9 +43,16 @@ export default function DialogMessages({
   onAcceptHail,
   onDeclineHail,
 }: DialogMessagesProps) {
+  const [outOfRangeNotice, setOutOfRangeNotice] = useState(false);
   const handleHail = onHail ?? (() => undefined);
   const handleAcceptHail = onAcceptHail ?? (() => undefined);
   const handleDeclineHail = onDeclineHail ?? (() => undefined);
+
+  useEffect(() => {
+    if (!outOfRangeNotice) return;
+    const timer = window.setTimeout(() => setOutOfRangeNotice(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [outOfRangeNotice]);
 
   return (
     <div className="comms-chat-messages">
@@ -94,7 +101,20 @@ export default function DialogMessages({
           )}
           {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && !isRadioActive && (
             <div className="comms-chat-prehail">
+              <button
+                className="comms-chat-hail-btn"
+                onClick={() => {
+                  setOutOfRangeNotice(true);
+                }}
+              >
+                ATTEMPT CONTACT
+              </button>
               <div className="comms-chat-status-line">○ OUT OF RADIO RANGE</div>
+              {outOfRangeNotice && (
+                <div className="comms-chat-status-line comms-chat-status-line--notice">
+                  SIGNAL FAILED - TARGET OUT OF RANGE
+                </div>
+              )}
             </div>
           )}
           {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'pending' && (

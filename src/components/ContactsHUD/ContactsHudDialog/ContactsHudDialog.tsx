@@ -18,6 +18,9 @@ export interface SelectionItem {
 interface ContactsHudDialogProps {
   title: string;
   incomingItems?: SelectionItem[];
+  historyItems?: SelectionItem[];
+  dockInteriorItems?: SelectionItem[];
+  dockInteriorLabel?: string;
   savedItems: SelectionItem[];
   inRangeItems: SelectionItem[];
   onSave: (id: string) => void;
@@ -30,6 +33,9 @@ interface ContactsHudDialogProps {
 export function ContactsHudDialog({
   title,
   incomingItems = [],
+  historyItems = [],
+  dockInteriorItems = [],
+  dockInteriorLabel,
   savedItems,
   inRangeItems,
   onSave,
@@ -113,10 +119,24 @@ export function ContactsHudDialog({
       >
         <div className="chd-title">{title}</div>
         <div className="chd-list">
+          {dockInteriorItems.length > 0 && (
+            <section>
+              <div className="chd-section-header">
+                {dockInteriorLabel ? `ABOARD · ${dockInteriorLabel}` : 'DOCK INTERIOR'}
+              </div>
+              {dockInteriorItems.map((item) => renderItem(item, false))}
+            </section>
+          )}
           {incomingItems.length > 0 && (
             <section>
               <div className="chd-section-header">INCOMING HAIL</div>
               {incomingItems.map((item) => renderItem(item, false))}
+            </section>
+          )}
+          {historyItems.length > 0 && (
+            <section>
+              <div className="chd-section-header">HISTORY</div>
+              {historyItems.map((item) => renderItem(item, false))}
             </section>
           )}
           {savedItems.length > 0 && (
@@ -131,7 +151,11 @@ export function ContactsHudDialog({
               {inRangeItems.map((item) => renderItem(item, true))}
             </section>
           )}
-          {savedItems.length === 0 && inRangeItems.length === 0 && incomingItems.length === 0 && (
+          {savedItems.length === 0 &&
+            inRangeItems.length === 0 &&
+            incomingItems.length === 0 &&
+            historyItems.length === 0 &&
+            dockInteriorItems.length === 0 && (
             <div className="chd-empty">— NO CONTACTS —</div>
           )}
         </div>

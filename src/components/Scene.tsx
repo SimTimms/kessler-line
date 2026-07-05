@@ -17,9 +17,11 @@ import AsteroidBelt from './Environment/AsteroidBelt';
 import EarthAsteroidRing from './Planets/Earth/EarthAsteroidRing';
 import BrokenVenusMoon from './Planets/Venus/BrokenVenusMoon';
 import DockingBay from './WorldObjects/DockingBay';
+import { SPACE_STATION_DOCK } from '../config/docks/spaceStationDockConfig';
 import EjectedCargo from './WorldObjects/EjectedCargo';
 import SpaceDebris from './WorldObjects/SpaceDebris';
 import CargoContainerField from './WorldObjects/CargoContainerField';
+import HoverSceneTools from './HoverSceneTools';
 import ProximityHighlight from './Proximity/ProximityHighlight';
 import ScannerRangeRings from './Scanners/ScannerRangeRings';
 import { sceneCamera } from '../context/CameraRef';
@@ -164,6 +166,7 @@ export default function Scene() {
       <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
       <ProgressiveAssetPreloader loadStage={loadStage} />
       <AutopilotController />
+      <HoverSceneTools />
 
       <Suspense fallback={null}>
         <SolarSystem scale={SOLAR_SYSTEM_SCALE} />
@@ -204,6 +207,7 @@ export default function Scene() {
                 stationId="space-station"
                 dimensions={new THREE.Vector3(40, 1, 10)}
                 rotation={[0, 0, 0]}
+                dock={SPACE_STATION_DOCK}
               />
               <RadioBeacon />
             </group>

@@ -46,6 +46,12 @@ export interface CollidableEntry {
 
   /** Spherical body surface — inward impact destroys the ship and spawns dust VFX. */
   planetSurfaceImpact?: boolean;
+
+  /**
+   * When false, the object stays in the registry for scanners / debug overlays but
+   * does not participate in ship hull collision resolution.
+   */
+  physicalCollision?: boolean;
 }
 
 const registry = new Map<string, CollidableEntry>();

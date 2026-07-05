@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../context/CollisionRegistry';
+import { gravityBodies } from '../context/GravityRegistry';
 
 function colliderId(bodyId: string): string {
   return `planet-surface-${bodyId}`;
@@ -24,6 +25,10 @@ export function useRegisterPlanetCollider(
     registerCollidable({
       id,
       getWorldPosition,
+      getWorldVelocity: (target) => {
+        const body = gravityBodies.get(bodyId);
+        return body ? target.copy(body.velocity) : target.set(0, 0, 0);
+      },
       shape: { type: 'sphere', radius: surfaceRadius },
       planetSurfaceImpact: true,
       getObject3D: () => centerRef.current,

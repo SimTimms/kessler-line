@@ -7,6 +7,7 @@ import {
   SCANNER_RANGE_RING_SEGMENTS,
   type ScannerRangeRingDef,
 } from '../../config/scanRanges';
+import { isScannerRingHovered } from '../../context/ScannerRingHover';
 
 function createUnitCircleGeometry(segments: number): THREE.BufferGeometry {
   const positions = new Float32Array(segments * 3);
@@ -29,8 +30,9 @@ function ScannerRangeRing({ def, geometry }: { def: ScannerRangeRingDef; geometr
     if (!line) return;
 
     const active = def.onRef.current && def.rangeRef.current > 0;
-    line.visible = active;
-    if (!active) return;
+    const hovered = isScannerRingHovered(def.id);
+    line.visible = active && hovered;
+    if (!line.visible) return;
 
     const range = def.rangeRef.current;
     line.position.y = def.yOffset;

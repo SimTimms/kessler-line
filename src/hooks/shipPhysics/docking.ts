@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import type { RefObject } from 'react';
-import { getCollidables } from '../../context/CollisionRegistry';
-import { minimapShipPosition } from '../../context/MinimapShipPosition';
+import { getCollidables, type CollidableEntry } from '../../context/CollisionRegistry';
 import {
   DOCKING_PORT_LOCAL_Z,
   DOCKING_PORT_RADIUS,
@@ -32,45 +31,64 @@ const _relVel = new THREE.Vector3();
 const _desiredDockPos = new THREE.Vector3();
 const _desiredDockQuat = new THREE.Quaternion();
 
-const DOCK_POS_SMOOTH_SPEED = 24;
-const DOCK_ROT_SMOOTH_SPEED = 28;
+/** Compute the world pose that aligns the ship nose with a docking bay. */
+function computeDockedWorldPose(dockerEntry: CollidableEntry): {
+  position: THREE.Vector3;
+  quaternion: THREE.Quaternion;
+} {
+  dockerEntry.getWorldPosition(_collidablePos);
+  if (dockerEntry.getWorldQuaternion) {
+    dockerEntry.getWorldQuaternion(_boxQuat);
+    _desiredDockQuat.copy(_boxQuat);
+  } else {
+    _desiredDockQuat.identity();
+  }
+  _localForward.set(0, 0, DOCKING_PORT_LOCAL_Z).applyQuaternion(_boxQuat);
+  _desiredDockPos.copy(_collidablePos).sub(_localForward);
+  return { position: _desiredDockPos, quaternion: _desiredDockQuat };
+}
 
-interface DockedStateParams {
-  group: THREE.Group;
-  dockedTo: { current: string | null };
+/**
+ * Parent the ship to the docking bay so orbital motion is inherited from the
+ * scene graph (no per-frame world-coordinate resync / lerp).
+ */
+export function attachShipToDock(group: THREE.Group, dockerEntry: CollidableEntry): void {
+  const dockObject = dockerEntry.getObject3D?.() ?? null;
+  const { position, quaternion } = computeDockedWorldPose(dockerEntry);
+
+  if (dockObject) {
+    if (group.parent !== dockObject) {
+      // Set world pose while still on the scene root, then reparent (preserves world transform).
+      group.position.copy(position);
+      group.quaternion.copy(quaternion);
+      dockObject.attach(group);
+    }
+    return;
+  }
+
+  // Static dock with no render object — hard snap in world space.
+  group.position.copy(position);
+  group.quaternion.copy(quaternion);
+}
+
+/** Restore the ship to the scene root when undocking, preserving world transform. */
+export function detachShipFromDock(group: THREE.Group, scene: THREE.Object3D): void {
+  if (!group.parent || group.parent === scene) return;
+  scene.attach(group);
+}
+
+interface DockedResourcesParams {
   thrusterLightRefs: RefObject<(THREE.PointLight | null)[]>;
   thrusterLightIntensities: { current: number[] };
   rawDelta: number;
 }
 
-export function applyDockedState({
-  group,
-  dockedTo,
+/** Fuel/O2/thruster state while docked — no transform updates here. */
+export function applyDockedResources({
   thrusterLightRefs,
   thrusterLightIntensities,
   rawDelta,
-}: DockedStateParams): boolean {
-  if (!dockedTo.current) return false;
-
-  const dockerEntry = getCollidables().find((c) => c.id === dockedTo.current);
-  if (dockerEntry) {
-    dockerEntry.getWorldPosition(_collidablePos);
-    if (dockerEntry.getWorldQuaternion) {
-      dockerEntry.getWorldQuaternion(_boxQuat);
-      _desiredDockQuat.copy(_boxQuat);
-    } else {
-      _desiredDockQuat.copy(group.quaternion);
-    }
-    _localForward.set(0, 0, DOCKING_PORT_LOCAL_Z).applyQuaternion(_boxQuat);
-    _desiredDockPos.copy(_collidablePos).sub(_localForward);
-
-    // Damped dock attach: avoids visible micro-jitter at large world coordinates.
-    const posAlpha = 1 - Math.exp(-DOCK_POS_SMOOTH_SPEED * rawDelta);
-    const rotAlpha = 1 - Math.exp(-DOCK_ROT_SMOOTH_SPEED * rawDelta);
-    group.position.lerp(_desiredDockPos, posAlpha);
-    group.quaternion.slerp(_desiredDockQuat, rotAlpha);
-  }
-
+}: DockedResourcesParams): void {
   shipVelocity.set(0, 0, 0);
   shipAcceleration.current = 0;
   zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
@@ -92,9 +110,6 @@ export function applyDockedState({
   resourceRateRefs.power.current = 0;
   resourceRateRefs.fuel.current = fuelRate;
   resourceRateRefs.o2.current = o2Rate;
-  // shipPosRef.current.copy(group.position);
-  minimapShipPosition.copy(group.position);
-  return true;
 }
 
 interface DockingPortParams {
@@ -132,7 +147,10 @@ export function checkDockingPort({ group, dockingPort, dockedTo, velocity }: Doc
     ? bayEntry.getWorldVelocity(_dockVel)
     : _dockVel.set(0, 0, 0);
   const relSpeed = _relVel.subVectors(velocity, bayVel).length();
-  if (relSpeed >= 4) return;
+  // Large rendezvous bays are interior capture volumes, so allow faster closure
+  // than nose-to-port docking.
+  const relSpeedLimit = bayEntry.id.startsWith('docking-bay-rendezvous-') ? 18 : 4;
+  if (relSpeed >= relSpeedLimit) return;
 
   dockedTo.current = bayEntry.id;
   if (autopilotActive.current) {
@@ -143,13 +161,5 @@ export function checkDockingPort({ group, dockingPort, dockedTo, velocity }: Doc
     new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
   );
   velocity.set(0, 0, 0);
-  bayEntry.getWorldPosition(_collidablePos);
-  if (bayEntry.getWorldQuaternion) {
-    bayEntry.getWorldQuaternion(_boxQuat);
-  } else {
-    _boxQuat.identity();
-  }
-  group.quaternion.copy(_boxQuat);
-  _localForward.set(0, 0, DOCKING_PORT_LOCAL_Z).applyQuaternion(_boxQuat);
-  group.position.copy(_collidablePos).sub(_localForward);
+  attachShipToDock(group, bayEntry);
 }

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { speakNpcLine, cancelSpeech } from '../../sound/PiperTTS';
+import { useState } from 'react';
 import type { InboxMessage, MessagePlatform, ReplyOption } from '../../context/MessageStore';
 import { markReplied, queueMessage } from '../../context/MessageStore';
 import { ASTEROID_DOCK_DEF } from '../../config/worldConfig';
@@ -86,35 +85,11 @@ export default function MessageDialog({
   onClose,
   onMinimize,
 }: MessageDialogProps) {
+  void wasUnread;
   const date = new Date(message.timestamp).toISOString().slice(0, 10);
-  useEffect(() => {
-    if (!wasUnread) return;
-
-    if (message.audioFile) {
-      const audio = new Audio(message.audioFile);
-      audio.play().catch(() => {
-        /* autoplay blocked */
-      });
-      return () => {
-        audio.pause();
-        audio.currentTime = 0;
-      };
-    } else {
-      let cancelled = false;
-      const timeoutId = window.setTimeout(() => {
-        if (!cancelled) speakNpcLine(message.body, 'inbox-reader');
-      }, 100);
-      return () => {
-        cancelled = true;
-        clearTimeout(timeoutId);
-        cancelSpeech();
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const platform = message.platform ?? 'REACH';
+  const platform: MessagePlatform = 'REACH';
   const cfg = PLATFORM_CONFIG[platform];
-  const isPriority = (PRIORITY_PLATFORMS as readonly string[]).includes(platform);
+  const isPriority = (PRIORITY_PLATFORMS as readonly string[]).includes(message.platform ?? 'REACH');
 
   const [replyOpen, setReplyOpen] = useState(false);
   const [sent, setSent] = useState<SentState | null>(() => {

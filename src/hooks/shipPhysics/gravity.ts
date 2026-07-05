@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { gravityBodies, type GravityBody } from '../../context/GravityRegistry';
 import { orbitingBodyIdRef, orbitStatusRef } from '../../context/ShipState';
+import { renderToSimulationSpace } from '../../context/FloatingOrigin';
 
 const _shipWorldPos = new THREE.Vector3();
 const _gravDir = new THREE.Vector3();
@@ -45,6 +46,7 @@ export function applyGravityStep({
   }
 
   group.getWorldPosition(_shipWorldPos);
+  renderToSimulationSpace(_shipWorldPos, _shipWorldPos);
   let primaryBodyId: string | null = null;
   let primaryBody: GravityBody | null = null;
   let primaryAccel = 0;

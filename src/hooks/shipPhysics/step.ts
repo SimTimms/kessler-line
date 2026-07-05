@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { THRUST, YAW_THRUST, thrustMultiplier } from '../../context/ShipState';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { applyYawAndRoll, getYawFromQuaternion } from '../../orbitalRoll/shipYawRoll';
+import { renderToSimulationSpace } from '../../context/FloatingOrigin';
 import { applyGravityStep } from './gravity';
 import { resolveCollisions } from './collisions';
 
@@ -51,24 +52,29 @@ export function applyPhysicsStep({
   radOut,
   radIn,
 }: StepParams) {
-  if (yawLeft) angularVelocity.current -= YAW_THRUST * thrustMultiplier.current * dt;
-  if (yawRight) angularVelocity.current += YAW_THRUST * thrustMultiplier.current * dt;
+  const forwardThrustMultiplier = thrustMultiplier.current;
+  // Cap RCS/reverse authority so maneuvering remains controllable at high global thrust.
+  const cappedManeuverMultiplier = Math.min(forwardThrustMultiplier, 2);
+
+  if (yawLeft) angularVelocity.current -= YAW_THRUST * cappedManeuverMultiplier * dt;
+  if (yawRight) angularVelocity.current += YAW_THRUST * cappedManeuverMultiplier * dt;
   const yaw = getYawFromQuaternion(group.quaternion) + angularVelocity.current * dt;
   applyYawAndRoll(group, yaw, 0);
 
   _localForward.set(0, 0, 1).applyQuaternion(group.quaternion);
-  if (fwd) velocity.addScaledVector(_localForward, -THRUST * thrustMultiplier.current * dt);
+  if (fwd) velocity.addScaledVector(_localForward, THRUST * forwardThrustMultiplier * dt);
   if (rev)
-    velocity.addScaledVector(_localForward, THRUST * thrustMultiplier.current * revScale * dt);
+    velocity.addScaledVector(_localForward, -THRUST * cappedManeuverMultiplier * revScale * dt);
 
   _localRight.set(1, 0, 0).applyQuaternion(group.quaternion);
-  if (strL) velocity.addScaledVector(_localRight, -THRUST * thrustMultiplier.current * dt);
-  if (strR) velocity.addScaledVector(_localRight, THRUST * thrustMultiplier.current * dt);
+  if (strL) velocity.addScaledVector(_localRight, -THRUST * cappedManeuverMultiplier * dt);
+  if (strR) velocity.addScaledVector(_localRight, THRUST * cappedManeuverMultiplier * dt);
 
   if ((radOut || radIn) && primaryGravityId.current) {
     const body = gravityBodies.get(primaryGravityId.current);
     if (body) {
       group.getWorldPosition(_shipPos);
+      renderToSimulationSpace(_shipPos, _shipPos);
       _radialDir.subVectors(_shipPos, body.position).normalize();
       if (radOut) velocity.addScaledVector(_radialDir, THRUST * thrustMultiplier.current * dt);
       if (radIn) velocity.addScaledVector(_radialDir, -THRUST * thrustMultiplier.current * dt);

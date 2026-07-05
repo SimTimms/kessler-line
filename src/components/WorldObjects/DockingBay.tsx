@@ -7,15 +7,8 @@ import {
   selectedTargetName,
   selectedTargetVelocity,
 } from '../../context/TargetSelection';
-import { useRegisterDockablePartner } from '../../hooks/useRegisterDockablePartner';
-import type { DockablePartnerConfig } from '../../context/DockablePartnerStore';
-
-/**
- * The resource parameters of a docking bay, minus `partnerId` (which is derived
- * from `stationId` so the bay's collision id and its resource registration can
- * never drift apart). Pass any subset of fuel/o2/power/crew that this bay offers.
- */
-export type DockingBayPartner = Omit<DockablePartnerConfig, 'partnerId'>;
+import { useRegisterDock } from '../../hooks/useRegisterDockablePartner';
+import type { DockConfig } from '../../config/dockConfig';
 
 interface DockingBayProps {
   stationId?: string;
@@ -25,12 +18,10 @@ interface DockingBayProps {
   position?: THREE.Vector3;
   rotation?: [number, number, number];
   /**
-   * Transferable resources offered at this bay (fuel, air/o2, power, crew) plus
-   * the docking-panel label. When provided, the bay registers itself as a
-   * dockable partner — no separate `useRegisterDockablePartner` call needed.
-   * Requires `stationId` (it becomes the partner id).
+   * Full per-dock configuration: name, transferable resources, interior comms
+   * contacts, and optional job board. Requires `stationId` (becomes the dock id).
    */
-  partner?: DockingBayPartner;
+  dock?: DockConfig;
 }
 
 export default function DockingBay({
@@ -40,18 +31,12 @@ export default function DockingBay({
   position,
   dimensions,
   rotation = [0, Math.PI, 0],
-  partner,
+  dock,
 }: DockingBayProps) {
   const COLLISION_ID = stationId ? `docking-bay-${stationId}` : `docking-bay-${Math.random()}`;
 
-  // Register the transferable resources for this bay, keyed by stationId so the
-  // partner id always matches the `ShipDocked` event's stationId. No-op when no
-  // `partner` is supplied or when the bay has no stationId to key off.
-  const partnerConfig = useMemo<DockablePartnerConfig | null>(
-    () => (partner && stationId ? { partnerId: stationId, ...partner } : null),
-    [partner, stationId]
-  );
-  useRegisterDockablePartner(partnerConfig);
+  const dockConfig = useMemo(() => dock ?? null, [dock]);
+  useRegisterDock(stationId, dockConfig);
 
   const groupRef = useRef<THREE.Group>(null!);
   const velocityRef = useRef(new THREE.Vector3());
@@ -59,7 +44,6 @@ export default function DockingBay({
   const hasPrevRef = useRef(false);
   const _worldPos = new THREE.Vector3();
 
-  // Fill the external stationGroupRef (if provided) so LaserRay can raycast against it.
   const setGroupRef = useCallback(
     (el: THREE.Group | null) => {
       groupRef.current = el!;
@@ -68,8 +52,6 @@ export default function DockingBay({
     [stationGroupRef]
   );
 
-  // Register as a collidable. The ref is guaranteed set before this effect runs
-  // (effects fire after commit, which is after setGroupRef fires).
   useEffect(() => {
     registerCollidable({
       id: COLLISION_ID,
@@ -94,6 +76,7 @@ export default function DockingBay({
     };
   }, [dimensions]);
 
+  // Priority 1: run after BodyOrbit (0) so world velocity matches this frame's orbit pose.
   useFrame((_, delta) => {
     if (!groupRef.current || delta <= 0) return;
     groupRef.current.getWorldPosition(_worldPos);
@@ -111,7 +94,7 @@ export default function DockingBay({
     if (selectedTargetName === COLLISION_ID) {
       selectedTargetVelocity.copy(velocityRef.current);
     }
-  });
+  }, 1);
 
   return (
     <>

@@ -35,7 +35,8 @@ function placeOnStarShell(
   const v = Math.random();
   const theta = u * Math.PI * 2;
   const phi = Math.acos(2 * v - 1);
-  const radius = STARFIELD_MIN_RADIUS + Math.random() * (STARFIELD_MAX_RADIUS - STARFIELD_MIN_RADIUS);
+  const radius =
+    STARFIELD_MIN_RADIUS + Math.random() * (STARFIELD_MAX_RADIUS - STARFIELD_MIN_RADIUS);
   const sinPhi = Math.sin(phi);
   arr[baseIndex + 0] = centerX + radius * sinPhi * Math.cos(theta);
   arr[baseIndex + 1] = centerY + radius * Math.cos(phi);
@@ -93,9 +94,9 @@ export default function SpaceParticles() {
       </bufferGeometry>
       <pointsMaterial
         color="white"
-        size={4}
+        size={3}
         transparent
-        opacity={0.95}
+        opacity={0.05}
         map={texture}
         depthTest
         depthWrite={false}

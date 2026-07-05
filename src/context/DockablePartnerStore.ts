@@ -4,28 +4,20 @@ import {
   SHIP_CREW_CAPACITY,
   SHIP_RESOURCE_MAX,
 } from '../config/dockTransferConfig';
+import type {
+  DockableResourceSlot,
+  DockContact,
+  DockJob,
+  RegisteredDockConfig,
+} from '../config/dockConfig';
 import { fuel, o2, power, setFuel, setO2, setPower, shipCrew, setShipCrew } from './ShipState';
 
 export type DockableResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
 
-export type DockableResourceSlot = {
-  amount: number;
-  capacity: number;
-};
+/** @deprecated Use RegisteredDockConfig from dockConfig.ts */
+export type DockablePartnerConfig = RegisteredDockConfig;
 
-export type DockablePartnerConfig = {
-  /** Matches `ShipDocked` detail.stationId (docking bay id). */
-  partnerId: string;
-  label: string;
-  fuel?: DockableResourceSlot;
-  o2?: DockableResourceSlot;
-  power?: DockableResourceSlot;
-  crew?: DockableResourceSlot;
-};
-
-type PartnerState = DockablePartnerConfig;
-
-const partners = new Map<string, PartnerState>();
+const docks = new Map<string, RegisteredDockConfig>();
 
 export const DOCKABLE_PARTNER_CHANGED = 'DockablePartnerChanged';
 
@@ -33,40 +25,77 @@ function notifyChanged() {
   window.dispatchEvent(new CustomEvent(DOCKABLE_PARTNER_CHANGED));
 }
 
-export function registerDockablePartner(config: DockablePartnerConfig) {
-  partners.set(config.partnerId, {
+function cloneDock(config: RegisteredDockConfig): RegisteredDockConfig {
+  return {
     ...config,
     fuel: config.fuel ? { ...config.fuel } : undefined,
     o2: config.o2 ? { ...config.o2 } : undefined,
     power: config.power ? { ...config.power } : undefined,
     crew: config.crew ? { ...config.crew } : undefined,
-  });
+    contacts: config.contacts?.map((c) => ({ ...c, dialogue: c.dialogue })),
+    jobBoard: config.jobBoard?.map((j) => ({ ...j, dialogue: j.dialogue })),
+  };
 }
 
+export function registerDock(config: RegisteredDockConfig) {
+  docks.set(config.id, cloneDock(config));
+}
+
+export function unregisterDock(dockId: string) {
+  docks.delete(dockId);
+}
+
+/** @deprecated Use registerDock */
+export function registerDockablePartner(config: RegisteredDockConfig) {
+  registerDock(config);
+}
+
+/** @deprecated Use unregisterDock */
 export function unregisterDockablePartner(partnerId: string) {
-  partners.delete(partnerId);
+  unregisterDock(partnerId);
 }
 
-export function hasDockablePartner(partnerId: string | null): partnerId is string {
-  return partnerId != null && partners.has(partnerId);
+export function hasDockablePartner(dockId: string | null): dockId is string {
+  return dockId != null && docks.has(dockId);
 }
 
-export function getDockablePartner(partnerId: string): PartnerState | undefined {
-  return partners.get(partnerId);
+export function getDock(dockId: string): RegisteredDockConfig | undefined {
+  return docks.get(dockId);
 }
 
-export function getDockablePartnerLabel(partnerId: string): string {
-  return partners.get(partnerId)?.label ?? partnerId;
+/** @deprecated Use getDock */
+export function getDockablePartner(dockId: string): RegisteredDockConfig | undefined {
+  return getDock(dockId);
 }
 
-export function listPartnerResources(partnerId: string): DockableResourceKind[] {
-  const p = partners.get(partnerId);
-  if (!p) return [];
+export function getDockablePartnerLabel(dockId: string): string {
+  return docks.get(dockId)?.label ?? dockId;
+}
+
+export function getDockContacts(dockId: string): DockContact[] {
+  return docks.get(dockId)?.contacts ?? [];
+}
+
+export function getDockJobs(dockId: string): DockJob[] {
+  return docks.get(dockId)?.jobBoard ?? [];
+}
+
+export function getDockContact(dockId: string, contactId: string): DockContact | undefined {
+  return getDockContacts(dockId).find((c) => c.id === contactId);
+}
+
+export function getDockJob(dockId: string, jobId: string): DockJob | undefined {
+  return getDockJobs(dockId).find((j) => j.id === jobId);
+}
+
+export function listPartnerResources(dockId: string): DockableResourceKind[] {
+  const dock = docks.get(dockId);
+  if (!dock) return [];
   const kinds: DockableResourceKind[] = [];
-  if (p.fuel) kinds.push('fuel');
-  if (p.o2) kinds.push('o2');
-  if (p.power) kinds.push('power');
-  if (p.crew) kinds.push('crew');
+  if (dock.fuel) kinds.push('fuel');
+  if (dock.o2) kinds.push('o2');
+  if (dock.power) kinds.push('power');
+  if (dock.crew) kinds.push('crew');
   return kinds;
 }
 
@@ -112,31 +141,30 @@ function setShipAmount(kind: DockableResourceKind, value: number) {
 }
 
 function partnerSlot(
-  partner: PartnerState,
+  dock: RegisteredDockConfig,
   kind: DockableResourceKind
 ): DockableResourceSlot | undefined {
   switch (kind) {
     case 'fuel':
-      return partner.fuel;
+      return dock.fuel;
     case 'o2':
-      return partner.o2;
+      return dock.o2;
     case 'power':
-      return partner.power;
+      return dock.power;
     case 'crew':
-      return partner.crew;
+      return dock.crew;
   }
 }
 
-/** Move resources between ship and docked partner. Returns units actually moved. */
 export function transferDockableResource(
   partnerId: string,
   kind: DockableResourceKind,
   direction: 'toPartner' | 'toShip',
   amount: number
 ): number {
-  const partner = partners.get(partnerId);
-  const slot = partner ? partnerSlot(partner, kind) : undefined;
-  if (!partner || !slot || amount <= 0) return 0;
+  const dock = docks.get(partnerId);
+  const slot = dock ? partnerSlot(dock, kind) : undefined;
+  if (!dock || !slot || amount <= 0) return 0;
 
   const shipVal = shipAmount(kind);
   const shipCap = shipCapacity(kind);
@@ -183,15 +211,15 @@ export function transferDockableHold(
 }
 
 export function readPartnerAmount(partnerId: string, kind: DockableResourceKind): number {
-  const slot = partners.get(partnerId);
-  if (!slot) return 0;
-  const s = partnerSlot(slot, kind);
-  return s ? s.amount : 0;
+  const dock = docks.get(partnerId);
+  if (!dock) return 0;
+  const slot = partnerSlot(dock, kind);
+  return slot ? slot.amount : 0;
 }
 
 export function readPartnerCapacity(partnerId: string, kind: DockableResourceKind): number {
-  const slot = partners.get(partnerId);
-  if (!slot) return 0;
-  const s = partnerSlot(slot, kind);
-  return s ? s.capacity : 0;
+  const dock = docks.get(partnerId);
+  if (!dock) return 0;
+  const slot = partnerSlot(dock, kind);
+  return slot ? slot.capacity : 0;
 }

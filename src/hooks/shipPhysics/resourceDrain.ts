@@ -5,21 +5,55 @@ import { power, fuel, shipCrew, setFuel, setPower, setO2, o2, thrustMultiplier }
 import { o2DrainRateForCrew, FUEL_BURN_RATE } from '../../config/damageConfig';
 
 interface DrainParams {
-  keysHeld: number;
+  fwd: boolean;
+  rev: boolean;
+  yawLeft: boolean;
+  yawRight: boolean;
+  strL: boolean;
+  strR: boolean;
+  radOut: boolean;
+  radIn: boolean;
   rawDelta: number;
 }
 
 let o2DepletedFired = false;
 
-export function applyResourceDrain({ keysHeld, rawDelta }: DrainParams) {
+const RCS_FUEL_RATE_FACTOR = 0.01;
+const RCS_THRUST_MULTIPLIER_CAP = 2;
+
+export function applyResourceDrain({
+  fwd,
+  rev,
+  yawLeft,
+  yawRight,
+  strL,
+  strR,
+  radOut,
+  radIn,
+  rawDelta,
+}: DrainParams) {
   let powerRate = 0;
   let fuelRate = 0;
 
   // Propulsion consumes propellant only; ship power is drained by systems (e.g. scanners).
-  // Burn scales with thrust multiplier so higher thrust costs proportionally more fuel.
-  if (keysHeld > 0) {
-    const thrustScale = thrustMultiplier.current;
-    const burnRate = keysHeld * thrustScale * FUEL_BURN_RATE;
+  // Main forward burn uses full thrust scale. RCS/reverse are capped and very cheap.
+  const thrustScale = thrustMultiplier.current;
+  const cappedRcsScale = Math.min(thrustScale, RCS_THRUST_MULTIPLIER_CAP);
+  const mainAxes = fwd ? 1 : 0;
+  const rcsAxes =
+    (rev ? 1 : 0) +
+    (yawLeft ? 1 : 0) +
+    (yawRight ? 1 : 0) +
+    (strL ? 1 : 0) +
+    (strR ? 1 : 0) +
+    (radOut ? 1 : 0) +
+    (radIn ? 1 : 0);
+
+  const burnRate =
+    mainAxes * thrustScale * FUEL_BURN_RATE +
+    rcsAxes * cappedRcsScale * FUEL_BURN_RATE * RCS_FUEL_RATE_FACTOR;
+
+  if (burnRate > 0) {
     fuelRate -= burnRate;
     setFuel(Math.max(0, fuel - burnRate * rawDelta));
   }

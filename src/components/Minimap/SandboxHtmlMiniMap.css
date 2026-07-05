@@ -1,0 +1,198 @@
+.sandbox-map-overlay {
+  position: fixed;
+  inset: 0;
+  /* Keep map above 3D canvas, but below HUD/UI overlays. */
+  z-index: 40;
+  background: radial-gradient(circle at center, rgba(5, 12, 24, 0.92), rgba(2, 4, 10, 0.97));
+  cursor: grab;
+  user-select: none;
+  overflow: hidden;
+}
+
+.sandbox-map-overlay:active {
+  cursor: grabbing;
+}
+
+.sandbox-map-overlay--dragging .sandbox-map-marker {
+  pointer-events: none;
+}
+
+.sandbox-map-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 200, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 200, 255, 0.09) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.sandbox-map-orbit-ring {
+  position: absolute;
+  border: 1px dashed rgba(120, 185, 255, 0.45);
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.28;
+}
+
+.sandbox-map-ring {
+  position: absolute;
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.sandbox-map-marker {
+  position: absolute;
+  width: var(--marker-size, 6px);
+  height: var(--marker-size, 6px);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: var(--marker-color, #ffffff);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--marker-color, #ffffff) 75%, transparent);
+  pointer-events: auto;
+}
+
+.sandbox-map-marker--planet {
+  background: var(--marker-color, #66aaff);
+}
+
+.sandbox-map-marker--ship {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 16px solid #ffffff;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+}
+
+.sandbox-map-marker--nav {
+  width: 10px;
+  height: 10px;
+  border-radius: 0;
+  background: #ff9900;
+  border-color: rgba(255, 180, 80, 0.9);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.sandbox-map-marker--drive {
+  background: #00d6ff;
+}
+
+.sandbox-map-marker--radio {
+  background: #45ff88;
+}
+
+.sandbox-map-marker--hard {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: rgba(255, 90, 90, 0.2);
+  border-color: rgba(255, 120, 120, 0.9);
+  box-shadow: 0 0 10px rgba(255, 80, 80, 0.55);
+}
+
+.sandbox-map-marker--mag {
+  background: #ffd24d;
+  border-color: rgba(255, 228, 140, 0.8);
+}
+
+.sandbox-map-marker--proximity {
+  background: #d885ff;
+}
+
+.sandbox-map-title {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  color: rgba(0, 220, 255, 0.75);
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  pointer-events: none;
+}
+
+.sandbox-map-status {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  color: rgba(210, 240, 255, 0.75);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.sandbox-map-help {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  color: rgba(180, 220, 255, 0.55);
+  font-family: monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+
+.sandbox-map-hover-card {
+  position: fixed;
+  z-index: 45;
+  min-width: 180px;
+  max-width: 260px;
+  background: rgba(2, 8, 20, 0.94);
+  border: 1px solid rgba(0, 200, 255, 0.5);
+  border-radius: 4px;
+  padding: 8px 10px;
+  pointer-events: none;
+  box-shadow: 0 0 18px rgba(0, 180, 255, 0.2);
+}
+
+.sandbox-map-hover-title {
+  color: rgba(130, 230, 255, 0.95);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.sandbox-map-hover-line {
+  color: rgba(190, 225, 245, 0.82);
+  font-family: monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+}
+
+.sandbox-map-actions {
+  position: absolute;
+  right: 16px;
+  top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.sandbox-map-actions button {
+  background: rgba(0, 180, 230, 0.12);
+  color: rgba(170, 235, 255, 0.92);
+  border: 1px solid rgba(0, 180, 230, 0.5);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.sandbox-map-actions button:hover {
+  background: rgba(0, 200, 255, 0.22);
+  border-color: rgba(0, 220, 255, 0.7);
+}

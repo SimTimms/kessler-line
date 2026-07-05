@@ -53,6 +53,7 @@ export function useScannableRegistration({
 
   const getWorldVelocity = (target: THREE.Vector3) => target.copy(velocityRef.current);
 
+  // Priority 1: after kinematic orbit movers (0) so velocity matches this frame.
   useFrame((_, delta) => {
     if (!groupRef.current || delta <= 0) return;
     groupRef.current.getWorldPosition(worldPosRef.current);
@@ -65,7 +66,7 @@ export function useScannableRegistration({
       hasPrevRef.current = true;
     }
     prevPosRef.current.copy(worldPosRef.current);
-  });
+  }, 1);
 
   useEffect(() => {
     if (!scannable) return;
@@ -79,6 +80,7 @@ export function useScannableRegistration({
         getWorldVelocity,
         shape: proximityShape,
         getObject3D: () => groupRef.current,
+        physicalCollision: false,
       });
     }
 

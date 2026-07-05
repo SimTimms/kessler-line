@@ -22,7 +22,7 @@ import { ASTEROID_DOCK_DEF } from '../../config/worldConfig';
 import { waypointPromptDef } from '../../context/WaypointPrompt';
 import { getOrCreateShipRecord, formatShipClass, formatAgenda } from '../../narrative/shipRegistry';
 import { SETTLEMENT_BY_OBJECT_ID } from '../../config/settlementConfig';
-import { ROLE_LABELS, type StationCharacter } from '../../narrative/stationCharacters';
+import { DOCK_ROLE_LABELS, type DockContact } from '../../config/dockConfig';
 import DialogHeader from './DialogHeader';
 import DialogFooter from './DialogFooter';
 import DialogMessages from './DialogMessages';
@@ -68,8 +68,8 @@ interface DialogueThreadProps {
   shipName: string;
   // Inbox mode (static contact)
   contact?: StaticContact;
-  /** Station-resident NPC — renders a portrait + dossier header instead of a ship profile. */
-  character?: StationCharacter;
+  /** Dock interior NPC — portrait + dossier header instead of a ship profile. */
+  character?: DockContact;
   /** Broadcast / world-object hail — hide random NPC ship profile line. */
   hideShipProfile?: boolean;
   commsPlatform?: MessagePlatform;
@@ -81,13 +81,19 @@ interface DialogueThreadProps {
   onHail?: () => void;
   onAcceptHail?: () => void;
   onDeclineHail?: () => void;
+  isSavedContact?: boolean;
+  onAddToContacts?: () => void;
   // Accepted dialogue
   thread: ChatThread | null;
   playerOptions: Array<{ id: string; label: string }>;
   showOptions: boolean;
   isEnded: boolean;
   onOption: (optionId: string) => void;
+  canRequestRendezvous?: boolean;
+  isRendezvousActive?: boolean;
+  onRequestRendezvous?: () => void;
   onClose: () => void;
+  onBack?: () => void;
 }
 
 export default function DialogueThread({
@@ -104,12 +110,18 @@ export default function DialogueThread({
   onHail,
   onAcceptHail,
   onDeclineHail,
+  isSavedContact = false,
+  onAddToContacts,
   thread,
   playerOptions,
   showOptions,
   isEnded,
   onOption,
+  canRequestRendezvous = false,
+  isRendezvousActive = false,
+  onRequestRendezvous,
   onClose,
+  onBack,
 }: DialogueThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasSettlement = !contact && SETTLEMENT_BY_OBJECT_ID[shipId] !== undefined;
@@ -124,13 +136,7 @@ export default function DialogueThread({
 
   useEffect(() => {
     if (!contact) return;
-    const unreadWithAudio = msgs.find((m) => !m.read && m.audioFile);
     contact.relatedMessageIds.forEach((id) => markRead(id));
-    if (unreadWithAudio?.audioFile) {
-      const audio = new Audio(unreadWithAudio.audioFile);
-      audio.play().catch(() => { /* autoplay blocked */ });
-      return () => { audio.pause(); audio.currentTime = 0; };
-    }
   }, [contact]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -265,7 +271,7 @@ export default function DialogueThread({
               </button>
             </div>
             <div className="comms-chat-captain">
-              {ROLE_LABELS[character.role].toUpperCase()}
+              {DOCK_ROLE_LABELS[character.role].toUpperCase()}
               {character.company ? ` · ${character.company.toUpperCase()}` : ' · INDEPENDENT'}
             </div>
           </div>
@@ -276,19 +282,33 @@ export default function DialogueThread({
         <div className="comms-chat-header">
           <div className="comms-chat-header-top">
             <div className="comms-chat-vessel">{shipName}</div>
-            {hasSettlement && (
-              <button
-                type="button"
-                className="comms-chat-header-toggle"
-                onClick={() =>
-                  setViewMode((mode) => (mode === 'messages' ? 'info' : 'messages'))
-                }
-                title={viewMode === 'messages' ? 'Station info' : 'Messages'}
-                aria-label={viewMode === 'messages' ? 'Show station info' : 'Show messages'}
-              >
-                {viewMode === 'messages' ? 'ⓘ' : '✉'}
-              </button>
-            )}
+            <div className="comms-chat-header-actions">
+              {onAddToContacts && (
+                <button
+                  type="button"
+                  className="comms-chat-header-action"
+                  onClick={onAddToContacts}
+                  title={isSavedContact ? 'Already in contacts' : 'Add to contacts'}
+                  aria-label={isSavedContact ? 'Already in contacts' : 'Add to contacts'}
+                  disabled={isSavedContact}
+                >
+                  {isSavedContact ? 'IN CONTACTS' : 'ADD TO CONTACTS'}
+                </button>
+              )}
+              {hasSettlement && (
+                <button
+                  type="button"
+                  className="comms-chat-header-toggle"
+                  onClick={() =>
+                    setViewMode((mode) => (mode === 'messages' ? 'info' : 'messages'))
+                  }
+                  title={viewMode === 'messages' ? 'Station info' : 'Messages'}
+                  aria-label={viewMode === 'messages' ? 'Show station info' : 'Show messages'}
+                >
+                  {viewMode === 'messages' ? 'ⓘ' : '✉'}
+                </button>
+              )}
+            </div>
           </div>
           <div className="comms-chat-captain">
             {thread
@@ -326,7 +346,7 @@ export default function DialogueThread({
           </div>
           <div className="comms-dossier-row">
             <span className="comms-dossier-key">ROLE</span>
-            <span className="comms-dossier-val">{ROLE_LABELS[character.role]}</span>
+            <span className="comms-dossier-val">{DOCK_ROLE_LABELS[character.role]}</span>
           </div>
           {character.bio && <p className="comms-dossier-bio">{character.bio}</p>}
         </div>
@@ -357,7 +377,11 @@ export default function DialogueThread({
         isPreHail={isPreHail}
         isEnded={isEnded}
         onClose={onClose}
+        onBack={onBack}
         handleFooterOption={handleFooterOption}
+        canRequestRendezvous={canRequestRendezvous}
+        isRendezvousActive={isRendezvousActive}
+        onRequestRendezvous={onRequestRendezvous}
       />
     </div>
   );

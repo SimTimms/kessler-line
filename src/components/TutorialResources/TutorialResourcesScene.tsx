@@ -21,6 +21,7 @@ import RadiationZones from '../RadiationZones';
 import { RADIATION_ZONES } from './radationConfigTutorial';
 import { UBoat } from './UBoat';
 import LaserRay from '../Combat/LaserRay';
+import HoverSceneTools from '../HoverSceneTools';
 import ProximityHighlight from '../Proximity/ProximityHighlight';
 import ScannerRangeRings from '../Scanners/ScannerRangeRings';
 import StartZoneAsteroidCluster from '../Environment/StartZoneAsteroidCluster';
@@ -98,6 +99,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
           <RadiationZones radiationZones={RADIATION_ZONES} />
           <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
           <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+          <HoverSceneTools />
           <ProximityHighlight />
           <ScannerRangeRings />
         </Suspense>

@@ -2,7 +2,7 @@ import { memo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import PowerHUD from '../PowerHUD/PowerHUD';
 import { NavHUD, type TutorialTargetDef } from '../NavHUD/NavHUD';
-import { ScannerHUD } from '../HUD/ScannerHUD';
+import { ScannerHUD, type ScannerHUDElementId } from '../HUD/ScannerHUD';
 import ContactsHUD from '../../ContactsHUD/ContactsHUD';
 import DockTransferHUD from '../DockTransferHUD/DockTransferHUD';
 import ShipControlsHUD from '../ShipControlsHUD/ShipControlsHUD';
@@ -33,6 +33,7 @@ export interface HelmetHUDProps {
   customPlanetaryTargets?: TutorialTargetDef[];
   thrustLevel?: number;
   setThrustLevel?: Dispatch<SetStateAction<number>>;
+  scannerInitialPowers?: Partial<Record<ScannerHUDElementId, number>>;
 }
 
 const HelmetHUD = memo(function HelmetHUD({
@@ -42,6 +43,7 @@ const HelmetHUD = memo(function HelmetHUD({
   customPlanetaryTargets,
   thrustLevel,
   setThrustLevel,
+  scannerInitialPowers,
   ...scannerProps
 }: HelmetHUDProps) {
   return (
@@ -63,6 +65,7 @@ const HelmetHUD = memo(function HelmetHUD({
             layout="helmet"
             focusElements={focusElements}
             disableElements={disableElements}
+            initialPowers={scannerInitialPowers}
             {...scannerProps}
           />
           <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />

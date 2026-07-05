@@ -12,15 +12,14 @@ import {
   resolveDialogueText,
 } from '../../narrative/npcDialogues';
 import { getOrCreateShipRecord, addContactEvent } from '../../narrative/shipRegistry';
-import { speakNpcLine } from '../../sound/PiperTTS';
 import type { HailStatus } from '../../context/HailState';
 import DialogueThread from './DialogueThread';
 import './CommsChat.css';
-import { DIALOGUE_TREES } from '../../narrative/npcDialogues';
 import { getRadioBroadcasts, resolveRadioDialogueTreeId } from '../../context/RadioBroadcastRegistry';
 import type { StaticContact } from '../../narrative/contacts';
 import type { MessagePlatform } from '../../context/MessageStore';
 import { RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
+import { acceptShipRendezvous, hasShipRendezvous } from '../../context/RendezvousState';
 
 interface CommsChatProps {
   shipId: string;
@@ -36,7 +35,10 @@ interface CommsChatProps {
   onHail?: () => void;
   onAcceptHail?: () => void;
   onDeclineHail?: () => void;
+  isSavedContact?: boolean;
+  onAddToContacts?: () => void;
   staticContact?: StaticContact;
+  onBack?: () => void;
 }
 
 export default function CommsChat({
@@ -51,7 +53,10 @@ export default function CommsChat({
   onHail,
   onAcceptHail,
   onDeclineHail,
+  isSavedContact = false,
+  onAddToContacts,
   staticContact,
+  onBack,
 }: CommsChatProps) {
   const [thread, setThread] = useState<ChatThread | null>(null);
   const closedRef = useRef(false);
@@ -78,12 +83,17 @@ export default function CommsChat({
   useEffect(() => {
     if (staticContact) return;
 
+    let t = getThread(shipId);
+    if (t) {
+      setThread({ ...t, messages: [...t.messages] });
+      return;
+    }
+
     const status = hailStatus ?? 'accepted';
     if (status !== 'accepted') return;
     if (threadInitRef.current) return;
     threadInitRef.current = true;
 
-    let t = getThread(shipId);
     if (!t) {
       const record = getOrCreateShipRecord(shipId, shipName);
       const tree = getOrAssignDialogueTree(shipId, record);
@@ -107,39 +117,11 @@ export default function CommsChat({
             timestamp: Date.now(),
           });
           setChatTurn(shipId, tree.openingTurnId, false);
-          if (tree.audioFile) {
-            const audio = new Audio(tree.audioFile);
-            audio.play().catch(() => {
-              /* autoplay blocked */
-            });
-          } else {
-            speakNpcLine(openingText, tree.id);
-          }
         }, delay);
       }
     }
     setThread({ ...t, messages: [...t.messages] });
   }, [shipId, shipName, hailStatus, staticContact]);
-
-  // Initialise thread only when hail is accepted
-  useEffect(() => {
-    if (!staticContact) return;
-    console.log(staticContact.relatedMessageIds[0]);
-
-    const audioFile = DIALOGUE_TREES.find(
-      (t) => t.id === staticContact.relatedMessageIds[0]
-    )?.audioFile;
-    if (audioFile) {
-      const audio = new Audio(audioFile);
-      audio.play().catch(() => {
-        /* autoplay blocked */
-      });
-      return () => {
-        audio.pause();
-        audio.currentTime = 0;
-      };
-    }
-  }, [staticContact]);
 
   // Log a contact event when the conversation ends
   useEffect(() => {
@@ -161,6 +143,8 @@ export default function CommsChat({
     currentTurn !== null &&
     (currentTurn?.playerOptions.length ?? 0) > 0;
   const isEnded = !!thread && thread.currentTurnId === null && !thread.awaitingNpc;
+  const canRequestRendezvous = !staticContact && effectiveHailStatus === 'accepted';
+  const isRendezvousActive = hasShipRendezvous(shipId);
 
   const handleOption = (optionId: string) => {
     if (!thread) return;
@@ -195,17 +179,35 @@ export default function CommsChat({
           });
           const isTerminal = nextTurn.playerOptions.length === 0;
           setChatTurn(shipId, isTerminal ? null : option.nextTurnId!, false);
-          speakNpcLine(npcText, dialogueTree.id);
         }, delay);
       }
     }
+  };
+
+  const handleRequestRendezvous = () => {
+    if (staticContact || isRendezvousActive) return;
+    const now = Date.now();
+    addChatMessage(shipId, {
+      id: `player-${shipId}-request-rendezvous-${now}`,
+      role: 'player',
+      text: 'Request rendezvous. Cut thrust and hold steady for docking approach.',
+      timestamp: now,
+    });
+    addChatMessage(shipId, {
+      id: `npc-${shipId}-accept-rendezvous-${now}`,
+      role: 'npc',
+      text: 'Rendezvous acknowledged. Engines idle. Maintaining heading for your approach. You are cleared to dock.',
+      timestamp: now + 1,
+    });
+    acceptShipRendezvous(shipId);
   };
 
   const isBroadcastContact = getRadioBroadcasts().some(
     (e) => e.id === shipId && resolveRadioDialogueTreeId(e)
   );
 
-  const uiPlatform = (staticContact?.platform as MessagePlatform | undefined) ?? platform;
+  // Force a single comms skin across all channels.
+  const uiPlatform: MessagePlatform = RADIO_COMMS_PLATFORM;
 
   return (
     <DialogueThread
@@ -221,12 +223,18 @@ export default function CommsChat({
       onHail={onHail}
       onAcceptHail={onAcceptHail}
       onDeclineHail={onDeclineHail}
+      isSavedContact={isSavedContact}
+      onAddToContacts={onAddToContacts}
       thread={thread}
       playerOptions={currentTurn?.playerOptions ?? []}
       showOptions={showOptions}
       isEnded={isEnded}
       onOption={handleOption}
+      canRequestRendezvous={canRequestRendezvous}
+      isRendezvousActive={isRendezvousActive}
+      onRequestRendezvous={handleRequestRendezvous}
       onClose={onClose}
+      onBack={onBack}
     />
   );
 }

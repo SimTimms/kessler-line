@@ -91,3 +91,18 @@ export const DISPATCHNAME = [
   'RESCUE DISPATCH',
 ];
 export const GHOST_FLEET_RADIUS = 40000000;
+export const GHOST_FLEET_SHIP_COUNT = 100;
+export const GHOST_FLEET_NEPTUNE_SHIP_COUNT = 50;
+export const GHOST_FLEET_NEPTUNE_ORBIT_ALTITUDE_MULTIPLIER = 1.75;
+export const GHOST_FLEET_NEPTUNE_ORBIT_RATIO = 0.8;
+export const GHOST_FLEET_NEPTUNE_ORBIT_BAND_MIN = 0.9;
+export const GHOST_FLEET_NEPTUNE_ORBIT_BAND_MAX = 1.1;
+export const GHOST_FLEET_NEPTUNE_SCATTER_BAND_MIN = 0.55;
+export const GHOST_FLEET_NEPTUNE_SCATTER_BAND_MAX = 1.7;
+export const GHOST_FLEET_NEAR_RENDER_DISTANCE = 30_000;
+export const GHOST_FLEET_NEAR_MODEL_URL = '/uboat.glb';
+/** Target world-space size (longest axis) for rendered rendezvous ships. */
+export const GHOST_FLEET_NEAR_MODEL_TARGET_SIZE = 120;
+/** Extra artist-tuning multiplier applied after auto-normalizing GLB size. */
+export const GHOST_FLEET_NEAR_MODEL_SCALE_MULTIPLIER = 30;
+export const GHOST_FLEET_RENDEZVOUS_DOCK_HALF_EXTENTS = [12, 8, 16] as const;

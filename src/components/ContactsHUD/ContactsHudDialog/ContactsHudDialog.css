@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 19000;
   pointer-events: auto;
 }
 
@@ -164,7 +164,7 @@
 }
 
 .chd-item-content--incoming {
-  color: rgba(255, 170, 0, 0.95);
+  color: rgba(0, 200, 255, 0.95);
   font-weight: bold;
 }
 

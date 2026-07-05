@@ -6,6 +6,7 @@ import { SkeletonUtils } from 'three-stdlib';
 
 interface StationDronesProps {
   center?: [number, number, number];
+  movementNodes?: [number, number, number][];
 }
 
 const DRONE_COUNT = 2;
@@ -97,7 +98,12 @@ function randomBurstDuration(on: boolean) {
     : THREE.MathUtils.lerp(WELD_BURST_OFF_MIN, WELD_BURST_OFF_MAX, Math.random());
 }
 
-function steerAndThrust(state: DroneState, desiredDir: THREE.Vector3, dt: number, drone: THREE.Group) {
+function steerAndThrust(
+  state: DroneState,
+  desiredDir: THREE.Vector3,
+  dt: number,
+  drone: THREE.Group
+) {
   const targetYaw = Math.atan2(desiredDir.x, desiredDir.z);
   let yawErr = targetYaw - drone.rotation.y;
   while (yawErr > Math.PI) yawErr -= Math.PI * 2;
@@ -112,7 +118,12 @@ function steerAndThrust(state: DroneState, desiredDir: THREE.Vector3, dt: number
   }
 }
 
-function steerYawOnly(state: DroneState, desiredDir: THREE.Vector3, dt: number, drone: THREE.Group) {
+function steerYawOnly(
+  state: DroneState,
+  desiredDir: THREE.Vector3,
+  dt: number,
+  drone: THREE.Group
+) {
   const targetYaw = Math.atan2(desiredDir.x, desiredDir.z);
   let yawErr = targetYaw - drone.rotation.y;
   while (yawErr > Math.PI) yawErr -= Math.PI * 2;
@@ -120,24 +131,40 @@ function steerYawOnly(state: DroneState, desiredDir: THREE.Vector3, dt: number, 
   state.angVel += (yawErr * DRONE_YAW_P - state.angVel * DRONE_YAW_D) * dt;
 }
 
-function buildPatrolPoints(center: [number, number, number]): THREE.Vector3[] {
-  return PATROL_POINT_OFFSETS.map(
+function buildPatrolPoints(
+  center: [number, number, number],
+  movementNodes: [number, number, number][]
+): THREE.Vector3[] {
+  return movementNodes.map(
     ([x, y, z]) => new THREE.Vector3(center[0] + x, center[1] + y, center[2] + z)
   );
 }
 
-export default function StationDrones({ center = [26, 44, -7] }: StationDronesProps) {
+export default function StationDrones({
+  center = [26, 44, -7],
+  movementNodes = PATROL_POINT_OFFSETS,
+}: StationDronesProps) {
   const gltf = useGLTF('/drone/untitled.gltf') as unknown as { scene: THREE.Group };
   const droneScenes = useMemo(
     () => Array.from({ length: DRONE_COUNT }, () => SkeletonUtils.clone(gltf.scene)),
     [gltf.scene]
   );
-  const patrolPoints = useMemo(() => buildPatrolPoints(center), [center]);
-
-  const droneRefs = useRef<Array<THREE.Group | null>>(Array.from({ length: DRONE_COUNT }, () => null));
-  const spotRefs = useRef<Array<THREE.SpotLight | null>>(Array.from({ length: DRONE_COUNT }, () => null));
-  const spotTargetRefs = useRef<Array<THREE.Object3D | null>>(Array.from({ length: DRONE_COUNT }, () => null));
-  const weldSpotRefs = useRef<Array<THREE.SpotLight | null>>(Array.from({ length: DRONE_COUNT }, () => null));
+  const patrolPoints = useMemo(
+    () => buildPatrolPoints(center, movementNodes),
+    [center, movementNodes]
+  );
+  const droneRefs = useRef<Array<THREE.Group | null>>(
+    Array.from({ length: DRONE_COUNT }, () => null)
+  );
+  const spotRefs = useRef<Array<THREE.SpotLight | null>>(
+    Array.from({ length: DRONE_COUNT }, () => null)
+  );
+  const spotTargetRefs = useRef<Array<THREE.Object3D | null>>(
+    Array.from({ length: DRONE_COUNT }, () => null)
+  );
+  const weldSpotRefs = useRef<Array<THREE.SpotLight | null>>(
+    Array.from({ length: DRONE_COUNT }, () => null)
+  );
   const weldSpotTargetRefs = useRef<Array<THREE.Object3D | null>>(
     Array.from({ length: DRONE_COUNT }, () => null)
   );
@@ -262,7 +289,12 @@ export default function StationDrones({ center = [26, 44, -7] }: StationDronesPr
       if (state.state !== 'arrive') {
         drone.rotation.y += state.angVel * dt;
         drone.position.addScaledVector(state.vel, dt);
-        drone.position.y = THREE.MathUtils.damp(drone.position.y, _target.y, DRONE_VERTICAL_FOLLOW, dt);
+        drone.position.y = THREE.MathUtils.damp(
+          drone.position.y,
+          _target.y,
+          DRONE_VERTICAL_FOLLOW,
+          dt
+        );
         state.vel.y = 0;
       }
 
@@ -332,6 +364,10 @@ export default function StationDrones({ center = [26, 44, -7] }: StationDronesPr
 
   return (
     <>
+      <mesh>
+        <boxGeometry args={[10000, 10000, 10000]} />
+        <meshBasicMaterial color="#ff0000" transparent opacity={1} depthWrite={false} wireframe />
+      </mesh>
       {droneScenes.map((scene, i) => (
         <group
           key={`tutorial-station-drone-${i}`}

@@ -10,6 +10,7 @@ import { proximityScanOnRef } from '../../context/ProximityScan';
 import { radioOnRef } from '../../context/RadioState';
 import { SANDBOX_PLANETARY_NAV_TARGETS } from '../../config/planetaryNavTargets';
 import type { Dispatch, SetStateAction } from 'react';
+import type { ScannerHUDElementId } from './HUD/ScannerHUD';
 
 interface AllHudsProps {
   spotlightOn: boolean;
@@ -24,6 +25,7 @@ interface AllHudsProps {
   setRadioOn: Dispatch<SetStateAction<boolean>>;
   activeHudElementsState?: string[];
   disabledHudElementsState?: string[];
+  scannerInitialPowers?: Partial<Record<ScannerHUDElementId, number>>;
 }
 
 export default function AllHuds({
@@ -39,6 +41,7 @@ export default function AllHuds({
   setRadioOn,
   activeHudElementsState,
   disabledHudElementsState,
+  scannerInitialPowers,
 }: AllHudsProps) {
   return (
     <div>
@@ -60,6 +63,7 @@ export default function AllHuds({
         radioOnRef={radioOnRef}
         focusElements={activeHudElementsState}
         disableElements={disabledHudElementsState}
+        scannerInitialPowers={scannerInitialPowers}
         sceneRadioContactsOnly
         customPlanetaryTargets={SANDBOX_PLANETARY_NAV_TARGETS}
       />

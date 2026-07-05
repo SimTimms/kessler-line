@@ -8,6 +8,7 @@ import {
 
 /** Slot order must match `Spaceship` point lights: main ×2, then RCS ×5. */
 export const THRUSTER_POINT_LIGHT_COUNT = 7;
+const MAX_THRUSTER_VISUAL_MULTIPLIER = 3;
 
 export interface ThrusterLightActives {
   reverseA: boolean;
@@ -30,7 +31,7 @@ export function updateThrusterLights({
   actives: ThrusterLightActives;
   dt: number;
 }) {
-  const m = thrustMultiplier.current;
+  const m = Math.min(thrustMultiplier.current, MAX_THRUSTER_VISUAL_MULTIPLIER);
   const targets: number[] = [
     actives.reverseA ? THRUSTER_LIGHT_INTENSITY_MAIN * m : 0,
     actives.reverseB ? THRUSTER_LIGHT_INTENSITY_MAIN * m : 0,

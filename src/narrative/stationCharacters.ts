@@ -1,67 +1,13 @@
-// Station-resident NPCs the player can talk to while docked.
-// Each character has a dossier (name, age, place of birth, employer) and is
-// linked to a dialogue tree in stationDialogues.ts. STATION_RESIDENTS maps a
-// dockable stationId (the value carried on the `ShipDocked` event) to the
-// characters aboard that station.
+// Back-compat re-exports — dock contacts and dialogue trees now live inline on each
+// DockingBay's `dock` prop (see config/dockConfig.ts and config/docks/).
 
-import type { MessagePlatform } from '../context/MessageStore';
+export type { DockContact as StationCharacter, DockCharacterRole as CharacterRole } from '../config/dockConfig';
+export { DOCK_ROLE_LABELS as ROLE_LABELS } from '../config/dockConfig';
+import { getDockContacts } from '../context/DockablePartnerStore';
 
-export type CharacterRole = 'dockmaster' | 'gangster' | 'merchant' | 'official' | 'drifter';
+export { getDockContact as getCharacter } from '../context/DockablePartnerStore';
 
-export interface StationCharacter {
-  id: string;
-  name: string;
-  age: number;
-  /** Place of birth — shown in the dossier. */
-  birthplace: string;
-  /** Employer, if any. Independents leave this undefined. */
-  company?: string;
-  role: CharacterRole;
-  /** Portrait image path. Placeholder art for now; swap for final portraits later. */
-  portrait: string;
-  /** Short backstory blurb shown on the dossier view. */
-  bio?: string;
-  /** Comms colour skin for the dialogue panel (REACH cyan, HERALD amber, …). */
-  platform?: MessagePlatform;
-  /** Links to a tree in STATION_DIALOGUE_TREES. */
-  dialogueTreeId: string;
-}
-
-export const ROLE_LABELS: Record<CharacterRole, string> = {
-  dockmaster: 'Dockmaster',
-  gangster: 'Syndicate',
-  merchant: 'Merchant',
-  official: 'Port Official',
-  drifter: 'Drifter',
-};
-
-export const STATION_CHARACTERS: Record<string, StationCharacter> = {
-  'dockmaster-korr': {
-    id: 'dockmaster-korr',
-    name: 'Vance Korr',
-    age: 54,
-    birthplace: 'Ceres, Belt',
-    company: 'Helix Port Authority',
-    role: 'dockmaster',
-    portrait: '/Image_0.jpg',
-    bio: 'Thirty years running approach control out of the Belt. Seen every kind of \
-hauler limp into a cradle. Runs a tight cycle and remembers a favour — and a slight.',
-    platform: 'HERALD',
-    dialogueTreeId: 'dockmaster',
-  },
-};
-
-/** Dockable stationId → character ids aboard. Re-key freely as new docks are added. */
-export const STATION_RESIDENTS: Record<string, string[]> = {
-  'space-station': ['dockmaster-korr'],
-};
-
-export function getStationResidents(stationId: string | null): StationCharacter[] {
+export function getStationResidents(stationId: string | null) {
   if (!stationId) return [];
-  const ids = STATION_RESIDENTS[stationId] ?? [];
-  return ids.map((id) => STATION_CHARACTERS[id]).filter((c): c is StationCharacter => !!c);
-}
-
-export function getCharacter(id: string): StationCharacter | undefined {
-  return STATION_CHARACTERS[id];
+  return getDockContacts(stationId);
 }

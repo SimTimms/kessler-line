@@ -1,9 +1,7 @@
 import { memo } from 'react';
 import DockingDialog from '../WorldObjects/DockingDialog';
-import StationCrewPanel from '../Station/StationCrewPanel';
 import type { MissionId } from '../../hooks/useMissionState';
 import { hasDockablePartner } from '../../context/DockablePartnerStore';
-import { getStationResidents } from '../../narrative/stationCharacters';
 
 interface DialogLayerProps {
   docked: boolean;
@@ -30,8 +28,9 @@ const DialogLayer = memo(function DialogLayer({
   onMissionSelect,
   onMissionComplete,
 }: DialogLayerProps) {
+  // Legacy mission/refuel dialog for docks without a `dock` config. Interior comms
+  // contacts are handled via ContactsHUD when docked at a configured bay.
   const showStationDialog = docked && !hasDockablePartner(dockedStation);
-  const showCrew = docked && getStationResidents(dockedStation).length > 0;
 
   return (
     <>
@@ -48,7 +47,6 @@ const DialogLayer = memo(function DialogLayer({
           onMissionComplete={onMissionComplete}
         />
       )}
-      {showCrew && <StationCrewPanel key={dockedStation} dockedStation={dockedStation} />}
     </>
   );
 });

@@ -5,6 +5,7 @@ import type { ShipClass, ShipFaction, ShipAgenda, ShipRegion, ShipRecord } from 
 import { getPlayerRegion } from './shipRegistry';
 import type { MessagePlatform, InboxMessage, ReplyOption } from '../context/MessageStore';
 import { BROADCAST_DIALOGUE_TREES } from './broadcastDialogues';
+import { PILOT_PROFILE } from './pilotProfile';
 
 export interface PlayerOption {
   id: string;
@@ -214,7 +215,96 @@ export const MSG_EMPLOYER_RECALL: DialogueTree = {
   },
 };
 
+export const SATURN_STARTER_DIALOGUE_TREE_ID = 'saturn-rendezvous-missing';
+
+const SATURN_STARTER_TREE: DialogueTree = {
+  id: SATURN_STARTER_DIALOGUE_TREE_ID,
+  captainName: '',
+  vesselName: '',
+  openingTurnId: 'intro',
+  turns: {
+    intro: {
+      id: 'intro',
+      npcText:
+        "Hey, this is a fleet recon ship. Not much out here. We haven't had contact from anyone in days — that's not unusual this far out, but we were expecting a rendezvous and got complete radio silence. Have you had any contact out here?",
+      playerOptions: [
+        {
+          id: 'intro-earth-blackout',
+          label: 'EARTH IS DARK',
+          text: `Negative. I was at a station a few days ago and heard Earth-side comms were going dark in waves. Nothing confirmed, but the blackout sounds real.\n\n— ${PILOT_PROFILE.name}`,
+          nextTurnId: 'earth-blackout',
+        },
+        {
+          id: 'intro-rendezvous',
+          label: 'WHO WERE YOU MEETING',
+          text: `No confirmed contact on my side. Who was your rendezvous with?\n\n— ${PILOT_PROFILE.name}`,
+          nextTurnId: 'rendezvous',
+        },
+        {
+          id: 'intro-hoard',
+          label: 'CONSERVE SUPPLIES',
+          text: `No contact. I'd start conserving supplies now — fuel, food, and life support.\n\n— ${PILOT_PROFILE.name}`,
+          nextTurnId: 'hoard',
+        },
+      ],
+    },
+    'earth-blackout': {
+      id: 'earth-blackout',
+      npcText:
+        "That's the first straight answer I've had all week. We heard the same rumor but nobody wanted to say it out loud. If Earth is dark, every route inward is going to get crowded fast.",
+      playerOptions: [
+        {
+          id: 'earth-blackout-goal',
+          label: 'HEADING INWARD',
+          text: `Copy. My plan is to head back toward the inner system and verify what's happened near Earth.\n\n— ${PILOT_PROFILE.name}`,
+          nextTurnId: 'close',
+        },
+      ],
+    },
+    rendezvous: {
+      id: 'rendezvous',
+      npcText:
+        "Survey cutter out of Titan orbit. Precise crew. Never misses a window. This time we got nothing — no ping, no delay notice, no debris trace. Just silence.",
+      playerOptions: [
+        {
+          id: 'rendezvous-goal',
+          label: 'WIDEN YOUR SEARCH',
+          text: `Understood. Expand your sweep and keep your transponder hot. I'm moving inward toward Earth and can relay if I hear anything solid.\n\n— ${PILOT_PROFILE.name}`,
+          nextTurnId: 'close',
+        },
+      ],
+    },
+    hoard: {
+      id: 'hoard',
+      npcText:
+        "You're not wrong. We burned too much waiting on a ship that never arrived. We'll lock down nonessential systems and ration from now on.",
+      playerOptions: [
+        {
+          id: 'hoard-goal',
+          label: 'MOVE TOWARD INNER SYSTEM',
+          text: `Good call. I'm doing the same — stock up, then push toward the inner system and see what happened at Earth.\n\n— ${PILOT_PROFILE.name}`,
+          nextTurnId: 'close',
+        },
+      ],
+    },
+    close: {
+      id: 'close',
+      npcText:
+        "Copy. If you hear anything verifiable from Earth relays, push it on this frequency. We'll return the favor. Recon out.",
+      playerOptions: [
+        {
+          id: 'close-ack',
+          label: 'KEEP CHANNEL OPEN',
+          text: `Channel open. Stay safe.\n\n— ${PILOT_PROFILE.name}`,
+          nextTurnId: null,
+        },
+      ],
+    },
+  },
+};
+
 export const DIALOGUE_TREES: DialogueTree[] = [
+  SATURN_STARTER_TREE,
   // ── Tree 1: Cargo hauler in transit ───────────────────────────────────────
   {
     id: 'cargo-runner',

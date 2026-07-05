@@ -36,7 +36,7 @@
   background: rgba(0, 8, 18, 0.97);
   border: 1px solid var(--cc-border);
   font-family: monospace;
-  z-index: 50;
+  z-index: 20000;
   box-shadow:
     0 0 40px var(--cc-glow),
     inset 0 0 60px rgba(0, 0, 0, 0.4);
@@ -126,6 +126,13 @@
   margin-bottom: 3px;
 }
 
+.comms-chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .comms-chat-vessel {
   font-size: 15px;
   letter-spacing: 0.1em;
@@ -156,6 +163,36 @@
   background: var(--cc-btn-bg-hover);
   border-color: var(--cc-btn-border-hover);
   color: var(--cc-btn-text-hover);
+}
+
+.comms-chat-header-action {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--cc-btn-border);
+  background: var(--cc-btn-bg);
+  color: var(--cc-btn-text);
+  font-family: monospace;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.comms-chat-header-action:hover:not(:disabled) {
+  background: var(--cc-btn-bg-hover);
+  border-color: var(--cc-btn-border-hover);
+  color: var(--cc-btn-text-hover);
+}
+
+.comms-chat-header-action:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .comms-chat-captain {
@@ -423,6 +460,11 @@
 
 .comms-chat-status-line--rejected {
   color: rgba(255, 60, 0, 0.5);
+}
+
+.comms-chat-status-line--notice {
+  color: var(--cc-pulse);
+  font-size: 9px;
 }
 
 .comms-chat-hail-btn {
