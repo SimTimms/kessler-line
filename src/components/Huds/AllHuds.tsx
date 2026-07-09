@@ -1,8 +1,5 @@
 import HelmetHUD from './HelmetHUD/HelmetHUD';
-import MagneticHUD from './MagneticHUD';
-import DriveSignatureHUD from './DriveSignatureHUD';
-import ProximityHUD from '../Proximity/ProximityHUD';
-import RadiationHUD from '../RadiationHUD';
+import SharedScannerOverlayHuds from './SharedScannerOverlayHuds';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { magneticOnRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
@@ -67,10 +64,7 @@ export default function AllHuds({
         sceneRadioContactsOnly
         customPlanetaryTargets={SANDBOX_PLANETARY_NAV_TARGETS}
       />
-      <MagneticHUD />
-      <DriveSignatureHUD />
-      <ProximityHUD />
-      <RadiationHUD />
+      <SharedScannerOverlayHuds />
     </div>
   );
 }

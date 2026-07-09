@@ -628,7 +628,8 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
           id: dockContactThreadId(dockedPartnerId, contact.id),
           label: contact.name,
           sublabel: DOCK_ROLE_LABELS[contact.role],
-          statusLine: commsStatus.accepted,
+          avatarSrc: contact.portrait,
+          avatarAlt: contact.name,
         })),
         ...getDockJobs(dockedPartnerId)
           .filter((job) => job.dialogue)
@@ -636,7 +637,6 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
             id: dockJobThreadId(dockedPartnerId, job.id),
             label: job.title,
             sublabel: 'JOB BOARD',
-            statusLine: commsStatus.accepted,
           })),
       ]
     : [];

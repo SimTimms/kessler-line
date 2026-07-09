@@ -57,7 +57,7 @@ const _shipForward = new THREE.Vector3(0, 0, 1);
 const NAVVIEW_HEIGHT = 50000;
 const NAVVIEW_POSITION_LERP_SPEED = 4.2;
 const NAVVIEW_MIN_HEIGHT = 600;
-const NAVVIEW_MAX_HEIGHT = 250000;
+const NAVVIEW_MAX_HEIGHT = 2500000;
 const NAVVIEW_TOPDOWN_PHI = 0.02;
 
 export default function TutorialFollowCamera({

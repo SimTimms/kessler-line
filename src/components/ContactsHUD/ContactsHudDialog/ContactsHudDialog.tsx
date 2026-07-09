@@ -9,6 +9,8 @@ export interface SelectionItem {
   id: string;
   label: string;
   sublabel?: string;
+  avatarSrc?: string;
+  avatarAlt?: string;
   statusIcon?: string;
   statusLine?: string;
   statusPulse?: boolean;
@@ -70,9 +72,9 @@ export function ContactsHudDialog({
     return `chd-item${item.id === selectedId ? ' chd-item--active' : ''}${item.statusIcon ? ' chd-item--unread' : ''}${statusClass}`;
   }
 
-  function renderItem(item: SelectionItem, showSave: boolean) {
+  function renderItem(item: SelectionItem, showSave: boolean, isDockInterior = false) {
     return (
-      <div key={item.id} className="chd-item-row">
+      <div key={item.id} className={`chd-item-row${isDockInterior ? ' chd-item-row--docked' : ''}`}>
         <button
           className={itemClass(item)}
           onClick={(e) => {
@@ -81,6 +83,13 @@ export function ContactsHudDialog({
             onSelect(item.id);
           }}
         >
+          {item.avatarSrc ? (
+            <img
+              className="chd-item-avatar"
+              src={item.avatarSrc}
+              alt={item.avatarAlt ?? `${item.label} portrait`}
+            />
+          ) : null}
           <span className="chd-item-content">
             <span className="chd-item-label">{item.label}</span>
             {item.sublabel && <span className="chd-item-sublabel">{item.sublabel}</span>}
@@ -120,11 +129,11 @@ export function ContactsHudDialog({
         <div className="chd-title">{title}</div>
         <div className="chd-list">
           {dockInteriorItems.length > 0 && (
-            <section>
+            <section className="chd-section chd-section--dock-interior">
               <div className="chd-section-header">
                 {dockInteriorLabel ? `ABOARD · ${dockInteriorLabel}` : 'DOCK INTERIOR'}
               </div>
-              {dockInteriorItems.map((item) => renderItem(item, false))}
+              {dockInteriorItems.map((item) => renderItem(item, false, true))}
             </section>
           )}
           {incomingItems.length > 0 && (

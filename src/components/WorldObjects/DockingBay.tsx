@@ -1,12 +1,7 @@
 import { useRef, useCallback, useEffect, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
-import {
-  selectTarget,
-  selectedTargetName,
-  selectedTargetVelocity,
-} from '../../context/TargetSelection';
+import { selectTarget } from '../../context/TargetSelection';
 import { useRegisterDock } from '../../hooks/useRegisterDockablePartner';
 import type { DockConfig } from '../../config/dockConfig';
 
@@ -22,6 +17,8 @@ interface DockingBayProps {
    * contacts, and optional job board. Requires `stationId` (becomes the dock id).
    */
   dock?: DockConfig;
+  /** Debug helper: clicking the bay simulates docking for UI testing. */
+  debugDockOnClick?: boolean;
 }
 
 export default function DockingBay({
@@ -32,6 +29,7 @@ export default function DockingBay({
   dimensions,
   rotation = [0, Math.PI, 0],
   dock,
+  debugDockOnClick = false,
 }: DockingBayProps) {
   const COLLISION_ID = stationId ? `docking-bay-${stationId}` : `docking-bay-${Math.random()}`;
 
@@ -39,10 +37,6 @@ export default function DockingBay({
   useRegisterDock(stationId, dockConfig);
 
   const groupRef = useRef<THREE.Group>(null!);
-  const velocityRef = useRef(new THREE.Vector3());
-  const prevPosRef = useRef(new THREE.Vector3());
-  const hasPrevRef = useRef(false);
-  const _worldPos = new THREE.Vector3();
 
   const setGroupRef = useCallback(
     (el: THREE.Group | null) => {
@@ -64,7 +58,7 @@ export default function DockingBay({
         if (groupRef.current) groupRef.current.getWorldQuaternion(target);
         return target;
       },
-      getWorldVelocity: (target) => target.copy(velocityRef.current),
+      getWorldVelocity: (target) => target.set(0, 0, 0),
       shape: {
         type: 'box',
         halfExtents: new THREE.Vector3(dimensions.x * 0.5, dimensions.y * 0.5, dimensions.z * 0.5),
@@ -76,26 +70,6 @@ export default function DockingBay({
     };
   }, [dimensions]);
 
-  // Priority 1: run after BodyOrbit (0) so world velocity matches this frame's orbit pose.
-  useFrame((_, delta) => {
-    if (!groupRef.current || delta <= 0) return;
-    groupRef.current.getWorldPosition(_worldPos);
-    if (hasPrevRef.current) {
-      velocityRef.current
-        .copy(_worldPos)
-        .sub(prevPosRef.current)
-        .multiplyScalar(1 / delta);
-    } else {
-      velocityRef.current.set(0, 0, 0);
-      hasPrevRef.current = true;
-    }
-    prevPosRef.current.copy(_worldPos);
-
-    if (selectedTargetName === COLLISION_ID) {
-      selectedTargetVelocity.copy(velocityRef.current);
-    }
-  }, 1);
-
   return (
     <>
       <group
@@ -103,14 +77,25 @@ export default function DockingBay({
         rotation={rotation}
         onClick={(e) => {
           e.stopPropagation();
-          selectTarget(COLLISION_ID, velocityRef.current);
+          selectTarget(COLLISION_ID);
+          if (debugDockOnClick) {
+            window.dispatchEvent(
+              new CustomEvent('ShipDocked', { detail: { stationId: stationId ?? null } })
+            );
+          }
         }}
         scale={scale}
         position={position}
       >
         <mesh>
           <boxGeometry args={[dimensions.x, dimensions.y, dimensions.z]} />
-          <meshStandardMaterial color="#ffffff" side={THREE.DoubleSide} emissive="#ffffff" />
+          <meshStandardMaterial
+            color="#ffffff"
+            side={THREE.DoubleSide}
+            emissive="#ffffff"
+            transparent
+            opacity={0.5}
+          />
         </mesh>
       </group>
     </>

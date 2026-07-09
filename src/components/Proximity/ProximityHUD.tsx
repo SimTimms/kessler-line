@@ -7,6 +7,9 @@ import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { SHIP_COLLISION_ID, drainPower } from '../../context/ShipState';
 
 const EDGE_PAD = 30;
+const MARKER_SMOOTHING = 0.35;
+const MARKER_MIN_MOVE_PX = 0.25;
+const EDGE_HYSTERESIS_PX = 8;
 
 function getLabelFromId(id: string): string {
   if (id.startsWith('debris-')) return 'DEBRIS';
@@ -53,6 +56,11 @@ function createMarker(container: HTMLElement) {
 }
 
 type Marker = ReturnType<typeof createMarker>;
+type MarkerScreenState = {
+  x: number;
+  y: number;
+  onScreen: boolean;
+};
 
 function styleOnScreen(marker: Marker, size: number, color: string) {
   marker.box.style.cssText = `
@@ -75,6 +83,27 @@ function styleOffScreen(marker: Marker, color: string) {
   `;
 }
 
+function isOnScreenWithHysteresis(
+  x: number,
+  y: number,
+  isBehind: boolean,
+  width: number,
+  height: number,
+  wasOnScreen: boolean
+): boolean {
+  if (isBehind) return false;
+  const inPrimary =
+    x > EDGE_PAD && x < width - EDGE_PAD && y > EDGE_PAD && y < height - EDGE_PAD;
+  if (inPrimary) return true;
+  if (!wasOnScreen) return false;
+  return (
+    x > EDGE_PAD - EDGE_HYSTERESIS_PX &&
+    x < width - EDGE_PAD + EDGE_HYSTERESIS_PX &&
+    y > EDGE_PAD - EDGE_HYSTERESIS_PX &&
+    y < height - EDGE_PAD + EDGE_HYSTERESIS_PX
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ProximityHUD() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +113,7 @@ export default function ProximityHUD() {
     if (!container) return;
 
     const markers = new Map<string, Marker>();
+    const markerStates = new Map<string, MarkerScreenState>();
     const _pos = new THREE.Vector3();
     const _ndc = new THREE.Vector3();
 
@@ -97,6 +127,7 @@ export default function ProximityHUD() {
 
       if (!proximityScanOnRef.current || !sceneCamera.current) {
         for (const m of markers.values()) m.root.style.display = 'none';
+        for (const s of markerStates.values()) s.onScreen = false;
         return;
       }
 
@@ -120,6 +151,8 @@ export default function ProximityHUD() {
         if (dist > range) {
           const m = markers.get(entry.id);
           if (m) m.root.style.display = 'none';
+          const state = markerStates.get(entry.id);
+          if (state) state.onScreen = false;
           continue;
         }
 
@@ -128,7 +161,11 @@ export default function ProximityHUD() {
         if (!markers.has(entry.id)) {
           markers.set(entry.id, createMarker(container));
         }
+        if (!markerStates.has(entry.id)) {
+          markerStates.set(entry.id, { x: 0, y: 0, onScreen: false });
+        }
         const marker = markers.get(entry.id)!;
+        const state = markerStates.get(entry.id)!;
 
         const ratio = dist / range;
         const color = getColor(ratio);
@@ -148,14 +185,25 @@ export default function ProximityHUD() {
         let sx = (_ndc.x * 0.5 + 0.5) * W;
         let sy = (-_ndc.y * 0.5 + 0.5) * H;
 
-        const onScreen =
-          !isBehind && sx > EDGE_PAD && sx < W - EDGE_PAD && sy > EDGE_PAD && sy < H - EDGE_PAD;
+        const onScreen = isOnScreenWithHysteresis(
+          sx,
+          sy,
+          isBehind,
+          W,
+          H,
+          state.onScreen
+        );
 
         if (onScreen) {
           const SIZE = 18;
           styleOnScreen(marker, SIZE, color);
-          marker.root.style.left = `${sx - SIZE * 0.5}px`;
-          marker.root.style.top = `${sy - SIZE * 0.5}px`;
+          state.x += (sx - state.x) * MARKER_SMOOTHING;
+          state.y += (sy - state.y) * MARKER_SMOOTHING;
+          if (Math.abs(sx - state.x) < MARKER_MIN_MOVE_PX) state.x = sx;
+          if (Math.abs(sy - state.y) < MARKER_MIN_MOVE_PX) state.y = sy;
+          marker.root.style.left = `${Math.round(state.x - SIZE * 0.5)}px`;
+          marker.root.style.top = `${Math.round(state.y - SIZE * 0.5)}px`;
+          state.onScreen = true;
         } else {
           if (isBehind) {
             sx = W - sx;
@@ -170,14 +218,23 @@ export default function ProximityHUD() {
           const ex = scale < 1 ? cx + dx * scale : sx;
           const ey = scale < 1 ? cy + dy * scale : sy;
           styleOffScreen(marker, color);
-          marker.root.style.left = `${ex - 7}px`;
-          marker.root.style.top = `${ey - 7}px`;
+          state.x += (ex - state.x) * MARKER_SMOOTHING;
+          state.y += (ey - state.y) * MARKER_SMOOTHING;
+          if (Math.abs(ex - state.x) < MARKER_MIN_MOVE_PX) state.x = ex;
+          if (Math.abs(ey - state.y) < MARKER_MIN_MOVE_PX) state.y = ey;
+          marker.root.style.left = `${Math.round(state.x - 7)}px`;
+          marker.root.style.top = `${Math.round(state.y - 7)}px`;
+          state.onScreen = false;
         }
       }
 
       // Hide markers that are no longer within range
       for (const [id, m] of markers) {
-        if (!visibleIds.has(id)) m.root.style.display = 'none';
+        if (!visibleIds.has(id)) {
+          m.root.style.display = 'none';
+          const state = markerStates.get(id);
+          if (state) state.onScreen = false;
+        }
       }
     };
 
@@ -185,6 +242,7 @@ export default function ProximityHUD() {
     return () => {
       cancelAnimationFrame(rafId);
       for (const m of markers.values()) m.root.remove();
+      markerStates.clear();
     };
   }, []);
 

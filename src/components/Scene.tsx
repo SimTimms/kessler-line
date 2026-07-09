@@ -21,9 +21,7 @@ import { SPACE_STATION_DOCK } from '../config/docks/spaceStationDockConfig';
 import EjectedCargo from './WorldObjects/EjectedCargo';
 import SpaceDebris from './WorldObjects/SpaceDebris';
 import CargoContainerField from './WorldObjects/CargoContainerField';
-import HoverSceneTools from './HoverSceneTools';
-import ProximityHighlight from './Proximity/ProximityHighlight';
-import ScannerRangeRings from './Scanners/ScannerRangeRings';
+import SharedInteractionSceneTools from './SharedInteractionSceneTools';
 import { sceneCamera } from '../context/CameraRef';
 import AIShip from './NPCs/AIShip';
 import AIScrapper from './NPCs/AIScrapper';
@@ -166,7 +164,7 @@ export default function Scene() {
       <OrbitCamera followTarget={shipPosRef} attachTo={spaceshipGroupRef} />
       <ProgressiveAssetPreloader loadStage={loadStage} />
       <AutopilotController />
-      <HoverSceneTools />
+      <SharedInteractionSceneTools showScannerTools={loadStage >= 3} />
 
       <Suspense fallback={null}>
         <SolarSystem scale={SOLAR_SYSTEM_SCALE} />
@@ -270,8 +268,6 @@ export default function Scene() {
             beaconGroupRef={beaconGroupRef}
           />
           <RailgunWarning shipGroupRef={spaceshipGroupRef} />
-          <ProximityHighlight />
-          <ScannerRangeRings />
           {/* CinematicController starts its intro timers on mount — fire only
               once the player ship is in the scene and the world is fully set up */}
           <CinematicController />

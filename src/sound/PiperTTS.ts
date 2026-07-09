@@ -6,6 +6,7 @@
 import { getDialogueTreeById } from '../narrative/npcDialogues';
 
 const MAX_QUEUE = 3;
+const COMMS_VOICE_ENABLED = false;
 let speechQueue: Array<{ text: string; characterId?: string; voiceHint?: string }> = [];
 let speaking = false;
 
@@ -114,17 +115,20 @@ function resolveProfile(characterId?: string): CharacterProfile {
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 export function preloadPiperVoice(): void {
+  if (!COMMS_VOICE_ENABLED) return;
   refreshVoiceCache();
   window.speechSynthesis.getVoices();
 }
 
 /** Generic radio chatter — no character assignment. */
 export function speakRadioLine(text: string): void {
+  if (!COMMS_VOICE_ENABLED) return;
   enqueue(text, 'radio');
 }
 
 /** NPC dialogue with character voice profile + emotion. */
 export function speakNpcLine(text: string, characterId: string): void {
+  if (!COMMS_VOICE_ENABLED) return;
   const tree = getDialogueTreeById(characterId);
   enqueue(text, characterId, tree?.audioVoice);
 }
@@ -139,12 +143,19 @@ export function cancelSpeech(): void {
 // ── Queue ──────────────────────────────────────────────────────────────────────
 
 function enqueue(text: string, characterId?: string, voiceHint?: string): void {
+  if (!COMMS_VOICE_ENABLED) return;
   if (speechQueue.length >= MAX_QUEUE) speechQueue.shift();
   speechQueue.push({ text, characterId, voiceHint });
   if (!speaking) drainQueue();
 }
 
 function drainQueue(): void {
+  if (!COMMS_VOICE_ENABLED) {
+    speechQueue = [];
+    speaking = false;
+    window.speechSynthesis.cancel();
+    return;
+  }
   if (speechQueue.length === 0) {
     speaking = false;
     return;

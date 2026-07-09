@@ -251,9 +251,28 @@ section:first-child .chd-section-header {
   gap: 6px;
 }
 
+.chd-item-row--docked {
+  padding: 5px 0;
+}
+
+.chd-section--dock-interior .chd-item-row:not(:last-child) {
+  border-bottom: 1px solid color-mix(in srgb, var(--chd-border) 55%, transparent);
+  margin-bottom: 2px;
+}
+
 .chd-item-row .chd-item {
   flex: 1;
   min-width: 0;
+}
+
+.chd-item-avatar {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--chd-item-border);
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 2px;
+  margin-right: 20px;
 }
 
 .chd-save-btn {

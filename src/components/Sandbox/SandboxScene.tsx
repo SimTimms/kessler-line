@@ -8,9 +8,7 @@ import { shipPosRef } from '../../context/ShipPos';
 import DefaultLighting from '../DefaultLighting';
 import LaserRay from '../Combat/LaserRay';
 import PlayerBullets from '../Combat/PlayerBullets';
-import HoverSceneTools from '../HoverSceneTools';
-import ProximityHighlight from '../Proximity/ProximityHighlight';
-import ScannerRangeRings from '../Scanners/ScannerRangeRings';
+import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import SolarSystem from '../Planets/SolarSystem';
 import SunGravity from '../Environment/SunGravity';
@@ -162,9 +160,7 @@ export default function SandboxScene() {
           worldContent
         )}
         <SunGravity />
-        <HoverSceneTools />
-        <ProximityHighlight />
-        <ScannerRangeRings />
+        <SharedInteractionSceneTools />
         <ShipDepthOfField saturation={-0.9} />
       </Canvas>
     </>

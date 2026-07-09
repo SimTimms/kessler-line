@@ -6,6 +6,10 @@ import { SHIP_CREW_CAPACITY, SHIP_RESOURCE_MAX } from '../../../config/dockTrans
 import {
   DOCKABLE_PARTNER_CHANGED,
   getDockablePartnerLabel,
+  getDockContact,
+  getDockContacts,
+  getDockJob,
+  getDockJobs,
   hasDockablePartner,
   listPartnerResources,
   readPartnerAmount,
@@ -14,6 +18,17 @@ import {
   transferDockableStep,
   type DockableResourceKind,
 } from '../../../context/DockablePartnerStore';
+import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
+import {
+  DOCK_ROLE_LABELS,
+  dockContactThreadId,
+  dockJobThreadId,
+  parseDockThreadId,
+  type DockContact,
+  type DockDialogueTree,
+} from '../../../config/dockConfig';
+import { ContactsHudDialog, type SelectionItem } from '../../ContactsHUD/ContactsHudDialog/ContactsHudDialog';
+import DockInteriorDialogue from '../../Station/StationDialogue';
 import '../HelmetHUD/HelmetHUD.css';
 import './DockTransferHUD.css';
 
@@ -159,6 +174,8 @@ function TransferRow({ partnerId, kind }: TransferRowProps) {
 
 const DockTransferHUD = memo(function DockTransferHUD() {
   const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [contactsOpen, setContactsOpen] = useState(false);
+  const [dockThreadId, setDockThreadId] = useState<string | null>(null);
   const [, bump] = useState(0);
 
   useEffect(() => {
@@ -166,7 +183,11 @@ const DockTransferHUD = memo(function DockTransferHUD() {
       const id = (e as CustomEvent<{ stationId: string | null }>).detail?.stationId ?? null;
       setPartnerId(hasDockablePartner(id) ? id : null);
     };
-    const onUndocked = () => setPartnerId(null);
+    const onUndocked = () => {
+      setPartnerId(null);
+      setContactsOpen(false);
+      setDockThreadId(null);
+    };
     const onChanged = () => bump((n) => n + 1);
 
     window.addEventListener('ShipDocked', onDocked);
@@ -189,10 +210,58 @@ const DockTransferHUD = memo(function DockTransferHUD() {
     return () => cancelAnimationFrame(raf);
   }, [partnerId]);
 
+  function resolveDockInteriorChat(
+    threadId: string
+  ): { contact: DockContact; dialogue: DockDialogueTree } | null {
+    const parsed = parseDockThreadId(threadId);
+    if (!parsed) return null;
+
+    if (parsed.jobId) {
+      const job = getDockJob(parsed.dockId, parsed.jobId);
+      if (!job?.dialogue) return null;
+      return {
+        contact: {
+          id: parsed.jobId,
+          name: job.title,
+          role: 'official',
+          portrait: '/Image_0.jpg',
+          bio: job.summary,
+          platform: 'HERALD',
+          dialogue: job.dialogue,
+        },
+        dialogue: job.dialogue,
+      };
+    }
+
+    if (parsed.contactId) {
+      const contact = getDockContact(parsed.dockId, parsed.contactId);
+      if (!contact) return null;
+      return { contact, dialogue: contact.dialogue };
+    }
+
+    return null;
+  }
+
   if (!partnerId) return null;
 
   const kinds = listPartnerResources(partnerId);
-  if (kinds.length === 0) return null;
+  const dockInteriorItems: SelectionItem[] = [
+    ...getDockContacts(partnerId).map((contact) => ({
+      id: dockContactThreadId(partnerId, contact.id),
+      label: contact.name,
+      sublabel: DOCK_ROLE_LABELS[contact.role],
+      avatarSrc: contact.portrait,
+      avatarAlt: contact.name,
+    })),
+    ...getDockJobs(partnerId)
+      .filter((job) => job.dialogue)
+      .map((job) => ({
+        id: dockJobThreadId(partnerId, job.id),
+        label: job.title,
+        sublabel: 'JOB BOARD',
+      })),
+  ];
+  if (kinds.length === 0 && dockInteriorItems.length === 0) return null;
 
   const label = getDockablePartnerLabel(partnerId);
 
@@ -202,14 +271,73 @@ const DockTransferHUD = memo(function DockTransferHUD() {
         <span className="dock-transfer-hud__title">{label}</span>
         <span className="dock-transfer-hud__subtitle">Transfer</span>
       </div>
-      <div className="dock-transfer-hud__cols">
-        <span>Ship</span>
-        <span />
-        <span>Dock</span>
+      {kinds.length > 0 ? (
+        <>
+          <div className="dock-transfer-hud__cols">
+            <span>Ship</span>
+            <span />
+            <span>Dock</span>
+          </div>
+          {kinds.map((kind) => (
+            <TransferRow key={kind} partnerId={partnerId} kind={kind} />
+          ))}
+        </>
+      ) : null}
+      {dockInteriorItems.length > 0 ? (
+        <>
+          <div className="dock-transfer-hud__divider" />
+          <div className="dock-transfer-hud__contacts-row">
+            <span className="dock-transfer-hud__label">Contacts</span>
+            <button
+              type="button"
+              className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
+              onClick={() => setContactsOpen(true)}
+              title={`Open ${label} contacts`}
+            >
+              OPEN
+            </button>
+          </div>
+        </>
+      ) : null}
+      {contactsOpen ? (
+        <ContactsHudDialog
+          title={`${label} CONTACTS`}
+          dockInteriorItems={dockInteriorItems}
+          dockInteriorLabel={label}
+          savedItems={[]}
+          inRangeItems={[]}
+          onSave={() => {}}
+          onSelect={(id) => {
+            setDockThreadId(id);
+            setContactsOpen(false);
+          }}
+          onClose={() => setContactsOpen(false)}
+        />
+      ) : null}
+      {dockThreadId
+        ? (() => {
+            const dockChat = resolveDockInteriorChat(dockThreadId);
+            if (!dockChat) return null;
+            return (
+              <DockInteriorDialogue
+                threadId={dockThreadId}
+                contact={dockChat.contact}
+                dialogue={dockChat.dialogue}
+                onClose={() => setDockThreadId(null)}
+              />
+            );
+          })()
+        : null}
+      <div className="dock-transfer-hud__footer">
+        <button
+          type="button"
+          className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
+          onClick={() => window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK))}
+          title="Undock from current bay"
+        >
+          UNDOCK
+        </button>
       </div>
-      {kinds.map((kind) => (
-        <TransferRow key={kind} partnerId={partnerId} kind={kind} />
-      ))}
     </div>
   );
 });

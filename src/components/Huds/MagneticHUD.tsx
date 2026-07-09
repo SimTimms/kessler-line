@@ -8,6 +8,9 @@ import { shipVelocity } from '../../context/ShipState';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
 const MAX_MARKERS = 200; // pre-allocated pool — supports up to this many simultaneous targets
+const MARKER_SMOOTHING = 0.35;
+const MARKER_MIN_MOVE_PX = 0.25;
+const EDGE_HYSTERESIS_PX = 8;
 
 // ─── Marker DOM structure ────────────────────────────────────────────────────
 function createMarker(container: HTMLElement) {
@@ -44,6 +47,11 @@ function createMarker(container: HTMLElement) {
 }
 
 type Marker = ReturnType<typeof createMarker>;
+type MarkerScreenState = {
+  x: number;
+  y: number;
+  onScreen: boolean;
+};
 
 // ─── On-screen bracket style ─────────────────────────────────────────────────
 function styleOnScreen(marker: Marker, size: number) {
@@ -67,6 +75,27 @@ function styleOffScreen(marker: Marker) {
   `;
 }
 
+function isOnScreenWithHysteresis(
+  x: number,
+  y: number,
+  isBehind: boolean,
+  width: number,
+  height: number,
+  wasOnScreen: boolean
+): boolean {
+  if (isBehind) return false;
+  const inPrimary =
+    x > EDGE_PAD && x < width - EDGE_PAD && y > EDGE_PAD && y < height - EDGE_PAD;
+  if (inPrimary) return true;
+  if (!wasOnScreen) return false;
+  return (
+    x > EDGE_PAD - EDGE_HYSTERESIS_PX &&
+    x < width - EDGE_PAD + EDGE_HYSTERESIS_PX &&
+    y > EDGE_PAD - EDGE_HYSTERESIS_PX &&
+    y < height - EDGE_PAD + EDGE_HYSTERESIS_PX
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function MagneticHUD() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,6 +106,11 @@ export default function MagneticHUD() {
 
     // Pre-allocate a fixed pool of marker DOM nodes
     const markers: Marker[] = Array.from({ length: MAX_MARKERS }, () => createMarker(container));
+    const markerStates: MarkerScreenState[] = Array.from({ length: MAX_MARKERS }, () => ({
+      x: 0,
+      y: 0,
+      onScreen: false,
+    }));
 
     const _vec = new THREE.Vector3();
     const _worldPos = new THREE.Vector3();
@@ -105,6 +139,7 @@ export default function MagneticHUD() {
 
         if (!target) {
           marker.root.style.display = 'none';
+          markerStates[i]!.onScreen = false;
           continue;
         }
 
@@ -113,6 +148,7 @@ export default function MagneticHUD() {
 
         if (dist > magneticScanRangeRef.current) {
           marker.root.style.display = 'none';
+          markerStates[i]!.onScreen = false;
           continue;
         }
 
@@ -138,8 +174,15 @@ export default function MagneticHUD() {
         let sx = (_vec.x * 0.5 + 0.5) * W;
         let sy = (-_vec.y * 0.5 + 0.5) * H;
 
-        const onScreen =
-          !isBehind && sx > EDGE_PAD && sx < W - EDGE_PAD && sy > EDGE_PAD && sy < H - EDGE_PAD;
+        const state = markerStates[i]!;
+        const onScreen = isOnScreenWithHysteresis(
+          sx,
+          sy,
+          isBehind,
+          W,
+          H,
+          state.onScreen
+        );
 
         const distText = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
 
@@ -149,9 +192,14 @@ export default function MagneticHUD() {
         if (onScreen) {
           const SIZE = 28;
           styleOnScreen(marker, SIZE);
-          marker.root.style.left = `${sx}px`;
-          marker.root.style.top = `${sy}px`;
+          state.x += (sx - state.x) * MARKER_SMOOTHING;
+          state.y += (sy - state.y) * MARKER_SMOOTHING;
+          if (Math.abs(sx - state.x) < MARKER_MIN_MOVE_PX) state.x = sx;
+          if (Math.abs(sy - state.y) < MARKER_MIN_MOVE_PX) state.y = sy;
+          marker.root.style.left = `${Math.round(state.x)}px`;
+          marker.root.style.top = `${Math.round(state.y)}px`;
           marker.root.style.transform = 'translate(-50%, -50%)';
+          state.onScreen = true;
         } else {
           if (isBehind) {
             sx = W - sx;
@@ -168,9 +216,14 @@ export default function MagneticHUD() {
           const ey = scale < 1 ? cy + dy * scale : sy;
 
           styleOffScreen(marker);
-          marker.root.style.left = `${ex}px`;
-          marker.root.style.top = `${ey}px`;
+          state.x += (ex - state.x) * MARKER_SMOOTHING;
+          state.y += (ey - state.y) * MARKER_SMOOTHING;
+          if (Math.abs(ex - state.x) < MARKER_MIN_MOVE_PX) state.x = ex;
+          if (Math.abs(ey - state.y) < MARKER_MIN_MOVE_PX) state.y = ey;
+          marker.root.style.left = `${Math.round(state.x)}px`;
+          marker.root.style.top = `${Math.round(state.y)}px`;
           marker.root.style.transform = 'translate(-50%, -50%)';
+          state.onScreen = false;
         }
       }
     };

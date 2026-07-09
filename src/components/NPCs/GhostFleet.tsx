@@ -456,6 +456,7 @@ export default function GhostFleet() {
         id: ship.id,
         label: ship.label,
         getPosition: (target) => target.copy(pos),
+        getVelocity: (target) => target.copy(ship.velocity),
       });
     }
     return () => {

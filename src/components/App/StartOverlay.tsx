@@ -41,12 +41,13 @@ const TUTORIAL_MENU_ITEMS: Array<{
   selection?: TutorialMenuSelection;
   placeholder?: boolean;
 }> = [
+  { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
-  { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
+  /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
   { id: 'air-management', label: 'Air Management', selection: GAME_MODES.airManagement },
   { id: 'radio-management', label: 'Radio Management', selection: GAME_MODES.radioManagement },
-  { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: GAME_MODES.orbitalManagement },
+  { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: GAME_MODES.orbitalManagement },*/
 ];
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {
@@ -72,6 +73,7 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: S
         </div>
         <div className={`start-menu-slider${showTutorialMenu ? ' is-tutorial-menu' : ''}`}>
           <div className="start-menu-page start-menu-page--root">
+            {/*
             <button type="button" className="start-button" onClick={() => dismiss(onStart)}>
               Start Game
             </button>
@@ -104,6 +106,8 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: S
             >
               ← Back
             </button>
+          */}
+
             {TUTORIAL_MENU_ITEMS.map((item) => (
               <button
                 key={item.id}
