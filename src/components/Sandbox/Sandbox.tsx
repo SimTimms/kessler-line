@@ -50,7 +50,7 @@ export default function Sandbox() {
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
   const [proximity, setProximity] = useState(true);
   const [radioOn, setRadioOn] = useState(true);
-  const [showMinimap, setShowMinimap] = useState(false);
+  const [showMinimap, setShowMinimap] = useState(true);
 
   useEffect(() => {
     clearNavTarget();

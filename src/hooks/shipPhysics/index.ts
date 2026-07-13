@@ -13,3 +13,4 @@ export type { ThrusterLightActives } from './thrusterLight';
 export { updateEngineAudio } from './engineAudio';
 export { PHYSICS_MAX_DELTA, PHYSICS_MAX_STEP, DELTA_SPIKE_THRESHOLD } from './constants';
 export { useShipPhysics } from './useShipPhysics';
+export type { ShipPhysicsOptions } from './useShipPhysics';

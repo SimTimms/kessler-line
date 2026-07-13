@@ -31,14 +31,17 @@ const _capsuleA = new THREE.Vector3();
 const _capsuleB = new THREE.Vector3();
 const _surfacePoint = new THREE.Vector3();
 const _surfaceNormal = new THREE.Vector3();
-const _randomDir = new THREE.Vector3();
 
 function isDockingBayCollidable(id: string): boolean {
   return id.startsWith('docking-bay-');
 }
 
-function shouldResolvePhysicalCollision(collidable: CollidableEntry): boolean {
-  if (collidable.id === SHIP_COLLISION_ID) return false;
+function shouldResolvePhysicalCollision(
+  collidable: CollidableEntry,
+  selfCollisionId: string
+): boolean {
+  if (collidable.id === selfCollisionId) return false;
+  if (collidable.id === SHIP_COLLISION_ID && selfCollisionId === SHIP_COLLISION_ID) return false;
   if (isDockingBayCollidable(collidable.id)) return false;
   if (collidable.physicalCollision === false) return false;
   return true;
@@ -209,12 +212,16 @@ function resolveEntryCollision(
   }
 }
 
-export function resolveCollisions(group: THREE.Object3D, velocity: THREE.Vector3) {
+export function resolveCollisions(
+  group: THREE.Object3D,
+  velocity: THREE.Vector3,
+  selfCollisionId = SHIP_COLLISION_ID
+) {
   group.getWorldPosition(_shipWorldPos);
   group.getWorldQuaternion(_shipWorldQuat);
 
   for (const collidable of getCollidables()) {
-    if (!shouldResolvePhysicalCollision(collidable)) continue;
+    if (!shouldResolvePhysicalCollision(collidable, selfCollisionId)) continue;
     collidable.getWorldPosition(_collidablePos);
 
     for (const sample of SHIP_COLLISION_SAMPLES) {

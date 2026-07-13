@@ -2,7 +2,11 @@
 /** Linear thrust acceleration (units per second²). */
 export const THRUST = 2.2;
 /** Yaw angular acceleration (radians per second²). */
-export const YAW_THRUST = 1.0;
+export const YAW_THRUST = 0.3;
+/** Exponential yaw damping rate (1/s) to prevent runaway angular drift. */
+export const YAW_DAMPING = 2.2;
+/** Hard cap for yaw rate (radians/s). */
+export const MAX_YAW_RATE = 0.9;
 /** Bounding sphere radius for legacy point checks (docking helpers, etc.). */
 export const SHIP_RADIUS = 3;
 /** Oriented box half-extents used for ship hull collision + debug overlay. */

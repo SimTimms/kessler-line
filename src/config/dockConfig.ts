@@ -15,6 +15,8 @@ export type DockCharacterRole =
   | 'trader'
   | 'police';
 
+export type DockTradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
+
 export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   dockmaster: 'Dockmaster',
   gangster: 'Syndicate',
@@ -24,6 +26,59 @@ export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   trader: 'Trader',
   police: 'Security',
 };
+
+export interface DockTradeTurnConfig {
+  /** Weighted offer score needed for direct acceptance. */
+  acceptThreshold: number;
+  /** Offers below this score are treated as insulting lowballs. */
+  insultThreshold: number;
+  /** Counteroffer multiplier applied to a non-insulting low offer. */
+  counterMultiplier: number;
+  /** Accept threshold increase per negative stance point. */
+  acceptPenaltyPerNegativeStance: number;
+  /** Insult threshold increase per negative stance point. */
+  insultPenaltyPerNegativeStance: number;
+  /** Insult threshold decrease per positive stance point. */
+  insultReliefPerPositiveStance: number;
+  /** Floor for insult threshold after stance adjustments. */
+  minimumInsultThreshold: number;
+  /** Per-resource weighting used to score offers. */
+  weights?: Partial<Record<DockTradeResourceKind, number>>;
+  /** Status line shown when the panel opens. */
+  panelStatusOpen: string;
+  /** Status line shown when user clears offer. */
+  panelStatusCleared: string;
+  /** Status line shown for empty offers. */
+  panelStatusEmptyOffer: string;
+  /** Status line shown when NPC is insulted. */
+  panelStatusInsult: string;
+  /** Status line shown for accepted offers pending confirmation. */
+  panelStatusAccepted: string;
+  /** Status line shown when NPC sends a counter. Use `{offer}` token. */
+  panelStatusCounter: string;
+  /** Status line shown after successful transfer. Use `{offer}` token. */
+  panelStatusSuccess: string;
+  /** Status line shown when player declines a counteroffer. */
+  panelStatusCounterDeclined: string;
+  /** NPC line when offer is insulting. */
+  npcInsultText: string;
+  /** NPC line when offer is accepted. */
+  npcAcceptText: string;
+  /** NPC line when countering. Use `{offer}` token. */
+  npcCounterText: string;
+  /** NPC line after transfer completes. */
+  npcCompleteText: string;
+  /** NPC line after player declines counteroffer. */
+  npcCounterDeclinedAckText: string;
+  /** Player line when submitting an offer. Use `{offer}` token. */
+  playerOfferText: string;
+  /** Player line when accepting a direct acceptance. Use `{offer}` token. */
+  playerAcceptText: string;
+  /** Player line when accepting a counteroffer. Use `{offer}` token. */
+  playerCounterAcceptText: string;
+  /** Player line when declining a counteroffer. */
+  playerCounterDeclineText: string;
+}
 
 export interface DockPlayerOption {
   id: string;
@@ -37,6 +92,7 @@ export interface DockDialogueTurn {
   id: string;
   npcText: string;
   playerOptions: DockPlayerOption[];
+  trade?: DockTradeTurnConfig;
 }
 
 /** Branching dialogue tree — defined inline on each dock contact. */

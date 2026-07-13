@@ -16,19 +16,23 @@ import { proximityScanOnRef, proximityScanRangeRef } from '../../context/Proximi
 import { radioOnRef, radioRangeRef } from '../../context/RadioState';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { setNavHudEnabled } from '../../context/NavHud';
+import {
+  EVENT_COLLISION_TEST_BURST,
+  EVENT_COLLISION_TEST_FIRE,
+  EVENT_COLLISION_TEST_SET_MODE,
+} from '../Debug/CollisionPhysicsTestRig';
 
 const MODEL_CONFIG_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.DRIVE]: 2,
   [ScannerHUDElements.PROXIMITY]: 2,
   [ScannerHUDElements.MAGNET]: 2,
-  [ScannerHUDElements.RADIO]: 1,
+  [ScannerHUDElements.RADIO]: 2,
   [ScannerHUDElements.RADIATION]: 1,
   [ScannerHUDElements.SPOTLIGHT]: 1,
 } as const;
 
 const MODEL_CONFIG_DISABLED_HUD_ELEMENTS = [
   ScannerHUDElements.SPOTLIGHT,
-  ScannerHUDElements.RADIO,
   ScannerHUDElements.RADIATION,
 ] as const;
 
@@ -49,8 +53,8 @@ function applyModelConfigScannerDefaults(): void {
     'proximity',
     MODEL_CONFIG_SCANNER_INITIAL_POWERS.proximity
   );
-  radioOnRef.current = false;
-  radioRangeRef.current = 0;
+  radioOnRef.current = true;
+  radioRangeRef.current = getScannerRange('radio', MODEL_CONFIG_SCANNER_INITIAL_POWERS.radio);
 }
 
 export default function ModelConfig() {
@@ -58,7 +62,9 @@ export default function ModelConfig() {
   const [magneticOn, setMagneticOn] = useState(true);
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
   const [proximity, setProximity] = useState(true);
-  const [radioOn, setRadioOn] = useState(false);
+  const [radioOn, setRadioOn] = useState(true);
+  const [collisionTestActive, setCollisionTestActive] = useState(false);
+  const [collisionMeshVisible, setCollisionMeshVisible] = useState(false);
 
   useEffect(() => {
     clearNavTarget();
@@ -71,22 +77,130 @@ export default function ModelConfig() {
 
   return (
     <AppContainer>
-      <ModelConfigScene />
+      <ModelConfigScene showCollisionDebug={collisionMeshVisible} />
+      <div
+        style={{
+          position: 'fixed',
+          top: 144,
+          left: 14,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          padding: '8px 10px',
+          border: '1px solid rgba(255, 85, 85, 0.45)',
+          background: 'rgba(10, 0, 0, 0.72)',
+          color: 'rgba(255, 200, 200, 0.95)',
+          fontFamily: 'monospace',
+          fontSize: 11,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          pointerEvents: 'auto',
+          zIndex: 9999,
+        }}
+      >
+        <div>Collision Test {collisionTestActive ? 'ON' : 'OFF'}</div>
+        <div>Collision Mesh {collisionMeshVisible ? 'ON' : 'OFF'}</div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            style={{
+              border: '1px solid rgba(255, 120, 120, 0.55)',
+              background: 'rgba(35, 0, 0, 0.8)',
+              color: 'rgba(255, 210, 210, 0.95)',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontFamily: 'inherit',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+            onClick={() => {
+              const next = !collisionTestActive;
+              setCollisionTestActive(next);
+              window.dispatchEvent(
+                new CustomEvent(EVENT_COLLISION_TEST_SET_MODE, { detail: { active: next } })
+              );
+            }}
+          >
+            {collisionTestActive ? 'Disable' : 'Enable'}
+          </button>
+          <button
+            type="button"
+            style={{
+              border: '1px solid rgba(255, 120, 120, 0.55)',
+              background: 'rgba(35, 0, 0, 0.8)',
+              color: 'rgba(255, 210, 210, 0.95)',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontFamily: 'inherit',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+            onClick={() => {
+              const next = !collisionMeshVisible;
+              setCollisionMeshVisible(next);
+            }}
+          >
+            Mesh
+          </button>
+          <button
+            type="button"
+            style={{
+              border: '1px solid rgba(255, 120, 120, 0.55)',
+              background: 'rgba(35, 0, 0, 0.8)',
+              color: 'rgba(255, 210, 210, 0.95)',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontFamily: 'inherit',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent(EVENT_COLLISION_TEST_FIRE));
+              setCollisionTestActive(true);
+            }}
+          >
+            Fire
+          </button>
+          <button
+            type="button"
+            style={{
+              border: '1px solid rgba(255, 120, 120, 0.55)',
+              background: 'rgba(35, 0, 0, 0.8)',
+              color: 'rgba(255, 210, 210, 0.95)',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontFamily: 'inherit',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent(EVENT_COLLISION_TEST_BURST));
+              setCollisionTestActive(true);
+            }}
+          >
+            Burst
+          </button>
+        </div>
+      </div>
       <ScannerHUD
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
-        spotlightOnRef={spotlightOnRef}
         magneticOn={magneticOn}
         setMagneticOn={setMagneticOn}
-        magneticOnRef={magneticOnRef}
         driveSignatureOn={driveSignatureOn}
         setDriveSignatureOn={setDriveSignatureOn}
-        driveSignatureOnRef={driveSignatureOnRef}
         proximity={proximity}
         setProximity={setProximity}
-        proximityScanOnRef={proximityScanOnRef}
         radioOn={radioOn}
         setRadioOn={setRadioOn}
+        spotlightOnRef={spotlightOnRef}
+        magneticOnRef={magneticOnRef}
+        driveSignatureOnRef={driveSignatureOnRef}
+        proximityScanOnRef={proximityScanOnRef}
         radioOnRef={radioOnRef}
         disableElements={[...MODEL_CONFIG_DISABLED_HUD_ELEMENTS]}
         initialPowers={MODEL_CONFIG_SCANNER_INITIAL_POWERS}

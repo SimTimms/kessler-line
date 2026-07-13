@@ -7,7 +7,7 @@ const MINING_SUPERVISOR: DockContact = {
   birthplace: 'Phobos Yard',
   company: 'Outer Belt Mining Co.',
   role: 'official',
-  portrait: '/Image_0.jpg',
+  portrait: '/profiles/scab-captain.png',
   bio: 'Runs the extraction schedule on AST-47718. Keeps the books straight and the ore moving.',
   platform: 'REACH',
   dialogue: {
@@ -16,8 +16,7 @@ const MINING_SUPERVISOR: DockContact = {
     turns: {
       intro: {
         id: 'intro',
-        npcText:
-          "Reeves, shift supervisor. You're clamped on the mineral face — state your business before my crew starts the next cut.",
+        npcText: 'Insidion. Wa wont yu?',
         playerOptions: [
           {
             id: 'ask-fuel',
@@ -41,13 +40,98 @@ const MINING_SUPERVISOR: DockContact = {
       },
       'fuel-ok': {
         id: 'fuel-ok',
-        npcText:
-          "Depot line's on the transfer panel — help yourself within quota. Don't strip us; the next hauler needs a full tank too.",
+        npcText: 'Have yu to spend?',
         playerOptions: [
           {
-            id: 'ack',
-            label: 'Understood',
-            text: "Copy. I'll take what I need and undock.",
+            id: 'what need',
+            label: 'What do you need',
+            text: 'We have supplies to trade, what do you need?',
+            nextTurnId: 'what-need',
+          },
+          {
+            id: 'trade-supplies',
+            label: 'How about this?',
+            text: 'How about this?',
+            nextTurnId: 'trade-supplies',
+          },
+        ],
+      },
+      'trade-supplies': {
+        id: 'trade-supplies',
+        npcText: 'Show me your offer. Make it worth opening the depot line.',
+        trade: {
+          acceptThreshold: 44,
+          insultThreshold: 12,
+          counterMultiplier: 1.22,
+          acceptPenaltyPerNegativeStance: 5,
+          insultPenaltyPerNegativeStance: 2,
+          insultReliefPerPositiveStance: 2,
+          minimumInsultThreshold: 4,
+          weights: {
+            fuel: 0.95,
+            o2: 1.15,
+            power: 1.05,
+            crew: 20,
+          },
+          panelStatusOpen: 'Set your offer and transmit it.',
+          panelStatusCleared: 'Offer cleared. Set a new package.',
+          panelStatusEmptyOffer: 'No offer selected. Move at least one slider.',
+          panelStatusInsult: 'Offer rejected as insulting.',
+          panelStatusAccepted: 'Offer accepted. Confirm transfer to finalize.',
+          panelStatusCounter: 'Counteroffer received: {offer}',
+          panelStatusSuccess: 'Transfer complete: {offer}',
+          panelStatusCounterDeclined: 'Counteroffer declined. Submit a new offer.',
+          npcInsultText: 'Yu insulting us pilot. We can take wot we need',
+          npcAcceptText: 'That clears my line. Confirm transfer and we have a deal.',
+          npcCounterText: 'Too light. I can do it for {offer}.',
+          npcCompleteText: 'Transfer received. We can trade again if you have more to move.',
+          npcCounterDeclinedAckText: 'Then adjust your numbers and send again.',
+          playerOfferText: 'Offer package: {offer}',
+          playerAcceptText: 'Agreed. Transferring {offer} now.',
+          playerCounterAcceptText: 'Counter accepted. Transferring {offer} now.',
+          playerCounterDeclineText: 'Counter declined. I will submit another offer.',
+        },
+        playerOptions: [
+          {
+            id: 'trade-back',
+            label: 'Back',
+            text: 'Stand by. Let me rethink this.',
+            nextTurnId: 'fuel-ok',
+          },
+        ],
+      },
+      'what-need': {
+        id: 'what-need',
+        npcText: 'Needs organics. Have yu crews peepals? Have yu? ',
+        playerOptions: [
+          {
+            id: 'trade-crew',
+            label: 'I have crew, they work hard. Good solid people',
+            text: 'I have crew, they work hard. Good solid people',
+            nextTurnId: 'what-need',
+          },
+          {
+            id: 'no-trade',
+            label: 'No',
+            text: "I don't trade in people.",
+            nextTurnId: 'maybe-take',
+          },
+        ],
+      },
+      'maybe-take': {
+        id: 'maybe-take',
+        npcText: 'Mai be we take yus organics, why not give us?',
+        playerOptions: [
+          {
+            id: 'accept',
+            label: 'Take it',
+            text: 'Take it.',
+            nextTurnId: 'ore-done',
+          },
+          {
+            id: 'decline',
+            label: 'No',
+            text: 'No.',
             nextTurnId: null,
           },
         ],
@@ -79,6 +163,7 @@ const MINING_SUPERVISOR: DockContact = {
           },
         ],
       },
+
       'ore-done': {
         id: 'ore-done',
         npcText: "Loaded. Watch your mass limits on undock — that ore's dense.",
@@ -129,7 +214,7 @@ const SYNDICATE_RUNNER: DockContact = {
       'job-offer': {
         id: 'job-offer',
         npcText:
-          "Small package, inner relay drop. No manifest, no questions. Half now, half on delivery. You in?",
+          'Small package, inner relay drop. No manifest, no questions. Half now, half on delivery. You in?',
         playerOptions: [
           {
             id: 'accept',
@@ -219,7 +304,8 @@ const TRADER: DockContact = {
       },
       'o2-sale': {
         id: 'o2-sale',
-        npcText: "Done — cells are on your hookup. Anything else before I move on to the next rock?",
+        npcText:
+          'Done — cells are on your hookup. Anything else before I move on to the next rock?',
         playerOptions: [
           {
             id: 'done',

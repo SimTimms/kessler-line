@@ -14,10 +14,11 @@ import RailgunOxygenVents from './RailgunOxygenVents';
 import HullStressEffect from './HullStressEffect';
 import ShipBreakApart from './ShipBreakApart';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
-import { useShipPhysics } from '../../hooks/shipPhysics';
+import { useShipPhysics, type ShipPhysicsOptions } from '../../hooks/shipPhysics';
 import TargetIndicatorLine from '../TargetIndicatorLine';
 import VelocityIndicator from '../VelocityIndicator';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { DEBUG_THRUSTER_HITBOXES } from '../../config/debugConfig';
 import {
   MAIN_ENGINE_LOCAL_POS_A,
@@ -72,6 +73,12 @@ interface SpaceshipProps {
   shipParticleCloudProps?: Partial<ShipParticleCloudProps>;
   /** World-space velocity (units/s) once at spawn; gravity/thrust apply after. Y ignored (horizontal plane). Omit if starting docked. */
   initialVelocity?: [number, number, number];
+  /** Vessel state id used by reusable ship physics. */
+  vesselId?: string;
+  /** Collision registry id for this ship body. */
+  collisionId?: string;
+  /** Optional feature gates for reusable vessel physics behavior. */
+  physicsOptions?: ShipPhysicsOptions;
 }
 
 export default function Spaceship({
@@ -84,6 +91,9 @@ export default function Spaceship({
   enableShipExplosion = false,
   shipParticleCloudProps,
   initialVelocity,
+  vesselId = PLAYER_VESSEL_ID,
+  collisionId = SHIP_COLLISION_ID,
+  physicsOptions,
 }: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
@@ -104,7 +114,7 @@ export default function Spaceship({
       if (shipGroupRef) shipGroupRef.current = el;
       if (el) {
         registerCollidable({
-          id: SHIP_COLLISION_ID,
+          id: collisionId,
           getWorldPosition: (target) => {
             if (groupRef.current) groupRef.current.getWorldPosition(target);
             return target.set(target.x, target.y, target.z);
@@ -120,10 +130,10 @@ export default function Spaceship({
           getObject3D: () => groupRef.current,
         });
       } else {
-        unregisterCollidable(SHIP_COLLISION_ID);
+        unregisterCollidable(collisionId);
       }
     },
-    [shipGroupRef]
+    [collisionId, shipGroupRef]
   );
 
   const {
@@ -135,7 +145,15 @@ export default function Spaceship({
     thrustStrafeRight,
     releaseParticleTrigger,
     thrusterLightRefs,
-  } = useShipPhysics({ groupRef, dockingPortRef, initialDockedTo, initialVelocity });
+  } = useShipPhysics({
+    vesselId,
+    selfCollisionId: collisionId,
+    groupRef,
+    dockingPortRef,
+    initialDockedTo,
+    initialVelocity,
+    options: physicsOptions,
+  });
 
   useLayoutEffect(() => {
     if (!initialPosition || !groupRef.current) return;

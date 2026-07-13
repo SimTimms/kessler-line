@@ -29,6 +29,8 @@ import DialogMessages from './DialogMessages';
 import SettlementInfoPanel from './SettlementInfoPanel';
 
 type CommsViewMode = 'messages' | 'info' | 'dossier';
+type TradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
+type TradeOfferDraft = Record<TradeResourceKind, number>;
 
 const LINKABLE: { text: string; def: typeof ASTEROID_DOCK_DEF }[] = [
   { text: 'Asteroid Dock', def: ASTEROID_DOCK_DEF },
@@ -92,6 +94,20 @@ interface DialogueThreadProps {
   canRequestRendezvous?: boolean;
   isRendezvousActive?: boolean;
   onRequestRendezvous?: () => void;
+  tradePanel?: {
+    visible: boolean;
+    offer: TradeOfferDraft;
+    maxOffer: TradeOfferDraft;
+    statusLine?: string;
+    pendingDeal?: TradeOfferDraft | null;
+    canSubmit: boolean;
+    submitLabel?: string;
+    onOfferChange: (kind: TradeResourceKind, value: number) => void;
+    onSubmit: () => void;
+    onReset: () => void;
+    onAcceptPendingDeal?: () => void;
+    onRejectPendingDeal?: () => void;
+  };
   onClose: () => void;
   onBack?: () => void;
 }
@@ -120,6 +136,7 @@ export default function DialogueThread({
   canRequestRendezvous = false,
   isRendezvousActive = false,
   onRequestRendezvous,
+  tradePanel,
   onClose,
   onBack,
 }: DialogueThreadProps) {
@@ -250,6 +267,12 @@ export default function DialogueThread({
   // Skip the ship registry for station characters so their ids don't get
   // assigned ship profiles / radio dialogue trees.
   const record = contact || character ? null : getOrCreateShipRecord(shipId, shipName);
+  const tradeRows: Array<{ key: TradeResourceKind; label: string; max: number; value: number }> = [
+    { key: 'fuel', label: 'Fuel', max: tradePanel?.maxOffer.fuel ?? 0, value: tradePanel?.offer.fuel ?? 0 },
+    { key: 'o2', label: 'O2', max: tradePanel?.maxOffer.o2 ?? 0, value: tradePanel?.offer.o2 ?? 0 },
+    { key: 'power', label: 'Power', max: tradePanel?.maxOffer.power ?? 0, value: tradePanel?.offer.power ?? 0 },
+    { key: 'crew', label: 'Crew', max: tradePanel?.maxOffer.crew ?? 0, value: tradePanel?.offer.crew ?? 0 },
+  ];
 
   return (
     <div className="comms-chat" data-platform={commsPlatform}>
@@ -299,9 +322,7 @@ export default function DialogueThread({
                 <button
                   type="button"
                   className="comms-chat-header-toggle"
-                  onClick={() =>
-                    setViewMode((mode) => (mode === 'messages' ? 'info' : 'messages'))
-                  }
+                  onClick={() => setViewMode((mode) => (mode === 'messages' ? 'info' : 'messages'))}
                   title={viewMode === 'messages' ? 'Station info' : 'Messages'}
                   aria-label={viewMode === 'messages' ? 'Show station info' : 'Show messages'}
                 >
@@ -369,11 +390,67 @@ export default function DialogueThread({
           bottomRef={bottomRef}
         />
       )}
+      {tradePanel?.visible && (
+        <div className="comms-trade-panel">
+          <div className="comms-trade-panel-title">NEGOTIATION OFFER</div>
+          {tradePanel.statusLine && <div className="comms-trade-status">{tradePanel.statusLine}</div>}
+          <div className="comms-trade-sliders">
+            {tradeRows.map((row) => (
+              <label key={row.key} className="comms-trade-slider-row">
+                <span className="comms-trade-slider-label">{row.label}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={row.max}
+                  value={Math.min(row.value, row.max)}
+                  step={1}
+                  onChange={(e) => tradePanel.onOfferChange(row.key, Number(e.target.value))}
+                />
+                <span className="comms-trade-slider-value">
+                  {Math.round(Math.min(row.value, row.max))}/{Math.round(row.max)}
+                </span>
+              </label>
+            ))}
+          </div>
+          {tradePanel.pendingDeal && (
+            <div className="comms-trade-pending">
+              <span className="comms-trade-pending-title">PROPOSED DEAL</span>
+              <span className="comms-trade-pending-values">
+                F {Math.round(tradePanel.pendingDeal.fuel)} · O {Math.round(tradePanel.pendingDeal.o2)} · P{' '}
+                {Math.round(tradePanel.pendingDeal.power)} · C {Math.round(tradePanel.pendingDeal.crew)}
+              </span>
+            </div>
+          )}
+          <div className="comms-trade-actions">
+            <button type="button" className="comms-chat-opt" onClick={tradePanel.onReset}>
+              CLEAR
+            </button>
+            <button
+              type="button"
+              className="comms-chat-opt"
+              onClick={tradePanel.onSubmit}
+              disabled={!tradePanel.canSubmit}
+            >
+              {tradePanel.submitLabel ?? 'SEND OFFER'}
+            </button>
+            {tradePanel.pendingDeal && tradePanel.onAcceptPendingDeal && (
+              <button type="button" className="comms-chat-opt" onClick={tradePanel.onAcceptPendingDeal}>
+                AGREE
+              </button>
+            )}
+            {tradePanel.pendingDeal && tradePanel.onRejectPendingDeal && (
+              <button type="button" className="comms-chat-opt" onClick={tradePanel.onRejectPendingDeal}>
+                DECLINE
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       <DialogFooter
         contact={contact ?? null}
         msgs={msgs}
         playerOptions={playerOptions}
-        showOptions={viewMode === 'messages' && showOptions}
+        showOptions={viewMode === 'messages' && showOptions && !tradePanel?.visible}
         isPreHail={isPreHail}
         isEnded={isEnded}
         onClose={onClose}

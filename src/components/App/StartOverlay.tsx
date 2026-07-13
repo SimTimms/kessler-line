@@ -42,6 +42,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
   placeholder?: boolean;
 }> = [
   { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
+  { id: 'ship-config', label: 'Ship Config', selection: GAME_MODES.shipConfig },
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },

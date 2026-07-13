@@ -83,13 +83,7 @@ export function ContactsHudDialog({
             onSelect(item.id);
           }}
         >
-          {item.avatarSrc ? (
-            <img
-              className="chd-item-avatar"
-              src={item.avatarSrc}
-              alt={item.avatarAlt ?? `${item.label} portrait`}
-            />
-          ) : null}
+          {item.avatarSrc ? <img className="chd-item-avatar" src={item.avatarSrc} /> : null}
           <span className="chd-item-content">
             <span className="chd-item-label">{item.label}</span>
             {item.sublabel && <span className="chd-item-sublabel">{item.sublabel}</span>}
@@ -164,9 +158,7 @@ export function ContactsHudDialog({
             inRangeItems.length === 0 &&
             incomingItems.length === 0 &&
             historyItems.length === 0 &&
-            dockInteriorItems.length === 0 && (
-            <div className="chd-empty">— NO CONTACTS —</div>
-          )}
+            dockInteriorItems.length === 0 && <div className="chd-empty">— NO CONTACTS —</div>}
         </div>
         <button className="chd-close" onClick={onClose}>
           ✕ CLOSE

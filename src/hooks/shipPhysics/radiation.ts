@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { hullIntegrity, setHullIntegrity } from '../../context/ShipState';
 import { radiationExposureRef } from '../../context/RadiationScan';
 import {
   activeRadiationZonesRef,
@@ -10,10 +9,22 @@ import {
   resolveRadiationZoneWorldPosition,
   horizontalDistanceToRadiationZone,
 } from '../../utils/radiationZonePosition';
+import {
+  setVesselHullIntegrity,
+  type VesselRuntimeState,
+} from '../../context/VesselStateStore';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { setHullIntegrity } from '../../context/ShipState';
 
 const _zonePos = new THREE.Vector3();
 
-export function applyRadiationDamage(shipPos: THREE.Vector3, dt: number) {
+export function applyRadiationDamage(
+  vesselId: string,
+  vesselState: VesselRuntimeState,
+  shipPos: THREE.Vector3,
+  dt: number,
+  trackHudRates = true
+) {
   const zones = activeRadiationZonesRef.current;
   let totalExposure = 0;
 
@@ -33,9 +44,18 @@ export function applyRadiationDamage(shipPos: THREE.Vector3, dt: number) {
 
   if (totalExposure > 0) {
     const hullDrainPerSec = activeRadiationHullDrainRateRef.current * totalExposure;
-    resourceRateRefs.hull.current = -hullDrainPerSec;
-    setHullIntegrity(Math.max(0, hullIntegrity - hullDrainPerSec * dt));
+    if (trackHudRates) {
+      resourceRateRefs.hull.current = -hullDrainPerSec;
+    }
+    const nextHull = Math.max(0, vesselState.hullIntegrity - hullDrainPerSec * dt);
+    if (vesselId === PLAYER_VESSEL_ID) {
+      setHullIntegrity(nextHull);
+    } else {
+      setVesselHullIntegrity(vesselId, nextHull);
+    }
   } else {
-    resourceRateRefs.hull.current = 0;
+    if (trackHudRates) {
+      resourceRateRefs.hull.current = 0;
+    }
   }
 }

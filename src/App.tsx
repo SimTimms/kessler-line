@@ -28,6 +28,7 @@ import TutorialRadio from './components/TutorialRadio/TutorialRadio';
 import TutorialOrbital from './components/TutorialOrbital/TutorialOrbital';
 import Sandbox from './components/Sandbox/Sandbox';
 import ModelConfig from './components/ModelConfig/ModelConfig';
+import ShipConfig from './components/ShipConfig/ShipConfig';
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
 function resetShipState(forTutorial = false) {
@@ -85,6 +86,8 @@ function App() {
       return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} />;
     case GAME_MODES.modelConfig:
       return <ModelConfig />;
+    case GAME_MODES.shipConfig:
+      return <ShipConfig />;
     case GAME_MODES.sandbox:
       return <Sandbox />;
     case GAME_MODES.tutorial:

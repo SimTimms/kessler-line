@@ -1,51 +1,52 @@
 import * as THREE from 'three';
 import type { RefObject } from 'react';
 import { getCollidables, type CollidableEntry } from '../../context/CollisionRegistry';
-import {
-  DOCKING_PORT_LOCAL_Z,
-  DOCKING_PORT_RADIUS,
-  SHIP_COLLISION_ID,
-  shipAcceleration,
-  shipVelocity,
-  fuel,
-  o2,
-  shipCrew,
-  isRefueling,
-  isTransferringO2,
-  setFuel,
-  setO2,
-} from '../../context/ShipState';
+import { SHIP_COLLISION_ID } from '../../context/ShipState';
 import { FUEL_REFILL_RATE, O2_REFILL_RATE, o2DrainRateForCrew } from '../../config/damageConfig';
 import { resourceRateRefs } from '../../context/ResourceRates';
 import { zeroThrusterLights } from './thrusterLight';
 import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
+import {
+  dockLocalOffsetToWorldPose,
+  getDockCaptureProfile,
+  pointDistanceToDockBox,
+  shipLocalOffsetToWorld,
+} from '../../utils/dockingCapture';
+import {
+  setVesselFuel,
+  setVesselO2,
+  type VesselRuntimeState,
+} from '../../context/VesselStateStore';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { setFuel, setO2 } from '../../context/ShipState';
 
-const _collidablePos = new THREE.Vector3();
-const _boxQuat = new THREE.Quaternion();
-const _invBoxQuat = new THREE.Quaternion();
-const _localShipPos = new THREE.Vector3();
-const _localForward = new THREE.Vector3();
 const _portWorldPos = new THREE.Vector3();
 const _dockVel = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
 const _desiredDockPos = new THREE.Vector3();
 const _desiredDockQuat = new THREE.Quaternion();
 
+function isInHierarchy(root: THREE.Object3D, candidate: THREE.Object3D): boolean {
+  let node: THREE.Object3D | null = candidate;
+  while (node) {
+    if (node === root) return true;
+    node = node.parent;
+  }
+  return false;
+}
+
 /** Compute the world pose that aligns the ship nose with a docking bay. */
 function computeDockedWorldPose(dockerEntry: CollidableEntry): {
   position: THREE.Vector3;
   quaternion: THREE.Quaternion;
 } {
-  dockerEntry.getWorldPosition(_collidablePos);
-  if (dockerEntry.getWorldQuaternion) {
-    dockerEntry.getWorldQuaternion(_boxQuat);
-    _desiredDockQuat.copy(_boxQuat);
-  } else {
-    _desiredDockQuat.identity();
-  }
-  _localForward.set(0, 0, DOCKING_PORT_LOCAL_Z).applyQuaternion(_boxQuat);
-  _desiredDockPos.copy(_collidablePos).sub(_localForward);
-  return { position: _desiredDockPos, quaternion: _desiredDockQuat };
+  const profile = getDockCaptureProfile(dockerEntry);
+  return dockLocalOffsetToWorldPose(
+    dockerEntry,
+    profile.attachOffsetLocal,
+    _desiredDockPos,
+    _desiredDockQuat
+  );
 }
 
 /**
@@ -78,6 +79,9 @@ export function detachShipFromDock(group: THREE.Group, scene: THREE.Object3D): v
 }
 
 interface DockedResourcesParams {
+  vesselId: string;
+  vesselState: VesselRuntimeState;
+  trackHudRates?: boolean;
   thrusterLightRefs: RefObject<(THREE.PointLight | null)[]>;
   thrusterLightIntensities: { current: number[] };
   rawDelta: number;
@@ -85,31 +89,51 @@ interface DockedResourcesParams {
 
 /** Fuel/O2/thruster state while docked — no transform updates here. */
 export function applyDockedResources({
+  vesselId,
+  vesselState,
+  trackHudRates = true,
   thrusterLightRefs,
   thrusterLightIntensities,
   rawDelta,
 }: DockedResourcesParams): void {
-  shipVelocity.set(0, 0, 0);
-  shipAcceleration.current = 0;
+  vesselState.shipVelocity.set(0, 0, 0);
+  vesselState.shipAcceleration.current = 0;
   zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
 
-  const o2Drain = o2DrainRateForCrew(shipCrew);
+  const o2Drain = o2DrainRateForCrew(vesselState.shipCrew);
 
   let fuelRate = 0;
   let o2Rate = -o2Drain;
-  if (isRefueling.current) {
+  if (vesselState.isRefueling.current) {
     fuelRate += FUEL_REFILL_RATE;
-    setFuel(Math.min(100, fuel + FUEL_REFILL_RATE * rawDelta));
+    const nextFuel = Math.min(100, vesselState.fuel + FUEL_REFILL_RATE * rawDelta);
+    if (vesselId === PLAYER_VESSEL_ID) {
+      setFuel(nextFuel);
+    } else {
+      setVesselFuel(vesselId, nextFuel);
+    }
   }
-  if (isTransferringO2.current) {
+  if (vesselState.isTransferringO2.current) {
     o2Rate += O2_REFILL_RATE;
-    setO2(Math.min(100, o2 + O2_REFILL_RATE * rawDelta));
+    const nextO2 = Math.min(100, vesselState.o2 + O2_REFILL_RATE * rawDelta);
+    if (vesselId === PLAYER_VESSEL_ID) {
+      setO2(nextO2);
+    } else {
+      setVesselO2(vesselId, nextO2);
+    }
   }
-  setO2(Math.max(0, o2 - o2Drain * rawDelta));
+  const drainedO2 = Math.max(0, vesselState.o2 - o2Drain * rawDelta);
+  if (vesselId === PLAYER_VESSEL_ID) {
+    setO2(drainedO2);
+  } else {
+    setVesselO2(vesselId, drainedO2);
+  }
 
-  resourceRateRefs.power.current = 0;
-  resourceRateRefs.fuel.current = fuelRate;
-  resourceRateRefs.o2.current = o2Rate;
+  if (trackHudRates) {
+    resourceRateRefs.power.current = 0;
+    resourceRateRefs.fuel.current = fuelRate;
+    resourceRateRefs.o2.current = o2Rate;
+  }
 }
 
 interface DockingPortParams {
@@ -117,49 +141,55 @@ interface DockingPortParams {
   dockingPort: THREE.Group | null;
   dockedTo: { current: string | null };
   velocity: THREE.Vector3;
+  selfCollisionId?: string;
+  emitDockingEvents?: boolean;
 }
 
-export function checkDockingPort({ group, dockingPort, dockedTo, velocity }: DockingPortParams) {
+export function checkDockingPort({
+  group,
+  dockingPort,
+  dockedTo,
+  velocity,
+  selfCollisionId = SHIP_COLLISION_ID,
+  emitDockingEvents = true,
+}: DockingPortParams) {
   if (dockedTo.current || !dockingPort) return;
 
-  dockingPort.getWorldPosition(_portWorldPos);
   const bayEntry = getCollidables().find((c) => {
-    if (c.id === SHIP_COLLISION_ID) return false;
+    if (c.id === selfCollisionId) return false;
     if (c.shape.type !== 'box') return false;
     if (!c.id.startsWith('docking-bay')) return false;
-    c.getWorldPosition(_collidablePos);
-    if (c.getWorldQuaternion) {
-      c.getWorldQuaternion(_boxQuat);
-    } else {
-      _boxQuat.identity();
+    const bayObject = c.getObject3D?.() ?? null;
+    if (bayObject && (isInHierarchy(group, bayObject) || isInHierarchy(bayObject, group))) {
+      return false;
     }
-    _invBoxQuat.copy(_boxQuat).invert();
-    _localShipPos.subVectors(_portWorldPos, _collidablePos).applyQuaternion(_invBoxQuat);
-    const he = c.shape.halfExtents;
-    const px = _localShipPos.x - THREE.MathUtils.clamp(_localShipPos.x, -he.x, he.x);
-    const py = _localShipPos.y - THREE.MathUtils.clamp(_localShipPos.y, -he.y, he.y);
-    const pz = _localShipPos.z - THREE.MathUtils.clamp(_localShipPos.z, -he.z, he.z);
-    return Math.sqrt(px * px + py * py + pz * pz) < DOCKING_PORT_RADIUS;
+    const dockingProfile = getDockCaptureProfile(c);
+    if (dockingProfile.mode === 'nose') {
+      dockingPort.getWorldPosition(_portWorldPos);
+    } else {
+      shipLocalOffsetToWorld(group, dockingProfile.probeLocalOffset, _portWorldPos);
+    }
+    return pointDistanceToDockBox(_portWorldPos, c) < dockingProfile.captureRadius;
   });
 
   if (!bayEntry) return;
+  const dockingProfile = getDockCaptureProfile(bayEntry);
   const bayVel = bayEntry.getWorldVelocity
     ? bayEntry.getWorldVelocity(_dockVel)
     : _dockVel.set(0, 0, 0);
   const relSpeed = _relVel.subVectors(velocity, bayVel).length();
-  // Large rendezvous bays are interior capture volumes, so allow faster closure
-  // than nose-to-port docking.
-  const relSpeedLimit = bayEntry.id.startsWith('docking-bay-rendezvous-') ? 18 : 4;
-  if (relSpeed >= relSpeedLimit) return;
+  if (relSpeed >= dockingProfile.maxRelativeSpeed) return;
 
   dockedTo.current = bayEntry.id;
-  if (autopilotActive.current) {
+  if (emitDockingEvents && autopilotActive.current) {
     disableAutopilot();
     window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
   }
-  window.dispatchEvent(
-    new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
-  );
+  if (emitDockingEvents) {
+    window.dispatchEvent(
+      new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
+    );
+  }
   velocity.set(0, 0, 0);
   attachShipToDock(group, bayEntry);
 }

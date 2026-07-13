@@ -9,6 +9,8 @@ export type BattleshipScanConfig = {
   driveSignature?: boolean;
   /** Registers a mesh-bounds collider for proximity scan + ship collision. */
   proximity?: boolean;
+  /** Registers a collider for physical collisions without enabling proximity scan labels. */
+  physicalCollision?: boolean;
 };
 
 /** Tutorial battleship — far from the lunar container, visible on all scanner bands. */

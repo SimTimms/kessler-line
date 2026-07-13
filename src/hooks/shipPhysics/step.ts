@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { THRUST, YAW_THRUST, thrustMultiplier } from '../../context/ShipState';
+import { MAX_YAW_RATE, THRUST, YAW_THRUST } from '../../context/ShipState';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { applyYawAndRoll, getYawFromQuaternion } from '../../orbitalRoll/shipYawRoll';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
@@ -10,6 +10,8 @@ const _localForward = new THREE.Vector3();
 const _localRight = new THREE.Vector3();
 const _radialDir = new THREE.Vector3();
 const _shipPos = new THREE.Vector3();
+const _yawPivotBefore = new THREE.Vector3();
+const _yawPivotAfter = new THREE.Vector3();
 
 interface StepParams {
   group: THREE.Group;
@@ -17,10 +19,14 @@ interface StepParams {
   angularVelocity: { current: number };
   primaryGravityId: { current: string | null };
   primaryGravityVelocity: THREE.Vector3;
+  thrustMultiplierRef: { current: number };
   dt: number;
   anyThrusting: boolean;
   disableGravity: boolean;
   freezeCollisions: boolean;
+  selfCollisionId?: string;
+  yawThrustScale?: number;
+  yawPivotLocal?: THREE.Vector3 | null;
   yawLeft: boolean;
   yawRight: boolean;
   fwd: boolean;
@@ -38,10 +44,14 @@ export function applyPhysicsStep({
   angularVelocity,
   primaryGravityId,
   primaryGravityVelocity,
+  thrustMultiplierRef,
   dt,
   anyThrusting,
   disableGravity,
   freezeCollisions,
+  selfCollisionId,
+  yawThrustScale = 1,
+  yawPivotLocal,
   yawLeft,
   yawRight,
   fwd,
@@ -52,14 +62,27 @@ export function applyPhysicsStep({
   radOut,
   radIn,
 }: StepParams) {
-  const forwardThrustMultiplier = thrustMultiplier.current;
+  const forwardThrustMultiplier = thrustMultiplierRef.current;
   // Cap RCS/reverse authority so maneuvering remains controllable at high global thrust.
   const cappedManeuverMultiplier = Math.min(forwardThrustMultiplier, 2);
 
-  if (yawLeft) angularVelocity.current -= YAW_THRUST * cappedManeuverMultiplier * dt;
-  if (yawRight) angularVelocity.current += YAW_THRUST * cappedManeuverMultiplier * dt;
+  const scaledYawThrust = YAW_THRUST * yawThrustScale;
+  if (yawLeft) angularVelocity.current -= scaledYawThrust * cappedManeuverMultiplier * dt;
+  if (yawRight) angularVelocity.current += scaledYawThrust * cappedManeuverMultiplier * dt;
+  angularVelocity.current = THREE.MathUtils.clamp(
+    angularVelocity.current,
+    -MAX_YAW_RATE,
+    MAX_YAW_RATE
+  );
+  if (yawPivotLocal) {
+    _yawPivotBefore.copy(yawPivotLocal).applyQuaternion(group.quaternion).add(group.position);
+  }
   const yaw = getYawFromQuaternion(group.quaternion) + angularVelocity.current * dt;
   applyYawAndRoll(group, yaw, 0);
+  if (yawPivotLocal) {
+    _yawPivotAfter.copy(yawPivotLocal).applyQuaternion(group.quaternion).add(group.position);
+    group.position.add(_yawPivotBefore.sub(_yawPivotAfter));
+  }
 
   _localForward.set(0, 0, 1).applyQuaternion(group.quaternion);
   if (fwd) velocity.addScaledVector(_localForward, THRUST * forwardThrustMultiplier * dt);
@@ -76,8 +99,8 @@ export function applyPhysicsStep({
       group.getWorldPosition(_shipPos);
       renderToSimulationSpace(_shipPos, _shipPos);
       _radialDir.subVectors(_shipPos, body.position).normalize();
-      if (radOut) velocity.addScaledVector(_radialDir, THRUST * thrustMultiplier.current * dt);
-      if (radIn) velocity.addScaledVector(_radialDir, -THRUST * thrustMultiplier.current * dt);
+      if (radOut) velocity.addScaledVector(_radialDir, THRUST * thrustMultiplierRef.current * dt);
+      if (radIn) velocity.addScaledVector(_radialDir, -THRUST * thrustMultiplierRef.current * dt);
     }
   }
 
@@ -93,6 +116,6 @@ export function applyPhysicsStep({
 
   group.position.addScaledVector(velocity, dt);
   if (!freezeCollisions) {
-    resolveCollisions(group, velocity);
+    resolveCollisions(group, velocity, selfCollisionId);
   }
 }

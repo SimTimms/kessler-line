@@ -20,6 +20,7 @@ import './SandboxHtmlMiniMap.css';
 
 interface SandboxHtmlMiniMapProps {
   onClose: () => void;
+  showSolarSystem?: boolean;
 }
 
 type MarkerKind = 'planet' | 'ship' | 'nav' | 'drive' | 'mag' | 'radio' | 'proximity' | 'hard';
@@ -58,13 +59,19 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps) {
+export default function SandboxHtmlMiniMap({
+  onClose,
+  showSolarSystem = true,
+}: SandboxHtmlMiniMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
   const dragAnchorRef = useRef<{ x: number; y: number; panX: number; panZ: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [zoomHalfSpan, setZoomHalfSpan] = useState(ZOOM_DEFAULT_HALF_SPAN);
+  const [zoomHalfSpan, setZoomHalfSpan] = useState(
+    showSolarSystem ? ZOOM_DEFAULT_HALF_SPAN : 1500
+  );
   const [panCenter, setPanCenter] = useState<{ x: number; z: number }>({ x: 0, z: 0 });
+  const [followShip, setFollowShip] = useState(false);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [shipHeadingDeg, setShipHeadingDeg] = useState(0);
   const [statusLine, setStatusLine] = useState('');
@@ -90,34 +97,39 @@ export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps)
     let raf = 0;
     const tick = () => {
       const ship = shipPosRef.current;
+      if (followShip) {
+        setPanCenter({ x: ship.x, z: ship.z });
+      }
       _shipForward.set(0, 0, 1).applyQuaternion(shipQuaternion);
       setShipHeadingDeg((Math.atan2(_shipForward.x, _shipForward.z) * 180) / Math.PI);
 
       const next: Marker[] = [];
-      next.push({
-        id: 'sun',
-        label: 'Sun',
-        x: 0,
-        z: 0,
-        kind: 'planet',
-        color: '#fdb813',
-        radiusWorld: SUN_WORLD_RADIUS,
-      });
-
-      for (const planet of PLANETS) {
-        const dynamicPos = solarPlanetPositions[planet.name];
-        const fallbackPos = getPlanetPosition(planet.name, _tmpA);
-        const worldX = dynamicPos ? dynamicPos.x * SOLAR_SYSTEM_SCALE : fallbackPos.x;
-        const worldZ = dynamicPos ? dynamicPos.z * SOLAR_SYSTEM_SCALE : fallbackPos.z;
+      if (showSolarSystem) {
         next.push({
-          id: `planet-${planet.name}`,
-          label: planet.name,
-          x: worldX,
-          z: worldZ,
+          id: 'sun',
+          label: 'Sun',
+          x: 0,
+          z: 0,
           kind: 'planet',
-          color: planet.name === 'Earth' ? '#3399ff' : planet.color,
-          radiusWorld: planet.radius * SOLAR_SYSTEM_SCALE,
+          color: '#fdb813',
+          radiusWorld: SUN_WORLD_RADIUS,
         });
+
+        for (const planet of PLANETS) {
+          const dynamicPos = solarPlanetPositions[planet.name];
+          const fallbackPos = getPlanetPosition(planet.name, _tmpA);
+          const worldX = dynamicPos ? dynamicPos.x * SOLAR_SYSTEM_SCALE : fallbackPos.x;
+          const worldZ = dynamicPos ? dynamicPos.z * SOLAR_SYSTEM_SCALE : fallbackPos.z;
+          next.push({
+            id: `planet-${planet.name}`,
+            label: planet.name,
+            x: worldX,
+            z: worldZ,
+            kind: 'planet',
+            color: planet.name === 'Earth' ? '#3399ff' : planet.color,
+            radiusWorld: planet.radius * SOLAR_SYSTEM_SCALE,
+          });
+        }
       }
 
       next.push({
@@ -226,13 +238,15 @@ export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps)
 
       setMarkers(next);
       setStatusLine(
-        `ZOOM ${(zoomHalfSpan / 1_000_000).toFixed(1)}M · RADIUS ${(MAX_PLANET_ORBIT_WORLD / 1_000_000).toFixed(1)}M · DRIVE ${driveEntries.length} · RADIO ${radioEntries.length}`
+        showSolarSystem
+          ? `ZOOM ${(zoomHalfSpan / 1_000_000).toFixed(1)}M · DRIVE ${driveEntries.length} · RADIO ${radioEntries.length}`
+          : `ZOOM ${Math.round(zoomHalfSpan)} · DRIVE ${driveEntries.length} · RADIO ${radioEntries.length}`
       );
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [zoomHalfSpan]);
+  }, [followShip, showSolarSystem, zoomHalfSpan]);
 
   const visibleMarkers = useMemo(() => {
     const node = containerRef.current;
@@ -261,6 +275,7 @@ export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps)
     const scale = rect.height / (2 * zoomHalfSpan);
     const sunSx = (0 - panCenter.x) * scale + rect.width / 2;
     const sunSy = (0 - panCenter.z) * scale + rect.height / 2;
+    if (!showSolarSystem) return [];
     return PLANETS.map((planet) => ({
       id: `orbit-${planet.name}`,
       sx: sunSx,
@@ -268,7 +283,7 @@ export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps)
       pxRadius: planet.orbitRadius * SOLAR_SYSTEM_SCALE * scale,
       color: planet.name === 'Earth' ? '#3399ff' : planet.color,
     })).filter((ring) => ring.pxRadius > 1.5);
-  }, [panCenter, zoomHalfSpan]);
+  }, [panCenter, showSolarSystem, zoomHalfSpan]);
 
   const scannerRings = useMemo<{
     shipSx: number;
@@ -393,9 +408,15 @@ export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps)
     setIsDragging(false);
   }
 
-  function centerOnShip() {
-    const ship = shipPosRef.current;
-    setPanCenter({ x: ship.x, z: ship.z });
+  function toggleFollowShip() {
+    setFollowShip((prev) => {
+      const next = !prev;
+      if (next) {
+        const ship = shipPosRef.current;
+        setPanCenter({ x: ship.x, z: ship.z });
+      }
+      return next;
+    });
   }
 
   return (
@@ -481,9 +502,9 @@ export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps)
         />
       ))}
 
-      <div className="sandbox-map-title">SANDBOX STAR CHART</div>
+      <div className="sandbox-map-title">STAR CHART</div>
       <div className="sandbox-map-status">{statusLine}</div>
-      <div className="sandbox-map-help">DRAG PAN · WHEEL ZOOM · [M] CLOSE</div>
+      <div className="sandbox-map-help">DRAG PAN · WHEEL ZOOM · [M] TOGGLE</div>
       {hoverCard && (
         <div
           className="sandbox-map-hover-card"
@@ -504,12 +525,11 @@ export default function SandboxHtmlMiniMap({ onClose }: SandboxHtmlMiniMapProps)
         <button
           type="button"
           onMouseDown={(e) => e.stopPropagation()}
-          onClick={centerOnShip}
+          onClick={toggleFollowShip}
+          className={followShip ? 'sandbox-map-action--active' : ''}
+          title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
         >
-          CENTER SHIP
-        </button>
-        <button type="button" onMouseDown={(e) => e.stopPropagation()} onClick={onClose}>
-          CLOSE
+          CENTER {followShip ? 'ON' : 'OFF'}
         </button>
       </div>
     </div>

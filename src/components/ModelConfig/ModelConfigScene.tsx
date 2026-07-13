@@ -2,24 +2,25 @@ import { Suspense, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { Perf } from 'r3f-perf';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
 import UBoat from '../UBoat/UBoat';
 import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
+import { UBoatConfig } from './UBoatConfig';
+import { Thruster } from '../Thruster';
 import {
-  MODEL_CONFIG_CAMERA_POSITION,
-  MODEL_CONFIG_CAMERA_TARGET,
-  MODEL_CONFIG_GRID_DIVISIONS,
-  MODEL_CONFIG_GRID_SIZE,
-  MODEL_CONFIG_TARGET_POSITION,
-  MODEL_CONFIG_TARGET_SCALE,
-  MODEL_CONFIG_TARGET_SCAN,
-  MODEL_CONFIG_SCENE,
-} from './modelConfigConfig';
+  KEY_THRUST_FORWARD,
+  KEY_THRUST_REVERSE,
+  KEY_YAW_LEFT,
+  KEY_YAW_RIGHT,
+} from '../../config/keybindings';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
 import DustCloud from '../DustCloud/DustCloud';
+import CollisionPhysicsTestRig from '../Debug/CollisionPhysicsTestRig';
+import CollisionDebug from '../Debug/CollisionDebug';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -35,26 +36,74 @@ function CameraCapture() {
 function ModelConfigTarget() {
   return (
     <UBoat
-      scale={MODEL_CONFIG_TARGET_SCALE}
-      position={MODEL_CONFIG_TARGET_POSITION}
-      scan={MODEL_CONFIG_TARGET_SCAN}
+      scale={UBoatConfig.targetScale}
+      position={UBoatConfig.targetPosition}
+      scan={UBoatConfig.targetScan}
+      impactVents
+      flyable
+      physicsMode="ship"
+      initialFuel={100}
       dockingBay={{
         stationId: 'model-config-target',
-        dimensions: [2, 0.6, 1.3],
+        dimensions: [2, 1, 1.3],
         position: [
-          -1110 / (MODEL_CONFIG_TARGET_SCALE * 2.18),
-          -4 / (MODEL_CONFIG_TARGET_SCALE * 2.18),
-          0,
+          -4 / (UBoatConfig.targetScale * 0.56),
+          -0.8,
+          1110 / (UBoatConfig.targetScale * 2.1),
         ],
         scale: 3,
         dock: ASTEROID_DOCK_CONFIG,
         debugDockOnClick: true,
       }}
-    />
+      shipPhysicsOptions={{
+        enabled: true,
+        inputEnabled: true,
+        thrusterPhysicsEnabled: true,
+        orbitalPhysicsEnabled: true,
+        dockingPhysicsEnabled: true,
+        yawPivotLocal: [0, 0, 0],
+      }}
+    >
+      <Thruster
+        position={UBoatConfig.mainThrusterPosition}
+        keyCode={KEY_THRUST_REVERSE}
+        kind="main"
+        fuelConsumptionMultiplier={1}
+      />
+      <Thruster
+        position={UBoatConfig.forwardRcsPosition}
+        rotation={[0, Math.PI, 0]}
+        keyCode={KEY_THRUST_FORWARD}
+        kind="rcs"
+        fuelConsumptionMultiplier={1}
+      />
+      <Thruster
+        position={UBoatConfig.yawLeftRcsPosition}
+        thrustDirection={[1, 0, 0]}
+        keyCode={KEY_YAW_LEFT}
+        kind="rcs"
+        yaw
+        yawSign={1}
+        fuelConsumptionMultiplier={0.5}
+      />
+      <Thruster
+        position={UBoatConfig.yawRightRcsPosition}
+        thrustDirection={[-1, 0, 0]}
+        keyCode={KEY_YAW_RIGHT}
+        kind="rcs"
+        yaw
+        yawSign={-1}
+        fuelConsumptionMultiplier={0.5}
+      />
+    </UBoat>
   );
 }
 
-export default function ModelConfigScene() {
+interface ModelConfigSceneProps {
+  showCollisionDebug?: boolean;
+}
+
+export default function ModelConfigScene({ showCollisionDebug = false }: ModelConfigSceneProps) {
   useEffect(() => {
     shipPosRef.current.set(0, 0, 0);
     minimapShipPosition.set(0, 0, 0);
@@ -75,28 +124,27 @@ export default function ModelConfigScene() {
       style={{
         width: '100vw',
         height: '100vh',
-        background: MODEL_CONFIG_SCENE.fogColor,
+        background: UBoatConfig.scene.fogColor,
         touchAction: 'none',
       }}
       camera={{
-        position: [...MODEL_CONFIG_CAMERA_POSITION],
-        near: MODEL_CONFIG_SCENE.canvasNear,
-        far: MODEL_CONFIG_SCENE.canvasFar,
+        position: [...UBoatConfig.cameraPosition],
+        near: UBoatConfig.scene.canvasNear,
+        far: UBoatConfig.scene.canvasFar,
       }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: MODEL_CONFIG_SCENE.toneMappingExposure,
+        toneMappingExposure: UBoatConfig.scene.toneMappingExposure,
       }}
       shadows={true}
     >
       <CameraCapture />
-      <fogExp2 attach="fog" args={[MODEL_CONFIG_SCENE.fogColor, 0.000001]} />
+      <Perf position="top-left" />
+      <fogExp2 attach="fog" args={[UBoatConfig.scene.fogColor, 0.000001]} />
       <ambientLight intensity={0.7} />
       <directionalLight position={[280, 20, 240]} intensity={14.4} color="#ffaaff" />
-      <gridHelper
-        args={[MODEL_CONFIG_GRID_SIZE, MODEL_CONFIG_GRID_DIVISIONS, '#006666', '#003333']}
-      />
+      <gridHelper args={[UBoatConfig.gridSize, UBoatConfig.gridDivisions, '#006666', '#003333']} />
       <axesHelper args={[120]} />
       <Suspense fallback={null}>
         <ModelConfigTarget />
@@ -105,15 +153,27 @@ export default function ModelConfigScene() {
       <OrbitControls
         makeDefault
         target={[
-          MODEL_CONFIG_CAMERA_TARGET[0],
-          MODEL_CONFIG_CAMERA_TARGET[1],
-          MODEL_CONFIG_CAMERA_TARGET[2],
+          UBoatConfig.cameraTarget[0],
+          UBoatConfig.cameraTarget[1],
+          UBoatConfig.cameraTarget[2],
         ]}
         enablePan
         enableZoom
         enableRotate
       />
       <DustCloud radius={5000} particleSize={2500000} radialSpread={9} yInitial={-1000} />
+      <CollisionPhysicsTestRig
+        enabled
+        showPanel={false}
+        defaultAimPosition={UBoatConfig.targetPosition}
+        preferredTargetId={UBoatConfig.targetScan.id}
+      />
+      <CollisionDebug
+        visible={showCollisionDebug}
+        attachToObjects
+        includeIds={['model-config-target', 'docking-bay-model-config-target']}
+        includeIdPrefixes={['debug-collision-test-']}
+      />
     </Canvas>
   );
 }

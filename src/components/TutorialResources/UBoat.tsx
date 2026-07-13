@@ -3,6 +3,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ScannableSignature } from '../../config/scannableSignature';
 import { useScannableRegistration } from '../../hooks/useScannableRegistration';
+import type { ShipPhysicsOptions } from '../../hooks/shipPhysics/useShipPhysics';
 
 const UBOAT_ID = 'tutorial-uboat-ruin';
 const UBOAT_LABEL = 'HMS Afridi Wreck';
@@ -10,6 +11,7 @@ const UBOAT_LABEL = 'HMS Afridi Wreck';
 export interface UBoatProps extends ScannableSignature {
   id?: string;
   label?: string;
+  physicsOptions?: ShipPhysicsOptions;
 }
 
 export function UBoat({
@@ -19,6 +21,7 @@ export function UBoat({
   magnet = true,
   driveSignature = true,
   proximity = true,
+  physicsOptions,
 }: UBoatProps) {
   const groupRef = useRef<THREE.Group>(null);
   const gltf = useGLTF('/uboat-ruin.glb') as unknown as { scene: THREE.Group };

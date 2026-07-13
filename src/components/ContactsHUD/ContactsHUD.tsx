@@ -252,7 +252,9 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
   const [inRangeDrives, setInRangeDrives] = useState<DriveContact[]>([]);
   const [broadcastContacts, setBroadcastContacts] = useState<BroadcastContact[]>([]);
   const [hailStates, setHailStates] = useState<Map<string, HailStatus>>(new Map());
-  const [incomingHails, setIncomingHails] = useState<Set<string>>(() => new Set(getIncomingHails()));
+  const [incomingHails, setIncomingHails] = useState<Set<string>>(
+    () => new Set(getIncomingHails())
+  );
   const [savedContactIds, setSavedContactIds] = useState<Set<string>>(new Set());
   const [historyContactIds, setHistoryContactIds] = useState<Set<string>>(
     () => new Set(HISTORICAL_CONTACT_IDS)
@@ -649,7 +651,7 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
     ? (resolveDockInteriorChat(chatShipId)?.contact.name ??
       inRangeDrives.find((d) => d.id === chatShipId)?.name ??
       (hailOffers.has(chatShipId)
-        ? SHIP_DESIGNATIONS[chatShipId] ?? `VESSEL-${chatShipId.toUpperCase()}`
+        ? (SHIP_DESIGNATIONS[chatShipId] ?? `VESSEL-${chatShipId.toUpperCase()}`)
         : undefined) ??
       broadcastContacts.find((b) => b.entry.id === chatShipId)?.entry.label ??
       chatShipId)

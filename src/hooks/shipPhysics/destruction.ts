@@ -1,26 +1,42 @@
 import * as THREE from 'three';
-import {
-  hullIntegrity,
-  setHullIntegrity,
-  shipDestroyed,
-  mainEngineDisabled,
-  cinematicThrustForward,
-  cinematicThrustReverse,
-} from '../../context/ShipState';
 import { cinematicAutopilotActive } from '../../context/CinematicState';
 import { radiationExposureRef } from '../../context/RadiationScan';
+import {
+  setVesselHullIntegrity,
+  type VesselRuntimeState,
+} from '../../context/VesselStateStore';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { setHullIntegrity } from '../../context/ShipState';
 
-export function triggerShipDestruction(cause: string) {
-  if (shipDestroyed.current) return;
-  shipDestroyed.current = true;
-  setHullIntegrity(0);
+export function triggerShipDestruction({
+  vesselId,
+  vesselState,
+  cause,
+  cinematicThrustForwardRef,
+  cinematicThrustReverseRef,
+}: {
+  vesselId: string;
+  vesselState: VesselRuntimeState;
+  cause: string;
+  cinematicThrustForwardRef?: { current: boolean };
+  cinematicThrustReverseRef?: { current: boolean };
+}) {
+  if (vesselState.shipDestroyed.current) return;
+  vesselState.shipDestroyed.current = true;
+  if (vesselId === PLAYER_VESSEL_ID) {
+    setHullIntegrity(0);
+  } else {
+    setVesselHullIntegrity(vesselId, 0);
+  }
   cinematicAutopilotActive.current = false;
-  cinematicThrustForward.current = false;
-  cinematicThrustReverse.current = false;
-  window.dispatchEvent(new CustomEvent('ShipDestroyed', { detail: { cause } }));
+  if (cinematicThrustForwardRef) cinematicThrustForwardRef.current = false;
+  if (cinematicThrustReverseRef) cinematicThrustReverseRef.current = false;
+  window.dispatchEvent(new CustomEvent('ShipDestroyed', { detail: { cause, vesselId } }));
 }
 
 export function checkShipDestruction({
+  vesselId,
+  vesselState,
   destroyedFired,
   destroyedSpinSet,
   angularVelocity,
@@ -33,7 +49,11 @@ export function checkShipDestruction({
   thrustStrafeRight,
   thrustRadialOut,
   thrustRadialIn,
+  cinematicThrustForwardRef,
+  cinematicThrustReverseRef,
 }: {
+  vesselId: string;
+  vesselState: VesselRuntimeState;
   destroyedFired: React.MutableRefObject<boolean>;
   destroyedSpinSet: React.MutableRefObject<boolean>;
   angularVelocity: React.MutableRefObject<number>;
@@ -46,11 +66,19 @@ export function checkShipDestruction({
   thrustStrafeRight: React.MutableRefObject<boolean>;
   thrustRadialOut: React.MutableRefObject<boolean>;
   thrustRadialIn: React.MutableRefObject<boolean>;
+  cinematicThrustForwardRef?: { current: boolean };
+  cinematicThrustReverseRef?: { current: boolean };
 }): void {
-  if (hullIntegrity <= 0 && !destroyedFired.current) {
+  if (vesselState.hullIntegrity <= 0 && !destroyedFired.current) {
     destroyedFired.current = true;
     const cause = radiationExposureRef.current > 0 ? 'radiation' : 'hull';
-    triggerShipDestruction(cause);
+    triggerShipDestruction({
+      vesselId,
+      vesselState,
+      cause,
+      cinematicThrustForwardRef,
+      cinematicThrustReverseRef,
+    });
     thrustForward.current = false;
     thrustReverse.current = false;
     thrustLeft.current = false;
@@ -59,8 +87,8 @@ export function checkShipDestruction({
     thrustStrafeRight.current = false;
     thrustRadialOut.current = false;
     thrustRadialIn.current = false;
-    mainEngineDisabled.reverseA.current = true;
-    mainEngineDisabled.reverseB.current = true;
+    vesselState.mainEngineDisabled.reverseA.current = true;
+    vesselState.mainEngineDisabled.reverseB.current = true;
     if (!destroyedSpinSet.current) {
       destroyedSpinSet.current = true;
       angularVelocity.current += (Math.random() < 0.5 ? -1 : 1) * 0.9;

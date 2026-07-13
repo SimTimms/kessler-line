@@ -4,6 +4,7 @@ import { registerCollidable, unregisterCollidable } from '../../context/Collisio
 import { selectTarget } from '../../context/TargetSelection';
 import { useRegisterDock } from '../../hooks/useRegisterDockablePartner';
 import type { DockConfig } from '../../config/dockConfig';
+import type { DockCaptureProfile } from '../../config/dockCaptureConfig';
 
 interface DockingBayProps {
   stationId?: string;
@@ -17,6 +18,10 @@ interface DockingBayProps {
    * contacts, and optional job board. Requires `stationId` (becomes the dock id).
    */
   dock?: DockConfig;
+  /** Optional docking behavior override (capture probe, speed gate, attach offset). */
+  dockingProfile?: DockCaptureProfile;
+  /** Render the translucent capture box mesh (debug/authoring aid). */
+  showCaptureMesh?: boolean;
   /** Debug helper: clicking the bay simulates docking for UI testing. */
   debugDockOnClick?: boolean;
 }
@@ -29,6 +34,8 @@ export default function DockingBay({
   dimensions,
   rotation = [0, Math.PI, 0],
   dock,
+  dockingProfile,
+  showCaptureMesh = true,
   debugDockOnClick = false,
 }: DockingBayProps) {
   const COLLISION_ID = stationId ? `docking-bay-${stationId}` : `docking-bay-${Math.random()}`;
@@ -63,12 +70,15 @@ export default function DockingBay({
         type: 'box',
         halfExtents: new THREE.Vector3(dimensions.x * 0.5, dimensions.y * 0.5, dimensions.z * 0.5),
       },
+      // Docking volumes are scan/dock capture zones, never hull-collision solids.
+      physicalCollision: false,
+      dockingProfile,
       getObject3D: () => groupRef.current,
     });
     return () => {
       unregisterCollidable(COLLISION_ID);
     };
-  }, [dimensions]);
+  }, [COLLISION_ID, dimensions, dockingProfile, stationId]);
 
   return (
     <>
@@ -87,16 +97,18 @@ export default function DockingBay({
         scale={scale}
         position={position}
       >
-        <mesh>
-          <boxGeometry args={[dimensions.x, dimensions.y, dimensions.z]} />
-          <meshStandardMaterial
-            color="#ffffff"
-            side={THREE.DoubleSide}
-            emissive="#ffffff"
-            transparent
-            opacity={0.5}
-          />
-        </mesh>
+        {showCaptureMesh && (
+          <mesh>
+            <boxGeometry args={[dimensions.x, dimensions.y, dimensions.z]} />
+            <meshStandardMaterial
+              color="#ffffff"
+              side={THREE.DoubleSide}
+              emissive="#ffffff"
+              transparent
+              opacity={0.5}
+            />
+          </mesh>
+        )}
       </group>
     </>
   );

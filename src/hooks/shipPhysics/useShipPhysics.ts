@@ -1,114 +1,45 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import {
-  THRUST,
-  cinematicThrustForward,
-  cinematicThrustReverse,
-  shipVelocity,
-  shipAcceleration,
-  shipAngularVelocity,
-  shipQuaternion,
-  shipDestroyed,
-  shipControlDisabledUntil,
-  thrustMultiplier,
-  mainEngineDisabled,
-  canUsePropulsion,
-  effectiveThrustFwd,
-  effectiveThrustRev,
-  effectiveYawLeft,
-  effectiveYawRight,
-  effectiveThrustStrL,
-  effectiveThrustStrR,
-} from '../../context/ShipState';
-import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
-import { minimapShipPosition } from '../../context/MinimapShipPosition';
-import { applyDockedResources, attachShipToDock, checkDockingPort } from './docking';
-import { applyPhysicsStep } from './step';
-import { applyResourceDrain } from './resourceDrain';
-import { getCombinedInputs, getManualInput } from './inputs';
-import { updateAutopilotThrustOutputs } from './simpleAutopilot';
+import { attachShipToDock, checkDockingPort } from './docking';
 import { PHYSICS_MAX_DELTA, PHYSICS_MAX_STEP } from './constants';
-import { updateEngineAudio } from './engineAudio';
-import {
-  updateThrusterLights,
-  zeroThrusterLights,
-  THRUSTER_POINT_LIGHT_COUNT,
-  type ThrusterLightActives,
-} from './thrusterLight';
-import {
-  cinematicAutopilotActive,
-  neptuneNoFlyZoneActive,
-  scrapperIntroActive,
-  scrapperWorldPos,
-  scrapperWorldQuat,
-} from '../../context/CinematicState';
-import { shipPosRef } from '../../context/ShipPos';
-import {
-  floatingOriginActiveRef,
-  floatingOriginOffsetRef,
-} from '../../context/FloatingOrigin';
-import {
-  SCRAPPER_PLAYER_OFFSET_X,
-  SCRAPPER_PLAYER_OFFSET_Y,
-  SCRAPPER_PLAYER_OFFSET_Z,
-} from '../../config/scrapperConfig';
-import { DEBUG_DISABLE_GRAVITY, DEBUG_FREEZE_COLLISIONS } from '../../config/debugConfig';
+import { THRUSTER_POINT_LIGHT_COUNT } from './thrusterLight';
+import { neptuneNoFlyZoneActive } from '../../context/CinematicState';
 import { useInputListeners } from './inputListeners';
-import { checkShipDestruction } from './destruction';
-import { getActiveMainEngines, applyEngineAsymmetryTorque } from './engineDamage';
-import { applyRadiationDamage } from './radiation';
 import { getCollidables } from '../../context/CollisionRegistry';
-
-const _spinEuler = new THREE.Vector3();
-const _scrapperOffset = new THREE.Vector3();
-const _assistForward = new THREE.Vector3();
-const _assistRight = new THREE.Vector3();
-const _worldPos = new THREE.Vector3();
-
-/** Gameplay plane is world XZ (Y = 0), including when a parent group is banked. */
-function clampShipToWorldXZPlane(
-  group: THREE.Group,
-  physicsPosition: THREE.Vector3,
-  velocity: THREE.Vector3
-) {
-  velocity.y = 0;
-  group.getWorldPosition(_worldPos);
-  if (Math.abs(_worldPos.y) <= 1e-4) {
-    physicsPosition.copy(group.position);
-    return;
-  }
-  _worldPos.y = 0;
-  if (group.parent) {
-    group.parent.worldToLocal(_worldPos);
-    group.position.copy(_worldPos);
-  } else {
-    group.position.y = 0;
-  }
-  physicsPosition.copy(group.position);
-}
-
-/** HUD/camera follow world position (required when the ship group has a moving parent). */
-function syncShipWorldRefs(group: THREE.Group) {
-  group.getWorldPosition(minimapShipPosition);
-  shipPosRef.current.copy(minimapShipPosition);
-  // FloatingOrigin rebases the scene graph; getWorldPosition is render-space. Keep
-  // shipPosRef in simulation space for gravity, comms range, and FO focus.
-  if (floatingOriginActiveRef.current) {
-    shipPosRef.current.sub(floatingOriginOffsetRef.current);
-  }
-}
-
-const CANCEL_LINEAR_EPS = 1.1; // units/s deadzone
-const CANCEL_YAW_EPS = 0.03; // rad/s deadzone
-const MAX_VISUAL_THRUST_MULTIPLIER = 3;
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { ensureVesselState } from '../../context/VesselStateStore';
+import { syncShipWorldRefs } from './helpers/syncShipWorldRefs';
+import { runPrimaryPhysicsFrame } from './helpers/runPrimaryPhysicsFrame';
 
 interface UseShipPhysicsParams {
+  vesselId?: string;
+  selfCollisionId?: string;
   groupRef: React.RefObject<THREE.Group>;
   dockingPortRef: React.RefObject<THREE.Group>;
   initialDockedTo?: string | null;
   /** World-space velocity (units/s) applied once on first free-flight frame — not continuous forcing. Y is ignored (game plane). */
   initialVelocity?: [number, number, number];
+  options?: ShipPhysicsOptions;
+}
+
+export interface ShipPhysicsOptions {
+  /** Whether this vessel writes world position into player HUD/camera refs. */
+  publishToPlayerRefs?: boolean;
+  /** Master gate: disable all physics integration and key-driven thrust. */
+  enabled?: boolean;
+  /** Gate keyboard/mobile thrust input capture for this vessel. */
+  inputEnabled?: boolean;
+  /** Gate thruster/yaw/radial thrust force application. */
+  thrusterPhysicsEnabled?: boolean;
+  /** Gate gravity/orbital acceleration. */
+  orbitalPhysicsEnabled?: boolean;
+  /** Gate docking capture checks and docked resource handling. */
+  dockingPhysicsEnabled?: boolean;
+  /** Per-vessel yaw authority scale (1 = default player-ship yaw response). */
+  yawThrustScale?: number;
+  /** Local pivot point used for yaw rotation; set to shift yaw around nose/tail. */
+  yawPivotLocal?: [number, number, number];
 }
 
 export interface UseShipPhysicsResult {
@@ -125,11 +56,24 @@ export interface UseShipPhysicsResult {
 }
 
 export function useShipPhysics({
+  vesselId = PLAYER_VESSEL_ID,
+  selfCollisionId,
   groupRef,
   dockingPortRef,
   initialDockedTo = null,
   initialVelocity,
+  options,
 }: UseShipPhysicsParams): UseShipPhysicsResult {
+  const vesselState = ensureVesselState(vesselId);
+  const publishToPlayerRefs = options?.publishToPlayerRefs ?? vesselId === PLAYER_VESSEL_ID;
+  const physicsEnabled = options?.enabled ?? true;
+  const inputEnabled = options?.inputEnabled ?? true;
+  const thrusterPhysicsEnabled = options?.thrusterPhysicsEnabled ?? true;
+  const orbitalPhysicsEnabled = options?.orbitalPhysicsEnabled ?? true;
+  const dockingPhysicsEnabled = options?.dockingPhysicsEnabled ?? true;
+  const yawThrustScale = options?.yawThrustScale ?? 1;
+  const yawPivotLocal = options?.yawPivotLocal;
+
   const { scene } = useThree();
   const velocity = useRef(new THREE.Vector3());
   const physicsPosition = useRef(new THREE.Vector3());
@@ -140,14 +84,30 @@ export function useShipPhysics({
   const angularVelocity3 = useRef(new THREE.Vector3());
   const destroyedFired = useRef(false);
   const destroyedSpinSet = useRef(false);
+  const didLogDockFrameError = useRef(false);
   const dockedTo = useRef<string | null>(initialDockedTo); // collision ID of the docked bay, or null
   const primaryGravityId = useRef<string | null>(null);
   const primaryGravityVelocity = useRef(new THREE.Vector3());
+  const yawPivotLocalRef = useRef<THREE.Vector3 | null>(null);
 
   const thrusterLightRefs = useRef<(THREE.PointLight | null)[]>([]);
   const thrusterLightIntensities = useRef<number[]>(
     Array.from({ length: THRUSTER_POINT_LIGHT_COUNT }, () => 0)
   );
+  const inputEnabledRef = useRef(inputEnabled && physicsEnabled);
+  useEffect(() => {
+    inputEnabledRef.current = inputEnabled && physicsEnabled;
+  }, [inputEnabled, physicsEnabled]);
+  useEffect(() => {
+    if (!yawPivotLocal) {
+      yawPivotLocalRef.current = null;
+      return;
+    }
+    if (!yawPivotLocalRef.current) {
+      yawPivotLocalRef.current = new THREE.Vector3();
+    }
+    yawPivotLocalRef.current.set(yawPivotLocal[0], yawPivotLocal[1], yawPivotLocal[2]);
+  }, [yawPivotLocal]);
 
   const {
     thrustForward,
@@ -160,35 +120,29 @@ export function useShipPhysics({
     thrustRadialIn,
     releaseParticleTrigger,
     stabilizerActive,
-  } = useInputListeners({ dockedTo, velocity, groupRef, scene, physicsPosition });
-
-  // Spawn already docked (e.g. docking tutorial): physics sets dockedTo before any bay overlap,
-  // so we must sync HUD / useDockingState with the same ShipDocked path as live docking.
-  // Defer past sibling useEffects (NavHUD registers listeners after this ship mounts).
-  useEffect(() => {
-    const onTutorialShipReset = () => {
-      destroyedFired.current = false;
-      destroyedSpinSet.current = false;
-      velocity.current.set(0, 0, 0);
-      angularVelocity.current = 0;
-      angularVelocity3.current.set(0, 0, 0);
-      didApplyInitialVelocity.current = false;
-      if (groupRef.current) {
-        // Use shipPosRef (set by each tutorial's reset handler) — not always world origin.
-        groupRef.current.position.set(
-          shipPosRef.current.x,
-          shipPosRef.current.y,
-          shipPosRef.current.z
-        );
-        physicsPosition.current.copy(groupRef.current.position);
-        renderPosition.current.copy(groupRef.current.position);
-      }
-    };
-    window.addEventListener('TutorialShipReset', onTutorialShipReset);
-    return () => window.removeEventListener('TutorialShipReset', onTutorialShipReset);
-  }, [groupRef]);
+    resetInputs,
+  } = useInputListeners({
+    vesselId,
+    vesselState,
+    dockedTo,
+    velocity,
+    groupRef,
+    scene,
+    physicsPosition,
+    inputEnabledRef,
+    listenersEnabled: physicsEnabled,
+  });
 
   useEffect(() => {
+    if (!physicsEnabled) return;
+    if (physicsEnabled && inputEnabled && thrusterPhysicsEnabled) return;
+    resetInputs();
+  }, [physicsEnabled, inputEnabled, resetInputs, thrusterPhysicsEnabled]);
+
+  useEffect(() => {
+    if (!physicsEnabled) return;
+    if (!publishToPlayerRefs) return;
+    if (!dockingPhysicsEnabled) return;
     if (!initialDockedTo) return;
     let cancelled = false;
     const bay = getCollidables().find((c) => c.id === initialDockedTo);
@@ -203,9 +157,10 @@ export function useShipPhysics({
     return () => {
       cancelled = true;
     };
-  }, [initialDockedTo]);
+  }, [dockingPhysicsEnabled, initialDockedTo, physicsEnabled, publishToPlayerRefs]);
 
   useFrame((_, delta) => {
+    if (!physicsEnabled) return;
     const rawDelta = delta;
 
     // Clamp total physics time and sub-step for stability on low-FPS devices.
@@ -217,284 +172,25 @@ export function useShipPhysics({
       renderPosition.current.copy(groupRef.current.position);
       didInitPositions.current = true;
     }
-    // Ensure physics runs on the authoritative position, not a smoothed render pose.
-    if (!dockedTo.current) {
-      groupRef.current.position.copy(physicsPosition.current);
-    }
-    if (shipDestroyed.current) {
-      updateEngineAudio({ mainThrust: false, rcsThrust: false });
-    }
-
-    if (dockedTo.current) {
-      applyDockedResources({
-        thrusterLightRefs,
-        thrusterLightIntensities,
-        rawDelta,
-      });
-      didApplyInitialVelocity.current = true;
-      updateEngineAudio({ mainThrust: false, rcsThrust: false });
-      effectiveThrustFwd.current = false;
-      effectiveThrustRev.current = false;
-      effectiveYawLeft.current = false;
-      effectiveYawRight.current = false;
-      effectiveThrustStrL.current = false;
-      effectiveThrustStrR.current = false;
-      shipAngularVelocity.current = 0;
-      return;
-    }
-
-    if (!didApplyInitialVelocity.current && initialVelocity) {
-      didApplyInitialVelocity.current = true;
-      velocity.current.set(initialVelocity[0], 0, initialVelocity[2]);
-    }
-
-    // ── Scrapper intro: pin player ship inside the hold ───────────────────────
-    if (scrapperIntroActive.current) {
-      _scrapperOffset
-        .set(SCRAPPER_PLAYER_OFFSET_X, 0, SCRAPPER_PLAYER_OFFSET_Z)
-        .applyQuaternion(scrapperWorldQuat);
-      groupRef.current.position.copy(scrapperWorldPos).add(_scrapperOffset);
-      physicsPosition.current.copy(groupRef.current.position);
-      syncShipWorldRefs(groupRef.current);
-      velocity.current.set(0, 0, 0);
-      updateEngineAudio({ mainThrust: false, rcsThrust: false });
-      return;
-    }
-
-    const controlsLocked = performance.now() < shipControlDisabledUntil.current;
-
-    if (!canUsePropulsion() && autopilotActive.current) {
-      disableAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-    }
-
-    updateAutopilotThrustOutputs(groupRef.current, velocity.current, {
-      controlsLocked,
-      shipDestroyed: shipDestroyed.current,
-      primaryGravityId,
-    });
-
-    let { yawLeft, yawRight, fwd, rev, strL, strR, radOut, radIn } = getCombinedInputs({
-      thrustForward,
-      thrustReverse,
-      thrustLeft,
-      thrustRight,
-      thrustStrafeLeft,
-      thrustStrafeRight,
-      thrustRadialOut,
-      thrustRadialIn,
-    });
-
-    if (shipDestroyed.current) {
-      yawLeft = false;
-      yawRight = false;
-      fwd = false;
-      rev = false;
-      strL = false;
-      strR = false;
-      radOut = false;
-      radIn = false;
-    }
-
-    if (controlsLocked) {
-      yawLeft = false;
-      yawRight = false;
-      fwd = false;
-      rev = false;
-      strL = false;
-      strR = false;
-      radOut = false;
-      radIn = false;
-    }
-
-    if (!canUsePropulsion()) {
-      yawLeft = false;
-      yawRight = false;
-      fwd = false;
-      rev = false;
-      strL = false;
-      strR = false;
-      radOut = false;
-      radIn = false;
-      cinematicThrustForward.current = false;
-      cinematicThrustReverse.current = false;
-    }
-
-    // Stabiliser (Space held): synthetically activates both keys of every cancel pair so the
-    // cancel-assist blocks below fire opposing thrusters on all three axes simultaneously.
-    if (stabilizerActive.current) {
-      fwd = true;
-      rev = true;
-      yawLeft = true;
-      yawRight = true;
-      strL = true;
-      strR = true;
-    }
-
-    // Opposite-key cancel assist:
-    // - W+S (fwd+rev): cancel longitudinal velocity
-    // - A+D (yawLeft+yawRight): cancel yaw rate
-    // - Q+E (strL+strR): cancel lateral/strafe velocity
-    if (fwd && rev) {
-      _assistForward.set(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
-      const vForward = velocity.current.dot(_assistForward);
-      if (Math.abs(vForward) <= CANCEL_LINEAR_EPS) {
-        // Snap longitudinal component to zero so assist does not re-pulse.
-        velocity.current.addScaledVector(_assistForward, -vForward);
-        fwd = false;
-        rev = false;
-      } else if (vForward > 0) {
-        // Moving +forward → apply opposite acceleration (-forward)
-        fwd = true;
-        rev = false;
-      } else {
-        fwd = false;
-        rev = true;
-      }
-    }
-
-    if (yawLeft && yawRight) {
-      const yawRate = angularVelocity.current;
-      if (Math.abs(yawRate) <= CANCEL_YAW_EPS) {
-        // Clamp residual angular drift at threshold.
-        angularVelocity.current = 0;
-        yawLeft = false;
-        yawRight = false;
-      } else if (yawRate > 0) {
-        // Positive yaw rate → apply yaw-left torque
-        yawLeft = true;
-        yawRight = false;
-      } else {
-        yawLeft = false;
-        yawRight = true;
-      }
-    }
-
-    if (strL && strR) {
-      _assistRight.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
-      const vRight = velocity.current.dot(_assistRight);
-      if (Math.abs(vRight) <= CANCEL_LINEAR_EPS) {
-        // Snap lateral component to zero so assist does not re-pulse.
-        velocity.current.addScaledVector(_assistRight, -vRight);
-        strL = false;
-        strR = false;
-      } else if (vRight > 0) {
-        // Moving +right → apply strafe-left
-        strL = true;
-        strR = false;
-      } else {
-        strL = false;
-        strR = true;
-      }
-    }
-
-    // Publish effective thruster states so ThrusterParticles shows the correct
-    // visual for cancel-assist and stabilizer thrusts, not just raw key presses.
-    effectiveThrustFwd.current = fwd;
-    effectiveThrustRev.current = rev;
-    effectiveYawLeft.current = yawLeft;
-    effectiveYawRight.current = yawRight;
-    effectiveThrustStrL.current = strL;
-    effectiveThrustStrR.current = strR;
-
-    const manualInput = getManualInput({
-      thrustForward,
-      thrustReverse,
-      thrustLeft,
-      thrustRight,
-      thrustStrafeLeft,
-      thrustStrafeRight,
-      thrustRadialOut,
-      thrustRadialIn,
-    });
-
-    if (cinematicAutopilotActive.current) {
-      if (manualInput) {
-        cinematicAutopilotActive.current = false;
-        cinematicThrustForward.current = false;
-        cinematicThrustReverse.current = false;
-      }
-    }
-
-    if (autopilotActive.current && (manualInput || stabilizerActive.current)) {
-      disableAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-    }
-
-    const activeMainEngines = getActiveMainEngines();
-    const mainThrust = fwd || (rev && activeMainEngines > 0);
-    const rcsThrust = strL || strR || yawLeft || yawRight;
-    const anyThrusting = updateEngineAudio({ mainThrust, rcsThrust });
-    if (shipDestroyed.current) {
-      zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
-    }
-
-    const thrusterLightActives: ThrusterLightActives = {
-      reverseA: fwd && !mainEngineDisabled.reverseA.current,
-      reverseB: fwd && !mainEngineDisabled.reverseB.current,
-      forward: rev,
-      left: yawLeft,
-      right: yawRight,
-      strafeLeft: strL,
-      strafeRight: strR,
-    };
-
-    applyEngineAsymmetryTorque({
-      rev,
-      activeMainEngines,
+    runPrimaryPhysicsFrame({
+      vesselId,
+      selfCollisionId: selfCollisionId ?? vesselId,
       group: groupRef.current,
-      angularVelocity,
+      rawDelta,
       cappedDelta,
-    });
-
-    const revScale = activeMainEngines / 2;
-
-    let remaining = cappedDelta;
-    while (remaining > 0) {
-      const dt = Math.min(remaining, maxStep);
-      remaining -= dt;
-      applyPhysicsStep({
-        group: groupRef.current,
-        velocity: velocity.current,
-        angularVelocity,
-        primaryGravityId,
-        primaryGravityVelocity: primaryGravityVelocity.current,
-        dt,
-        anyThrusting,
-        disableGravity: DEBUG_DISABLE_GRAVITY,
-        freezeCollisions: DEBUG_FREEZE_COLLISIONS,
-        yawLeft,
-        yawRight,
-        fwd,
-        rev,
-        revScale,
-        strL,
-        strR,
-        radOut,
-        radIn,
-      });
-
-      updateThrusterLights({
-        thrusterLightIntensities,
-        thrusterLightRefs,
-        actives: thrusterLightActives,
-        dt,
-      });
-    }
-
-    shipAngularVelocity.current = angularVelocity.current;
-
-    if (shipDestroyed.current) {
-      _spinEuler.copy(angularVelocity3.current).multiplyScalar(cappedDelta);
-      groupRef.current.rotation.x += _spinEuler.x;
-      groupRef.current.rotation.z += _spinEuler.z;
-    }
-
-    checkShipDestruction({
-      destroyedFired,
-      destroyedSpinSet,
+      maxStep,
+      vesselState,
+      publishToPlayerRefs,
+      dockingPhysicsEnabled,
+      dockedTo,
+      didApplyInitialVelocity,
+      initialVelocity,
+      velocity,
       angularVelocity,
       angularVelocity3,
+      physicsPosition,
+      primaryGravityId,
+      primaryGravityVelocity: primaryGravityVelocity.current,
       thrustForward,
       thrustReverse,
       thrustLeft,
@@ -503,64 +199,60 @@ export function useShipPhysics({
       thrustStrafeRight,
       thrustRadialOut,
       thrustRadialIn,
+      stabilizerActive,
+      destroyedFired,
+      destroyedSpinSet,
+      thrusterLightRefs,
+      thrusterLightIntensities,
+      thrusterPhysicsEnabled,
+      orbitalPhysicsEnabled,
+      yawThrustScale,
+      yawPivotLocal: yawPivotLocalRef.current,
     });
-
-    physicsPosition.current.copy(groupRef.current.position);
-
-    shipVelocity.copy(velocity.current);
-    groupRef.current.getWorldQuaternion(shipQuaternion);
-
-    const isLinearThrusting = fwd || rev || strL || strR;
-    const visualThrustMultiplier = Math.min(thrustMultiplier.current, MAX_VISUAL_THRUST_MULTIPLIER);
-    shipAcceleration.current = isLinearThrusting ? THRUST * visualThrustMultiplier : 0;
-
-    applyResourceDrain({
-      fwd,
-      rev,
-      yawLeft,
-      yawRight,
-      strL,
-      strR,
-      radOut,
-      radIn,
-      rawDelta,
-    });
-    applyRadiationDamage(physicsPosition.current, rawDelta);
-
-    clampShipToWorldXZPlane(groupRef.current, physicsPosition.current, velocity.current);
-
-    syncShipWorldRefs(groupRef.current);
   }, -1);
 
   // Priority 2: after BodyOrbit (0) — parent to dock and sync world refs for camera/HUD.
   useFrame(() => {
-    if (!groupRef.current) return;
-    const group = groupRef.current;
+    try {
+      if (!physicsEnabled) return;
+      if (!groupRef.current) return;
+      const group = groupRef.current;
 
-    if (dockedTo.current) {
-      const entry = getCollidables().find((c) => c.id === dockedTo.current);
-      if (entry) {
-        attachShipToDock(group, entry);
+      if (!dockingPhysicsEnabled) return;
+
+      if (dockedTo.current) {
+        const entry = getCollidables().find((c) => c.id === dockedTo.current);
+        if (entry) {
+          attachShipToDock(group, entry);
+        }
+        group.getWorldPosition(physicsPosition.current);
+        syncShipWorldRefs(group, publishToPlayerRefs);
+        group.getWorldQuaternion(vesselState.shipQuaternion);
+        return;
       }
-      group.getWorldPosition(physicsPosition.current);
-      syncShipWorldRefs(group);
-      group.getWorldQuaternion(shipQuaternion);
-      return;
-    }
 
-    if (neptuneNoFlyZoneActive.current) return;
-    checkDockingPort({
-      group,
-      dockingPort: dockingPortRef.current,
-      dockedTo,
-      velocity: velocity.current,
-    });
-    if (dockedTo.current) {
-      group.getWorldPosition(physicsPosition.current);
-      syncShipWorldRefs(group);
-      group.getWorldQuaternion(shipQuaternion);
+      if (neptuneNoFlyZoneActive.current) return;
+      checkDockingPort({
+        group,
+        dockingPort: dockingPortRef.current,
+        dockedTo,
+        velocity: velocity.current,
+        selfCollisionId: selfCollisionId ?? vesselId,
+        emitDockingEvents: publishToPlayerRefs,
+      });
+      if (dockedTo.current) {
+        group.getWorldPosition(physicsPosition.current);
+        syncShipWorldRefs(group, publishToPlayerRefs);
+        group.getWorldQuaternion(vesselState.shipQuaternion);
+      }
+    } catch (error) {
+      // Guard rendering from docking callback failures while preserving diagnostics.
+      if (!didLogDockFrameError.current) {
+        didLogDockFrameError.current = true;
+        console.error('[useShipPhysics] Docking frame failed', error);
+      }
     }
-  }, 2);
+  }, 0);
 
   return {
     thrustForward,

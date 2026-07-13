@@ -1,12 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import {
-  damageHull,
-  MAIN_ENGINE_HIT_RADIUS,
-  MAIN_ENGINE_LOCAL_POS,
-  mainEngineDisabled,
-  railgunTargetEngine,
-} from '../../context/ShipState';
+import { MAIN_ENGINE_HIT_RADIUS } from '../../context/ShipState';
 import { playImpactSoundOverlap, playRailgunHit } from '../../sound/SoundManager';
 import { RAILGUN_DAMAGE_MIN, RAILGUN_DAMAGE_MAX } from '../../config/damageConfig';
 import {
@@ -29,6 +23,11 @@ import {
   isDockingTutorialUndockAllowed,
 } from '../../tutorial/tutorialDockingInputGate';
 import { detachShipFromDock } from './docking';
+import { getCollidables } from '../../context/CollisionRegistry';
+import { getDockCaptureProfile } from '../../utils/dockingCapture';
+import { damageVesselHull, type VesselRuntimeState } from '../../context/VesselStateStore';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { damageHull } from '../../context/ShipState';
 
 export interface InputListenersResult {
   thrustForward: React.MutableRefObject<boolean>;
@@ -41,20 +40,29 @@ export interface InputListenersResult {
   thrustRadialIn: React.MutableRefObject<boolean>;
   releaseParticleTrigger: React.MutableRefObject<boolean>;
   stabilizerActive: React.MutableRefObject<boolean>;
+  resetInputs: () => void;
 }
 
 export function useInputListeners({
+  vesselId,
+  vesselState,
   dockedTo,
   velocity,
   groupRef,
   scene,
   physicsPosition,
+  inputEnabledRef,
+  listenersEnabled = true,
 }: {
+  vesselId: string;
+  vesselState: VesselRuntimeState;
   dockedTo: React.MutableRefObject<string | null>;
   velocity: React.MutableRefObject<THREE.Vector3>;
   groupRef: React.RefObject<THREE.Group>;
   scene: THREE.Object3D;
   physicsPosition: React.MutableRefObject<THREE.Vector3>;
+  inputEnabledRef?: React.MutableRefObject<boolean>;
+  listenersEnabled?: boolean;
 }): InputListenersResult {
   const thrustForward = useRef(false);
   const thrustReverse = useRef(false);
@@ -67,8 +75,24 @@ export function useInputListeners({
   const releaseParticleTrigger = useRef(false);
   const stabilizerActive = useRef(false);
   const lastRailgunTarget = useRef<'reverseA' | 'reverseB' | null>(null);
+  const resetInputs = useCallback(() => {
+    thrustForward.current = false;
+    thrustReverse.current = false;
+    thrustLeft.current = false;
+    thrustRight.current = false;
+    thrustStrafeLeft.current = false;
+    thrustStrafeRight.current = false;
+    thrustRadialOut.current = false;
+    thrustRadialIn.current = false;
+    stabilizerActive.current = false;
+  }, []);
 
   useEffect(() => {
+    if (!listenersEnabled) {
+      resetInputs();
+      return;
+    }
+
     const performShipUndock = (): boolean => {
       if (!dockedTo.current) return false;
       const previousDockId = dockedTo.current;
@@ -80,7 +104,10 @@ export function useInputListeners({
         const releaseDir = forward.multiplyScalar(-1);
         groupRef.current.position.addScaledVector(releaseDir, 1); // ensure clear separation from bay
         // Push away from the docking bay, not toward it.
-        const releaseSpeed = previousDockId.startsWith('docking-bay-rendezvous-') ? 2.5 : 8;
+        const dockEntry = getCollidables().find((c) => c.id === previousDockId);
+        const releaseSpeed = dockEntry
+          ? getDockCaptureProfile(dockEntry).undockReleaseSpeed
+          : 8;
         velocity.current.copy(releaseDir.multiplyScalar(releaseSpeed));
         groupRef.current.getWorldPosition(physicsPosition.current);
       }
@@ -89,6 +116,7 @@ export function useInputListeners({
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
+      if (inputEnabledRef && !inputEnabledRef.current) return;
       if (
         DOCKING_TUTORIAL_ALL_FLIGHT_KEYS.has(e.code) &&
         !isDockingTutorialShipKeyAllowed(e.code)
@@ -122,16 +150,10 @@ export function useInputListeners({
     };
 
     const onDockingTutorialInputReset = () => {
-      thrustForward.current = false;
-      thrustReverse.current = false;
-      thrustLeft.current = false;
-      thrustRight.current = false;
-      thrustStrafeLeft.current = false;
-      thrustStrafeRight.current = false;
-      thrustRadialOut.current = false;
-      thrustRadialIn.current = false;
+      resetInputs();
     };
     const onKeyUp = (e: KeyboardEvent) => {
+      if (inputEnabledRef && !inputEnabledRef.current) return;
       if (e.code === KEY_THRUST_REVERSE) thrustForward.current = false;
       if (e.code === KEY_THRUST_FORWARD) thrustReverse.current = false;
       if (e.code === KEY_YAW_LEFT) thrustLeft.current = false;
@@ -150,11 +172,15 @@ export function useInputListeners({
     const onRailgunHit = (event: Event) => {
       const detail = (event as CustomEvent<{ targetEngine?: 'reverseA' | 'reverseB' | null }>)
         .detail;
-      lastRailgunTarget.current = detail?.targetEngine ?? railgunTargetEngine.current;
+      lastRailgunTarget.current = detail?.targetEngine ?? vesselState.railgunTargetEngine.current;
       playImpactSoundOverlap();
       playRailgunHit();
       const damage = RAILGUN_DAMAGE_MIN + Math.random() * (RAILGUN_DAMAGE_MAX - RAILGUN_DAMAGE_MIN);
-      damageHull(damage);
+      if (vesselId === PLAYER_VESSEL_ID) {
+        damageHull(damage);
+      } else {
+        damageVesselHull(vesselId, damage);
+      }
     };
     window.addEventListener('RailgunHit', onRailgunHit);
 
@@ -174,24 +200,24 @@ export function useInputListeners({
         localPoint.set(point.x, point.y, point.z);
         group.worldToLocal(localPoint);
 
-        const distA = localPoint.distanceTo(MAIN_ENGINE_LOCAL_POS.reverseA);
-        const distB = localPoint.distanceTo(MAIN_ENGINE_LOCAL_POS.reverseB);
+        const distA = localPoint.distanceTo(vesselState.MAIN_ENGINE_LOCAL_POS.reverseA);
+        const distB = localPoint.distanceTo(vesselState.MAIN_ENGINE_LOCAL_POS.reverseB);
         if (distA < closestA) closestA = distA;
         if (distB < closestB) closestB = distB;
       }
 
       const hitA = closestA <= MAIN_ENGINE_HIT_RADIUS;
       const hitB = closestB <= MAIN_ENGINE_HIT_RADIUS;
-      const target = lastRailgunTarget.current ?? railgunTargetEngine.current;
+      const target = lastRailgunTarget.current ?? vesselState.railgunTargetEngine.current;
 
       if (target === 'reverseA' && hitA) {
-        mainEngineDisabled.reverseA.current = true;
+        vesselState.mainEngineDisabled.reverseA.current = true;
       } else if (target === 'reverseB' && hitB) {
-        mainEngineDisabled.reverseB.current = true;
+        vesselState.mainEngineDisabled.reverseB.current = true;
       }
 
       lastRailgunTarget.current = null;
-      railgunTargetEngine.current = null;
+      vesselState.railgunTargetEngine.current = null;
     };
     window.addEventListener('RailgunDamagePoints', onDamagePoints);
 
@@ -205,7 +231,7 @@ export function useInputListeners({
     };
     // dockedTo and velocity are stable refs — intentionally omitted from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupRef]);
+  }, [groupRef, inputEnabledRef, listenersEnabled, resetInputs, vesselId, vesselState]);
 
   return {
     thrustForward,
@@ -218,5 +244,6 @@ export function useInputListeners({
     thrustRadialIn,
     releaseParticleTrigger,
     stabilizerActive,
+    resetInputs,
   };
 }

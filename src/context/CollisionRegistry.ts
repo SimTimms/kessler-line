@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { DockCaptureProfile } from '../config/dockCaptureConfig';
 
 export type ColliderShape =
   | {
@@ -52,6 +53,9 @@ export interface CollidableEntry {
    * does not participate in ship hull collision resolution.
    */
   physicalCollision?: boolean;
+
+  /** Optional docking capture profile used by docking helpers for this bay. */
+  dockingProfile?: DockCaptureProfile;
 }
 
 const registry = new Map<string, CollidableEntry>();

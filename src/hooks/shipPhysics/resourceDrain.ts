@@ -1,10 +1,20 @@
 import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { resourceRateRefs } from '../../context/ResourceRates';
-import { power, fuel, shipCrew, setFuel, setPower, setO2, o2, thrustMultiplier } from '../../context/ShipState';
 import { o2DrainRateForCrew, FUEL_BURN_RATE } from '../../config/damageConfig';
+import {
+  setVesselFuel,
+  setVesselO2,
+  setVesselPower,
+  type VesselRuntimeState,
+} from '../../context/VesselStateStore';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { setFuel, setO2, setPower } from '../../context/ShipState';
 
 interface DrainParams {
+  vesselId: string;
+  vesselState: VesselRuntimeState;
+  trackHudRates?: boolean;
   fwd: boolean;
   rev: boolean;
   yawLeft: boolean;
@@ -22,6 +32,9 @@ const RCS_FUEL_RATE_FACTOR = 0.01;
 const RCS_THRUST_MULTIPLIER_CAP = 2;
 
 export function applyResourceDrain({
+  vesselId,
+  vesselState,
+  trackHudRates = true,
   fwd,
   rev,
   yawLeft,
@@ -37,7 +50,7 @@ export function applyResourceDrain({
 
   // Propulsion consumes propellant only; ship power is drained by systems (e.g. scanners).
   // Main forward burn uses full thrust scale. RCS/reverse are capped and very cheap.
-  const thrustScale = thrustMultiplier.current;
+  const thrustScale = vesselState.thrustMultiplier.current;
   const cappedRcsScale = Math.min(thrustScale, RCS_THRUST_MULTIPLIER_CAP);
   const mainAxes = fwd ? 1 : 0;
   const rcsAxes =
@@ -55,27 +68,48 @@ export function applyResourceDrain({
 
   if (burnRate > 0) {
     fuelRate -= burnRate;
-    setFuel(Math.max(0, fuel - burnRate * rawDelta));
+    const nextFuel = Math.max(0, vesselState.fuel - burnRate * rawDelta);
+    if (vesselId === PLAYER_VESSEL_ID) {
+      setFuel(nextFuel);
+    } else {
+      setVesselFuel(vesselId, nextFuel);
+    }
   }
   if (spotlightOnRef.current) {
     powerRate -= 1;
-    setPower(Math.max(0, power - rawDelta));
+    const nextPower = Math.max(0, vesselState.power - rawDelta);
+    if (vesselId === PLAYER_VESSEL_ID) {
+      setPower(nextPower);
+    } else {
+      setVesselPower(vesselId, nextPower);
+    }
   }
   if (driveSignatureOnRef.current) {
     powerRate -= 2;
-    setPower(Math.max(0, power - 2 * rawDelta));
+    const nextPower = Math.max(0, vesselState.power - 2 * rawDelta);
+    if (vesselId === PLAYER_VESSEL_ID) {
+      setPower(nextPower);
+    } else {
+      setVesselPower(vesselId, nextPower);
+    }
   }
 
-  const o2Drain = o2DrainRateForCrew(shipCrew);
+  const o2Drain = o2DrainRateForCrew(vesselState.shipCrew);
 
-  resourceRateRefs.power.current = powerRate;
-  resourceRateRefs.fuel.current = fuelRate;
-  resourceRateRefs.o2.current = -o2Drain;
+  if (trackHudRates) {
+    resourceRateRefs.power.current = powerRate;
+    resourceRateRefs.fuel.current = fuelRate;
+    resourceRateRefs.o2.current = -o2Drain;
+  }
 
-  const newO2 = Math.max(0, o2 - o2Drain * rawDelta);
-  if (newO2 === 0 && o2 > 0 && !o2DepletedFired) {
+  const newO2 = Math.max(0, vesselState.o2 - o2Drain * rawDelta);
+  if (newO2 === 0 && vesselState.o2 > 0 && !o2DepletedFired) {
     o2DepletedFired = true;
     window.dispatchEvent(new CustomEvent('O2Depleted'));
   }
-  setO2(newO2);
+  if (vesselId === PLAYER_VESSEL_ID) {
+    setO2(newO2);
+  } else {
+    setVesselO2(vesselId, newO2);
+  }
 }

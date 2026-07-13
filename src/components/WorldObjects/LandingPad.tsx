@@ -1,21 +1,25 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import PowerSource from './PowerSource';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { selectTarget } from '../../context/TargetSelection';
 import DockingBay from './DockingBay';
-const COLLISION_ID = 'fuel-station';
+import type { DockConfig } from '../../config/dockConfig';
+import { LANDING_PAD_DOCK_CAPTURE_PROFILE } from '../../config/dockCaptureConfig';
+
+const LANDING_PAD_COLLISION_ID = 'landing-pad-structure';
+const LANDING_PAD_DOCK_ID = 'landing-pad';
 
 interface LandingPadProps {
   scale?: number;
+  dock?: DockConfig;
   /** World-space bounding radius for collision detection. Tune to match visual size. */
   landingPadGroupRef?: { current: THREE.Group | null };
 }
 
-export default function LandingPad({ scale = 1, landingPadGroupRef }: LandingPadProps) {
-  const gltf = useGLTF('./landing-pad.glb') as unknown as { scene: THREE.Group };
+export default function LandingPad({ scale = 1, dock, landingPadGroupRef }: LandingPadProps) {
+  const gltf = useGLTF('/landing-pad.glb') as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
 
   // Fill the external stationGroupRef (if provided) so LaserRay can raycast against it.
@@ -31,7 +35,8 @@ export default function LandingPad({ scale = 1, landingPadGroupRef }: LandingPad
   // (effects fire after commit, which is after setGroupRef fires).
   useEffect(() => {
     registerCollidable({
-      id: COLLISION_ID,
+      id: LANDING_PAD_COLLISION_ID,
+      label: 'Landing Pad',
       getWorldPosition: (target) => {
         if (groupRef.current) groupRef.current.getWorldPosition(target);
         return target;
@@ -41,17 +46,14 @@ export default function LandingPad({ scale = 1, landingPadGroupRef }: LandingPad
         return target;
       },
       shape: { type: 'box', halfExtents: new THREE.Vector3(10, 10.5, 20) },
+      // Keep the pad scannable/targetable, but don't physically collide the ship with it.
+      physicalCollision: false,
       getObject3D: () => groupRef.current,
     });
     return () => {
-      unregisterCollidable(COLLISION_ID);
+      unregisterCollidable(LANDING_PAD_COLLISION_ID);
     };
   }, [landingPadGroupRef]);
-
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    groupRef.current.rotation.y += delta * 0.04;
-  });
 
   return (
     <>
@@ -65,11 +67,14 @@ export default function LandingPad({ scale = 1, landingPadGroupRef }: LandingPad
       >
         <PowerSource scale={1} />
         <primitive object={gltf.scene} scale={scale} />
-        <group position={[0, 0, 104]}>
+        <group position={[0, 6, 104]}>
           <DockingBay
-            stationId="landing-pad"
-            dimensions={new THREE.Vector3(40, 1, 10)}
+            stationId={LANDING_PAD_DOCK_ID}
+            dimensions={new THREE.Vector3(40, 2, 10)}
             rotation={[0, 0, 0]}
+            dock={dock}
+            dockingProfile={LANDING_PAD_DOCK_CAPTURE_PROFILE}
+            showCaptureMesh={false}
           />
         </group>
       </group>

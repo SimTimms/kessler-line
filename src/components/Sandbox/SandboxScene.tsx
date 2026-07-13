@@ -26,12 +26,12 @@ import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
 import { Station } from '../Station/Station';
 import DustCloud from '../DustCloud/DustCloud';
 import { getPlanetPosition } from '../../config/planetPosition';
-import { TUTORIAL_BATTLESHIP_SCAN } from '../../config/battleshipScanConfig';
-import { TUTORIAL_BATTLESHIP_RADIO_BROADCAST } from '../TutorialRadio/tutorialRadioConfig';
 import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
 import SandboxStarterMission from './SandboxStarterMission';
 import GhostFleet from '../NPCs/GhostFleet';
 import UBoat from '../UBoat/UBoat';
+import { UBoatConfig } from '../ModelConfig/UBoatConfig';
+import { KEY_THRUST_FORWARD, KEY_THRUST_REVERSE } from '../../config/keybindings';
 /** Camera + post FX run after FloatingOrigin rebases the world (priority 3). */
 const SANDBOX_CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
@@ -115,9 +115,25 @@ export default function SandboxScene() {
       </group>
       <BodyOrbit {...SANDBOX_BATTLESHIP_ORBIT}>
         <UBoat
-          scan={TUTORIAL_BATTLESHIP_SCAN}
-          radioBroadcast={TUTORIAL_BATTLESHIP_RADIO_BROADCAST}
-        />
+          scale={UBoatConfig.targetScale}
+          position={UBoatConfig.targetPosition}
+          scan={UBoatConfig.targetScan}
+          impactVents
+          flyable
+          initialFuel={100}
+          dockingBay={{
+            stationId: 'model-config-target',
+            dimensions: [2, 1, 1.3],
+            position: [
+              -4 / (UBoatConfig.targetScale * 0.56),
+              -0.8,
+              1110 / (UBoatConfig.targetScale * 2.1),
+            ],
+            scale: 3,
+            dock: ASTEROID_DOCK_CONFIG,
+            debugDockOnClick: true,
+          }}
+        ></UBoat>
       </BodyOrbit>
     </>
   );

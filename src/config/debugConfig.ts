@@ -45,3 +45,14 @@ export const DEBUG_THRUSTER_HITBOXES = false;
 export const DEBUG_RAILGUN = true;
 /** Scale factor applied to the debug hit sphere radius. */
 export const DEBUG_HIT_SCALE = 10;
+
+// ── Collision physics test harness ───────────────────────────────────────
+/**
+ * Enable keyboard-driven collision physics test tools in the main scene.
+ * Press F8 to toggle active test mode, J to fire one test projectile, K for a 5-shot burst.
+ */
+export const DEBUG_COLLISION_PHYSICS_TESTS = false;
+/** Speed (units/s) of fired test projectiles. */
+export const DEBUG_COLLISION_TEST_PROJECTILE_SPEED = 90;
+/** Spawn distance (units) from the ship for incoming test projectiles. */
+export const DEBUG_COLLISION_TEST_SPAWN_DISTANCE = 220;

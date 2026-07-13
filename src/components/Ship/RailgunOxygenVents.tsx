@@ -10,6 +10,8 @@ const PARTICLE_SIZE = 0.8;
 
 interface RailgunOxygenVentsProps {
   shipGroupRef: { current: THREE.Group | null };
+  /** Scales vent particle size for larger/smaller hulls (default 1). */
+  particleSizeScale?: number;
 }
 
 type VentParticle = {
@@ -17,7 +19,10 @@ type VentParticle = {
   life: number;
 };
 
-export default function RailgunOxygenVents({ shipGroupRef }: RailgunOxygenVentsProps) {
+export default function RailgunOxygenVents({
+  shipGroupRef,
+  particleSizeScale = 1,
+}: RailgunOxygenVentsProps) {
   const pointsRef = useRef<THREE.Points>(null!);
   const materialRef = useRef<THREE.ShaderMaterial>(null!);
   const positions = useRef(new Float32Array(MAX_PARTICLES * 3));
@@ -155,7 +160,10 @@ export default function RailgunOxygenVents({ shipGroupRef }: RailgunOxygenVentsP
         transparent
         depthWrite={false}
         blending={THREE.AdditiveBlending}
-        uniforms={{ pointTexture: { value: texture }, size: { value: PARTICLE_SIZE } }}
+        uniforms={{
+          pointTexture: { value: texture },
+          size: { value: PARTICLE_SIZE * particleSizeScale },
+        }}
         vertexShader={[
           'attribute float alpha;',
           'uniform float size;',

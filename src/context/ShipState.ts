@@ -1,10 +1,34 @@
-import * as THREE from 'three';
-import { MAIN_ENGINE_LOCAL_POS_A, MAIN_ENGINE_LOCAL_POS_B } from '../config/shipConfig';
+import {
+  ensureVesselState,
+  setVesselPower,
+  setVesselFuel,
+  canVesselUsePropulsion,
+  setVesselO2,
+  setVesselCrew,
+  setVesselHullIntegrity,
+  drainVesselPower,
+  damageVesselHull,
+} from './VesselStateStore';
+import {
+  PLAYER_VESSEL_ID,
+  mobileThrustForward,
+  mobileThrustReverse,
+  mobileThrustLeft,
+  mobileThrustRight,
+  mobileThrustStrafeLeft,
+  mobileThrustStrafeRight,
+  mobileThrustRadialOut,
+  mobileThrustRadialIn,
+  cinematicThrustForward,
+  cinematicThrustReverse,
+} from './PlayerShipState';
 
 // ── Physics constants (values live in src/config/shipConfig.ts) ────────────────
 export {
   THRUST,
   YAW_THRUST,
+  YAW_DAMPING,
+  MAX_YAW_RATE,
   SHIP_RADIUS,
   RESTITUTION,
   MAX_THRUST_MULTIPLIER,
@@ -16,129 +40,115 @@ export {
 export { COLLISION_DAMAGE_MULTIPLIER as DAMAGE_MULTIPLIER } from '../config/damageConfig';
 export const SHIP_COLLISION_ID = 'spaceship';
 
-// ── Resource state ────────────────────────────────────────────────────────────
-export let power = 100; // 0–100, decreases by 1 per active thrust key/sec
-export let hullIntegrity = 100; // 0–100, decreases on collision
-export let fuel = 100; // 0–100, drains while thrusting, refills while docked
-export let o2 = 100; // 0–100, depletes constantly, refills while docked
-export let shipCrew = 1; // crew aboard (0–SHIP_CREW_CAPACITY)
+const playerState = ensureVesselState(PLAYER_VESSEL_ID);
+
+function syncPlayerResourceBindings() {
+  power = playerState.power;
+  hullIntegrity = playerState.hullIntegrity;
+  fuel = playerState.fuel;
+  o2 = playerState.o2;
+  shipCrew = playerState.shipCrew;
+}
+
+// ── Resource state (player compatibility bindings) ───────────────────────────
+export let power = playerState.power; // 0–100, decreases by 1 per active thrust key/sec
+export let hullIntegrity = playerState.hullIntegrity; // 0–100, decreases on collision
+export let fuel = playerState.fuel; // 0–100, drains while thrusting, refills while docked
+export let o2 = playerState.o2; // 0–100, depletes constantly, refills while docked
+export let shipCrew = playerState.shipCrew; // crew aboard (0–SHIP_CREW_CAPACITY)
 
 export function setPower(v: number) {
-  power = v;
+  setVesselPower(PLAYER_VESSEL_ID, v);
+  syncPlayerResourceBindings();
 }
 export function setFuel(v: number) {
-  fuel = v;
+  setVesselFuel(PLAYER_VESSEL_ID, v);
+  syncPlayerResourceBindings();
 }
 export function canUsePropulsion(): boolean {
-  return fuel > 0;
+  return canVesselUsePropulsion(PLAYER_VESSEL_ID);
 }
 export function setO2(v: number) {
-  o2 = v;
+  setVesselO2(PLAYER_VESSEL_ID, v);
+  syncPlayerResourceBindings();
 }
 export function setShipCrew(v: number) {
-  shipCrew = v;
+  setVesselCrew(PLAYER_VESSEL_ID, v);
+  syncPlayerResourceBindings();
 }
 export function setHullIntegrity(v: number) {
-  hullIntegrity = v;
+  setVesselHullIntegrity(PLAYER_VESSEL_ID, v);
+  syncPlayerResourceBindings();
 }
 
 export function drainPower(amount: number) {
-  power = Math.max(0, power - amount);
+  drainVesselPower(PLAYER_VESSEL_ID, amount);
+  syncPlayerResourceBindings();
 }
 
 export function damageHull(amount: number) {
-  hullIntegrity = Math.max(0, hullIntegrity - amount);
+  damageVesselHull(PLAYER_VESSEL_ID, amount);
+  syncPlayerResourceBindings();
 }
 
 // ── Shared refs (read by other components every frame) ────────────────────────
-export const shipVelocity = new THREE.Vector3(); // updated each frame; read by HUD
+export const shipVelocity = playerState.shipVelocity; // updated each frame; read by HUD
 export const METRES_PER_UNIT = 1;
 export function getShipSpeedMps() {
   return shipVelocity.length() * METRES_PER_UNIT;
 }
-export const shipAcceleration = { current: 0 }; // linear acceleration magnitude (units/s²)
-export const shipQuaternion = new THREE.Quaternion(); // updated each frame; read by EjectedCargo
-export const orbitingBodyIdRef = { current: null as string | null }; // current primary gravity body id
-export const orbitStatusRef = {
-  current: {
-    bodyId: null as string | null,
-    isOrbiting: false,
-    periapsis: 0,
-    apoapsis: 0,
-    surfaceRadius: 0,
-    radialVelocity: 0, // positive = moving away from body (toward apoapsis), negative = toward body (toward periapsis)
-    hyperbolicPeriapsis: 0, // predicted periapsis on hyperbolic approach (energy ≥ 0); 0 when not applicable
-  },
-};
+export const shipAcceleration = playerState.shipAcceleration; // linear acceleration magnitude (units/s²)
+export const shipQuaternion = playerState.shipQuaternion; // updated each frame; read by EjectedCargo
+export const orbitingBodyIdRef = playerState.orbitingBodyIdRef; // current primary gravity body id
+export const orbitStatusRef = playerState.orbitStatusRef;
 
 // ── Trajectory-simulated apsides (written by VelocityIndicator each frame) ────
 // Values are radial distances (not altitudes) from the primary body center.
 // apoapsis is 0 when the trajectory is open (hyperbolic).
-export const trajectoryApsisRef = {
-  current: {
-    periapsis: 0, // min radial distance along simulated trajectory; 0 if none
-    apoapsis: 0, // max radial distance along closed trajectory; 0 if open
-    surfaceRadius: 0, // surface radius of the primary body at time of calculation
-  },
-};
+export const trajectoryApsisRef = playerState.trajectoryApsisRef;
 
-// ── Mobile thrust inputs (set by MobileControls overlay) ─────────────────────
-export const mobileThrustForward = { current: false };
-export const mobileThrustReverse = { current: false };
-export const mobileThrustLeft = { current: false };
-export const mobileThrustRight = { current: false };
-export const mobileThrustStrafeLeft = { current: false };
-export const mobileThrustStrafeRight = { current: false };
-export const mobileThrustRadialOut = { current: false };
-export const mobileThrustRadialIn = { current: false };
-
-// ── Cinematic thrust overrides ───────────────────────────────────────────────
-export const cinematicThrustForward = { current: false };
-export const cinematicThrustReverse = { current: false };
-
-export const isRefueling = { current: false }; // set by Refuel button while docked
-export const isTransferringO2 = { current: false }; // set by Transfer O2 button while docked
-export const thrustMultiplier = { current: 1 }; // range 0.5–MAX_THRUST_MULTIPLIER
-export const shipDestroyed = { current: false }; // set true when hull reaches 0
+export const isRefueling = playerState.isRefueling; // set by Refuel button while docked
+export const isTransferringO2 = playerState.isTransferringO2; // set by Transfer O2 button while docked
+export const thrustMultiplier = playerState.thrustMultiplier; // range 0.5–MAX_THRUST_MULTIPLIER
+export const shipDestroyed = playerState.shipDestroyed; // set true when hull reaches 0
 
 // ── Damage / control effects ───────────────────────────────────────────────
-export const shipImpactPulseUntil = { current: 0 }; // performance.now() ms
-export const shipControlDisabledUntil = { current: 0 }; // performance.now() ms
-export const railgunImpactDir = new THREE.Vector3();
-export const railgunImpactAt = { current: 0 }; // performance.now() ms
-export const railgunTargetEngine = {
-  current: null as 'reverseA' | 'reverseB' | null,
-};
+export const shipImpactPulseUntil = playerState.shipImpactPulseUntil; // performance.now() ms
+export const shipControlDisabledUntil = playerState.shipControlDisabledUntil; // performance.now() ms
+export const railgunImpactDir = playerState.railgunImpactDir;
+export const railgunImpactAt = playerState.railgunImpactAt; // performance.now() ms
+export const railgunTargetEngine = playerState.railgunTargetEngine;
 
 // ── Main engine damage state ───────────────────────────────────────────────
-export const MAIN_ENGINE_LOCAL_POS = {
-  reverseA: new THREE.Vector3(
-    MAIN_ENGINE_LOCAL_POS_A[0],
-    MAIN_ENGINE_LOCAL_POS_A[1],
-    MAIN_ENGINE_LOCAL_POS_A[2]
-  ),
-  reverseB: new THREE.Vector3(
-    MAIN_ENGINE_LOCAL_POS_B[0],
-    MAIN_ENGINE_LOCAL_POS_B[1],
-    MAIN_ENGINE_LOCAL_POS_B[2]
-  ),
-} as const;
-export const mainEngineDisabled = {
-  reverseA: { current: false },
-  reverseB: { current: false },
-};
+export const MAIN_ENGINE_LOCAL_POS = playerState.MAIN_ENGINE_LOCAL_POS;
+export const mainEngineDisabled = playerState.mainEngineDisabled;
 
 // Yaw rate in rad/s — written by useShipPhysics each frame, read by AutopilotController
-export const shipAngularVelocity = { current: 0 };
+export const shipAngularVelocity = playerState.shipAngularVelocity;
 
 // ── Effective thruster states ─────────────────────────────────────────────────
 // Written by useShipPhysics each frame after cancel-assist and stabilizer logic.
 // Read by ThrusterParticles so visual effects reflect computed thrust, not just
 // raw key presses (stabilizer, autopilot overrides, and cancel-assist all show
 // the correct thruster firing).
-export const effectiveThrustFwd = { current: false };
-export const effectiveThrustRev = { current: false };
-export const effectiveYawLeft = { current: false };
-export const effectiveYawRight = { current: false };
-export const effectiveThrustStrL = { current: false };
-export const effectiveThrustStrR = { current: false };
+export const effectiveThrustFwd = playerState.effectiveThrustFwd;
+export const effectiveThrustRev = playerState.effectiveThrustRev;
+export const effectiveYawLeft = playerState.effectiveYawLeft;
+export const effectiveYawRight = playerState.effectiveYawRight;
+export const effectiveThrustStrL = playerState.effectiveThrustStrL;
+export const effectiveThrustStrR = playerState.effectiveThrustStrR;
+
+// ── Re-export player-control state from dedicated module ─────────────────────
+export {
+  PLAYER_VESSEL_ID,
+  mobileThrustForward,
+  mobileThrustReverse,
+  mobileThrustLeft,
+  mobileThrustRight,
+  mobileThrustStrafeLeft,
+  mobileThrustStrafeRight,
+  mobileThrustRadialOut,
+  mobileThrustRadialIn,
+  cinematicThrustForward,
+  cinematicThrustReverse,
+};
