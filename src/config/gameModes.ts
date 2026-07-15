@@ -2,6 +2,7 @@ export const GAME_MODES = {
   menu: 'menu',
   modelConfig: 'modelConfig',
   shipConfig: 'shipConfig',
+  inventoryConfig: 'inventoryConfig',
   sandbox: 'sandbox',
   tutorial: 'tutorial',
   resources: 'resources',
@@ -15,6 +16,7 @@ export type GameMode = (typeof GAME_MODES)[keyof typeof GAME_MODES];
 export type TutorialMenuSelection =
   | typeof GAME_MODES.modelConfig
   | typeof GAME_MODES.shipConfig
+  | typeof GAME_MODES.inventoryConfig
   | typeof GAME_MODES.sandbox
   | typeof GAME_MODES.tutorial
   | typeof GAME_MODES.resources

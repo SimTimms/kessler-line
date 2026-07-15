@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { PLANETS } from '../Planets/SolarSystem';
 import { SOLAR_SYSTEM_SCALE, SUN_WORLD_RADIUS } from '../../config/solarConfig';
 import { shipPosRef } from '../../context/ShipPos';
-import { shipQuaternion } from '../../context/ShipState';
+import { shipQuaternion, shipVelocity } from '../../context/ShipState';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { getPlanetPosition } from '../../config/planetPosition';
 import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
@@ -16,6 +16,7 @@ import { radioOnRef, radioRangeRef } from '../../context/RadioState';
 import { getCollidables } from '../../context/CollisionRegistry';
 import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
+import { beginPadScan } from '../../context/PadScanState';
 import './SandboxHtmlMiniMap.css';
 
 interface SandboxHtmlMiniMapProps {
@@ -43,11 +44,230 @@ type HoverCardState = {
   y: number;
 };
 
+type DockingAssistData = {
+  dockId: string;
+  dockLabel: string;
+  stationId: string | null;
+  shipX: number;
+  shipZ: number;
+  dockX: number;
+  dockZ: number;
+  distanceToCenter: number;
+  lateralX: number;
+  lateralZ: number;
+  relSpeedMps: number;
+  idealSpeedMps: number;
+  headingErrorDeg: number;
+  shipHeadingDeg: number;
+};
+
+type DockingReadouts = {
+  speedIndicatorPct: number;
+  speedSafeTopPct: number;
+  alignPct: number;
+  relSpeedText: string;
+  idealSpeedText: string;
+  xText: string;
+  zText: string;
+  rangeText: string;
+};
+
+type VisibleMarker = Marker & { sx: number; sy: number; pxSize: number };
+type OrbitRing = { id: string; sx: number; sy: number; pxRadius: number; color: string };
+type ScannerRings = {
+  shipSx: number;
+  shipSy: number;
+  rings: Array<{ id: string; pxRadius: number; color: string }>;
+};
+
+function StarChartPanel({
+  orbitRings,
+  scannerRings,
+  visibleMarkers,
+  shipHeadingDeg,
+  markerClass,
+  setHoverCard,
+  hoverCard,
+  describeMarker,
+}: {
+  orbitRings: OrbitRing[];
+  scannerRings: ScannerRings | null;
+  visibleMarkers: VisibleMarker[];
+  shipHeadingDeg: number;
+  markerClass: (kind: MarkerKind) => string;
+  setHoverCard: React.Dispatch<React.SetStateAction<HoverCardState | null>>;
+  hoverCard: HoverCardState | null;
+  describeMarker: (marker: Marker) => string[];
+}) {
+  return (
+    <>
+      {orbitRings.map((ring) => (
+        <div
+          key={ring.id}
+          className="sandbox-map-orbit-ring"
+          style={
+            {
+              left: `${ring.sx}px`,
+              top: `${ring.sy}px`,
+              width: `${ring.pxRadius * 2}px`,
+              height: `${ring.pxRadius * 2}px`,
+              borderColor: ring.color,
+            } as CSSProperties
+          }
+        />
+      ))}
+      {scannerRings?.rings.map((ring) => (
+        <div
+          key={ring.id}
+          className="sandbox-map-ring"
+          style={
+            {
+              left: `${scannerRings.shipSx}px`,
+              top: `${scannerRings.shipSy}px`,
+              width: `${ring.pxRadius * 2}px`,
+              height: `${ring.pxRadius * 2}px`,
+              borderColor: ring.color,
+            } as CSSProperties
+          }
+        />
+      ))}
+      {visibleMarkers.map((marker) => (
+        <div
+          key={marker.id}
+          className={markerClass(marker.kind)}
+          style={
+            {
+              left: `${marker.sx}px`,
+              top: `${marker.sy}px`,
+              '--marker-color': marker.color ?? undefined,
+              '--marker-size': `${marker.pxSize}px`,
+              opacity: marker.inRange === false ? 0.45 : 1,
+              transform:
+                marker.kind === 'ship'
+                  ? shipIconCssTransform(shipHeadingDeg)
+                  : marker.kind === 'nav'
+                    ? 'translate(-50%, -50%) rotate(45deg)'
+                    : 'translate(-50%, -50%)',
+            } as CSSProperties
+          }
+          title={marker.label}
+          onMouseEnter={(e) =>
+            setHoverCard({
+              marker,
+              x: e.clientX,
+              y: e.clientY,
+            })
+          }
+          onMouseMove={(e) =>
+            setHoverCard((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    x: e.clientX,
+                    y: e.clientY,
+                  }
+                : prev
+            )
+          }
+          onMouseLeave={() => setHoverCard(null)}
+        />
+      ))}
+      <div className="sandbox-map-title">STAR CHART</div>
+      {hoverCard && (
+        <div
+          className="sandbox-map-hover-card"
+          style={{
+            left: `${hoverCard.x + 14}px`,
+            top: `${hoverCard.y - 8}px`,
+          }}
+        >
+          <div className="sandbox-map-hover-title">{hoverCard.marker.label}</div>
+          {describeMarker(hoverCard.marker).map((line) => (
+            <div key={line} className="sandbox-map-hover-line">
+              {line}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function DockingAssistPanel({
+  dockingAssist,
+  dockingAssistProjection,
+  dockingReadouts,
+  dockingCaptureActive,
+}: {
+  dockingAssist: DockingAssistData;
+  dockingAssistProjection: {
+    shipSx: number;
+    shipSy: number;
+    dockSx: number;
+    dockSy: number;
+  } | null;
+  dockingReadouts: DockingReadouts | null;
+  dockingCaptureActive: boolean;
+}) {
+  return (
+    <>
+      <div className="sandbox-map-docking-rings" />
+      <div
+        className="sandbox-map-docking-scale sandbox-map-docking-scale--left sandbox-map-docking-scale--speed"
+        style={
+          {
+            '--speed-indicator-y': `${dockingReadouts?.speedIndicatorPct ?? 100}%`,
+            '--speed-safe-top': `${dockingReadouts?.speedSafeTopPct ?? 100}%`,
+          } as CSSProperties
+        }
+      >
+        <div className="sandbox-map-docking-speed-indicator" />
+        <div className="sandbox-map-docking-speed-label sandbox-map-docking-speed-label--top">
+          50
+        </div>
+        <div className="sandbox-map-docking-speed-label sandbox-map-docking-speed-label--bot">
+          0
+        </div>
+      </div>
+      {dockingAssistProjection && (
+        <>
+          <div
+            className="sandbox-map-marker sandbox-map-marker--ship"
+            style={
+              {
+                left: `${dockingAssistProjection.shipSx}px`,
+                top: `${dockingAssistProjection.shipSy}px`,
+                transform: shipIconCssTransform(dockingAssist.shipHeadingDeg),
+              } as CSSProperties
+            }
+            title="Your Ship"
+          />
+        </>
+      )}
+      <div className="sandbox-map-title">DOCKING ASSIST</div>
+      {dockingReadouts && (
+        <>
+          <div className="sandbox-map-docking-mps">MPS {dockingReadouts.relSpeedText}</div>
+          <div className="sandbox-map-docking-ideal">
+            IDEAL {dockingReadouts.idealSpeedText} MPS
+          </div>
+        </>
+      )}
+      {dockingCaptureActive && <div className="sandbox-map-docking-wait">DOCKING, PLEASE WAIT</div>}
+    </>
+  );
+}
+
 const MAX_MARKERS_PER_GROUP = 160;
 const ZOOM_MIN_HALF_SPAN = 1_000;
 const _tmpA = new THREE.Vector3();
 const _tmpB = new THREE.Vector3();
 const _shipForward = new THREE.Vector3();
+const _dockForward = new THREE.Vector3();
+const _dockWorldPos = new THREE.Vector3();
+const _dockVel = new THREE.Vector3();
+const _dockQuat = new THREE.Quaternion();
+const _identityQuat = new THREE.Quaternion();
 
 const MAX_PLANET_ORBIT_WORLD = Math.max(...PLANETS.map((p) => p.orbitRadius)) * SOLAR_SYSTEM_SCALE;
 // Add outer-system margin so zoom/pan still covers Neptune and beyond (Pluto-like distances).
@@ -55,8 +275,30 @@ const OUTER_SYSTEM_COVERAGE_WORLD = MAX_PLANET_ORBIT_WORLD * 1.7;
 const ZOOM_DEFAULT_HALF_SPAN = OUTER_SYSTEM_COVERAGE_WORLD;
 const ZOOM_MAX_HALF_SPAN = OUTER_SYSTEM_COVERAGE_WORLD * 2.2;
 const PAN_LIMIT = OUTER_SYSTEM_COVERAGE_WORLD * 3.0;
+const DOCKING_ASSIST_RANGE = 220;
+const DOCKING_ASSIST_MIN_HALF_SPAN = 22;
+const DOCKING_ASSIST_MAX_HALF_SPAN = 260;
+const DOCKING_ASSIST_MARGIN = 26;
+const DOCKING_SPEED_GAUGE_MAX_MPS = 14;
+const EVENT_DOCKING_CAPTURE_STARTED = 'DockingCaptureStarted';
+const EVENT_DOCKING_CAPTURE_ENDED = 'DockingCaptureEnded';
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+/** CSS transform for ship-nav-icon.png (default points up) from world heading (atan2 x,z, 0=+Z). */
+function shipIconCssTransform(headingDeg: number): string {
+  return `translate(-50%, -50%) rotate(${180 - headingDeg}deg) scaleY(-1)`;
+}
+
+function signedAngleDegXZ(from: THREE.Vector3, to: THREE.Vector3): number {
+  const a = _tmpA.set(from.x, 0, from.z).normalize();
+  const b = _tmpB.set(to.x, 0, to.z).normalize();
+  if (a.lengthSq() <= 1e-6 || b.lengthSq() <= 1e-6) return 0;
+  const dot = clamp(a.dot(b), -1, 1);
+  const crossY = a.x * b.z - a.z * b.x;
+  return (Math.atan2(crossY, dot) * 180) / Math.PI;
 }
 
 export default function SandboxHtmlMiniMap({
@@ -67,15 +309,17 @@ export default function SandboxHtmlMiniMap({
   const draggingRef = useRef(false);
   const dragAnchorRef = useRef<{ x: number; y: number; panX: number; panZ: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [zoomHalfSpan, setZoomHalfSpan] = useState(
-    showSolarSystem ? ZOOM_DEFAULT_HALF_SPAN : 1500
-  );
+  const [zoomHalfSpan, setZoomHalfSpan] = useState(showSolarSystem ? ZOOM_DEFAULT_HALF_SPAN : 1500);
   const [panCenter, setPanCenter] = useState<{ x: number; z: number }>({ x: 0, z: 0 });
   const [followShip, setFollowShip] = useState(false);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [shipHeadingDeg, setShipHeadingDeg] = useState(0);
-  const [statusLine, setStatusLine] = useState('');
   const [hoverCard, setHoverCard] = useState<HoverCardState | null>(null);
+  const [dockingAssist, setDockingAssist] = useState<DockingAssistData | null>(null);
+  const [dockingCaptureActive, setDockingCaptureActive] = useState(false);
+  const nearestDockDistance = useRef(Number.POSITIVE_INFINITY);
+  /** Fires pad scan once when docking assist first engages (or switches pads). */
+  const lastPadScanDockIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const ship = shipPosRef.current;
@@ -92,6 +336,20 @@ export default function SandboxHtmlMiniMap({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    const onCaptureStarted = () => setDockingCaptureActive(true);
+    const onCaptureEnded = () => setDockingCaptureActive(false);
+    const onShipUndocked = () => setDockingCaptureActive(false);
+    window.addEventListener(EVENT_DOCKING_CAPTURE_STARTED, onCaptureStarted);
+    window.addEventListener(EVENT_DOCKING_CAPTURE_ENDED, onCaptureEnded);
+    window.addEventListener('ShipUndocked', onShipUndocked);
+    return () => {
+      window.removeEventListener(EVENT_DOCKING_CAPTURE_STARTED, onCaptureStarted);
+      window.removeEventListener(EVENT_DOCKING_CAPTURE_ENDED, onCaptureEnded);
+      window.removeEventListener('ShipUndocked', onShipUndocked);
+    };
+  }, []);
 
   useEffect(() => {
     let raf = 0;
@@ -206,6 +464,16 @@ export default function SandboxHtmlMiniMap({
 
       const collidables = getCollidables().slice(0, MAX_MARKERS_PER_GROUP);
       const hardOverlayIds = new Set<string>();
+      let nearestDock: {
+        id: string;
+        label: string;
+        stationId: string | null;
+        x: number;
+        z: number;
+        relSpeedMps: number;
+        idealSpeedMps: number;
+        headingErrorDeg: number;
+      } | null = null;
       for (const col of collidables) {
         const hardObject = col.physicalCollision !== false || col.planetSurfaceImpact === true;
         if (!hardObject) continue;
@@ -219,6 +487,40 @@ export default function SandboxHtmlMiniMap({
           z: _tmpA.z,
           kind: 'hard',
         });
+      }
+      for (const col of collidables) {
+        if (!col.id.startsWith('docking-bay-')) continue;
+        col.getWorldPosition(_dockWorldPos);
+        renderToSimulationSpace(_dockWorldPos, _dockWorldPos);
+        const dx = _dockWorldPos.x - ship.x;
+        const dz = _dockWorldPos.z - ship.z;
+        const planarDist = Math.hypot(dx, dz);
+        if (planarDist > DOCKING_ASSIST_RANGE) continue;
+        const dockWorldVel = col.getWorldVelocity
+          ? col.getWorldVelocity(_dockVel)
+          : _dockVel.set(0, 0, 0);
+        const relSpeed = _tmpA.copy(shipVelocity).sub(dockWorldVel).length();
+        const dockQuat = col.getWorldQuaternion ? col.getWorldQuaternion(_dockQuat) : _identityQuat;
+        _shipForward.set(0, 0, 1).applyQuaternion(shipQuaternion);
+        _dockForward.set(0, 0, 1).applyQuaternion(dockQuat);
+        const headingErrorDeg = signedAngleDegXZ(_shipForward, _dockForward);
+        const idealSpeedMps = Math.max(0.35, (col.dockingProfile?.maxRelativeSpeed ?? 2) * 0.55);
+        if (!nearestDock || planarDist < nearestDockDistance.current) {
+          nearestDock = {
+            id: col.id,
+            label: col.label ?? col.stationId ?? col.id,
+            stationId: col.stationId ?? null,
+            x: _dockWorldPos.x,
+            z: _dockWorldPos.z,
+            relSpeedMps: relSpeed,
+            idealSpeedMps,
+            headingErrorDeg,
+          };
+          nearestDockDistance.current = planarDist;
+        }
+      }
+      if (!nearestDock) {
+        nearestDockDistance.current = Number.POSITIVE_INFINITY;
       }
       for (const col of collidables) {
         if (!proximityOn || !col.label || hardOverlayIds.has(col.id)) continue;
@@ -237,16 +539,83 @@ export default function SandboxHtmlMiniMap({
       }
 
       setMarkers(next);
-      setStatusLine(
-        showSolarSystem
-          ? `ZOOM ${(zoomHalfSpan / 1_000_000).toFixed(1)}M · DRIVE ${driveEntries.length} · RADIO ${radioEntries.length}`
-          : `ZOOM ${Math.round(zoomHalfSpan)} · DRIVE ${driveEntries.length} · RADIO ${radioEntries.length}`
-      );
+      if (nearestDock) {
+        const lateralX = nearestDock.x - ship.x;
+        const lateralZ = nearestDock.z - ship.z;
+        const distanceToCenter = Math.hypot(lateralX, lateralZ);
+        if (lastPadScanDockIdRef.current !== nearestDock.id) {
+          lastPadScanDockIdRef.current = nearestDock.id;
+          beginPadScan(nearestDock.id);
+        }
+        setDockingAssist({
+          dockId: nearestDock.id,
+          dockLabel: nearestDock.label,
+          stationId: nearestDock.stationId,
+          shipX: ship.x,
+          shipZ: ship.z,
+          dockX: nearestDock.x,
+          dockZ: nearestDock.z,
+          distanceToCenter,
+          lateralX,
+          lateralZ,
+          relSpeedMps: nearestDock.relSpeedMps,
+          idealSpeedMps: nearestDock.idealSpeedMps,
+          headingErrorDeg: nearestDock.headingErrorDeg,
+          shipHeadingDeg: (Math.atan2(_shipForward.x, _shipForward.z) * 180) / Math.PI,
+        });
+      } else {
+        lastPadScanDockIdRef.current = null;
+        setDockingAssist(null);
+      }
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
   }, [followShip, showSolarSystem, zoomHalfSpan]);
+
+  const dockingAssistProjection = useMemo(() => {
+    const node = containerRef.current;
+    if (!node || !dockingAssist) return null;
+    const rect = node.getBoundingClientRect();
+    const halfSpan = clamp(
+      Math.max(Math.abs(dockingAssist.lateralX), Math.abs(dockingAssist.lateralZ)) +
+        DOCKING_ASSIST_MARGIN,
+      DOCKING_ASSIST_MIN_HALF_SPAN,
+      DOCKING_ASSIST_MAX_HALF_SPAN
+    );
+    const scale = rect.height / (2 * halfSpan);
+    const centerX = dockingAssist.dockX;
+    const centerZ = dockingAssist.dockZ;
+    const shipSx = (dockingAssist.shipX - centerX) * scale + rect.width / 2;
+    const shipSy = (dockingAssist.shipZ - centerZ) * scale + rect.height / 2;
+    const dockSx = (dockingAssist.dockX - centerX) * scale + rect.width / 2;
+    const dockSy = (dockingAssist.dockZ - centerZ) * scale + rect.height / 2;
+    return { shipSx, shipSy, dockSx, dockSy };
+  }, [dockingAssist]);
+
+  const dockingReadouts = useMemo<DockingReadouts | null>(() => {
+    if (!dockingAssist) return null;
+    const speedClamped = clamp(dockingAssist.relSpeedMps, 0, DOCKING_SPEED_GAUGE_MAX_MPS);
+    const speedIndicatorPct = 100 - (speedClamped / DOCKING_SPEED_GAUGE_MAX_MPS) * 100;
+    const speedSafeTopPct =
+      100 -
+      (clamp(dockingAssist.idealSpeedMps, 0, DOCKING_SPEED_GAUGE_MAX_MPS) /
+        DOCKING_SPEED_GAUGE_MAX_MPS) *
+        100;
+    const centerPenalty = dockingAssist.distanceToCenter * 2.3;
+    const headingPenalty = Math.abs(dockingAssist.headingErrorDeg) * 1.7;
+    const alignPct = clamp(100 - centerPenalty - headingPenalty, 0, 100);
+    return {
+      speedIndicatorPct,
+      speedSafeTopPct,
+      alignPct,
+      relSpeedText: dockingAssist.relSpeedMps.toFixed(1),
+      idealSpeedText: dockingAssist.idealSpeedMps.toFixed(1),
+      xText: dockingAssist.lateralX.toFixed(1),
+      zText: dockingAssist.lateralZ.toFixed(1),
+      rangeText: dockingAssist.distanceToCenter.toFixed(1),
+    };
+  }, [dockingAssist]);
 
   const visibleMarkers = useMemo(() => {
     const node = containerRef.current;
@@ -258,12 +627,12 @@ export default function SandboxHtmlMiniMap({
         const sx = (m.x - panCenter.x) * scale + rect.width / 2;
         const sy = (m.z - panCenter.z) * scale + rect.height / 2;
         const pxSize =
-          m.radiusWorld !== undefined
-            ? Math.max(1, m.radiusWorld * scale * 2)
-            : (m.size ?? 6);
+          m.radiusWorld !== undefined ? Math.max(1, m.radiusWorld * scale * 2) : (m.size ?? 6);
         return { ...m, sx, sy, pxSize };
       })
-      .filter((m) => m.sx >= -80 && m.sx <= rect.width + 80 && m.sy >= -80 && m.sy <= rect.height + 80);
+      .filter(
+        (m) => m.sx >= -80 && m.sx <= rect.width + 80 && m.sy >= -80 && m.sy <= rect.height + 80
+      );
   }, [markers, panCenter, zoomHalfSpan]);
 
   const orbitRings = useMemo<
@@ -302,7 +671,11 @@ export default function SandboxHtmlMiniMap({
       rings.push({ id: 'mag', pxRadius: magneticScanRangeRef.current * scale, color: '#ffd24d' });
     }
     if (driveSignatureOnRef.current && driveSignatureRangeRef.current > 0) {
-      rings.push({ id: 'drive', pxRadius: driveSignatureRangeRef.current * scale, color: '#00d6ff' });
+      rings.push({
+        id: 'drive',
+        pxRadius: driveSignatureRangeRef.current * scale,
+        color: '#00d6ff',
+      });
     }
     if (radioOnRef.current && radioRangeRef.current > 0) {
       rings.push({ id: 'radio', pxRadius: radioRangeRef.current * scale, color: '#45ff88' });
@@ -422,7 +795,7 @@ export default function SandboxHtmlMiniMap({
   return (
     <div
       ref={containerRef}
-      className={`sandbox-map-overlay${isDragging ? ' sandbox-map-overlay--dragging' : ''}`}
+      className={`sandbox-map-overlay${isDragging ? ' sandbox-map-overlay--dragging' : ''}${dockingAssist ? ' sandbox-map-overlay--docking' : ''}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -430,96 +803,24 @@ export default function SandboxHtmlMiniMap({
       onMouseLeave={stopDrag}
     >
       <div className="sandbox-map-grid" />
-      {orbitRings.map((ring) => (
-        <div
-          key={ring.id}
-          className="sandbox-map-orbit-ring"
-          style={
-            {
-              left: `${ring.sx}px`,
-              top: `${ring.sy}px`,
-              width: `${ring.pxRadius * 2}px`,
-              height: `${ring.pxRadius * 2}px`,
-              borderColor: ring.color,
-            } as CSSProperties
-          }
+      {dockingAssist ? (
+        <DockingAssistPanel
+          dockingAssist={dockingAssist}
+          dockingAssistProjection={dockingAssistProjection}
+          dockingReadouts={dockingReadouts}
+          dockingCaptureActive={dockingCaptureActive}
         />
-      ))}
-      {scannerRings?.rings.map((ring) => (
-          <div
-            key={ring.id}
-            className="sandbox-map-ring"
-            style={
-              {
-                left: `${scannerRings.shipSx}px`,
-                top: `${scannerRings.shipSy}px`,
-                width: `${ring.pxRadius * 2}px`,
-                height: `${ring.pxRadius * 2}px`,
-                borderColor: ring.color,
-              } as CSSProperties
-            }
-          />
-        ))}
-      {visibleMarkers.map((marker) => (
-        <div
-          key={marker.id}
-          className={markerClass(marker.kind)}
-          style={
-            {
-              left: `${marker.sx}px`,
-              top: `${marker.sy}px`,
-              '--marker-color': marker.color ?? undefined,
-              '--marker-size': `${marker.pxSize}px`,
-              opacity: marker.inRange === false ? 0.45 : 1,
-              transform:
-                marker.kind === 'ship'
-                  ? `translate(-50%, -50%) rotate(${shipHeadingDeg}deg)`
-                  : marker.kind === 'nav'
-                    ? 'translate(-50%, -50%) rotate(45deg)'
-                    : 'translate(-50%, -50%)',
-            } as CSSProperties
-          }
-          title={marker.label}
-          onMouseEnter={(e) =>
-            setHoverCard({
-              marker,
-              x: e.clientX,
-              y: e.clientY,
-            })
-          }
-          onMouseMove={(e) =>
-            setHoverCard((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    x: e.clientX,
-                    y: e.clientY,
-                  }
-                : prev
-            )
-          }
-          onMouseLeave={() => setHoverCard(null)}
+      ) : (
+        <StarChartPanel
+          orbitRings={orbitRings}
+          scannerRings={scannerRings}
+          visibleMarkers={visibleMarkers}
+          shipHeadingDeg={shipHeadingDeg}
+          markerClass={markerClass}
+          setHoverCard={setHoverCard}
+          hoverCard={hoverCard}
+          describeMarker={describeMarker}
         />
-      ))}
-
-      <div className="sandbox-map-title">STAR CHART</div>
-      <div className="sandbox-map-status">{statusLine}</div>
-      <div className="sandbox-map-help">DRAG PAN · WHEEL ZOOM · [M] TOGGLE</div>
-      {hoverCard && (
-        <div
-          className="sandbox-map-hover-card"
-          style={{
-            left: `${hoverCard.x + 14}px`,
-            top: `${hoverCard.y - 8}px`,
-          }}
-        >
-          <div className="sandbox-map-hover-title">{hoverCard.marker.label}</div>
-          {describeMarker(hoverCard.marker).map((line) => (
-            <div key={line} className="sandbox-map-hover-line">
-              {line}
-            </div>
-          ))}
-        </div>
       )}
       <div className="sandbox-map-actions">
         <button
@@ -528,8 +829,9 @@ export default function SandboxHtmlMiniMap({
           onClick={toggleFollowShip}
           className={followShip ? 'sandbox-map-action--active' : ''}
           title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
+          disabled={Boolean(dockingAssist)}
         >
-          CENTER {followShip ? 'ON' : 'OFF'}
+          {dockingAssist ? 'DOCK MODE' : `CENTER ${followShip ? 'ON' : 'OFF'}`}
         </button>
       </div>
     </div>

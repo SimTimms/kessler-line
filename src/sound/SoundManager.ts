@@ -22,6 +22,63 @@ let impactAnalysisSource: MediaElementAudioSourceNode | null = null;
 let impactAnalysisAnalyser: AnalyserNode | null = null;
 let radioChatterAudio: HTMLAudioElement | null = null;
 let radioChatterClipTimer: ReturnType<typeof setTimeout> | null = null;
+let ambientBedAudio: HTMLAudioElement | null = null;
+let padScanAudio: HTMLAudioElement | null = null;
+let dockAlignAudio: HTMLAudioElement | null = null;
+
+/** Title / config-scene space atmosphere bed. */
+export const SPACE_ATMOSPHERE_AMBIENT_SRC =
+  '/audio/audiopapkin-ambient-soundscapes-007-space-atmosphere-304974.mp3';
+
+/** Landing-pad inbound scan of the player ship. */
+export const PAD_SCAN_SFX_SRC = '/audio/virtual_vibes-corrupt-data-sound-379468.mp3';
+
+/** Hover-dock capture / align mechanical bed. */
+export const DOCK_ALIGN_SFX_SRC =
+  '/audio/freesound_community-047847_industrial-crane-movement-67583.mp3';
+
+const DEFAULT_AMBIENT_BED_VOLUME = 0.05;
+const DEFAULT_PAD_SCAN_VOLUME = 0.35;
+const DEFAULT_DOCK_ALIGN_VOLUME = 0.35;
+/** Base playback rate for jittered dock / pad SFX. */
+const DOCK_SFX_PLAYBACK_RATE = 0.75;
+/** Random relative variation around the base rate (±50%). */
+const DOCK_SFX_PLAYBACK_RATE_JITTER = 0.5;
+
+function jitteredDockSfxPlaybackRate(): number {
+  const rateJitter = 1 + (Math.random() * 2 - 1) * DOCK_SFX_PLAYBACK_RATE_JITTER;
+  return Math.max(0.25, DOCK_SFX_PLAYBACK_RATE * rateJitter);
+}
+
+function playOneShotHtmlAudio(
+  getOrCreate: () => HTMLAudioElement,
+  volume: number
+): Promise<void> {
+  resumeAudioContext();
+  return new Promise((resolve) => {
+    try {
+      const audio = getOrCreate();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = Math.max(0, Math.min(1, volume));
+      audio.playbackRate = jitteredDockSfxPlaybackRate();
+      audio.loop = false;
+
+      const finish = () => {
+        audio.removeEventListener('ended', finish);
+        audio.removeEventListener('error', finish);
+        resolve();
+      };
+      audio.addEventListener('ended', finish);
+      audio.addEventListener('error', finish);
+      void audio.play().catch(() => {
+        finish();
+      });
+    } catch {
+      resolve();
+    }
+  });
+}
 
 export type RailgunHitParams = {
   volume: number;
@@ -123,6 +180,91 @@ export function resumeAudioContext(): void {
     if (ac.state === 'suspended') {
       void ac.resume();
     }
+  } catch {
+    /* non-critical */
+  }
+}
+
+/**
+ * Start the looping space-atmosphere bed.
+ * Must be called from a user gesture (e.g. title-menu click) so autoplay is allowed.
+ */
+export function startSpaceAtmosphereAmbient(volume = DEFAULT_AMBIENT_BED_VOLUME): void {
+  resumeAudioContext();
+  try {
+    if (!ambientBedAudio) {
+      ambientBedAudio = new Audio(SPACE_ATMOSPHERE_AMBIENT_SRC);
+      ambientBedAudio.loop = true;
+      ambientBedAudio.preload = 'auto';
+    }
+    ambientBedAudio.volume = Math.max(0, Math.min(1, volume));
+    if (ambientBedAudio.paused) {
+      void ambientBedAudio.play().catch(() => {
+        /* autoplay may still fail if not in a gesture */
+      });
+    }
+  } catch {
+    /* non-critical */
+  }
+}
+
+export function stopSpaceAtmosphereAmbient(): void {
+  if (!ambientBedAudio) return;
+  try {
+    ambientBedAudio.pause();
+    ambientBedAudio.currentTime = 0;
+  } catch {
+    /* non-critical */
+  }
+}
+
+export function isSpaceAtmosphereAmbientPlaying(): boolean {
+  return !!ambientBedAudio && !ambientBedAudio.paused;
+}
+
+/**
+ * Play the landing-pad ship-scan SFX. Resolves when playback ends (or fails).
+ * Safe to call from docking-assist enter; restarts if already playing.
+ */
+export function playPadScanSound(volume = DEFAULT_PAD_SCAN_VOLUME): Promise<void> {
+  return playOneShotHtmlAudio(() => {
+    if (!padScanAudio) {
+      padScanAudio = new Audio(PAD_SCAN_SFX_SRC);
+      padScanAudio.preload = 'auto';
+    }
+    return padScanAudio;
+  }, volume);
+}
+
+export function stopPadScanSound(): void {
+  if (!padScanAudio) return;
+  try {
+    padScanAudio.pause();
+    padScanAudio.currentTime = 0;
+  } catch {
+    /* non-critical */
+  }
+}
+
+/**
+ * Play when a hover dock takes control and begins aligning the ship.
+ * Uses the same 0.75× base rate ±50% jitter as the pad-scan SFX.
+ */
+export function playDockAlignSound(volume = DEFAULT_DOCK_ALIGN_VOLUME): Promise<void> {
+  return playOneShotHtmlAudio(() => {
+    if (!dockAlignAudio) {
+      dockAlignAudio = new Audio(DOCK_ALIGN_SFX_SRC);
+      dockAlignAudio.preload = 'auto';
+    }
+    return dockAlignAudio;
+  }, volume);
+}
+
+export function stopDockAlignSound(): void {
+  if (!dockAlignAudio) return;
+  try {
+    dockAlignAudio.pause();
+    dockAlignAudio.currentTime = 0;
   } catch {
     /* non-critical */
   }

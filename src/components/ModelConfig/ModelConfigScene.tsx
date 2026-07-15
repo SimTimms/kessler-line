@@ -7,20 +7,12 @@ import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
-import UBoat from '../UBoat/UBoat';
-import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
-import { UBoatConfig } from './UBoatConfig';
-import { Thruster } from '../Thruster';
-import {
-  KEY_THRUST_FORWARD,
-  KEY_THRUST_REVERSE,
-  KEY_YAW_LEFT,
-  KEY_YAW_RIGHT,
-} from '../../config/keybindings';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
 import DustCloud from '../DustCloud/DustCloud';
 import CollisionPhysicsTestRig from '../Debug/CollisionPhysicsTestRig';
 import CollisionDebug from '../Debug/CollisionDebug';
+import Spaceship from '../Ship/Spaceship';
+import { SpaceshipConfig } from './SpaceshipConfig';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -31,72 +23,6 @@ function CameraCapture() {
     };
   }, [camera]);
   return null;
-}
-
-function ModelConfigTarget() {
-  return (
-    <UBoat
-      scale={UBoatConfig.targetScale}
-      position={UBoatConfig.targetPosition}
-      scan={UBoatConfig.targetScan}
-      impactVents
-      flyable
-      physicsMode="ship"
-      initialFuel={100}
-      dockingBay={{
-        stationId: 'model-config-target',
-        dimensions: [2, 1, 1.3],
-        position: [
-          -4 / (UBoatConfig.targetScale * 0.56),
-          -0.8,
-          1110 / (UBoatConfig.targetScale * 2.1),
-        ],
-        scale: 3,
-        dock: ASTEROID_DOCK_CONFIG,
-        debugDockOnClick: true,
-      }}
-      shipPhysicsOptions={{
-        enabled: true,
-        inputEnabled: true,
-        thrusterPhysicsEnabled: true,
-        orbitalPhysicsEnabled: true,
-        dockingPhysicsEnabled: true,
-        yawPivotLocal: [0, 0, 0],
-      }}
-    >
-      <Thruster
-        position={UBoatConfig.mainThrusterPosition}
-        keyCode={KEY_THRUST_REVERSE}
-        kind="main"
-        fuelConsumptionMultiplier={1}
-      />
-      <Thruster
-        position={UBoatConfig.forwardRcsPosition}
-        rotation={[0, Math.PI, 0]}
-        keyCode={KEY_THRUST_FORWARD}
-        kind="rcs"
-        fuelConsumptionMultiplier={1}
-      />
-      <Thruster
-        position={UBoatConfig.yawLeftRcsPosition}
-        thrustDirection={[1, 0, 0]}
-        keyCode={KEY_YAW_LEFT}
-        kind="rcs"
-        yaw
-        yawSign={1}
-        fuelConsumptionMultiplier={0.5}
-      />
-      <Thruster
-        position={UBoatConfig.yawRightRcsPosition}
-        thrustDirection={[-1, 0, 0]}
-        keyCode={KEY_YAW_RIGHT}
-        kind="rcs"
-        yaw
-        yawSign={-1}
-        fuelConsumptionMultiplier={0.5}
-      />
-    </UBoat>
-  );
 }
 
 interface ModelConfigSceneProps {
@@ -124,54 +50,70 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
       style={{
         width: '100vw',
         height: '100vh',
-        background: UBoatConfig.scene.fogColor,
+        background: SpaceshipConfig.scene.fogColor,
         touchAction: 'none',
       }}
       camera={{
-        position: [...UBoatConfig.cameraPosition],
-        near: UBoatConfig.scene.canvasNear,
-        far: UBoatConfig.scene.canvasFar,
+        position: [...SpaceshipConfig.cameraPosition],
+        near: SpaceshipConfig.scene.canvasNear,
+        far: SpaceshipConfig.scene.canvasFar,
       }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: UBoatConfig.scene.toneMappingExposure,
+        toneMappingExposure: SpaceshipConfig.scene.toneMappingExposure,
       }}
       shadows={true}
     >
       <CameraCapture />
       <Perf position="top-left" />
-      <fogExp2 attach="fog" args={[UBoatConfig.scene.fogColor, 0.000001]} />
+      <fogExp2 attach="fog" args={[SpaceshipConfig.scene.fogColor, 0.000001]} />
       <ambientLight intensity={0.7} />
       <directionalLight position={[280, 20, 240]} intensity={14.4} color="#ffaaff" />
-      <gridHelper args={[UBoatConfig.gridSize, UBoatConfig.gridDivisions, '#006666', '#003333']} />
+      <gridHelper
+        args={[SpaceshipConfig.gridSize, SpaceshipConfig.gridDivisions, '#006666', '#003333']}
+      />
       <axesHelper args={[120]} />
       <Suspense fallback={null}>
-        <ModelConfigTarget />
+        <Spaceship
+          url={SpaceshipConfig.url}
+          initialPosition={SpaceshipConfig.initialPosition}
+          initialRotation={SpaceshipConfig.initialRotation}
+          scale={SpaceshipConfig.scale}
+          initialVelocity={SpaceshipConfig.initialVelocity}
+          collisionId={SpaceshipConfig.collisionId}
+          shipParticleCloudProps={SpaceshipConfig.shipParticleCloudProps}
+          physicsOptions={SpaceshipConfig.physicsOptions}
+        />
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
         makeDefault
         target={[
-          UBoatConfig.cameraTarget[0],
-          UBoatConfig.cameraTarget[1],
-          UBoatConfig.cameraTarget[2],
+          SpaceshipConfig.cameraTarget[0],
+          SpaceshipConfig.cameraTarget[1],
+          SpaceshipConfig.cameraTarget[2],
         ]}
         enablePan
         enableZoom
         enableRotate
       />
-      <DustCloud radius={5000} particleSize={2500000} radialSpread={9} yInitial={-1000} />
+      <DustCloud
+        radius={SpaceshipConfig.dustCloud.radius}
+        particleSize={SpaceshipConfig.dustCloud.particleSize}
+        radialSpread={SpaceshipConfig.dustCloud.radialSpread}
+        yInitial={SpaceshipConfig.dustCloud.yInitial}
+      />
       <CollisionPhysicsTestRig
         enabled
         showPanel={false}
-        defaultAimPosition={UBoatConfig.targetPosition}
-        preferredTargetId={UBoatConfig.targetScan.id}
+        defaultAimPosition={SpaceshipConfig.targetPosition}
+        preferredTargetId={SpaceshipConfig.targetScan.id}
       />
       <CollisionDebug
         visible={showCollisionDebug}
         attachToObjects
-        includeIds={['model-config-target', 'docking-bay-model-config-target']}
+        includeIds={[SpaceshipConfig.collisionId, SpaceshipConfig.targetScan.id]}
         includeIdPrefixes={['debug-collision-test-']}
       />
     </Canvas>

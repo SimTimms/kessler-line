@@ -32,6 +32,20 @@ type CommsViewMode = 'messages' | 'info' | 'dossier';
 type TradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
 type TradeOfferDraft = Record<TradeResourceKind, number>;
 
+export type CargoBarterSideDraft = Record<string, number>;
+
+export interface CargoBarterDealDraft {
+  playerGives: CargoBarterSideDraft;
+  contactGives: CargoBarterSideDraft;
+}
+
+export interface CargoBarterRow {
+  itemId: string;
+  label: string;
+  max: number;
+  value: number;
+}
+
 const LINKABLE: { text: string; def: typeof ASTEROID_DOCK_DEF }[] = [
   { text: 'Asteroid Dock', def: ASTEROID_DOCK_DEF },
 ];
@@ -96,13 +110,22 @@ interface DialogueThreadProps {
   onRequestRendezvous?: () => void;
   tradePanel?: {
     visible: boolean;
-    offer: TradeOfferDraft;
-    maxOffer: TradeOfferDraft;
+    mode?: 'resources' | 'cargo';
+    /** Resource-mode (legacy) offer. */
+    offer?: TradeOfferDraft;
+    maxOffer?: TradeOfferDraft;
+    /** Cargo-mode two-sided deal. */
+    cargoDeal?: CargoBarterDealDraft;
+    playerCargoRows?: CargoBarterRow[];
+    contactCargoRows?: CargoBarterRow[];
     statusLine?: string;
     pendingDeal?: TradeOfferDraft | null;
+    pendingCargoDeal?: CargoBarterDealDraft | null;
+    pendingCargoSummary?: string;
     canSubmit: boolean;
     submitLabel?: string;
-    onOfferChange: (kind: TradeResourceKind, value: number) => void;
+    onOfferChange?: (kind: TradeResourceKind, value: number) => void;
+    onCargoOfferChange?: (side: 'playerGives' | 'contactGives', itemId: string, value: number) => void;
     onSubmit: () => void;
     onReset: () => void;
     onAcceptPendingDeal?: () => void;
@@ -267,12 +290,14 @@ export default function DialogueThread({
   // Skip the ship registry for station characters so their ids don't get
   // assigned ship profiles / radio dialogue trees.
   const record = contact || character ? null : getOrCreateShipRecord(shipId, shipName);
+  const tradeMode = tradePanel?.mode ?? 'resources';
   const tradeRows: Array<{ key: TradeResourceKind; label: string; max: number; value: number }> = [
-    { key: 'fuel', label: 'Fuel', max: tradePanel?.maxOffer.fuel ?? 0, value: tradePanel?.offer.fuel ?? 0 },
-    { key: 'o2', label: 'O2', max: tradePanel?.maxOffer.o2 ?? 0, value: tradePanel?.offer.o2 ?? 0 },
-    { key: 'power', label: 'Power', max: tradePanel?.maxOffer.power ?? 0, value: tradePanel?.offer.power ?? 0 },
-    { key: 'crew', label: 'Crew', max: tradePanel?.maxOffer.crew ?? 0, value: tradePanel?.offer.crew ?? 0 },
+    { key: 'fuel', label: 'Fuel', max: tradePanel?.maxOffer?.fuel ?? 0, value: tradePanel?.offer?.fuel ?? 0 },
+    { key: 'o2', label: 'O2', max: tradePanel?.maxOffer?.o2 ?? 0, value: tradePanel?.offer?.o2 ?? 0 },
+    { key: 'power', label: 'Power', max: tradePanel?.maxOffer?.power ?? 0, value: tradePanel?.offer?.power ?? 0 },
+    { key: 'crew', label: 'Crew', max: tradePanel?.maxOffer?.crew ?? 0, value: tradePanel?.offer?.crew ?? 0 },
   ];
+  const hasPendingDeal = tradeMode === 'cargo' ? !!tradePanel?.pendingCargoDeal : !!tradePanel?.pendingDeal;
 
   return (
     <div className="comms-chat" data-platform={commsPlatform}>
@@ -392,27 +417,104 @@ export default function DialogueThread({
       )}
       {tradePanel?.visible && (
         <div className="comms-trade-panel">
-          <div className="comms-trade-panel-title">NEGOTIATION OFFER</div>
-          {tradePanel.statusLine && <div className="comms-trade-status">{tradePanel.statusLine}</div>}
-          <div className="comms-trade-sliders">
-            {tradeRows.map((row) => (
-              <label key={row.key} className="comms-trade-slider-row">
-                <span className="comms-trade-slider-label">{row.label}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={row.max}
-                  value={Math.min(row.value, row.max)}
-                  step={1}
-                  onChange={(e) => tradePanel.onOfferChange(row.key, Number(e.target.value))}
-                />
-                <span className="comms-trade-slider-value">
-                  {Math.round(Math.min(row.value, row.max))}/{Math.round(row.max)}
-                </span>
-              </label>
-            ))}
+          <div className="comms-trade-panel-title">
+            {tradeMode === 'cargo' ? 'BARTER NEGOTIATION' : 'NEGOTIATION OFFER'}
           </div>
-          {tradePanel.pendingDeal && (
+          {tradePanel.statusLine && <div className="comms-trade-status">{tradePanel.statusLine}</div>}
+          {tradeMode === 'cargo' ? (
+            <div className="comms-trade-cargo-grid">
+              <div className="comms-trade-cargo-col">
+                <div className="comms-trade-cargo-col-title">YOU OFFER</div>
+                {(tradePanel.playerCargoRows ?? []).length === 0 ? (
+                  <div className="comms-trade-empty">Hold empty</div>
+                ) : (
+                  (tradePanel.playerCargoRows ?? []).map((row) => (
+                    <label key={`player-${row.itemId}`} className="comms-trade-slider-row">
+                      <span className="comms-trade-slider-label" title={row.label}>
+                        {row.label}
+                      </span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={row.max}
+                        value={Math.min(row.value, row.max)}
+                        step={1}
+                        onChange={(e) =>
+                          tradePanel.onCargoOfferChange?.(
+                            'playerGives',
+                            row.itemId,
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                      <span className="comms-trade-slider-value">
+                        {Math.round(Math.min(row.value, row.max))}/{Math.round(row.max)}
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+              <div className="comms-trade-cargo-col">
+                <div className="comms-trade-cargo-col-title">THEY OFFER</div>
+                {(tradePanel.contactCargoRows ?? []).length === 0 ? (
+                  <div className="comms-trade-empty">Nothing in hold</div>
+                ) : (
+                  (tradePanel.contactCargoRows ?? []).map((row) => (
+                    <label key={`contact-${row.itemId}`} className="comms-trade-slider-row">
+                      <span className="comms-trade-slider-label" title={row.label}>
+                        {row.label}
+                      </span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={row.max}
+                        value={Math.min(row.value, row.max)}
+                        step={1}
+                        onChange={(e) =>
+                          tradePanel.onCargoOfferChange?.(
+                            'contactGives',
+                            row.itemId,
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                      <span className="comms-trade-slider-value">
+                        {Math.round(Math.min(row.value, row.max))}/{Math.round(row.max)}
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="comms-trade-sliders">
+              {tradeRows.map((row) => (
+                <label key={row.key} className="comms-trade-slider-row">
+                  <span className="comms-trade-slider-label">{row.label}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={row.max}
+                    value={Math.min(row.value, row.max)}
+                    step={1}
+                    onChange={(e) => tradePanel.onOfferChange?.(row.key, Number(e.target.value))}
+                  />
+                  <span className="comms-trade-slider-value">
+                    {Math.round(Math.min(row.value, row.max))}/{Math.round(row.max)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+          {tradeMode === 'cargo' && tradePanel.pendingCargoDeal && (
+            <div className="comms-trade-pending">
+              <span className="comms-trade-pending-title">PROPOSED DEAL</span>
+              <span className="comms-trade-pending-values">
+                {tradePanel.pendingCargoSummary ?? 'Awaiting confirmation'}
+              </span>
+            </div>
+          )}
+          {tradeMode === 'resources' && tradePanel.pendingDeal && (
             <div className="comms-trade-pending">
               <span className="comms-trade-pending-title">PROPOSED DEAL</span>
               <span className="comms-trade-pending-values">
@@ -433,12 +535,12 @@ export default function DialogueThread({
             >
               {tradePanel.submitLabel ?? 'SEND OFFER'}
             </button>
-            {tradePanel.pendingDeal && tradePanel.onAcceptPendingDeal && (
+            {hasPendingDeal && tradePanel.onAcceptPendingDeal && (
               <button type="button" className="comms-chat-opt" onClick={tradePanel.onAcceptPendingDeal}>
                 AGREE
               </button>
             )}
-            {tradePanel.pendingDeal && tradePanel.onRejectPendingDeal && (
+            {hasPendingDeal && tradePanel.onRejectPendingDeal && (
               <button type="button" className="comms-chat-opt" onClick={tradePanel.onRejectPendingDeal}>
                 DECLINE
               </button>

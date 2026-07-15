@@ -11,7 +11,7 @@ import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
 import DustCloud from '../DustCloud/DustCloud';
 import LandingPad from '../WorldObjects/LandingPad';
-import { UBoatConfig } from '../ModelConfig/UBoatConfig';
+import { LandingPadConfig } from './LandingPadConfigFile';
 import Spaceship from '../Ship/Spaceship';
 
 function CameraCapture() {
@@ -25,9 +25,9 @@ function CameraCapture() {
   return null;
 }
 
-export default function ShipConfigScene() {
-  const shipConfigCameraPosition: [number, number, number] = [0, 26, 84];
-  const shipConfigCameraTarget: [number, number, number] = [0, 0, 38];
+export default function LandingPadConfigScene() {
+  const landingPadConfigCameraPosition: [number, number, number] = [0, 26, 84];
+  const landingPadConfigCameraTarget: [number, number, number] = [0, 0, 38];
 
   useEffect(() => {
     const onRequestUndock = () => {
@@ -49,28 +49,30 @@ export default function ShipConfigScene() {
       style={{
         width: '100vw',
         height: '100vh',
-        background: UBoatConfig.scene.fogColor,
+        background: LandingPadConfig.scene.fogColor,
         touchAction: 'none',
       }}
       camera={{
-        position: [...shipConfigCameraPosition],
-        near: UBoatConfig.scene.canvasNear,
-        far: UBoatConfig.scene.canvasFar,
+        position: [...landingPadConfigCameraPosition],
+        near: LandingPadConfig.scene.canvasNear,
+        far: LandingPadConfig.scene.canvasFar,
       }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: UBoatConfig.scene.toneMappingExposure,
+        toneMappingExposure: LandingPadConfig.scene.toneMappingExposure,
       }}
       shadows={true}
     >
       <CameraCapture />
       <Perf position="top-left" />
-      <fogExp2 attach="fog" args={[UBoatConfig.scene.fogColor, 0.000001]} />
+      <fogExp2 attach="fog" args={[LandingPadConfig.scene.fogColor, 0.000001]} />
       <ambientLight intensity={1.1} />
       <directionalLight position={[180, 120, 120]} intensity={16} color="#ffd8ff" />
       <directionalLight position={[-120, 80, -80]} intensity={6} color="#88bbff" />
-      <gridHelper args={[UBoatConfig.gridSize, UBoatConfig.gridDivisions, '#00aaaa', '#005555']} />
+      <gridHelper
+        args={[LandingPadConfig.gridSize, LandingPadConfig.gridDivisions, '#00aaaa', '#005555']}
+      />
       <axesHelper args={[180]} />
 
       <Suspense fallback={null}>
@@ -94,14 +96,22 @@ export default function ShipConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <group position={UBoatConfig.landingPadOffsetFromSpawn}>
-          <LandingPad scale={UBoatConfig.landingPadScale} dock={ASTEROID_DOCK_CONFIG} />
+        <group position={LandingPadConfig.landingPadOffsetFromSpawn}>
+          <LandingPad
+            scale={LandingPadConfig.landingPadScale}
+            dock={ASTEROID_DOCK_CONFIG}
+            landingPadThreshold={LandingPadConfig.landingPadThreshold}
+          />
         </group>
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
         makeDefault
-        target={[shipConfigCameraTarget[0], shipConfigCameraTarget[1], shipConfigCameraTarget[2]]}
+        target={[
+          landingPadConfigCameraTarget[0],
+          landingPadConfigCameraTarget[1],
+          landingPadConfigCameraTarget[2],
+        ]}
         enablePan
         enableZoom
         enableRotate
@@ -109,7 +119,7 @@ export default function ShipConfigScene() {
       <DustCloud
         radius={2200}
         particleSize={900000}
-        radialSpread={UBoatConfig.dustCloud.radialSpread}
+        radialSpread={LandingPadConfig.dustCloud.radialSpread}
         yInitial={-160}
       />
     </Canvas>

@@ -10,6 +10,17 @@ const MINING_SUPERVISOR: DockContact = {
   portrait: '/profiles/scab-captain.png',
   bio: 'Runs the extraction schedule on AST-47718. Keeps the books straight and the ore moving.',
   platform: 'REACH',
+  inventory: {
+    label: 'Mara Reeves',
+    slots: [
+      // Excess ore from the cut — eager to move it.
+      { itemId: 'iron-slag', quantity: 18, capacity: 40, supply: 0.85, demand: 0.1 },
+      // Short on life support for the crew rotation.
+      { itemId: 'organics', quantity: 1, capacity: 20, supply: 0.05, demand: 0.9 },
+      { itemId: 'o2-cells', quantity: 2, capacity: 30, supply: 0.1, demand: 0.7 },
+      { itemId: 'reaction-mass', quantity: 6, capacity: 50, supply: 0.35, demand: 0.25 },
+    ],
+  },
   dialogue: {
     id: 'supervisor-reeves',
     openingTurnId: 'intro',
@@ -60,6 +71,10 @@ const MINING_SUPERVISOR: DockContact = {
         id: 'trade-supplies',
         npcText: 'Show me your offer. Make it worth opening the depot line.',
         trade: {
+          cargoBarter: true,
+          acceptRatio: 1,
+          insultRatio: 0.4,
+          counterTargetRatio: 1.15,
           acceptThreshold: 44,
           insultThreshold: 12,
           counterMultiplier: 1.22,
@@ -67,28 +82,22 @@ const MINING_SUPERVISOR: DockContact = {
           insultPenaltyPerNegativeStance: 2,
           insultReliefPerPositiveStance: 2,
           minimumInsultThreshold: 4,
-          weights: {
-            fuel: 0.95,
-            o2: 1.15,
-            power: 1.05,
-            crew: 20,
-          },
-          panelStatusOpen: 'Set your offer and transmit it.',
+          panelStatusOpen: 'Set both sides of the deal, then transmit.',
           panelStatusCleared: 'Offer cleared. Set a new package.',
-          panelStatusEmptyOffer: 'No offer selected. Move at least one slider.',
+          panelStatusEmptyOffer: 'Put goods on both sides — or at least what you are giving.',
           panelStatusInsult: 'Offer rejected as insulting.',
-          panelStatusAccepted: 'Offer accepted. Confirm transfer to finalize.',
-          panelStatusCounter: 'Counteroffer received: {offer}',
-          panelStatusSuccess: 'Transfer complete: {offer}',
+          panelStatusAccepted: 'They agree. Confirm to finalize the exchange.',
+          panelStatusCounter: 'Counteroffer on the table: {offer}',
+          panelStatusSuccess: 'Exchange complete: {offer}',
           panelStatusCounterDeclined: 'Counteroffer declined. Submit a new offer.',
           npcInsultText: 'Yu insulting us pilot. We can take wot we need',
-          npcAcceptText: 'That clears my line. Confirm transfer and we have a deal.',
+          npcAcceptText: 'That clears my line. Confirm and we swap.',
           npcCounterText: 'Too light. I can do it for {offer}.',
-          npcCompleteText: 'Transfer received. We can trade again if you have more to move.',
+          npcCompleteText: 'Transfer locked. We can trade again if you have more to move.',
           npcCounterDeclinedAckText: 'Then adjust your numbers and send again.',
-          playerOfferText: 'Offer package: {offer}',
-          playerAcceptText: 'Agreed. Transferring {offer} now.',
-          playerCounterAcceptText: 'Counter accepted. Transferring {offer} now.',
+          playerOfferText: 'Proposed deal: {offer}',
+          playerAcceptText: 'Agreed. Executing exchange: {offer}',
+          playerCounterAcceptText: 'Counter accepted. Executing: {offer}',
           playerCounterDeclineText: 'Counter declined. I will submit another offer.',
         },
         playerOptions: [
@@ -139,22 +148,38 @@ const MINING_SUPERVISOR: DockContact = {
       'ore-offer': {
         id: 'ore-offer',
         npcText:
-          "We've got slag-grade iron in the hopper — not assay-certified, but it'll smelt. Two tonnes, flat rate. Want it loaded?",
+          "We've got slag-grade iron in the hopper — not assay-certified, but it'll smelt. Nothing free. Show me what you'll put up for it.",
+        trade: {
+          cargoBarter: true,
+          acceptRatio: 0.95,
+          insultRatio: 0.35,
+          counterTargetRatio: 1.1,
+          acceptThreshold: 44,
+          insultThreshold: 12,
+          counterMultiplier: 1.22,
+          acceptPenaltyPerNegativeStance: 5,
+          insultPenaltyPerNegativeStance: 2,
+          insultReliefPerPositiveStance: 2,
+          minimumInsultThreshold: 4,
+          panelStatusOpen: 'Offer something for the slag — they will not gift it.',
+          panelStatusCleared: 'Offer cleared. Set a new package.',
+          panelStatusEmptyOffer: 'Put something on your side if you want their ore.',
+          panelStatusInsult: 'Offer rejected as insulting.',
+          panelStatusAccepted: 'They agree. Confirm to finalize the exchange.',
+          panelStatusCounter: 'Counteroffer on the table: {offer}',
+          panelStatusSuccess: 'Exchange complete: {offer}',
+          panelStatusCounterDeclined: 'Counteroffer declined. Submit a new offer.',
+          npcInsultText: 'Yu joking? That slag cost blood to cut.',
+          npcAcceptText: 'Deal. Confirm and we swap.',
+          npcCounterText: 'Not enough. I can do: {offer}.',
+          npcCompleteText: 'Loaded. Watch your mass limits on undock.',
+          npcCounterDeclinedAckText: 'Then come back with a real package.',
+          playerOfferText: 'Proposed deal: {offer}',
+          playerAcceptText: 'Agreed. Executing exchange: {offer}',
+          playerCounterAcceptText: 'Counter accepted. Executing: {offer}',
+          playerCounterDeclineText: 'Counter declined. I will submit another offer.',
+        },
         playerOptions: [
-          {
-            id: 'accept',
-            label: 'Load it',
-            text: 'Load two tonnes. Bill my account.',
-            nextTurnId: 'ore-done',
-            effects: [
-              {
-                type: 'giveCargo',
-                item: 'Iron Slag (raw)',
-                qty: 2,
-                resultText: 'Two tonnes of slag-grade iron loaded.',
-              },
-            ],
-          },
           {
             id: 'decline',
             label: 'Pass',
@@ -188,6 +213,16 @@ const SYNDICATE_RUNNER: DockContact = {
   portrait: '/Image_0.jpg',
   bio: 'Nobody asks how he got a berth on a mining rock. He asks how fast you can leave.',
   platform: 'OPENLINE',
+  inventory: {
+    label: 'Dex Vex',
+    slots: [
+      { itemId: 'unmarked-canister', quantity: 2, capacity: 5, supply: 0.7, demand: 0.15 },
+      { itemId: 'spare-parts', quantity: 3, capacity: 20, supply: 0.4, demand: 0.3 },
+      // Always hunting reaction mass for quiet burns.
+      { itemId: 'reaction-mass', quantity: 0, capacity: 50, supply: 0, demand: 0.95 },
+      { itemId: 'power-cells', quantity: 1, capacity: 30, supply: 0.2, demand: 0.55 },
+    ],
+  },
   dialogue: {
     id: 'runner-vex',
     openingTurnId: 'intro',
@@ -271,6 +306,16 @@ const TRADER: DockContact = {
   company: 'Sol Freight Exchange',
   bio: 'Independent broker — buys low from mining ops, sells to relay stations.',
   platform: 'HERALD',
+  inventory: {
+    label: 'Iris Sol',
+    slots: [
+      { itemId: 'o2-cells', quantity: 12, capacity: 30, supply: 0.75, demand: 0.15 },
+      { itemId: 'power-cells', quantity: 8, capacity: 30, supply: 0.6, demand: 0.2 },
+      // Buys slag cheap from miners for inner-system runs.
+      { itemId: 'iron-slag', quantity: 4, capacity: 40, supply: 0.2, demand: 0.8 },
+      { itemId: 'spare-parts', quantity: 5, capacity: 20, supply: 0.45, demand: 0.35 },
+    ],
+  },
   dialogue: {
     id: 'trader-sol',
     openingTurnId: 'intro',
@@ -326,6 +371,15 @@ export const ASTEROID_DOCK_CONFIG: DockConfig = {
   o2: { amount: 100, capacity: 100 },
   power: { amount: 100, capacity: 100 },
   crew: { amount: 4, capacity: 8 },
+  inventory: {
+    label: 'Asteroid Dock Depot',
+    slots: [
+      { itemId: 'iron-slag', quantity: 30, capacity: 80, supply: 0.9, demand: 0.05 },
+      { itemId: 'reaction-mass', quantity: 20, capacity: 60, supply: 0.5, demand: 0.3 },
+      { itemId: 'o2-cells', quantity: 10, capacity: 40, supply: 0.4, demand: 0.35 },
+      { itemId: 'spare-parts', quantity: 6, capacity: 25, supply: 0.3, demand: 0.45 },
+    ],
+  },
   contacts: [MINING_SUPERVISOR, SYNDICATE_RUNNER, TRADER],
   jobBoard: [
     {

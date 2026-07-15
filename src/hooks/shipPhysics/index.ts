@@ -1,6 +1,6 @@
 export { applyGravityStep } from './gravity';
 export { resolveCollisions } from './collisions';
-export { applyDockedResources, attachShipToDock, detachShipFromDock, checkDockingPort } from './docking';
+export { applyDockedResources, attachShipToDock, detachShipFromDock, checkDockingPort, isShipWithinDockCaptureRange } from './docking';
 export { getCombinedInputs } from './inputs';
 export { applyResourceDrain } from './resourceDrain';
 export { applyPhysicsStep } from './step';

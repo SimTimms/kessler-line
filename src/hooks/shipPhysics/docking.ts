@@ -25,6 +25,8 @@ const _dockVel = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
 const _desiredDockPos = new THREE.Vector3();
 const _desiredDockQuat = new THREE.Quaternion();
+const _shipWorldPos = new THREE.Vector3();
+const _dockWorldPos = new THREE.Vector3();
 
 function isInHierarchy(root: THREE.Object3D, candidate: THREE.Object3D): boolean {
   let node: THREE.Object3D | null = candidate;
@@ -33,6 +35,33 @@ function isInHierarchy(root: THREE.Object3D, candidate: THREE.Object3D): boolean
     node = node.parent;
   }
   return false;
+}
+
+/** True when the ship satisfies the same capture overlap test used by `checkDockingPort`. */
+export function isShipWithinDockCaptureRange(
+  group: THREE.Group,
+  dockEntry: CollidableEntry,
+  dockingPort: THREE.Group | null
+): boolean {
+  const bayObject = dockEntry.getObject3D?.() ?? null;
+  if (bayObject && (isInHierarchy(group, bayObject) || isInHierarchy(bayObject, group))) {
+    return false;
+  }
+  const dockingProfile = getDockCaptureProfile(dockEntry);
+  if (dockingProfile.mode === 'nose') {
+    if (!dockingPort) return false;
+    dockingPort.getWorldPosition(_portWorldPos);
+    return pointDistanceToDockBox(_portWorldPos, dockEntry) < dockingProfile.captureRadius;
+  }
+  if (dockingProfile.mode === 'hover') {
+    group.getWorldPosition(_shipWorldPos);
+    dockEntry.getWorldPosition(_dockWorldPos);
+    const dx = _shipWorldPos.x - _dockWorldPos.x;
+    const dz = _shipWorldPos.z - _dockWorldPos.z;
+    return Math.hypot(dx, dz) < dockingProfile.captureRadius;
+  }
+  shipLocalOffsetToWorld(group, dockingProfile.probeLocalOffset, _portWorldPos);
+  return pointDistanceToDockBox(_portWorldPos, dockEntry) < dockingProfile.captureRadius;
 }
 
 /** Compute the world pose that aligns the ship nose with a docking bay. */
@@ -143,6 +172,14 @@ interface DockingPortParams {
   velocity: THREE.Vector3;
   selfCollisionId?: string;
   emitDockingEvents?: boolean;
+  /** Bay id to ignore until the ship leaves that dock's capture range (post-undock re-entry guard). */
+  dockReentryBlock?: { current: string | null };
+  onBeforeDock?: (params: {
+    bayEntry: CollidableEntry;
+    dockingProfile: ReturnType<typeof getDockCaptureProfile>;
+    captureMode: 'nose' | 'hover';
+    relSpeed: number;
+  }) => boolean;
 }
 
 export function checkDockingPort({
@@ -152,13 +189,17 @@ export function checkDockingPort({
   velocity,
   selfCollisionId = SHIP_COLLISION_ID,
   emitDockingEvents = true,
+  dockReentryBlock,
+  onBeforeDock,
 }: DockingPortParams) {
   if (dockedTo.current || !dockingPort) return;
 
+  let capturedProfileMode: 'nose' | 'hover' | null = null;
   const bayEntry = getCollidables().find((c) => {
     if (c.id === selfCollisionId) return false;
     if (c.shape.type !== 'box') return false;
     if (!c.id.startsWith('docking-bay')) return false;
+    if (dockReentryBlock?.current === c.id) return false;
     const bayObject = c.getObject3D?.() ?? null;
     if (bayObject && (isInHierarchy(group, bayObject) || isInHierarchy(bayObject, group))) {
       return false;
@@ -166,10 +207,26 @@ export function checkDockingPort({
     const dockingProfile = getDockCaptureProfile(c);
     if (dockingProfile.mode === 'nose') {
       dockingPort.getWorldPosition(_portWorldPos);
-    } else {
-      shipLocalOffsetToWorld(group, dockingProfile.probeLocalOffset, _portWorldPos);
+      const isCaptured = pointDistanceToDockBox(_portWorldPos, c) < dockingProfile.captureRadius;
+      if (isCaptured) capturedProfileMode = dockingProfile.mode;
+      return isCaptured;
     }
-    return pointDistanceToDockBox(_portWorldPos, c) < dockingProfile.captureRadius;
+    if (dockingProfile.mode === 'hover') {
+      // Hover/landing docking uses ship-center planar distance to lock X/Z to pad center.
+      group.getWorldPosition(_shipWorldPos);
+      c.getWorldPosition(_dockWorldPos);
+      const dx = _shipWorldPos.x - _dockWorldPos.x;
+      const dz = _shipWorldPos.z - _dockWorldPos.z;
+      const isCaptured = Math.hypot(dx, dz) < dockingProfile.captureRadius;
+      if (isCaptured) capturedProfileMode = dockingProfile.mode;
+      return isCaptured;
+    }
+    {
+      shipLocalOffsetToWorld(group, dockingProfile.probeLocalOffset, _portWorldPos);
+      const isCaptured = pointDistanceToDockBox(_portWorldPos, c) < dockingProfile.captureRadius;
+      if (isCaptured) capturedProfileMode = dockingProfile.mode;
+      return isCaptured;
+    }
   });
 
   if (!bayEntry) return;
@@ -180,11 +237,25 @@ export function checkDockingPort({
   const relSpeed = _relVel.subVectors(velocity, bayVel).length();
   if (relSpeed >= dockingProfile.maxRelativeSpeed) return;
 
-  dockedTo.current = bayEntry.id;
   if (emitDockingEvents && autopilotActive.current) {
     disableAutopilot();
     window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
   }
+
+  const captureMode = capturedProfileMode ?? dockingProfile.mode;
+  if (
+    onBeforeDock?.({
+      bayEntry,
+      dockingProfile,
+      captureMode,
+      relSpeed,
+    })
+  ) {
+    velocity.set(0, 0, 0);
+    return;
+  }
+
+  dockedTo.current = bayEntry.id;
   if (emitDockingEvents) {
     window.dispatchEvent(
       new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })

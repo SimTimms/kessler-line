@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppContainer from '../App/AppContainer';
-import ShipConfigScene from './ShipConfigScene';
+import LandingPadConfigScene from './LandingPadConfigScene';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
 import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
 import AllHuds from '../Huds/AllHuds';
@@ -34,9 +34,15 @@ const SHIP_CONFIG_DISABLED_HUD_ELEMENTS = [
 function applyShipConfigScannerDefaults(): void {
   spotlightOnRef.current = false;
   magneticOnRef.current = true;
-  magneticScanRangeRef.current = getScannerRange('magnet', SHIP_CONFIG_SCANNER_INITIAL_POWERS.magnet);
+  magneticScanRangeRef.current = getScannerRange(
+    'magnet',
+    SHIP_CONFIG_SCANNER_INITIAL_POWERS.magnet
+  );
   driveSignatureOnRef.current = true;
-  driveSignatureRangeRef.current = getScannerRange('drive', SHIP_CONFIG_SCANNER_INITIAL_POWERS.drive);
+  driveSignatureRangeRef.current = getScannerRange(
+    'drive',
+    SHIP_CONFIG_SCANNER_INITIAL_POWERS.drive
+  );
   proximityScanOnRef.current = true;
   proximityScanRangeRef.current = getScannerRange(
     'proximity',
@@ -46,7 +52,7 @@ function applyShipConfigScannerDefaults(): void {
   radioRangeRef.current = getScannerRange('radio', SHIP_CONFIG_SCANNER_INITIAL_POWERS.radio);
 }
 
-export default function ShipConfig() {
+export default function LandingPadConfig() {
   const [spotlightOn, setSpotlightOn] = useState(false);
   const [magneticOn, setMagneticOn] = useState(true);
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
@@ -80,7 +86,7 @@ export default function ShipConfig() {
 
   return (
     <AppContainer>
-      <ShipConfigScene />
+      <LandingPadConfigScene />
       <AllHuds
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}

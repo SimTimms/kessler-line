@@ -8,12 +8,12 @@
  */
 
 // ─── Ship thrust / rotation (use e.code) ─────────────────────────────────────
-export const KEY_THRUST_REVERSE = 'KeyW';
-export const KEY_THRUST_FORWARD = 'KeyS';
+export const KEY_THRUST_REVERSE = 'KeyS';
+export const KEY_THRUST_FORWARD = 'KeyW';
 export const KEY_YAW_LEFT = 'KeyA';
 export const KEY_YAW_RIGHT = 'KeyD';
-export const KEY_STRAFE_LEFT = 'KeyQ'; // port  (Q)
-export const KEY_STRAFE_RIGHT = 'KeyE'; // starboard (E)
+export const KEY_STRAFE_LEFT = 'KeyQ'; // port
+export const KEY_STRAFE_RIGHT = 'KeyE'; // starboard
 export const KEY_RADIAL_OUT = 'KeyR'; // away from planet
 export const KEY_RADIAL_IN = 'KeyF'; // toward planet
 export const KEY_UNDOCK_CARGO = 'Space'; // undock when docked; cargo release otherwise
@@ -21,6 +21,12 @@ export const KEY_STABILISER = 'Space'; // hold to cancel all linear and angular 
 
 /** Dispatched by the Undock HUD control; handled in useInputListeners (same effect as Space when docked). */
 export const EVENT_REQUEST_UNDOCK = 'RequestUndock';
+
+/**
+ * Inventory/authoring debug: teleport the player ship above a dock and start the
+ * normal hover docking procedure. Detail: `{ stationId: string }`.
+ */
+export const EVENT_DEBUG_JUMP_DOCK = 'DebugJumpDock';
 export const KEY_THRUST_INCREASE = 'Equal'; // + / = key (increase thrust multiplier)
 export const KEY_THRUST_INCREASE_NP = 'NumpadAdd'; // numpad +
 export const KEY_THRUST_DECREASE = 'Minus'; // - key (decrease thrust multiplier)

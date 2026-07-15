@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { attachShipToDock, checkDockingPort } from './docking';
+import { attachShipToDock, checkDockingPort, detachShipFromDock, isShipWithinDockCaptureRange } from './docking';
+import { getDockCaptureProfile } from '../../utils/dockingCapture';
 import { PHYSICS_MAX_DELTA, PHYSICS_MAX_STEP } from './constants';
 import { THRUSTER_POINT_LIGHT_COUNT } from './thrusterLight';
 import { neptuneNoFlyZoneActive } from '../../context/CinematicState';
@@ -11,6 +12,53 @@ import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { ensureVesselState } from '../../context/VesselStateStore';
 import { syncShipWorldRefs } from './helpers/syncShipWorldRefs';
 import { runPrimaryPhysicsFrame } from './helpers/runPrimaryPhysicsFrame';
+import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
+import { shipVelocity } from '../../context/ShipState';
+import { playDockAlignSound } from '../../sound/SoundManager';
+
+const LANDING_ALIGN_SPEED = 2.8; // units/s
+const LANDING_DESCEND_SPEED = 2.8; // units/s
+const LANDING_ASCEND_SPEED = 2.8; // units/s
+const LANDING_ROTATE_SPEED = 1.1; // rad/s (25% of prior 4.4)
+/** Dock-local Y used when debug-jumping into a hover landing approach. */
+const DEBUG_JUMP_HOVER_LOCAL_Y = 14;
+const LOCAL_DOCK_FORWARD_QUAT = new THREE.Quaternion();
+
+function moveTowardScalar(current: number, target: number, maxStep: number): number {
+  const delta = target - current;
+  if (Math.abs(delta) <= maxStep) return target;
+  return current + Math.sign(delta) * maxStep;
+}
+
+function rotateTowardQuaternion(
+  quat: THREE.Quaternion,
+  target: THREE.Quaternion,
+  maxRadians: number
+): boolean {
+  const remaining = quat.angleTo(target);
+  if (remaining <= maxRadians) {
+    quat.copy(target);
+    return true;
+  }
+  quat.rotateTowards(target, maxRadians);
+  return false;
+}
+
+type HoverDockingTransition = {
+  dockEntryId: string;
+  stationId: string | null;
+  stage: 'align' | 'descend';
+  /** Dock-local Y when capture began — undock returns to this height. */
+  releaseLocalY: number;
+};
+
+type HoverUndockingTransition = {
+  dockEntryId: string;
+  targetY: number;
+};
+
+const EVENT_DOCKING_CAPTURE_STARTED = 'DockingCaptureStarted';
+const EVENT_DOCKING_CAPTURE_ENDED = 'DockingCaptureEnded';
 
 interface UseShipPhysicsParams {
   vesselId?: string;
@@ -89,6 +137,15 @@ export function useShipPhysics({
   const primaryGravityId = useRef<string | null>(null);
   const primaryGravityVelocity = useRef(new THREE.Vector3());
   const yawPivotLocalRef = useRef<THREE.Vector3 | null>(null);
+  const hoverDockingTransition = useRef<HoverDockingTransition | null>(null);
+  const hoverUndockingTransition = useRef<HoverUndockingTransition | null>(null);
+  const hoverDockReleaseLocalY = useRef<Map<string, number>>(new Map());
+  const dockReentryBlock = useRef<string | null>(null);
+  const undockHandlersRef = useRef<{
+    tryBeginHoverUndock: (dockId: string) => boolean;
+  }>({
+    tryBeginHoverUndock: () => false,
+  });
 
   const thrusterLightRefs = useRef<(THREE.PointLight | null)[]>([]);
   const thrusterLightIntensities = useRef<number[]>(
@@ -131,7 +188,39 @@ export function useShipPhysics({
     physicsPosition,
     inputEnabledRef,
     listenersEnabled: physicsEnabled,
+    undockHandlersRef,
   });
+
+  undockHandlersRef.current.tryBeginHoverUndock = (dockId: string) => {
+    if (hoverUndockingTransition.current || hoverDockingTransition.current) return true;
+    const entry = getCollidables().find((c) => c.id === dockId);
+    if (!entry) return false;
+    const profile = getDockCaptureProfile(entry);
+    if (profile.mode !== 'hover') return false;
+    const dockObject = entry.getObject3D?.() ?? null;
+    if (!dockObject || !groupRef.current) return false;
+    if (groupRef.current.parent !== dockObject) {
+      dockObject.attach(groupRef.current);
+    }
+    const releaseLocalY = hoverDockReleaseLocalY.current.get(dockId);
+    const targetY =
+      releaseLocalY ??
+      profile.hoverReleaseLocalY ??
+      groupRef.current.position.y;
+    hoverUndockingTransition.current = {
+      dockEntryId: dockId,
+      targetY,
+    };
+    dockReentryBlock.current = dockId;
+    if (publishToPlayerRefs) {
+      window.dispatchEvent(
+        new CustomEvent(EVENT_DOCKING_CAPTURE_STARTED, {
+          detail: { stationId: entry.stationId ?? null },
+        })
+      );
+    }
+    return true;
+  };
 
   useEffect(() => {
     if (!physicsEnabled) return;
@@ -158,6 +247,79 @@ export function useShipPhysics({
       cancelled = true;
     };
   }, [dockingPhysicsEnabled, initialDockedTo, physicsEnabled, publishToPlayerRefs]);
+
+  useEffect(() => {
+    if (!physicsEnabled || !dockingPhysicsEnabled || !publishToPlayerRefs) return;
+
+    const onDebugJumpDock = (event: Event) => {
+      const stationId = (event as CustomEvent<{ stationId?: string | null }>).detail?.stationId;
+      if (!stationId || !groupRef.current) return;
+
+      const dockEntryId = `docking-bay-${stationId}`;
+      const entry =
+        getCollidables().find((c) => c.id === dockEntryId) ??
+        getCollidables().find((c) => c.stationId === stationId);
+      if (!entry) return;
+
+      const profile = getDockCaptureProfile(entry);
+      if (profile.mode !== 'hover') return;
+
+      const dockObject = entry.getObject3D?.() ?? null;
+      if (!dockObject) return;
+
+      const group = groupRef.current;
+      const wasDocked = dockedTo.current != null || group.parent !== scene;
+
+      hoverDockingTransition.current = null;
+      hoverUndockingTransition.current = null;
+      dockReentryBlock.current = null;
+      dockedTo.current = null;
+
+      if (wasDocked) {
+        detachShipFromDock(group, scene);
+        window.dispatchEvent(new CustomEvent('ShipUndocked'));
+      }
+
+      dockObject.attach(group);
+      group.position.set(0, DEBUG_JUMP_HOVER_LOCAL_Y, 0);
+      group.quaternion.copy(LOCAL_DOCK_FORWARD_QUAT);
+      velocity.current.set(0, 0, 0);
+      angularVelocity.current = 0;
+      angularVelocity3.current.set(0, 0, 0);
+      vesselState.shipVelocity.set(0, 0, 0);
+      if (publishToPlayerRefs) {
+        shipVelocity.set(0, 0, 0);
+      }
+      group.getWorldPosition(physicsPosition.current);
+      syncShipWorldRefs(group, publishToPlayerRefs);
+
+      hoverDockingTransition.current = {
+        dockEntryId: entry.id,
+        stationId: entry.stationId ?? stationId,
+        stage: 'align',
+        releaseLocalY: DEBUG_JUMP_HOVER_LOCAL_Y,
+      };
+      void playDockAlignSound();
+      window.dispatchEvent(
+        new CustomEvent(EVENT_DOCKING_CAPTURE_STARTED, {
+          detail: { stationId: entry.stationId ?? stationId },
+        })
+      );
+    };
+
+    window.addEventListener(EVENT_DEBUG_JUMP_DOCK, onDebugJumpDock);
+    return () => {
+      window.removeEventListener(EVENT_DEBUG_JUMP_DOCK, onDebugJumpDock);
+    };
+  }, [
+    dockingPhysicsEnabled,
+    groupRef,
+    physicsEnabled,
+    physicsPosition,
+    publishToPlayerRefs,
+    scene,
+    vesselState,
+  ]);
 
   useFrame((_, delta) => {
     if (!physicsEnabled) return;
@@ -208,17 +370,114 @@ export function useShipPhysics({
       orbitalPhysicsEnabled,
       yawThrustScale,
       yawPivotLocal: yawPivotLocalRef.current,
+      dockingTransitionActive: Boolean(
+        hoverDockingTransition.current || hoverUndockingTransition.current
+      ),
     });
   }, -1);
 
   // Priority 2: after BodyOrbit (0) — parent to dock and sync world refs for camera/HUD.
-  useFrame(() => {
+  useFrame((_, delta) => {
     try {
       if (!physicsEnabled) return;
       if (!groupRef.current) return;
       const group = groupRef.current;
 
       if (!dockingPhysicsEnabled) return;
+
+      if (hoverUndockingTransition.current) {
+        const transition = hoverUndockingTransition.current;
+        const entry = getCollidables().find((c) => c.id === transition.dockEntryId);
+        const dockObject = entry?.getObject3D?.() ?? null;
+
+        if (!entry || !dockObject) {
+          hoverUndockingTransition.current = null;
+          if (publishToPlayerRefs) {
+            window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
+          }
+        } else {
+          if (group.parent !== dockObject) {
+            dockObject.attach(group);
+          }
+          const nextY = moveTowardScalar(
+            group.position.y,
+            transition.targetY,
+            LANDING_ASCEND_SPEED * delta
+          );
+          group.position.set(0, nextY, 0);
+          if (nextY === transition.targetY) {
+            group.position.set(0, transition.targetY, 0);
+            hoverUndockingTransition.current = null;
+            dockedTo.current = null;
+            if (publishToPlayerRefs) {
+              window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
+              window.dispatchEvent(new CustomEvent('ShipUndocked'));
+            }
+            detachShipFromDock(group, scene);
+            const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(group.quaternion);
+            const releaseDir = forward.multiplyScalar(-1);
+            group.position.addScaledVector(releaseDir, 1);
+            const releaseSpeed = getDockCaptureProfile(entry).undockReleaseSpeed;
+            velocity.current.copy(releaseDir.multiplyScalar(releaseSpeed));
+            releaseParticleTrigger.current = true;
+            group.getWorldPosition(physicsPosition.current);
+          }
+          group.getWorldPosition(physicsPosition.current);
+          syncShipWorldRefs(group, publishToPlayerRefs);
+          group.getWorldQuaternion(vesselState.shipQuaternion);
+          return;
+        }
+      }
+
+      if (hoverDockingTransition.current) {
+        const transition = hoverDockingTransition.current;
+        const entry = getCollidables().find((c) => c.id === transition.dockEntryId);
+        const dockObject = entry?.getObject3D?.() ?? null;
+
+        if (!entry || !dockObject) {
+          if (publishToPlayerRefs) {
+            window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
+          }
+          hoverDockingTransition.current = null;
+        } else {
+          if (group.parent !== dockObject) {
+            dockObject.attach(group);
+          }
+          const rotationAligned = rotateTowardQuaternion(
+            group.quaternion,
+            LOCAL_DOCK_FORWARD_QUAT,
+            LANDING_ROTATE_SPEED * delta
+          );
+          if (transition.stage === 'align') {
+            const nextX = moveTowardScalar(group.position.x, 0, LANDING_ALIGN_SPEED * delta);
+            const nextZ = moveTowardScalar(group.position.z, 0, LANDING_ALIGN_SPEED * delta);
+            group.position.set(nextX, group.position.y, nextZ);
+            if (nextX === 0 && nextZ === 0 && rotationAligned) {
+              group.position.set(0, group.position.y, 0);
+              transition.stage = 'descend';
+            }
+          } else {
+            const nextY = moveTowardScalar(group.position.y, 0, LANDING_DESCEND_SPEED * delta);
+            group.position.set(0, nextY, 0);
+            if (nextY === 0) {
+              group.quaternion.copy(LOCAL_DOCK_FORWARD_QUAT);
+              hoverDockReleaseLocalY.current.set(transition.dockEntryId, transition.releaseLocalY);
+              dockedTo.current = transition.dockEntryId;
+              if (publishToPlayerRefs) {
+                window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
+                window.dispatchEvent(
+                  new CustomEvent('ShipDocked', { detail: { stationId: transition.stationId } })
+                );
+              }
+              hoverDockingTransition.current = null;
+            }
+          }
+          group.getWorldPosition(physicsPosition.current);
+          syncShipWorldRefs(group, publishToPlayerRefs);
+          group.getWorldQuaternion(vesselState.shipQuaternion);
+          return;
+        }
+      }
 
       if (dockedTo.current) {
         const entry = getCollidables().find((c) => c.id === dockedTo.current);
@@ -232,6 +491,17 @@ export function useShipPhysics({
       }
 
       if (neptuneNoFlyZoneActive.current) return;
+
+      if (dockReentryBlock.current) {
+        const blockedEntry = getCollidables().find((c) => c.id === dockReentryBlock.current);
+        if (
+          !blockedEntry ||
+          !isShipWithinDockCaptureRange(group, blockedEntry, dockingPortRef.current)
+        ) {
+          dockReentryBlock.current = null;
+        }
+      }
+
       checkDockingPort({
         group,
         dockingPort: dockingPortRef.current,
@@ -239,6 +509,30 @@ export function useShipPhysics({
         velocity: velocity.current,
         selfCollisionId: selfCollisionId ?? vesselId,
         emitDockingEvents: publishToPlayerRefs,
+        dockReentryBlock,
+        onBeforeDock: ({ bayEntry, captureMode }) => {
+          if (captureMode !== 'hover') return false;
+          const dockObject = bayEntry.getObject3D?.() ?? null;
+          if (!dockObject) return false;
+          if (!hoverDockingTransition.current) {
+            dockObject.attach(group);
+            hoverDockingTransition.current = {
+              dockEntryId: bayEntry.id,
+              stationId: bayEntry.stationId ?? null,
+              stage: 'align',
+              releaseLocalY: group.position.y,
+            };
+            if (publishToPlayerRefs) {
+              void playDockAlignSound();
+              window.dispatchEvent(
+                new CustomEvent(EVENT_DOCKING_CAPTURE_STARTED, {
+                  detail: { stationId: bayEntry.stationId ?? null },
+                })
+              );
+            }
+          }
+          return true;
+        },
       });
       if (dockedTo.current) {
         group.getWorldPosition(physicsPosition.current);

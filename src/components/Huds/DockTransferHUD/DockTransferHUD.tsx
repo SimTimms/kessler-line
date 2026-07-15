@@ -27,7 +27,10 @@ import {
   type DockContact,
   type DockDialogueTree,
 } from '../../../config/dockConfig';
-import { ContactsHudDialog, type SelectionItem } from '../../ContactsHUD/ContactsHudDialog/ContactsHudDialog';
+import {
+  ContactsHudDialog,
+  type SelectionItem,
+} from '../../ContactsHUD/ContactsHudDialog/ContactsHudDialog';
 import DockInteriorDialogue from '../../Station/StationDialogue';
 import '../HelmetHUD/HelmetHUD.css';
 import './DockTransferHUD.css';

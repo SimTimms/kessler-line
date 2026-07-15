@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import PowerSource from './PowerSource';
@@ -7,20 +7,46 @@ import { selectTarget } from '../../context/TargetSelection';
 import DockingBay from './DockingBay';
 import type { DockConfig } from '../../config/dockConfig';
 import { LANDING_PAD_DOCK_CAPTURE_PROFILE } from '../../config/dockCaptureConfig';
+import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 
-const LANDING_PAD_COLLISION_ID = 'landing-pad-structure';
-const LANDING_PAD_DOCK_ID = 'landing-pad';
+const DEFAULT_LANDING_PAD_ID = 'landing-pad';
 
 interface LandingPadProps {
+  /** Unique id for collision + dock registration (required when multiple pads share a scene). */
+  id?: string;
+  label?: string;
   scale?: number;
   dock?: DockConfig;
+  landingPadThreshold?: number;
   /** World-space bounding radius for collision detection. Tune to match visual size. */
   landingPadGroupRef?: { current: THREE.Group | null };
+  /**
+   * Inventory/authoring debug: clicking the pad teleports the ship above it and
+   * starts the normal hover docking procedure.
+   */
+  debugJumpDockOnClick?: boolean;
 }
 
-export default function LandingPad({ scale = 1, dock, landingPadGroupRef }: LandingPadProps) {
+export default function LandingPad({
+  id = DEFAULT_LANDING_PAD_ID,
+  label = 'Landing Pad',
+  scale = 1,
+  dock,
+  landingPadThreshold = LANDING_PAD_DOCK_CAPTURE_PROFILE.captureRadius,
+  landingPadGroupRef,
+  debugJumpDockOnClick = false,
+}: LandingPadProps) {
   const gltf = useGLTF('/landing-pad.glb') as unknown as { scene: THREE.Group };
+  const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const groupRef = useRef<THREE.Group>(null!);
+  const structureCollisionId = `${id}-structure`;
+  const dockingProfile = useMemo(
+    () => ({
+      ...LANDING_PAD_DOCK_CAPTURE_PROFILE,
+      captureRadius: landingPadThreshold,
+    }),
+    [landingPadThreshold]
+  );
 
   // Fill the external stationGroupRef (if provided) so LaserRay can raycast against it.
   const setGroupRef = useCallback(
@@ -35,8 +61,8 @@ export default function LandingPad({ scale = 1, dock, landingPadGroupRef }: Land
   // (effects fire after commit, which is after setGroupRef fires).
   useEffect(() => {
     registerCollidable({
-      id: LANDING_PAD_COLLISION_ID,
-      label: 'Landing Pad',
+      id: structureCollisionId,
+      label,
       getWorldPosition: (target) => {
         if (groupRef.current) groupRef.current.getWorldPosition(target);
         return target;
@@ -51,9 +77,9 @@ export default function LandingPad({ scale = 1, dock, landingPadGroupRef }: Land
       getObject3D: () => groupRef.current,
     });
     return () => {
-      unregisterCollidable(LANDING_PAD_COLLISION_ID);
+      unregisterCollidable(structureCollisionId);
     };
-  }, [landingPadGroupRef]);
+  }, [label, landingPadGroupRef, structureCollisionId]);
 
   return (
     <>
@@ -62,18 +88,24 @@ export default function LandingPad({ scale = 1, dock, landingPadGroupRef }: Land
         rotation={[0, Math.PI, 0]}
         onClick={(e) => {
           e.stopPropagation();
-          selectTarget('Landing Pad');
+          selectTarget(label);
+          if (debugJumpDockOnClick) {
+            window.dispatchEvent(
+              new CustomEvent(EVENT_DEBUG_JUMP_DOCK, { detail: { stationId: id } })
+            );
+          }
         }}
       >
         <PowerSource scale={1} />
-        <primitive object={gltf.scene} scale={scale} />
-        <group position={[0, 6, 104]}>
+        <primitive object={modelScene} scale={scale} />
+        {/* Keep the docking anchor at pad center so X/Z threshold checks match landing-pad position. */}
+        <group position={[0, 6, 0]}>
           <DockingBay
-            stationId={LANDING_PAD_DOCK_ID}
+            stationId={id}
             dimensions={new THREE.Vector3(40, 2, 10)}
             rotation={[0, 0, 0]}
             dock={dock}
-            dockingProfile={LANDING_PAD_DOCK_CAPTURE_PROFILE}
+            dockingProfile={dockingProfile}
             showCaptureMesh={false}
           />
         </group>

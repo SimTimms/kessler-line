@@ -4,7 +4,7 @@
 // (0–1; omitted = always fires). applyDialogueEffects() mutates the existing game
 // stores and returns human-readable outcome lines for the conversation to show.
 
-import { cargo, setCargo, reduceCargoItem, type CargoItem } from '../context/Inventory';
+import { cargo, reduceCargoItem, addCargoItem } from '../context/Inventory';
 import { fuel, o2, power, setFuel, setO2, setPower, damageHull } from '../context/ShipState';
 import { addMessage, type MessagePlatform } from '../context/MessageStore';
 
@@ -47,11 +47,7 @@ function clamp100(v: number): number {
 }
 
 function addCargo(item: string, qty: number): void {
-  const existing = cargo.find((c) => c.name === item);
-  const next: CargoItem[] = existing
-    ? cargo.map((c) => (c.name === item ? { ...c, quantity: c.quantity + qty } : c))
-    : [...cargo, { name: item, quantity: qty }];
-  setCargo(next);
+  addCargoItem(item, qty);
 }
 
 /** Apply one effect, returning whether it fired and an optional outcome line. */

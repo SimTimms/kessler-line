@@ -67,8 +67,8 @@ export function applyPhysicsStep({
   const cappedManeuverMultiplier = Math.min(forwardThrustMultiplier, 2);
 
   const scaledYawThrust = YAW_THRUST * yawThrustScale;
-  if (yawLeft) angularVelocity.current -= scaledYawThrust * cappedManeuverMultiplier * dt;
-  if (yawRight) angularVelocity.current += scaledYawThrust * cappedManeuverMultiplier * dt;
+  if (yawRight) angularVelocity.current -= scaledYawThrust * cappedManeuverMultiplier * dt;
+  if (yawLeft) angularVelocity.current += scaledYawThrust * cappedManeuverMultiplier * dt;
   angularVelocity.current = THREE.MathUtils.clamp(
     angularVelocity.current,
     -MAX_YAW_RATE,
@@ -85,9 +85,9 @@ export function applyPhysicsStep({
   }
 
   _localForward.set(0, 0, 1).applyQuaternion(group.quaternion);
-  if (fwd) velocity.addScaledVector(_localForward, THRUST * forwardThrustMultiplier * dt);
+  if (fwd) velocity.addScaledVector(_localForward, -THRUST * forwardThrustMultiplier * dt);
   if (rev)
-    velocity.addScaledVector(_localForward, -THRUST * cappedManeuverMultiplier * revScale * dt);
+    velocity.addScaledVector(_localForward, THRUST * cappedManeuverMultiplier * revScale * dt);
 
   _localRight.set(1, 0, 0).applyQuaternion(group.quaternion);
   if (strL) velocity.addScaledVector(_localRight, -THRUST * cappedManeuverMultiplier * dt);

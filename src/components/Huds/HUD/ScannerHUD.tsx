@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect, type CSSProperties } from 'react';
-import { Flashlight, Magnet, HardDrive, Radar, AudioLines, Radiation } from 'lucide-react';
+import { Flashlight, Magnet, HardDrive, Radar, AudioLines, Radiation, RadioTower } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HudButton } from '../HudButton';
 import { shipPosRef } from '../../../context/ShipPos';
+import {
+  EVENT_PAD_SCAN_ENDED,
+  EVENT_PAD_SCAN_STARTED,
+  padScanActiveRef,
+} from '../../../context/PadScanState';
 import './ScannerHUD.css';
 import '../HelmetHUD/HelmetHUD.css';
 import {
@@ -110,6 +115,43 @@ function HelmetScannerRow({
   );
 }
 
+const PAD_SCAN_WAVE_BARS = 12;
+
+function PadScanWaveform({ active }: { active: boolean }) {
+  return (
+    <div
+      className={`helmet-pad-scan${active ? ' helmet-pad-scan--active' : ''}`}
+      title={active ? 'Inbound pad scan' : 'Pad link'}
+      aria-label={active ? 'Receiving pad scan' : 'Pad link idle'}
+    >
+      <div className="helmet-pad-scan-icon" aria-hidden>
+        <RadioTower size={15} strokeWidth={1.75} />
+      </div>
+      <div className="helmet-pad-scan-wave" aria-hidden>
+        {Array.from({ length: PAD_SCAN_WAVE_BARS }, (_, i) => (
+          <span key={i} className="helmet-pad-scan-bar" style={{ animationDelay: `${i * 0.07}s` }} />
+        ))}
+      </div>
+      <span className="helmet-pad-scan-label">{active ? 'RX' : 'LNK'}</span>
+    </div>
+  );
+}
+
+function usePadScanActive(): boolean {
+  const [active, setActive] = useState(() => padScanActiveRef.current);
+  useEffect(() => {
+    const onStart = () => setActive(true);
+    const onEnd = () => setActive(false);
+    window.addEventListener(EVENT_PAD_SCAN_STARTED, onStart);
+    window.addEventListener(EVENT_PAD_SCAN_ENDED, onEnd);
+    return () => {
+      window.removeEventListener(EVENT_PAD_SCAN_STARTED, onStart);
+      window.removeEventListener(EVENT_PAD_SCAN_ENDED, onEnd);
+    };
+  }, []);
+  return active;
+}
+
 interface ScannerHUDProps {
   layout?: 'classic' | 'helmet';
   spotlightOn: boolean;
@@ -192,6 +234,7 @@ export const ScannerHUD = ({
 }: ScannerHUDProps) => {
   void tutorialMagneticFocus;
   const [radiationOn, setRadiationOn] = useState(false);
+  const padScanActive = usePadScanActive();
 
   // Coords display — mutated directly to avoid re-renders
   const coordsRef = useRef<HTMLDivElement>(null!);
@@ -319,6 +362,8 @@ export const ScannerHUD = ({
             );
           })}
         </div>
+        <div className="helmet-pad-scan-divider" aria-hidden />
+        <PadScanWaveform active={padScanActive} />
       </div>
     );
   }
@@ -352,6 +397,8 @@ export const ScannerHUD = ({
           />
         </div>
       ))}
+      <div className="classic-pad-scan-divider" aria-hidden />
+      <PadScanWaveform active={padScanActive} />
     </div>
   );
 };

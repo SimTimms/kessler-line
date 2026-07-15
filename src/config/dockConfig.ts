@@ -1,5 +1,6 @@
 import type { MessagePlatform } from '../context/MessageStore';
 import type { DialogueEffect } from '../narrative/dialogueEffects';
+import type { InventoryBlueprint } from './inventoryTypes';
 
 export type DockableResourceSlot = {
   amount: number;
@@ -28,6 +29,17 @@ export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
 };
 
 export interface DockTradeTurnConfig {
+  /**
+   * Two-sided cargo barter (player offer ↔ contact offer).
+   * When true, the negotiation panel uses inventories instead of fuel/O2/power/crew.
+   */
+  cargoBarter?: boolean;
+  /** Contact accepts when value received / value given >= this (cargo barter). Default 1. */
+  acceptRatio?: number;
+  /** Contact insults when value ratio falls below this (cargo barter). Default 0.4. */
+  insultRatio?: number;
+  /** Contact counters aiming for this value ratio (cargo barter). Default 1.15. */
+  counterTargetRatio?: number;
   /** Weighted offer score needed for direct acceptance. */
   acceptThreshold: number;
   /** Offers below this score are treated as insulting lowballs. */
@@ -114,6 +126,8 @@ export interface DockContact {
   bio?: string;
   platform?: MessagePlatform;
   dialogue: DockDialogueTree;
+  /** Personal hold used for barter / supply-demand with this contact. */
+  inventory?: InventoryBlueprint;
 }
 
 /** Optional job-board entry shown alongside dock contacts while docked. */
@@ -135,6 +149,8 @@ export interface DockConfig {
   o2?: DockableResourceSlot;
   power?: DockableResourceSlot;
   crew?: DockableResourceSlot;
+  /** Shared dock depot / warehouse inventory (separate from contacts). */
+  inventory?: InventoryBlueprint;
   /** People the player can talk to while docked (interior comms). */
   contacts?: DockContact[];
   /** Side jobs / contracts posted at this dock. */

@@ -11,6 +11,10 @@ import type {
   RegisteredDockConfig,
 } from '../config/dockConfig';
 import { fuel, o2, power, setFuel, setO2, setPower, shipCrew, setShipCrew } from './ShipState';
+import {
+  registerDockInventories,
+  unregisterDockInventories,
+} from './InventoryStore';
 
 export type DockableResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
 
@@ -32,17 +36,46 @@ function cloneDock(config: RegisteredDockConfig): RegisteredDockConfig {
     o2: config.o2 ? { ...config.o2 } : undefined,
     power: config.power ? { ...config.power } : undefined,
     crew: config.crew ? { ...config.crew } : undefined,
-    contacts: config.contacts?.map((c) => ({ ...c, dialogue: c.dialogue })),
+    inventory: config.inventory
+      ? {
+          ...config.inventory,
+          slots: config.inventory.slots?.map((slot) => ({ ...slot })),
+        }
+      : undefined,
+    contacts: config.contacts?.map((c) => ({
+      ...c,
+      dialogue: c.dialogue,
+      inventory: c.inventory
+        ? {
+            ...c.inventory,
+            slots: c.inventory.slots?.map((slot) => ({ ...slot })),
+          }
+        : undefined,
+    })),
     jobBoard: config.jobBoard?.map((j) => ({ ...j, dialogue: j.dialogue })),
   };
 }
 
 export function registerDock(config: RegisteredDockConfig) {
-  docks.set(config.id, cloneDock(config));
+  const cloned = cloneDock(config);
+  docks.set(cloned.id, cloned);
+  registerDockInventories(
+    cloned.id,
+    cloned.label,
+    cloned.inventory,
+    cloned.contacts?.map((c) => ({
+      id: c.id,
+      name: c.name,
+      inventory: c.inventory,
+    }))
+  );
 }
 
 export function unregisterDock(dockId: string) {
+  const existing = docks.get(dockId);
+  const contactIds = existing?.contacts?.map((c) => c.id) ?? [];
   docks.delete(dockId);
+  unregisterDockInventories(dockId, contactIds);
 }
 
 /** @deprecated Use registerDock */

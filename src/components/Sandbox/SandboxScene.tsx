@@ -31,7 +31,6 @@ import SandboxStarterMission from './SandboxStarterMission';
 import GhostFleet from '../NPCs/GhostFleet';
 import UBoat from '../UBoat/UBoat';
 import { UBoatConfig } from '../ModelConfig/UBoatConfig';
-import { KEY_THRUST_FORWARD, KEY_THRUST_REVERSE } from '../../config/keybindings';
 /** Camera + post FX run after FloatingOrigin rebases the world (priority 3). */
 const SANDBOX_CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 

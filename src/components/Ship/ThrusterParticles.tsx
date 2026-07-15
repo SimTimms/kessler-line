@@ -130,7 +130,6 @@ function makePool(count: number): Particle[] {
 }
 
 interface ThrusterParticlesProps {
-  shipGroupRef: { current: THREE.Group };
   thrustForward: { current: boolean };
   thrustReverse: { current: boolean };
   thrustLeft: { current: boolean };
@@ -143,7 +142,6 @@ interface ThrusterParticlesProps {
 }
 
 export default function ThrusterParticles({
-  shipGroupRef,
   thrustForward,
   thrustReverse,
   thrustLeft,
@@ -368,25 +366,19 @@ export default function ThrusterParticles({
         },
       ],
       [
-        'left',
-        {
-          current:
-            propulsionAvailable && (thrustLeft.current || mobileThrustLeft.current || effectiveYawLeft.current),
-        },
-      ],
-      [
         'right',
         {
           current:
-            propulsionAvailable && (thrustRight.current || mobileThrustRight.current || effectiveYawRight.current),
+            propulsionAvailable &&
+            (thrustLeft.current || mobileThrustLeft.current || effectiveYawLeft.current),
         },
       ],
       [
-        'strafeLeft',
+        'left',
         {
           current:
             propulsionAvailable &&
-            (thrustStrafeLeft.current || mobileThrustStrafeLeft.current || effectiveThrustStrL.current),
+            (thrustRight.current || mobileThrustRight.current || effectiveYawRight.current),
         },
       ],
       [
@@ -394,7 +386,19 @@ export default function ThrusterParticles({
         {
           current:
             propulsionAvailable &&
-            (thrustStrafeRight.current || mobileThrustStrafeRight.current || effectiveThrustStrR.current),
+            (thrustStrafeLeft.current ||
+              mobileThrustStrafeLeft.current ||
+              effectiveThrustStrL.current),
+        },
+      ],
+      [
+        'strafeLeft',
+        {
+          current:
+            propulsionAvailable &&
+            (thrustStrafeRight.current ||
+              mobileThrustStrafeRight.current ||
+              effectiveThrustStrR.current),
         },
       ],
     ];
@@ -404,14 +408,7 @@ export default function ThrusterParticles({
         const count = Math.floor(rcsAccum.current[key]);
         rcsAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
-          spawnInto(
-            RCS_EMITTERS,
-            key,
-            rcsPool.current,
-            RCS_MAX,
-            rcsSlot,
-            RCS_VISUAL_MULTIPLIER
-          );
+          spawnInto(RCS_EMITTERS, key, rcsPool.current, RCS_MAX, rcsSlot, RCS_VISUAL_MULTIPLIER);
       } else {
         rcsAccum.current[key] = 0;
       }
@@ -526,7 +523,7 @@ export default function ThrusterParticles({
     return null;
   }
   return (
-    <>
+    <group rotation={new THREE.Euler(0, Math.PI, 0)}>
       {/* Main engines — two larger nozzles */}
       <points frustumCulled={false}>
         <bufferGeometry ref={mainGeoRef}>
@@ -552,6 +549,6 @@ export default function ThrusterParticles({
         </bufferGeometry>
         <pointsMaterial ref={hoverMatRef} size={0.15} {...sharedMatProps} />
       </points>
-    </>
+    </group>
   );
 }

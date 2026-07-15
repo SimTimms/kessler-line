@@ -53,6 +53,7 @@ export function useInputListeners({
   physicsPosition,
   inputEnabledRef,
   listenersEnabled = true,
+  undockHandlersRef,
 }: {
   vesselId: string;
   vesselState: VesselRuntimeState;
@@ -63,6 +64,9 @@ export function useInputListeners({
   physicsPosition: React.MutableRefObject<THREE.Vector3>;
   inputEnabledRef?: React.MutableRefObject<boolean>;
   listenersEnabled?: boolean;
+  undockHandlersRef?: React.MutableRefObject<{
+    tryBeginHoverUndock: (dockId: string) => boolean;
+  }>;
 }): InputListenersResult {
   const thrustForward = useRef(false);
   const thrustReverse = useRef(false);
@@ -95,6 +99,9 @@ export function useInputListeners({
 
     const performShipUndock = (): boolean => {
       if (!dockedTo.current) return false;
+      if (undockHandlersRef?.current.tryBeginHoverUndock(dockedTo.current)) {
+        return true;
+      }
       const previousDockId = dockedTo.current;
       dockedTo.current = null;
       window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -105,9 +112,7 @@ export function useInputListeners({
         groupRef.current.position.addScaledVector(releaseDir, 1); // ensure clear separation from bay
         // Push away from the docking bay, not toward it.
         const dockEntry = getCollidables().find((c) => c.id === previousDockId);
-        const releaseSpeed = dockEntry
-          ? getDockCaptureProfile(dockEntry).undockReleaseSpeed
-          : 8;
+        const releaseSpeed = dockEntry ? getDockCaptureProfile(dockEntry).undockReleaseSpeed : 8;
         velocity.current.copy(releaseDir.multiplyScalar(releaseSpeed));
         groupRef.current.getWorldPosition(physicsPosition.current);
       }
@@ -125,12 +130,12 @@ export function useInputListeners({
         return;
       }
       // Treat thrust keybindings in reverse so gameplay remains W=forward, S=reverse.
-      if (e.code === KEY_THRUST_REVERSE) thrustForward.current = true;
-      if (e.code === KEY_THRUST_FORWARD) thrustReverse.current = true;
+      if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = true;
+      if (e.code === KEY_THRUST_FORWARD) thrustForward.current = true;
       if (e.code === KEY_YAW_LEFT) thrustLeft.current = true;
       if (e.code === KEY_YAW_RIGHT) thrustRight.current = true;
-      if (e.code === KEY_STRAFE_RIGHT) thrustStrafeLeft.current = true;
-      if (e.code === KEY_STRAFE_LEFT) thrustStrafeRight.current = true;
+      if (e.code === KEY_STRAFE_RIGHT) thrustStrafeRight.current = true;
+      if (e.code === KEY_STRAFE_LEFT) thrustStrafeLeft.current = true;
       if (e.code === KEY_RADIAL_OUT) thrustRadialOut.current = true;
       if (e.code === KEY_RADIAL_IN) thrustRadialIn.current = true;
       if (e.code === KEY_UNDOCK_CARGO) {
@@ -154,12 +159,12 @@ export function useInputListeners({
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (inputEnabledRef && !inputEnabledRef.current) return;
-      if (e.code === KEY_THRUST_REVERSE) thrustForward.current = false;
-      if (e.code === KEY_THRUST_FORWARD) thrustReverse.current = false;
+      if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = false;
+      if (e.code === KEY_THRUST_FORWARD) thrustForward.current = false;
       if (e.code === KEY_YAW_LEFT) thrustLeft.current = false;
       if (e.code === KEY_YAW_RIGHT) thrustRight.current = false;
-      if (e.code === KEY_STRAFE_RIGHT) thrustStrafeLeft.current = false;
-      if (e.code === KEY_STRAFE_LEFT) thrustStrafeRight.current = false;
+      if (e.code === KEY_STRAFE_RIGHT) thrustStrafeRight.current = false;
+      if (e.code === KEY_STRAFE_LEFT) thrustStrafeLeft.current = false;
       if (e.code === KEY_RADIAL_OUT) thrustRadialOut.current = false;
       if (e.code === KEY_RADIAL_IN) thrustRadialIn.current = false;
       if (e.code === KEY_STABILISER) stabilizerActive.current = false;

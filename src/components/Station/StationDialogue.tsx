@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   getThread,
   createThread,
@@ -13,6 +13,8 @@ import type {
   DockTradeTurnConfig,
   DockTradeResourceKind,
 } from '../../config/dockConfig';
+import { parseDockThreadId } from '../../config/dockConfig';
+import { getInventoryItemDef } from '../../config/inventoryCatalog';
 import {
   fuel,
   o2,
@@ -23,10 +25,25 @@ import {
   setPower,
   setShipCrew,
 } from '../../context/ShipState';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { refreshPlayerCargoBinding } from '../../context/Inventory';
+import { INVENTORY_CHANGED, type InventoryOwnerRef } from '../../context/InventoryStore';
 import { SHIP_MIN_CREW_ONBOARD } from '../../config/dockTransferConfig';
 import { speakNpcLine } from '../../sound/PiperTTS';
 import DialogueThread from '../CommsChat/DialogueThread';
 import '../CommsChat/CommsChat.css';
+import {
+  type BarterDeal,
+  clampBarterDeal,
+  cloneBarterDeal,
+  commitBarterDeal,
+  emptyBarterDeal,
+  evaluateBarterDeal,
+  formatBarterDeal,
+  inventoryQtyMap,
+  isBarterDealEmpty,
+  sumBarterSide,
+} from '../../utils/barterDeal';
 
 interface DockInteriorDialogueProps {
   /** ChatStore thread id — typically dockContactThreadId(dockId, contactId). */
@@ -38,9 +55,16 @@ interface DockInteriorDialogueProps {
 
 type TradeOffer = Record<DockTradeResourceKind, number>;
 
-interface PendingTrade {
+interface PendingResourceTrade {
   kind: 'accepted' | 'counter';
   deal: TradeOffer;
+}
+
+interface PendingCargoTrade {
+  kind: 'accepted' | 'counter';
+  /** Contact has accepted this deal shape; player must still AGREE to transfer. */
+  deal: BarterDeal;
+  contactAgreed: true;
 }
 
 const EMPTY_TRADE_OFFER: TradeOffer = {
@@ -72,8 +96,16 @@ function formatOffer(offer: TradeOffer): string {
   return `F ${Math.round(offer.fuel)} · O ${Math.round(offer.o2)} · P ${Math.round(offer.power)} · C ${Math.round(offer.crew)}`;
 }
 
-function withOffer(template: string, offer: TradeOffer): string {
-  return template.replaceAll('{offer}', formatOffer(offer));
+function withOfferToken(template: string, offerText: string): string {
+  return template.replaceAll('{offer}', offerText);
+}
+
+function withResourceOffer(template: string, offer: TradeOffer): string {
+  return withOfferToken(template, formatOffer(offer));
+}
+
+function withCargoOffer(template: string, deal: BarterDeal): string {
+  return withOfferToken(template, formatBarterDeal(deal));
 }
 
 function sumOffer(offer: TradeOffer): number {
@@ -161,6 +193,18 @@ function recordTradeDelivery(threadId: string, offer: TradeOffer) {
   });
 }
 
+function cargoRowsFromMap(maxByItem: Record<string, number>, dealSide: Record<string, number>) {
+  return Object.entries(maxByItem)
+    .filter(([, max]) => max > 0)
+    .map(([itemId, max]) => ({
+      itemId,
+      label: getInventoryItemDef(itemId)?.label ?? itemId,
+      max,
+      value: dealSide[itemId] ?? 0,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 /**
  * Interior comms conversation while docked. Uses the same DialogueThread UI as
  * ship-to-ship comms, driven by an inline dialogue tree from the dock config.
@@ -178,9 +222,24 @@ export default function DockInteriorDialogue({
   const threadInitRef = useRef(false);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [tradeOffer, setTradeOffer] = useState<TradeOffer>(EMPTY_TRADE_OFFER);
+  const [cargoDeal, setCargoDeal] = useState<BarterDeal>(emptyBarterDeal);
   const [tradeStatus, setTradeStatus] = useState('');
   const [tradeStance, setTradeStance] = useState(0);
-  const [pendingTrade, setPendingTrade] = useState<PendingTrade | null>(null);
+  const [pendingResourceTrade, setPendingResourceTrade] = useState<PendingResourceTrade | null>(
+    null
+  );
+  const [pendingCargoTrade, setPendingCargoTrade] = useState<PendingCargoTrade | null>(null);
+  const [, bumpInventory] = useState(0);
+
+  const playerOwner: InventoryOwnerRef = useMemo(
+    () => ({ kind: 'vessel', vesselId: PLAYER_VESSEL_ID }),
+    []
+  );
+  const contactOwner: InventoryOwnerRef | null = useMemo(() => {
+    const parsed = parseDockThreadId(threadId);
+    if (!parsed?.dockId || !parsed.contactId) return null;
+    return { kind: 'contact', dockId: parsed.dockId, contactId: parsed.contactId };
+  }, [threadId]);
 
   useEffect(() => {
     const onUpdate = (e: Event) => {
@@ -193,6 +252,12 @@ export default function DockInteriorDialogue({
     window.addEventListener('ChatUpdated', onUpdate);
     return () => window.removeEventListener('ChatUpdated', onUpdate);
   }, [threadId]);
+
+  useEffect(() => {
+    const onInv = () => bumpInventory((n) => n + 1);
+    window.addEventListener(INVENTORY_CHANGED, onInv);
+    return () => window.removeEventListener(INVENTORY_CHANGED, onInv);
+  }, []);
 
   useEffect(() => {
     if (threadInitRef.current) return;
@@ -213,15 +278,21 @@ export default function DockInteriorDialogue({
       });
       setChatTurn(threadId, dialogue.openingTurnId, false);
       speakNpcLine(firstTurn.npcText, dialogue.id);
+      if (firstTurn.trade) {
+        setTradeOpen(true);
+        setTradeStatus(firstTurn.trade.panelStatusOpen);
+      }
     }, delay);
   }, [threadId, contact, dialogue]);
 
   useEffect(() => {
     setTradeOpen(false);
     setTradeOffer(EMPTY_TRADE_OFFER);
+    setCargoDeal(emptyBarterDeal());
     setTradeStatus('');
     setTradeStance(0);
-    setPendingTrade(null);
+    setPendingResourceTrade(null);
+    setPendingCargoTrade(null);
   }, [threadId]);
 
   const currentTurn = thread?.currentTurnId ? dialogue.turns[thread.currentTurnId] : null;
@@ -232,21 +303,125 @@ export default function DockInteriorDialogue({
     (currentTurn?.playerOptions.length ?? 0) > 0;
   const isEnded = !!thread && thread.currentTurnId === null && !thread.awaitingNpc;
   const activeTradeConfig = tradeOpen ? (currentTurn?.trade ?? null) : null;
+  const useCargoBarter = !!(activeTradeConfig?.cargoBarter && contactOwner);
+
+  const playerMax = useCargoBarter ? inventoryQtyMap(playerOwner) : {};
+  const contactMax = useCargoBarter && contactOwner ? inventoryQtyMap(contactOwner) : {};
 
   const handleTradeOfferChange = (kind: DockTradeResourceKind, value: number) => {
     const max = maxOfferFromShip();
     setTradeOffer((prev) => clampOffer({ ...prev, [kind]: value }, max));
   };
 
+  const handleCargoOfferChange = (
+    side: 'playerGives' | 'contactGives',
+    itemId: string,
+    value: number
+  ) => {
+    setCargoDeal((prev) =>
+      clampBarterDeal(
+        {
+          ...prev,
+          [side]: { ...prev[side], [itemId]: value },
+        },
+        playerMax,
+        contactMax
+      )
+    );
+  };
+
   const clearTradeOffer = () => {
     setTradeOffer(EMPTY_TRADE_OFFER);
-    setPendingTrade(null);
+    setCargoDeal(emptyBarterDeal());
+    setPendingResourceTrade(null);
+    setPendingCargoTrade(null);
     if (activeTradeConfig) {
       setTradeStatus(activeTradeConfig.panelStatusCleared);
     }
   };
 
-  const submitTradeOffer = () => {
+  const submitCargoOffer = () => {
+    if (!activeTradeConfig || !thread || !contactOwner) return;
+    const deal = clampBarterDeal(cargoDeal, playerMax, contactMax);
+    if (isBarterDealEmpty(deal)) {
+      setTradeStatus(activeTradeConfig.panelStatusEmptyOffer);
+      return;
+    }
+
+    // Asking for goods without putting anything up is never a free take.
+    if (sumBarterSide(deal.playerGives) <= 0 && sumBarterSide(deal.contactGives) > 0) {
+      setTradeStatus(activeTradeConfig.panelStatusEmptyOffer);
+      addChatMessage(threadId, {
+        id: `npc-${threadId}-trade-need-offer-${Date.now()}`,
+        role: 'npc',
+        text: 'Nothing for nothing. Put something on the table.',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    setCargoDeal(deal);
+    addChatMessage(threadId, {
+      id: `player-${threadId}-trade-offer-${Date.now()}`,
+      role: 'player',
+      text: withCargoOffer(activeTradeConfig.playerOfferText, deal),
+      timestamp: Date.now(),
+    });
+
+    const stanceAdjust = tradeStance * 0.04;
+    const evalResult = evaluateBarterDeal(deal, playerOwner, contactOwner, {
+      acceptRatio: (activeTradeConfig.acceptRatio ?? 1) - stanceAdjust,
+      insultRatio: Math.max(
+        0.15,
+        (activeTradeConfig.insultRatio ?? 0.4) - Math.max(0, tradeStance) * 0.03
+      ),
+      counterTargetRatio: activeTradeConfig.counterTargetRatio ?? 1.15,
+    });
+
+    if (evalResult.kind === 'empty') {
+      setTradeStatus(activeTradeConfig.panelStatusEmptyOffer);
+      return;
+    }
+
+    if (evalResult.kind === 'insult') {
+      setPendingCargoTrade(null);
+      setTradeStance((prev) => prev - 1);
+      setTradeStatus(activeTradeConfig.panelStatusInsult);
+      addChatMessage(threadId, {
+        id: `npc-${threadId}-trade-insult-${Date.now()}`,
+        role: 'npc',
+        text: activeTradeConfig.npcInsultText,
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (evalResult.kind === 'accept') {
+      // Contact agrees — still wait for player AGREE before any transfer.
+      setPendingCargoTrade({ kind: 'accepted', deal: cloneBarterDeal(deal), contactAgreed: true });
+      setTradeStatus(activeTradeConfig.panelStatusAccepted);
+      addChatMessage(threadId, {
+        id: `npc-${threadId}-trade-accept-${Date.now()}`,
+        role: 'npc',
+        text: activeTradeConfig.npcAcceptText,
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const counter = evalResult.deal;
+    setPendingCargoTrade({ kind: 'counter', deal: counter, contactAgreed: true });
+    setCargoDeal(cloneBarterDeal(counter));
+    setTradeStatus(withCargoOffer(activeTradeConfig.panelStatusCounter, counter));
+    addChatMessage(threadId, {
+      id: `npc-${threadId}-trade-counter-${Date.now()}`,
+      role: 'npc',
+      text: withCargoOffer(activeTradeConfig.npcCounterText, counter),
+      timestamp: Date.now(),
+    });
+  };
+
+  const submitResourceOffer = () => {
     if (!activeTradeConfig || !thread) return;
     const max = maxOfferFromShip();
     const offer = clampOffer(tradeOffer, max);
@@ -259,7 +434,7 @@ export default function DockInteriorDialogue({
     addChatMessage(threadId, {
       id: `player-${threadId}-trade-offer-${Date.now()}`,
       role: 'player',
-      text: withOffer(activeTradeConfig.playerOfferText, offer),
+      text: withResourceOffer(activeTradeConfig.playerOfferText, offer),
       timestamp: Date.now(),
     });
 
@@ -275,7 +450,7 @@ export default function DockInteriorDialogue({
     );
 
     if (score < insultThreshold) {
-      setPendingTrade(null);
+      setPendingResourceTrade(null);
       setTradeStance((prev) => prev - 1);
       setTradeStatus(activeTradeConfig.panelStatusInsult);
       addChatMessage(threadId, {
@@ -288,7 +463,7 @@ export default function DockInteriorDialogue({
     }
 
     if (score >= acceptThreshold) {
-      setPendingTrade({ kind: 'accepted', deal: offer });
+      setPendingResourceTrade({ kind: 'accepted', deal: offer });
       setTradeStatus(activeTradeConfig.panelStatusAccepted);
       addChatMessage(threadId, {
         id: `npc-${threadId}-trade-accept-${Date.now()}`,
@@ -300,21 +475,67 @@ export default function DockInteriorDialogue({
     }
 
     const counter = scaleOfferForCounter(offer, activeTradeConfig, max);
-    setPendingTrade({ kind: 'counter', deal: counter });
-    setTradeStatus(withOffer(activeTradeConfig.panelStatusCounter, counter));
+    setPendingResourceTrade({ kind: 'counter', deal: counter });
+    setTradeStatus(withResourceOffer(activeTradeConfig.panelStatusCounter, counter));
     addChatMessage(threadId, {
       id: `npc-${threadId}-trade-counter-${Date.now()}`,
       role: 'npc',
-      text: withOffer(activeTradeConfig.npcCounterText, counter),
+      text: withResourceOffer(activeTradeConfig.npcCounterText, counter),
       timestamp: Date.now(),
     });
   };
 
-  const acceptPendingTrade = () => {
-    if (!pendingTrade || !activeTradeConfig) return;
+  const submitTradeOffer = () => {
+    if (useCargoBarter) submitCargoOffer();
+    else submitResourceOffer();
+  };
+
+  const acceptPendingCargoTrade = () => {
+    if (!pendingCargoTrade || !activeTradeConfig || !contactOwner) return;
+    const tradeConfig = activeTradeConfig;
+    const deal = cloneBarterDeal(pendingCargoTrade.deal);
+    const commit = commitBarterDeal(deal, playerOwner, contactOwner);
+    if (!commit.ok) {
+      setTradeStatus(commit.reason);
+      addChatMessage(threadId, {
+        id: `npc-${threadId}-trade-failed-${Date.now()}`,
+        role: 'npc',
+        text: commit.reason,
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    refreshPlayerCargoBinding();
+    setPendingCargoTrade(null);
+    setCargoDeal(emptyBarterDeal());
+    setTradeStance((prev) => Math.min(3, prev + 1));
+    setTradeStatus(withCargoOffer(tradeConfig.panelStatusSuccess, deal));
+
+    addChatMessage(threadId, {
+      id: `player-${threadId}-trade-confirm-${Date.now()}`,
+      role: 'player',
+      text:
+        pendingCargoTrade.kind === 'counter'
+          ? withCargoOffer(tradeConfig.playerCounterAcceptText, deal)
+          : withCargoOffer(tradeConfig.playerAcceptText, deal),
+      timestamp: Date.now(),
+    });
+    if (tradeConfig.npcCompleteText) {
+      addChatMessage(threadId, {
+        id: `npc-${threadId}-trade-complete-${Date.now()}`,
+        role: 'npc',
+        text: tradeConfig.npcCompleteText,
+        timestamp: Date.now(),
+      });
+    }
+  };
+
+  const acceptPendingResourceTrade = () => {
+    if (!pendingResourceTrade || !activeTradeConfig) return;
     const tradeConfig = activeTradeConfig;
 
-    const deal = cloneOffer(pendingTrade.deal);
+    const deal = cloneOffer(pendingResourceTrade.deal);
     const commit = commitOfferToShip(deal);
     if (!commit.ok) {
       setTradeStatus(commit.reason);
@@ -328,18 +549,18 @@ export default function DockInteriorDialogue({
     }
 
     recordTradeDelivery(threadId, deal);
-    setPendingTrade(null);
+    setPendingResourceTrade(null);
     setTradeOffer(EMPTY_TRADE_OFFER);
     setTradeStance((prev) => Math.min(3, prev + 1));
-    setTradeStatus(withOffer(tradeConfig.panelStatusSuccess, deal));
+    setTradeStatus(withResourceOffer(tradeConfig.panelStatusSuccess, deal));
 
     addChatMessage(threadId, {
       id: `player-${threadId}-trade-confirm-${Date.now()}`,
       role: 'player',
       text:
-        pendingTrade.kind === 'counter'
-          ? withOffer(tradeConfig.playerCounterAcceptText, deal)
-          : withOffer(tradeConfig.playerAcceptText, deal),
+        pendingResourceTrade.kind === 'counter'
+          ? withResourceOffer(tradeConfig.playerCounterAcceptText, deal)
+          : withResourceOffer(tradeConfig.playerAcceptText, deal),
       timestamp: Date.now(),
     });
     if (tradeConfig.npcCompleteText) {
@@ -352,10 +573,19 @@ export default function DockInteriorDialogue({
     }
   };
 
+  const acceptPendingTrade = () => {
+    if (useCargoBarter) acceptPendingCargoTrade();
+    else acceptPendingResourceTrade();
+  };
+
   const rejectPendingTrade = () => {
-    if (!pendingTrade || !activeTradeConfig) return;
+    if (!activeTradeConfig) return;
     const tradeConfig = activeTradeConfig;
-    setPendingTrade(null);
+    const wasCounter = useCargoBarter
+      ? pendingCargoTrade?.kind === 'counter'
+      : pendingResourceTrade?.kind === 'counter';
+    setPendingResourceTrade(null);
+    setPendingCargoTrade(null);
     setTradeStatus(tradeConfig.panelStatusCounterDeclined);
     addChatMessage(threadId, {
       id: `player-${threadId}-trade-reject-${Date.now()}`,
@@ -363,7 +593,7 @@ export default function DockInteriorDialogue({
       text: tradeConfig.playerCounterDeclineText,
       timestamp: Date.now(),
     });
-    if (tradeConfig.npcCounterDeclinedAckText) {
+    if (wasCounter && tradeConfig.npcCounterDeclinedAckText) {
       addChatMessage(threadId, {
         id: `npc-${threadId}-trade-reject-ack-${Date.now()}`,
         role: 'npc',
@@ -386,8 +616,10 @@ export default function DockInteriorDialogue({
       text: option.text,
       timestamp: Date.now(),
     });
-    setPendingTrade(null);
+    setPendingResourceTrade(null);
+    setPendingCargoTrade(null);
     setTradeOffer(EMPTY_TRADE_OFFER);
+    setCargoDeal(emptyBarterDeal());
     setChatTurn(threadId, option.nextTurnId, true);
 
     const outcomes = applyDialogueEffects(option.effects).filter((o) => o.text);
@@ -429,6 +661,9 @@ export default function DockInteriorDialogue({
     }, delay);
   };
 
+  const cargoCanSubmit =
+    sumBarterSide(cargoDeal.playerGives) > 0 || sumBarterSide(cargoDeal.contactGives) > 0;
+
   return (
     <DialogueThread
       shipId={threadId}
@@ -446,20 +681,41 @@ export default function DockInteriorDialogue({
       onOption={handleOption}
       tradePanel={
         activeTradeConfig
-          ? {
-              visible: tradeOpen,
-              offer: tradeOffer,
-              maxOffer: maxOfferFromShip(),
-              statusLine: `${tradeStatus}  STANCE ${tradeStance >= 0 ? '+' : ''}${tradeStance}`,
-              pendingDeal: pendingTrade?.deal ?? null,
-              canSubmit: sumOffer(tradeOffer) > 0,
-              submitLabel: pendingTrade ? 'SEND NEW OFFER' : 'SEND OFFER',
-              onOfferChange: handleTradeOfferChange,
-              onSubmit: submitTradeOffer,
-              onReset: clearTradeOffer,
-              onAcceptPendingDeal: pendingTrade ? acceptPendingTrade : undefined,
-              onRejectPendingDeal: pendingTrade ? rejectPendingTrade : undefined,
-            }
+          ? useCargoBarter
+            ? {
+                visible: tradeOpen,
+                mode: 'cargo',
+                cargoDeal,
+                playerCargoRows: cargoRowsFromMap(playerMax, cargoDeal.playerGives),
+                contactCargoRows: cargoRowsFromMap(contactMax, cargoDeal.contactGives),
+                statusLine: `${tradeStatus}  STANCE ${tradeStance >= 0 ? '+' : ''}${tradeStance}`,
+                pendingCargoDeal: pendingCargoTrade?.deal ?? null,
+                pendingCargoSummary: pendingCargoTrade
+                  ? formatBarterDeal(pendingCargoTrade.deal)
+                  : undefined,
+                canSubmit: cargoCanSubmit,
+                submitLabel: pendingCargoTrade ? 'SEND NEW OFFER' : 'SEND OFFER',
+                onCargoOfferChange: handleCargoOfferChange,
+                onSubmit: submitTradeOffer,
+                onReset: clearTradeOffer,
+                onAcceptPendingDeal: pendingCargoTrade ? acceptPendingTrade : undefined,
+                onRejectPendingDeal: pendingCargoTrade ? rejectPendingTrade : undefined,
+              }
+            : {
+                visible: tradeOpen,
+                mode: 'resources',
+                offer: tradeOffer,
+                maxOffer: maxOfferFromShip(),
+                statusLine: `${tradeStatus}  STANCE ${tradeStance >= 0 ? '+' : ''}${tradeStance}`,
+                pendingDeal: pendingResourceTrade?.deal ?? null,
+                canSubmit: sumOffer(tradeOffer) > 0,
+                submitLabel: pendingResourceTrade ? 'SEND NEW OFFER' : 'SEND OFFER',
+                onOfferChange: handleTradeOfferChange,
+                onSubmit: submitTradeOffer,
+                onReset: clearTradeOffer,
+                onAcceptPendingDeal: pendingResourceTrade ? acceptPendingTrade : undefined,
+                onRejectPendingDeal: pendingResourceTrade ? rejectPendingTrade : undefined,
+              }
           : undefined
       }
       onClose={onClose}

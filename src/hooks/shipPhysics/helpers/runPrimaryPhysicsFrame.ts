@@ -78,6 +78,7 @@ interface RunPrimaryPhysicsFrameParams {
   orbitalPhysicsEnabled: boolean;
   yawThrustScale: number;
   yawPivotLocal: THREE.Vector3 | null;
+  dockingTransitionActive?: boolean;
 }
 
 export function runPrimaryPhysicsFrame({
@@ -116,8 +117,9 @@ export function runPrimaryPhysicsFrame({
   orbitalPhysicsEnabled,
   yawThrustScale,
   yawPivotLocal,
+  dockingTransitionActive = false,
 }: RunPrimaryPhysicsFrameParams): void {
-  if (dockingPhysicsEnabled && dockedTo.current) {
+  if (dockingPhysicsEnabled && (dockedTo.current || dockingTransitionActive)) {
     didApplyInitialVelocity.current = true;
     velocity.current.set(0, 0, 0);
     angularVelocity.current = 0;

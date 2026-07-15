@@ -1,0 +1,101 @@
+/** Catalog of tradeable cargo items. Quantities live on inventories; this defines identity + base value. */
+
+export type InventoryItemCategory =
+  | 'ore'
+  | 'fuel'
+  | 'lifeSupport'
+  | 'parts'
+  | 'contraband'
+  | 'misc';
+
+export interface InventoryItemDef {
+  id: string;
+  label: string;
+  category: InventoryItemCategory;
+  /** Neutral market value used before supply/demand modifiers. */
+  baseValue: number;
+  /** Default stack capacity when a holder does not specify one. */
+  defaultCapacity: number;
+}
+
+export const INVENTORY_ITEMS = {
+  ironSlag: {
+    id: 'iron-slag',
+    label: 'Iron Slag (raw)',
+    category: 'ore',
+    baseValue: 12,
+    defaultCapacity: 40,
+  },
+  o2Cells: {
+    id: 'o2-cells',
+    label: 'O2 Cells',
+    category: 'lifeSupport',
+    baseValue: 18,
+    defaultCapacity: 30,
+  },
+  reactionMass: {
+    id: 'reaction-mass',
+    label: 'Reaction Mass',
+    category: 'fuel',
+    baseValue: 15,
+    defaultCapacity: 50,
+  },
+  powerCells: {
+    id: 'power-cells',
+    label: 'Power Cells',
+    category: 'parts',
+    baseValue: 20,
+    defaultCapacity: 30,
+  },
+  unmarkedCanister: {
+    id: 'unmarked-canister',
+    label: 'Unmarked Canister',
+    category: 'contraband',
+    baseValue: 55,
+    defaultCapacity: 5,
+  },
+  organics: {
+    id: 'organics',
+    label: 'Organics Ration',
+    category: 'lifeSupport',
+    baseValue: 22,
+    defaultCapacity: 20,
+  },
+  spareParts: {
+    id: 'spare-parts',
+    label: 'Spare Parts',
+    category: 'parts',
+    baseValue: 25,
+    defaultCapacity: 20,
+  },
+} as const satisfies Record<string, InventoryItemDef>;
+
+export type InventoryItemId = (typeof INVENTORY_ITEMS)[keyof typeof INVENTORY_ITEMS]['id'];
+
+const BY_ID = new Map<string, InventoryItemDef>(
+  Object.values(INVENTORY_ITEMS).map((item) => [item.id, item])
+);
+
+const BY_LABEL = new Map<string, InventoryItemDef>(
+  Object.values(INVENTORY_ITEMS).map((item) => [item.label, item])
+);
+
+export function getInventoryItemDef(itemIdOrLabel: string): InventoryItemDef | undefined {
+  return BY_ID.get(itemIdOrLabel) ?? BY_LABEL.get(itemIdOrLabel);
+}
+
+export function resolveInventoryItemId(itemIdOrLabel: string): string {
+  return getInventoryItemDef(itemIdOrLabel)?.id ?? itemIdOrLabel;
+}
+
+/**
+ * Effective barter value for one unit.
+ * High demand raises value; high supply lowers it.
+ */
+export function effectiveTradeValue(
+  baseValue: number,
+  supply = 0,
+  demand = 0
+): number {
+  return (baseValue * (1 + Math.max(0, demand))) / (1 + Math.max(0, supply));
+}

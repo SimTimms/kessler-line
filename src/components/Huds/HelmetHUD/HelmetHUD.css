@@ -690,3 +690,85 @@
   font-family: inherit;
   letter-spacing: 0.16em;
 }
+
+/* ── Inbound pad scan / RF link (below scanner grid) ─────────────────────── */
+
+.helmet-pad-scan-divider {
+  margin: 10px 0 8px;
+  border-top: 1px solid rgba(0, 200, 255, 0.18);
+}
+
+.helmet-pad-scan {
+  display: grid;
+  grid-template-columns: 22px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  color: rgba(0, 200, 255, 0.35);
+}
+
+.helmet-pad-scan-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.helmet-pad-scan-wave {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2px;
+  height: 16px;
+  padding: 0 2px;
+}
+
+.helmet-pad-scan-bar {
+  flex: 1;
+  min-width: 2px;
+  max-width: 4px;
+  height: 22%;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.45;
+  transform-origin: bottom center;
+}
+
+.helmet-pad-scan-label {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-align: right;
+  color: inherit;
+}
+
+.helmet-pad-scan--active {
+  color: #00e8ff;
+}
+
+.helmet-pad-scan--active .helmet-pad-scan-icon {
+  filter: drop-shadow(0 0 4px rgba(0, 232, 255, 0.55));
+}
+
+.helmet-pad-scan--active .helmet-pad-scan-bar {
+  opacity: 1;
+  animation: helmet-pad-scan-wave 0.55s ease-in-out infinite alternate;
+}
+
+.helmet-pad-scan--active .helmet-pad-scan-label {
+  color: #7ef3ff;
+}
+
+@keyframes helmet-pad-scan-wave {
+  0% {
+    height: 18%;
+  }
+  35% {
+    height: 70%;
+  }
+  70% {
+    height: 40%;
+  }
+  100% {
+    height: 95%;
+  }
+}

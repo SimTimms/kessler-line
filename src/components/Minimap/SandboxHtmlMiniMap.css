@@ -13,6 +13,12 @@
   overflow: hidden;
 }
 
+.sandbox-map-overlay--docking {
+  background: radial-gradient(circle at 50% 46%, rgba(5, 12, 24, 0.92), rgba(2, 4, 10, 0.96));
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  box-shadow: 0 0 24px rgba(0, 180, 255, 0.18);
+}
+
 .sandbox-map-overlay:active {
   cursor: grabbing;
 }
@@ -30,6 +36,10 @@
   background-size: 36px 36px;
   opacity: 0.35;
   pointer-events: none;
+}
+
+.sandbox-map-overlay--docking .sandbox-map-grid {
+  opacity: 0.28;
 }
 
 .sandbox-map-orbit-ring {
@@ -55,7 +65,6 @@
   width: var(--marker-size, 6px);
   height: var(--marker-size, 6px);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
   background: var(--marker-color, #ffffff);
   box-shadow: 0 0 8px color-mix(in srgb, var(--marker-color, #ffffff) 75%, transparent);
   pointer-events: auto;
@@ -66,15 +75,21 @@
 }
 
 .sandbox-map-marker--ship {
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 16px solid #ffffff;
+  width: 20px;
+  height: 20px;
   border-radius: 0;
-  background: transparent;
+  background: url('/ship-nav-icon.png') no-repeat center center;
+  background-size: contain;
   box-shadow: none;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+}
+
+.sandbox-map-overlay--docking .sandbox-map-marker--ship {
+  width: 100px;
+  height: 100px;
+  border-radius: 0;
+  background: url('/ship-nav-icon.png') no-repeat center center;
+  background-size: contain;
+  box-shadow: none;
 }
 
 .sandbox-map-marker--nav {
@@ -112,6 +127,107 @@
   background: #d885ff;
 }
 
+.sandbox-map-overlay--docking .sandbox-map-marker--ship {
+  border-bottom-color: #ffffff;
+  filter: drop-shadow(0 0 8px rgba(0, 214, 255, 0.85));
+}
+
+.sandbox-map-docking-rings {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 190px;
+  height: 190px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 20px rgba(0, 200, 255, 0.12),
+    inset 0 0 0 40px rgba(0, 200, 255, 0.1),
+    inset 0 0 0 60px rgba(0, 200, 255, 0.08),
+    0 0 109px rgba(0, 180, 255, 0.22);
+  pointer-events: none;
+}
+
+.sandbox-map-docking-scale {
+  --scale-value: 0%;
+  position: absolute;
+  top: 52px;
+  width: 24px;
+  height: calc(100% - 104px);
+  border: 1px solid rgba(0, 180, 230, 0.35);
+  background:
+    linear-gradient(180deg, rgba(0, 200, 255, 0.28), rgba(0, 200, 255, 0.04)) bottom / 100%
+      var(--scale-value) no-repeat,
+    repeating-linear-gradient(to top, rgba(0, 200, 255, 0.45) 0 2px, transparent 2px 10px);
+  opacity: 0.88;
+  pointer-events: none;
+}
+
+.sandbox-map-docking-scale--left {
+  left: 12px;
+  clip-path: polygon(15% 0, 100% 0, 85% 100%, 0 100%);
+}
+
+.sandbox-map-docking-scale--right {
+  right: 12px;
+  clip-path: polygon(0 0, 85% 0, 100% 100%, 15% 100%);
+}
+
+.sandbox-map-docking-scale--speed {
+  --speed-indicator-y: 100%;
+  --speed-safe-top: 100%;
+  background: repeating-linear-gradient(
+    to top,
+    rgba(0, 200, 255, 0.45) 0 2px,
+    transparent 2px 10px
+  );
+  overflow: visible;
+}
+
+.sandbox-map-docking-scale--speed::before {
+  content: '';
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: var(--speed-safe-top);
+  bottom: 0;
+  background: rgba(105, 230, 120, 0.42);
+  box-shadow: 0 0 8px rgba(112, 255, 130, 0.35);
+}
+
+.sandbox-map-docking-speed-indicator {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: var(--speed-indicator-y);
+  height: 3px;
+  transform: translateY(-50%);
+  background: rgba(200, 245, 255, 0.96);
+  box-shadow: 0 0 8px rgba(0, 214, 255, 0.75);
+}
+
+.sandbox-map-docking-speed-label {
+  position: absolute;
+  right: -18px;
+  color: rgba(130, 230, 255, 0.86);
+  font-family: monospace;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.sandbox-map-docking-scale--left .sandbox-map-docking-speed-label {
+  left: -18px;
+  right: auto;
+}
+
+.sandbox-map-docking-speed-label--top {
+  top: -10px;
+}
+
+.sandbox-map-docking-speed-label--bot {
+  bottom: -10px;
+}
+
 .sandbox-map-title {
   position: absolute;
   left: 10px;
@@ -121,6 +237,10 @@
   font-size: 10px;
   letter-spacing: 0.16em;
   pointer-events: none;
+}
+
+.sandbox-map-overlay--docking .sandbox-map-title {
+  color: rgba(0, 220, 255, 0.85);
 }
 
 .sandbox-map-status {
@@ -134,6 +254,10 @@
   pointer-events: none;
 }
 
+.sandbox-map-overlay--docking .sandbox-map-status {
+  color: rgba(210, 240, 255, 0.85);
+}
+
 .sandbox-map-help {
   position: absolute;
   left: 10px;
@@ -143,6 +267,62 @@
   font-size: 8px;
   letter-spacing: 0.1em;
   pointer-events: none;
+}
+
+.sandbox-map-overlay--docking .sandbox-map-help {
+  left: auto;
+  right: 10px;
+  color: rgba(180, 220, 255, 0.92);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.sandbox-map-docking-mps {
+  position: absolute;
+  left: 10px;
+  top: 38px;
+  color: rgba(130, 230, 255, 0.9);
+  font-family: monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.sandbox-map-docking-ideal {
+  position: absolute;
+  left: 10px;
+  bottom: 22px;
+  color: rgba(170, 235, 255, 0.82);
+  font-family: monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.sandbox-map-docking-wait {
+  position: absolute;
+  right: 10px;
+  bottom: 24px;
+  color: rgba(170, 235, 255, 0.97);
+  font-family: monospace;
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  border: 1px solid rgba(0, 200, 255, 0.55);
+  background: rgba(2, 8, 20, 0.88);
+  padding: 4px 7px;
+  box-shadow: 0 0 12px rgba(0, 180, 255, 0.28);
+  animation: sandbox-map-docking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sandbox-map-docking-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .sandbox-map-hover-card {
@@ -204,4 +384,9 @@
   border-color: rgba(100, 240, 255, 0.95);
   color: rgba(220, 250, 255, 0.98);
   box-shadow: 0 0 10px rgba(0, 220, 255, 0.35);
+}
+
+.sandbox-map-actions button:disabled {
+  opacity: 0.8;
+  cursor: default;
 }

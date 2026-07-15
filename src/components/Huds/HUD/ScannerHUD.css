@@ -72,3 +72,13 @@
   color: rgba(0, 200, 255, 0.85);
   box-shadow: 0 0 8px rgba(0, 200, 255, 0.1);
 }
+
+.classic-pad-scan-divider {
+  margin: 10px 0 6px;
+  border-top: 1px solid rgba(0, 200, 255, 0.22);
+}
+
+.button-panel .helmet-pad-scan {
+  padding: 2px 0 4px;
+  min-width: 120px;
+}

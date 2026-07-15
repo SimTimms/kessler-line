@@ -1,6 +1,7 @@
 import { memo, useCallback, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
 import { GAME_MODES, type TutorialMenuSelection } from '../../config/gameModes';
+import { startSpaceAtmosphereAmbient } from '../../sound/SoundManager';
 
 interface StartOverlayProps {
   onStart: () => void;
@@ -42,7 +43,8 @@ const TUTORIAL_MENU_ITEMS: Array<{
   placeholder?: boolean;
 }> = [
   { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
-  { id: 'ship-config', label: 'Ship Config', selection: GAME_MODES.shipConfig },
+  { id: 'ship-config', label: 'Landing Pad Config', selection: GAME_MODES.shipConfig },
+  { id: 'inventory-config', label: 'Inventory Config', selection: GAME_MODES.inventoryConfig },
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
@@ -50,6 +52,12 @@ const TUTORIAL_MENU_ITEMS: Array<{
   { id: 'radio-management', label: 'Radio Management', selection: GAME_MODES.radioManagement },
   { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: GAME_MODES.orbitalManagement },*/
 ];
+
+const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
+  GAME_MODES.modelConfig,
+  GAME_MODES.shipConfig,
+  GAME_MODES.inventoryConfig,
+]);
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {
   const [dismissing, setDismissing] = useState(false);
@@ -118,6 +126,10 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: S
                 onClick={() => {
                   const selection = item.selection;
                   if (!selection) return;
+                  // Start ambient inside the click gesture so autoplay is allowed.
+                  if (AMBIENT_ON_SELECT.has(selection)) {
+                    startSpaceAtmosphereAmbient();
+                  }
                   dismiss(() => onTutorialSelect(selection));
                 }}
               >

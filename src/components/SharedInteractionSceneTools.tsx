@@ -1,5 +1,4 @@
 import HoverSceneTools from './HoverSceneTools';
-import ProximityHighlight from './Proximity/ProximityHighlight';
 import ScannerRangeRings from './Scanners/ScannerRangeRings';
 
 interface SharedInteractionSceneToolsProps {
@@ -18,7 +17,6 @@ export default function SharedInteractionSceneTools({
   return (
     <>
       {showHoverTools ? <HoverSceneTools /> : null}
-      {showScannerTools ? <ProximityHighlight /> : null}
       {showScannerTools ? <ScannerRangeRings /> : null}
     </>
   );

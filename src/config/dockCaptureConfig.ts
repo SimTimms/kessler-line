@@ -14,6 +14,8 @@ export interface DockCaptureProfile {
   attachOffsetLocal: [number, number, number];
   /** Initial speed applied when undocking from this dock profile. */
   undockReleaseSpeed: number;
+  /** Hover-mode dock-local Y to return to on undock when capture height was not recorded. */
+  hoverReleaseLocalY?: number;
 }
 
 export const DEFAULT_DOCK_CAPTURE_PROFILE: DockCaptureProfile = {
@@ -33,7 +35,7 @@ export const RENDEZVOUS_DOCK_CAPTURE_PROFILE: DockCaptureProfile = {
 
 export const LANDING_PAD_DOCK_CAPTURE_PROFILE: DockCaptureProfile = {
   mode: 'hover',
-  maxRelativeSpeed: 0.65,
+  maxRelativeSpeed: 10.65,
   probeLocalOffset: [0, -2.4, 0],
   captureRadius: 3,
   attachOffsetLocal: [0, 6.5, 0],

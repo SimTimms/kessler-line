@@ -1,16 +1,4 @@
 import { type CompletionCriteria } from '../TutorialShared/tutorialSharedConst';
-import {
-  KEY_STRAFE_LEFT,
-  KEY_STRAFE_RIGHT,
-  KEY_THRUST_FORWARD,
-  KEY_THRUST_REVERSE,
-  KEY_YAW_LEFT,
-  KEY_YAW_RIGHT,
-  KEY_STABILISER,
-  displayLabelForKeyCode,
-} from '../../config/keybindings';
-
-const K = displayLabelForKeyCode;
 
 /**
  * Criteria that determines when a tutorial step auto-advances.

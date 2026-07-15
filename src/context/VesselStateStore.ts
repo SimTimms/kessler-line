@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MAIN_ENGINE_LOCAL_POS_A, MAIN_ENGINE_LOCAL_POS_B } from '../config/shipConfig';
+import { clearInventory, ensureVesselInventory } from './InventoryStore';
 
 export interface VesselRuntimeState {
   power: number;
@@ -135,6 +136,7 @@ export function ensureVesselState(vesselId: string): VesselRuntimeState {
     state = createDefaultVesselRuntimeState();
     vesselStates.set(vesselId, state);
   }
+  ensureVesselInventory(vesselId, undefined, vesselId === 'player' ? 'Player Ship' : vesselId);
   return state;
 }
 
@@ -148,6 +150,7 @@ export function getAllVesselStates(): ReadonlyMap<string, VesselRuntimeState> {
 
 export function clearVesselState(vesselId: string): void {
   vesselStates.delete(vesselId);
+  clearInventory({ kind: 'vessel', vesselId });
 }
 
 export function setVesselPower(vesselId: string, value: number): number {

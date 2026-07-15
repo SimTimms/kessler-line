@@ -65,6 +65,8 @@ export {
 interface SpaceshipProps {
   url: string;
   scale?: number;
+  /** Rotation applied to the loaded GLB primitive (ship-local). */
+  modelRotation?: [number, number, number];
   shipGroupRef?: { current: THREE.Group | null };
   initialPosition?: [number, number, number];
   initialRotation?: [number, number, number];
@@ -84,6 +86,7 @@ interface SpaceshipProps {
 export default function Spaceship({
   url,
   scale = 1,
+  modelRotation = [0, Math.PI / 2, 0],
   shipGroupRef,
   initialPosition,
   initialRotation,
@@ -167,12 +170,7 @@ export default function Spaceship({
       <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
         <PlanetSurfaceImpactDust />
 
-        <primitive
-          object={gltf.scene}
-          scale={scale}
-          rotation={[0, Math.PI / 2, 0]}
-          castShadow={true}
-        />
+        <primitive object={gltf.scene} scale={scale} rotation={modelRotation} castShadow={true} />
         <group position={[0, -2, 0]}>
           <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
         </group>
@@ -223,7 +221,6 @@ export default function Spaceship({
         {/* Particles are children of the ship group so buffer coords stay in local space —
             avoids float32 precision jitter at large world coordinates. */}
         <ThrusterParticles
-          shipGroupRef={groupRef}
           thrustForward={thrustForward}
           thrustReverse={thrustReverse}
           thrustLeft={thrustLeft}
