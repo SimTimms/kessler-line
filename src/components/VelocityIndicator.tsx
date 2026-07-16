@@ -3,9 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shipVelocity } from './Ship/Spaceship';
 import { gravityBodies } from '../context/GravityRegistry';
-import { orbitStatusRef, trajectoryApsisRef, shipQuaternion } from '../context/ShipState';
+import { orbitStatusRef, trajectoryApsisRef } from '../context/ShipState';
 import { shipPosRef } from '../context/ShipPos';
-import { DOCKING_PORT_LOCAL_Z } from '../config/shipConfig';
 import { navHudEnabledRef } from '../context/NavHud';
 
 const MIN_SPEED = 0.05;
@@ -36,7 +35,6 @@ const _simVel = new THREE.Vector3();
 const _orbitPos = new THREE.Vector3();
 const _orbitVel = new THREE.Vector3();
 const _orbitDir = new THREE.Vector3();
-const _noseFwd = new THREE.Vector3();
 const _apsisScaleWorld = new THREE.Vector3();
 
 /** Target on-screen height for Pe/Ap sprites (px). World scale is derived from camera each frame. */
@@ -249,17 +247,12 @@ export default function VelocityIndicator() {
     }
     const primaryIsPlanet = primaryBodyId !== null && primaryBodyId !== 'Sun';
 
-    // Nose offset: start the simulation from the ship's nose tip so the
-    // trajectory line appears to emerge from the front of the hull, not the center.
-    _noseFwd.set(0, 0, 1).applyQuaternion(shipQuaternion);
-    const noseOffX = _noseFwd.x * DOCKING_PORT_LOCAL_Z;
-    const noseOffZ = _noseFwd.z * DOCKING_PORT_LOCAL_Z;
-
+    // Start the simulation from the ship model centre (shipPosRef).
     if (primaryBody) {
       _simPos.set(
-        ship.x + noseOffX - primaryBody.position.x,
+        ship.x - primaryBody.position.x,
         0,
-        ship.z + noseOffZ - primaryBody.position.z
+        ship.z - primaryBody.position.z
       );
       _simVel.set(
         shipVelocity.x - primaryBody.velocity.x,
@@ -267,7 +260,7 @@ export default function VelocityIndicator() {
         shipVelocity.z - primaryBody.velocity.z
       );
     } else {
-      _simPos.set(ship.x + noseOffX, 0, ship.z + noseOffZ);
+      _simPos.set(ship.x, 0, ship.z);
       _simVel.copy(shipVelocity);
     }
 
@@ -394,9 +387,9 @@ export default function VelocityIndicator() {
         maxDistFromStart > ORBIT_AWAY_DIST &&
         distFromStart < orbitCloseDist
       ) {
-        posArr[i * 3] = noseOffX + VELOCITY_X_OFFSET; // close back to nose start
+        posArr[i * 3] = VELOCITY_X_OFFSET; // close back to ship centre
         posArr[i * 3 + 1] = 0;
-        posArr[i * 3 + 2] = noseOffZ;
+        posArr[i * 3 + 2] = 0;
         orbitClosedAt = i;
         break;
       }

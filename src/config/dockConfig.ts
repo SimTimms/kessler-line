@@ -145,6 +145,11 @@ export interface DockJob {
 export interface DockConfig {
   /** Display name for this dock / station. */
   label: string;
+  /**
+   * Public URL for the dock transfer HUD background (e.g. `/station.jpg`).
+   * Falls back to `/station.jpg` when omitted.
+   */
+  backgroundImage?: string;
   fuel?: DockableResourceSlot;
   o2?: DockableResourceSlot;
   power?: DockableResourceSlot;
@@ -156,6 +161,9 @@ export interface DockConfig {
   /** Side jobs / contracts posted at this dock. */
   jobBoard?: DockJob[];
 }
+
+/** Default dock transfer HUD backdrop when a dock omits `backgroundImage`. */
+export const DEFAULT_DOCK_BACKGROUND_IMAGE = '/station.jpg';
 
 /** Runtime registration — `id` matches the bay's `stationId`. */
 export type RegisteredDockConfig = DockConfig & { id: string };

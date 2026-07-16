@@ -3,6 +3,7 @@ export const GAME_MODES = {
   modelConfig: 'modelConfig',
   shipConfig: 'shipConfig',
   inventoryConfig: 'inventoryConfig',
+  salvageConfig: 'salvageConfig',
   sandbox: 'sandbox',
   tutorial: 'tutorial',
   resources: 'resources',
@@ -17,6 +18,7 @@ export type TutorialMenuSelection =
   | typeof GAME_MODES.modelConfig
   | typeof GAME_MODES.shipConfig
   | typeof GAME_MODES.inventoryConfig
+  | typeof GAME_MODES.salvageConfig
   | typeof GAME_MODES.sandbox
   | typeof GAME_MODES.tutorial
   | typeof GAME_MODES.resources

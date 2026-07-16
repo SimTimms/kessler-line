@@ -1,4 +1,10 @@
 import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
+import {
+  INVENTORY_PAD_A_DOCK,
+  INVENTORY_PAD_B_DOCK,
+  INVENTORY_PAD_C_DOCK,
+} from '../../config/docks/inventoryConfigDocks';
+import type { DockConfig } from '../../config/dockConfig';
 
 type Vec3 = [number, number, number];
 
@@ -30,18 +36,21 @@ export const InventoryConfig = {
   landingPads: [
     {
       id: 'inventory-pad-a',
-      label: 'Inventory Pad A',
+      label: 'Mining Cradle A',
       position: equilateralPadPosition(0),
+      dock: INVENTORY_PAD_A_DOCK as DockConfig,
     },
     {
       id: 'inventory-pad-b',
-      label: 'Inventory Pad B',
+      label: 'Shadow Berth B',
       position: equilateralPadPosition(1),
+      dock: INVENTORY_PAD_B_DOCK as DockConfig,
     },
     {
       id: 'inventory-pad-c',
-      label: 'Inventory Pad C',
+      label: 'Freight Exchange C',
       position: equilateralPadPosition(2),
+      dock: INVENTORY_PAD_C_DOCK as DockConfig,
     },
   ] as const,
   scene: {
@@ -52,7 +61,7 @@ export const InventoryConfig = {
   },
   dustCloud: {
     radius: 5000,
-    particleSize: 2500000,
+    particleSize: 600,
     radialSpread: 9,
     yInitial: -1000,
   },
@@ -61,5 +70,6 @@ export const InventoryConfig = {
     { name: 'reaction-mass', quantity: 8 },
     { name: 'organics', quantity: 4 },
     { name: 'spare-parts', quantity: 3 },
+    { name: 'iron-slag', quantity: 5 },
   ],
 };

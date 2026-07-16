@@ -1,0 +1,259 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
+import { selectTarget } from '../../context/TargetSelection';
+import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
+import DockingBay from '../WorldObjects/DockingBay';
+import { boxColliderFromObject } from '../../utils/colliderFromObject';
+import type { DockConfig } from '../../config/dockConfig';
+import type { DockCaptureProfile } from '../../config/dockCaptureConfig';
+import {
+  CARGO_CONTAINER_DOCK_CAPTURE_PROFILE,
+  DOCK_ATTACH_PORT_GAP,
+} from '../../config/dockCaptureConfig';
+import { CARGO_CONTAINER_DOCK } from '../../config/docks/cargoContainerDockConfig';
+import {
+  CARGO_CONTAINER_PORT_DIMENSIONS,
+  CARGO_CONTAINER_PORT_LOCAL_OFFSET,
+  CONTAINER_IMPULSE_SCALE,
+  CONTAINER_VELOCITY_DAMPING,
+} from '../../config/containerConfig';
+import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
+import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
+import { shipPosRef } from '../../context/ShipPos';
+import { shipQuaternion, shipVelocity } from '../../context/ShipState';
+import type { ShipUndockedDetail } from '../../hooks/shipPhysics/docking';
+
+const DEFAULT_URL = '/container.glb';
+const DEFAULT_ID = 'cargo-container';
+
+const _shipPortWorld = new THREE.Vector3();
+const _portLocal = new THREE.Vector3();
+const _noseDir = new THREE.Vector3();
+const _euler = new THREE.Euler();
+
+export interface CargoContainerProps {
+  /** Unique dock id — required when multiple containers share a scene. */
+  id?: string;
+  label?: string;
+  url?: string;
+  scale?: number;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  /**
+   * Full dock configuration (fuel / O2 / power / crew / inventory / contacts).
+   * Defaults to {@link CARGO_CONTAINER_DOCK}.
+   */
+  dock?: DockConfig;
+  dockingProfile?: DockCaptureProfile;
+  /**
+   * When true, docking freezes the ship (station-style).
+   * When false (default), the ship keeps physics and tows this container.
+   */
+  disablePhysicsOnDock?: boolean;
+  /** Local offset of the docking port from the crate origin. */
+  portLocalOffset?: [number, number, number];
+  /** Full-size docking-port capture box dimensions. */
+  portDimensions?: [number, number, number];
+  showCaptureMesh?: boolean;
+  /** Inventory/authoring debug: click teleports the ship and starts docking. */
+  debugJumpDockOnClick?: boolean;
+}
+
+export default function CargoContainer({
+  id = DEFAULT_ID,
+  label,
+  url = DEFAULT_URL,
+  scale = 1,
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  dock = CARGO_CONTAINER_DOCK,
+  dockingProfile = CARGO_CONTAINER_DOCK_CAPTURE_PROFILE,
+  disablePhysicsOnDock = false,
+  portLocalOffset = CARGO_CONTAINER_PORT_LOCAL_OFFSET,
+  portDimensions = CARGO_CONTAINER_PORT_DIMENSIONS,
+  showCaptureMesh = true,
+  debugJumpDockOnClick = false,
+}: CargoContainerProps) {
+  const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
+  // Clone so each instance is independent (shared GLTF cache is not mutated).
+  const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  const groupRef = useRef<THREE.Group>(null!);
+  const structureCollisionId = `${id}-structure`;
+  const displayLabel = label ?? dock.label ?? 'Cargo Container';
+
+  // Crates always slide on the XZ plane (Y locked to 0).
+  const posRef = useRef(new THREE.Vector3(position[0], 0, position[2]));
+  const velRef = useRef(new THREE.Vector3());
+  const quatRef = useRef(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotation[1], 0)));
+  /** True while the player ship is towing this container. */
+  const towedRef = useRef(false);
+
+  const resolvedProfile = useMemo(
+    () => ({
+      ...dockingProfile,
+      disablePhysicsOnDock,
+    }),
+    [dockingProfile, disablePhysicsOnDock]
+  );
+
+  const { halfExtents, meshOffset } = useMemo(
+    () => boxColliderFromObject(gltf.scene, scale),
+    [gltf.scene, scale]
+  );
+
+  // Port box scales with the crate so the white mesh stays visible on the face.
+  const portBox = useMemo(
+    () =>
+      new THREE.Vector3(
+        portDimensions[0] * scale,
+        portDimensions[1] * scale,
+        portDimensions[2] * scale
+      ),
+    [portDimensions, scale]
+  );
+
+  // Sit the port on the crate's +Z face (X/Y from config, Z from hull bounds).
+  const portLocal = useMemo(
+    () =>
+      new THREE.Vector3(
+        portLocalOffset[0] * scale,
+        portLocalOffset[1] * scale,
+        halfExtents.z + portBox.z * 0.5
+      ),
+    [halfExtents.z, portBox.z, portLocalOffset, scale]
+  );
+
+  const setGroupRef = useCallback((el: THREE.Group | null) => {
+    groupRef.current = el!;
+  }, []);
+
+  useEffect(() => {
+    posRef.current.set(position[0], 0, position[2]);
+    // Keep upright — yaw only.
+    quatRef.current.setFromEuler(new THREE.Euler(0, rotation[1], 0));
+    velRef.current.set(0, 0, 0);
+  }, [position, rotation]);
+
+  const registerStructureCollider = useCallback(
+    (physicalCollision: boolean) => {
+      registerCollidable({
+        id: structureCollisionId,
+        label: displayLabel,
+        getWorldPosition: (target) => target.copy(posRef.current),
+        getWorldQuaternion: (target) => target.copy(quatRef.current),
+        getWorldVelocity: (target) => target.copy(velRef.current),
+        shape: { type: 'box', halfExtents: halfExtents.clone() },
+        physicalCollision,
+        applyImpulse: (impulse: THREE.Vector3) => {
+          if (towedRef.current) return;
+          velRef.current.addScaledVector(impulse, CONTAINER_IMPULSE_SCALE);
+          // Never leave the XZ plane.
+          velRef.current.y = 0;
+        },
+        getObject3D: () => groupRef.current,
+      });
+    },
+    [displayLabel, halfExtents, structureCollisionId]
+  );
+
+  useEffect(() => {
+    registerStructureCollider(true);
+    return () => {
+      unregisterCollidable(structureCollisionId);
+    };
+  }, [registerStructureCollider, structureCollisionId]);
+
+  useEffect(() => {
+    const onDocked = (e: Event) => {
+      const stationId = (e as CustomEvent<{ stationId?: string | null }>).detail?.stationId;
+      if (stationId !== id) return;
+      towedRef.current = !disablePhysicsOnDock;
+      velRef.current.set(0, 0, 0);
+      // Avoid ship↔crate collision fighting while towing.
+      if (towedRef.current) registerStructureCollider(false);
+    };
+    const onUndocked = (e: Event) => {
+      if (!towedRef.current) return;
+      towedRef.current = false;
+      const releaseVel = (e as CustomEvent<ShipUndockedDetail>).detail?.partnerReleaseVelocity;
+      if (releaseVel) {
+        velRef.current.set(releaseVel.x, 0, releaseVel.z);
+      } else {
+        velRef.current.set(shipVelocity.x, 0, shipVelocity.z);
+      }
+      registerStructureCollider(true);
+    };
+    window.addEventListener('ShipDocked', onDocked);
+    window.addEventListener('ShipUndocked', onUndocked);
+    return () => {
+      window.removeEventListener('ShipDocked', onDocked);
+      window.removeEventListener('ShipUndocked', onUndocked);
+    };
+  }, [disablePhysicsOnDock, id, registerStructureCollider]);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+
+    if (towedRef.current) {
+      // Align container docking port with the ship nose port, then push it a little
+      // further along the nose so ports keep a small gap while attached.
+      _shipPortWorld
+        .set(SHIP_DOCKING_PORT_LOCAL[0], SHIP_DOCKING_PORT_LOCAL[1], SHIP_DOCKING_PORT_LOCAL[2])
+        .applyQuaternion(shipQuaternion)
+        .add(shipPosRef.current);
+
+      _euler.setFromQuaternion(shipQuaternion, 'YXZ');
+      quatRef.current.setFromEuler(_euler.set(0, _euler.y, 0));
+
+      // Ship nose / dock axis is local -Z.
+      _noseDir.set(0, 0, -1).applyQuaternion(quatRef.current);
+      _shipPortWorld.addScaledVector(_noseDir, DOCK_ATTACH_PORT_GAP);
+
+      _portLocal.copy(portLocal).applyQuaternion(quatRef.current);
+      posRef.current.copy(_shipPortWorld).sub(_portLocal);
+      posRef.current.y = 0;
+      velRef.current.set(shipVelocity.x, 0, shipVelocity.z);
+    } else if (velRef.current.lengthSq() > 1e-8) {
+      posRef.current.addScaledVector(velRef.current, delta);
+      velRef.current.multiplyScalar(Math.pow(CONTAINER_VELOCITY_DAMPING, delta));
+      posRef.current.y = 0;
+      velRef.current.y = 0;
+    }
+
+    groupRef.current.position.copy(posRef.current);
+    groupRef.current.quaternion.copy(quatRef.current);
+  });
+
+  return (
+    <group
+      ref={setGroupRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        selectTarget(displayLabel);
+        if (debugJumpDockOnClick) {
+          window.dispatchEvent(
+            new CustomEvent(EVENT_DEBUG_JUMP_DOCK, { detail: { stationId: id } })
+          );
+        }
+      }}
+    >
+      <group position={[meshOffset.x, meshOffset.y, meshOffset.z]}>
+        <primitive object={modelScene} scale={scale} />
+      </group>
+      {/* Dedicated docking port — not the physical hull. */}
+      <DockingBay
+        stationId={id}
+        dimensions={portBox}
+        position={portLocal}
+        rotation={[0, 0, 0]}
+        dock={dock}
+        dockingProfile={resolvedProfile}
+        showCaptureMesh={showCaptureMesh}
+      />
+    </group>
+  );
+}
+
+useGLTF.preload(DEFAULT_URL);

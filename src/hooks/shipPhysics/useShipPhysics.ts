@@ -1,8 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { attachShipToDock, checkDockingPort, detachShipFromDock, isShipWithinDockCaptureRange } from './docking';
+import {
+  attachShipToDock,
+  checkDockingPort,
+  computeUndockReleaseDirection,
+  detachShipFromDock,
+  isShipWithinDockCaptureRange,
+} from './docking';
 import { getDockCaptureProfile } from '../../utils/dockingCapture';
+import { disablesShipPhysicsWhenDocked } from '../../config/dockCaptureConfig';
 import { PHYSICS_MAX_DELTA, PHYSICS_MAX_STEP } from './constants';
 import { THRUSTER_POINT_LIGHT_COUNT } from './thrusterLight';
 import { neptuneNoFlyZoneActive } from '../../context/CinematicState';
@@ -15,6 +22,7 @@ import { runPrimaryPhysicsFrame } from './helpers/runPrimaryPhysicsFrame';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipVelocity } from '../../context/ShipState';
 import { playDockAlignSound } from '../../sound/SoundManager';
+import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';
 
 const LANDING_ALIGN_SPEED = 2.8; // units/s
 const LANDING_DESCEND_SPEED = 2.8; // units/s
@@ -23,6 +31,7 @@ const LANDING_ROTATE_SPEED = 1.1; // rad/s (25% of prior 4.4)
 /** Dock-local Y used when debug-jumping into a hover landing approach. */
 const DEBUG_JUMP_HOVER_LOCAL_Y = 14;
 const LOCAL_DOCK_FORWARD_QUAT = new THREE.Quaternion();
+const _hoverUndockReleaseDir = new THREE.Vector3();
 
 function moveTowardScalar(current: number, target: number, maxStep: number): number {
   const delta = target - current;
@@ -141,6 +150,8 @@ export function useShipPhysics({
   const hoverUndockingTransition = useRef<HoverUndockingTransition | null>(null);
   const hoverDockReleaseLocalY = useRef<Map<string, number>>(new Map());
   const dockReentryBlock = useRef<string | null>(null);
+  /** Ship docking port ignores capture until this performance.now() timestamp. */
+  const dockingPortDisabledUntil = useRef(0);
   const undockHandlersRef = useRef<{
     tryBeginHoverUndock: (dockId: string) => boolean;
   }>({
@@ -189,6 +200,8 @@ export function useShipPhysics({
     inputEnabledRef,
     listenersEnabled: physicsEnabled,
     undockHandlersRef,
+    dockReentryBlock,
+    dockingPortDisabledUntil,
   });
 
   undockHandlersRef.current.tryBeginHoverUndock = (dockId: string) => {
@@ -414,11 +427,17 @@ export function useShipPhysics({
               window.dispatchEvent(new CustomEvent('ShipUndocked'));
             }
             detachShipFromDock(group, scene);
-            const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(group.quaternion);
-            const releaseDir = forward.multiplyScalar(-1);
+            const releaseDir = computeUndockReleaseDirection(
+              group,
+              entry,
+              _hoverUndockReleaseDir
+            );
             group.position.addScaledVector(releaseDir, 1);
             const releaseSpeed = getDockCaptureProfile(entry).undockReleaseSpeed;
-            velocity.current.copy(releaseDir.multiplyScalar(releaseSpeed));
+            velocity.current.copy(releaseDir.clone().multiplyScalar(releaseSpeed));
+            dockReentryBlock.current = transition.dockEntryId;
+            dockingPortDisabledUntil.current =
+              performance.now() + SHIP_UNDOCK_DOCKING_COOLDOWN_MS;
             releaseParticleTrigger.current = true;
             group.getWorldPosition(physicsPosition.current);
           }
@@ -481,6 +500,16 @@ export function useShipPhysics({
 
       if (dockedTo.current) {
         const entry = getCollidables().find((c) => c.id === dockedTo.current);
+        if (entry && !disablesShipPhysicsWhenDocked(getDockCaptureProfile(entry))) {
+          // Towable dock: keep ship on the scene root; partner follows the ship port.
+          if (group.parent !== scene) {
+            detachShipFromDock(group, scene);
+          }
+          group.getWorldPosition(physicsPosition.current);
+          syncShipWorldRefs(group, publishToPlayerRefs);
+          group.getWorldQuaternion(vesselState.shipQuaternion);
+          return;
+        }
         if (entry) {
           attachShipToDock(group, entry);
         }
@@ -510,6 +539,7 @@ export function useShipPhysics({
         selfCollisionId: selfCollisionId ?? vesselId,
         emitDockingEvents: publishToPlayerRefs,
         dockReentryBlock,
+        dockingPortDisabledUntil,
         onBeforeDock: ({ bayEntry, captureMode }) => {
           if (captureMode !== 'hover') return false;
           const dockObject = bayEntry.getObject3D?.() ?? null;

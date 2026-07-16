@@ -12,6 +12,7 @@ import {
   pointDistanceToDockBox,
   shipLocalOffsetToWorld,
 } from '../../utils/dockingCapture';
+import { disablesShipPhysicsWhenDocked } from '../../config/dockCaptureConfig';
 import {
   setVesselFuel,
   setVesselO2,
@@ -81,9 +82,13 @@ function computeDockedWorldPose(dockerEntry: CollidableEntry): {
 /**
  * Parent the ship to the docking bay so orbital motion is inherited from the
  * scene graph (no per-frame world-coordinate resync / lerp).
+ *
+ * Nose docks: ship root is offset by `attachOffsetLocal` so the ship's docking
+ * port sits on the bay origin (port-to-port), not the ship center on the bay.
  */
 export function attachShipToDock(group: THREE.Group, dockerEntry: CollidableEntry): void {
   const dockObject = dockerEntry.getObject3D?.() ?? null;
+  const profile = getDockCaptureProfile(dockerEntry);
   const { position, quaternion } = computeDockedWorldPose(dockerEntry);
 
   if (dockObject) {
@@ -92,6 +97,16 @@ export function attachShipToDock(group: THREE.Group, dockerEntry: CollidableEntr
       group.position.copy(position);
       group.quaternion.copy(quaternion);
       dockObject.attach(group);
+    }
+    // Nose docks: keep port-to-port alignment in dock-local space every frame.
+    // Hover docks manage their own local pose (align/descend to pad center).
+    if (profile.mode === 'nose') {
+      group.position.set(
+        profile.attachOffsetLocal[0],
+        profile.attachOffsetLocal[1],
+        profile.attachOffsetLocal[2]
+      );
+      group.quaternion.identity();
     }
     return;
   }
@@ -106,6 +121,42 @@ export function detachShipFromDock(group: THREE.Group, scene: THREE.Object3D): v
   if (!group.parent || group.parent === scene) return;
   scene.attach(group);
 }
+
+/**
+ * World-space direction that pushes the ship *away* from the dock partner.
+ * Uses dock→ship on the XZ plane so towable / yaw-mismatched partners never
+ * get a ship-local axis that points into the object.
+ */
+export function computeUndockReleaseDirection(
+  group: THREE.Group,
+  dockEntry: CollidableEntry | undefined,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  group.getWorldPosition(_shipWorldPos);
+
+  if (dockEntry) {
+    dockEntry.getWorldPosition(_dockWorldPos);
+    out.set(_shipWorldPos.x - _dockWorldPos.x, 0, _shipWorldPos.z - _dockWorldPos.z);
+    if (out.lengthSq() > 1e-6) {
+      return out.normalize();
+    }
+  }
+
+  // Fallback: ship-local +Z is opposite the nose docking port (-Z).
+  out.set(0, 0, 1).applyQuaternion(group.quaternion).setY(0);
+  if (out.lengthSq() < 1e-6) out.set(1, 0, 0);
+  return out.normalize();
+}
+
+/** Detail payload on `ShipUndocked` for towable dock partners. */
+export type ShipUndockedDetail = {
+  dockEntryId: string | null;
+  /**
+   * Absolute world-space velocity the towable partner should take on release
+   * (shared tow velocity minus the same undock impulse the ship received).
+   */
+  partnerReleaseVelocity?: { x: number; y: number; z: number };
+};
 
 interface DockedResourcesParams {
   vesselId: string;
@@ -174,6 +225,8 @@ interface DockingPortParams {
   emitDockingEvents?: boolean;
   /** Bay id to ignore until the ship leaves that dock's capture range (post-undock re-entry guard). */
   dockReentryBlock?: { current: string | null };
+  /** performance.now() timestamp — ship's docking port is disabled until this time. */
+  dockingPortDisabledUntil?: { current: number };
   onBeforeDock?: (params: {
     bayEntry: CollidableEntry;
     dockingProfile: ReturnType<typeof getDockCaptureProfile>;
@@ -190,9 +243,11 @@ export function checkDockingPort({
   selfCollisionId = SHIP_COLLISION_ID,
   emitDockingEvents = true,
   dockReentryBlock,
+  dockingPortDisabledUntil,
   onBeforeDock,
 }: DockingPortParams) {
   if (dockedTo.current || !dockingPort) return;
+  if (dockingPortDisabledUntil && performance.now() < dockingPortDisabledUntil.current) return;
 
   let capturedProfileMode: 'nose' | 'hover' | null = null;
   const bayEntry = getCollidables().find((c) => {
@@ -260,6 +315,10 @@ export function checkDockingPort({
     window.dispatchEvent(
       new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
     );
+  }
+  // Towable docks (e.g. cargo): keep ship free — partner follows the ship port.
+  if (!disablesShipPhysicsWhenDocked(dockingProfile)) {
+    return;
   }
   velocity.set(0, 0, 0);
   attachShipToDock(group, bayEntry);

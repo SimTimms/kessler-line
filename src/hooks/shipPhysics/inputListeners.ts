@@ -22,12 +22,20 @@ import {
   isDockingTutorialShipKeyAllowed,
   isDockingTutorialUndockAllowed,
 } from '../../tutorial/tutorialDockingInputGate';
-import { detachShipFromDock } from './docking';
+import {
+  computeUndockReleaseDirection,
+  detachShipFromDock,
+  type ShipUndockedDetail,
+} from './docking';
 import { getCollidables } from '../../context/CollisionRegistry';
 import { getDockCaptureProfile } from '../../utils/dockingCapture';
+import { disablesShipPhysicsWhenDocked } from '../../config/dockCaptureConfig';
 import { damageVesselHull, type VesselRuntimeState } from '../../context/VesselStateStore';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
-import { damageHull } from '../../context/ShipState';
+import { damageHull, shipVelocity as playerShipVelocity } from '../../context/ShipState';
+import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';
+
+const _undockReleaseDir = new THREE.Vector3();
 
 export interface InputListenersResult {
   thrustForward: React.MutableRefObject<boolean>;
@@ -54,6 +62,8 @@ export function useInputListeners({
   inputEnabledRef,
   listenersEnabled = true,
   undockHandlersRef,
+  dockReentryBlock,
+  dockingPortDisabledUntil,
 }: {
   vesselId: string;
   vesselState: VesselRuntimeState;
@@ -67,6 +77,8 @@ export function useInputListeners({
   undockHandlersRef?: React.MutableRefObject<{
     tryBeginHoverUndock: (dockId: string) => boolean;
   }>;
+  dockReentryBlock?: React.MutableRefObject<string | null>;
+  dockingPortDisabledUntil?: React.MutableRefObject<number>;
 }): InputListenersResult {
   const thrustForward = useRef(false);
   const thrustReverse = useRef(false);
@@ -104,18 +116,49 @@ export function useInputListeners({
       }
       const previousDockId = dockedTo.current;
       dockedTo.current = null;
-      window.dispatchEvent(new CustomEvent('ShipUndocked'));
+      if (dockReentryBlock) dockReentryBlock.current = previousDockId;
+      if (dockingPortDisabledUntil) {
+        dockingPortDisabledUntil.current = performance.now() + SHIP_UNDOCK_DOCKING_COOLDOWN_MS;
+      }
+
+      let undockDetail: ShipUndockedDetail = { dockEntryId: previousDockId };
       if (groupRef.current) {
         detachShipFromDock(groupRef.current, scene);
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
-        const releaseDir = forward.multiplyScalar(-1);
-        groupRef.current.position.addScaledVector(releaseDir, 1); // ensure clear separation from bay
-        // Push away from the docking bay, not toward it.
         const dockEntry = getCollidables().find((c) => c.id === previousDockId);
-        const releaseSpeed = dockEntry ? getDockCaptureProfile(dockEntry).undockReleaseSpeed : 8;
-        velocity.current.copy(releaseDir.multiplyScalar(releaseSpeed));
+        const profile = dockEntry ? getDockCaptureProfile(dockEntry) : null;
+        // Always push away from the dock object in world space (not a fixed ship axis).
+        const releaseDir = computeUndockReleaseDirection(
+          groupRef.current,
+          dockEntry,
+          _undockReleaseDir
+        );
+        groupRef.current.position.addScaledVector(releaseDir, 1);
+        const releaseSpeed = profile?.undockReleaseSpeed ?? 8;
+        const releaseImpulse = releaseDir.clone().multiplyScalar(releaseSpeed);
+        const towable = profile != null && !disablesShipPhysicsWhenDocked(profile);
+
+        if (towable) {
+          // Equal-and-opposite: ship gets V+I, partner gets V-I.
+          undockDetail = {
+            dockEntryId: previousDockId,
+            partnerReleaseVelocity: {
+              x: velocity.current.x - releaseImpulse.x,
+              y: 0,
+              z: velocity.current.z - releaseImpulse.z,
+            },
+          };
+          velocity.current.add(releaseImpulse);
+        } else {
+          velocity.current.copy(releaseImpulse);
+        }
+        vesselState.shipVelocity.copy(velocity.current);
+        if (vesselId === PLAYER_VESSEL_ID) {
+          playerShipVelocity.copy(velocity.current);
+        }
         groupRef.current.getWorldPosition(physicsPosition.current);
       }
+
+      window.dispatchEvent(new CustomEvent('ShipUndocked', { detail: undockDetail }));
       releaseParticleTrigger.current = true;
       return true;
     };

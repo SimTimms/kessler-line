@@ -32,6 +32,7 @@ import { getActiveMainEngines, applyEngineAsymmetryTorque } from '../engineDamag
 import { checkShipDestruction } from '../destruction';
 import { clampShipToWorldXZPlane } from './clampShipToWorldXZPlane';
 import { syncShipWorldRefs } from './syncShipWorldRefs';
+import { getCollidables } from '../../../context/CollisionRegistry';
 
 const _spinEuler = new THREE.Vector3();
 const _scrapperOffset = new THREE.Vector3();
@@ -119,7 +120,7 @@ export function runPrimaryPhysicsFrame({
   yawPivotLocal,
   dockingTransitionActive = false,
 }: RunPrimaryPhysicsFrameParams): void {
-  if (dockingPhysicsEnabled && (dockedTo.current || dockingTransitionActive)) {
+  if (dockingPhysicsEnabled && dockingTransitionActive) {
     didApplyInitialVelocity.current = true;
     velocity.current.set(0, 0, 0);
     angularVelocity.current = 0;
@@ -135,6 +136,31 @@ export function runPrimaryPhysicsFrame({
     vesselState.effectiveThrustStrR.current = false;
     vesselState.shipAngularVelocity.current = 0;
     return;
+  }
+
+  // Station/landing docks freeze ship physics; towable docks (cargo) keep flying.
+  if (dockingPhysicsEnabled && dockedTo.current) {
+    const dockEntry = getCollidables().find((c) => c.id === dockedTo.current);
+    const freezeShip =
+      !dockEntry ||
+      dockEntry.dockingProfile?.disablePhysicsOnDock !== false;
+    if (freezeShip) {
+      didApplyInitialVelocity.current = true;
+      velocity.current.set(0, 0, 0);
+      angularVelocity.current = 0;
+      updateEngineAudio({ mainThrust: false, rcsThrust: false });
+      zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
+      vesselState.shipAcceleration.current = 0;
+      vesselState.shipVelocity.set(0, 0, 0);
+      vesselState.effectiveThrustFwd.current = false;
+      vesselState.effectiveThrustRev.current = false;
+      vesselState.effectiveYawLeft.current = false;
+      vesselState.effectiveYawRight.current = false;
+      vesselState.effectiveThrustStrL.current = false;
+      vesselState.effectiveThrustStrR.current = false;
+      vesselState.shipAngularVelocity.current = 0;
+      return;
+    }
   }
 
   // Ensure physics runs on the authoritative position, not a smoothed render pose.

@@ -36,7 +36,27 @@ export const SHIP_IMPACT_PULSE_MS = 1200;
 /** Detection sphere radius at the nose docking port (world units). */
 export const DOCKING_PORT_RADIUS = 2;
 /** Local +Z distance from ship center to the nose docking port. */
-export const DOCKING_PORT_LOCAL_Z = 19.6;
+export const DOCKING_PORT_LOCAL_Z = -19.6;
+/**
+ * Ship-local position of the nose docking port (matches Spaceship dockingPortRef).
+ * When docking, this point is placed on the target bay's origin.
+ */
+export const SHIP_DOCKING_PORT_LOCAL: [number, number, number] = [
+  0,
+  -0.025,
+  DOCKING_PORT_LOCAL_Z - 0.1,
+];
+/**
+ * Dock-local offset for the ship root so {@link SHIP_DOCKING_PORT_LOCAL} lands on
+ * the bay origin (port-to-port, not center-to-port).
+ */
+export const SHIP_DOCK_ATTACH_OFFSET_LOCAL: [number, number, number] = [
+  -SHIP_DOCKING_PORT_LOCAL[0],
+  -SHIP_DOCKING_PORT_LOCAL[1],
+  -SHIP_DOCKING_PORT_LOCAL[2],
+];
+/** After undock, ship docking port ignores capture for this long (ms) to prevent instant re-dock. */
+export const SHIP_UNDOCK_DOCKING_COOLDOWN_MS = 5000;
 
 // ── Main engine positions ─────────────────────────────────────────────────
 /** Distance threshold for a railgun hit to register on a main engine. */

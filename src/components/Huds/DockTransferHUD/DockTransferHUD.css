@@ -1,3 +1,26 @@
+.dock-transfer-hud__background {
+  padding: 10px;
+  box-shadow: 0 0 20px 20px rgba(0, 0, 0, 1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1195;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.dock-transfer-hud__background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(2px);
+}
 .dock-transfer-hud {
   position: fixed;
   left: 50%;
@@ -16,20 +39,30 @@
   color: rgba(0, 207, 255, 0.92);
   pointer-events: auto;
   z-index: 96;
+  backdrop-filter: blur(10px);
 }
 
 .dock-transfer-hud__header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: flex-start;
   margin-bottom: 10px;
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(0, 200, 255, 0.12);
 }
 
 .dock-transfer-hud__title {
-  font-size: 11px;
-  color: rgba(0, 207, 255, 0.95);
+  font-size: 16px;
+  color: rgba(255, 255, 255);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 400;
+  font-family: var(--helmet-font, 'Space Grotesk', sans-serif);
+  text-align: center;
+  width: 100%;
+  backdrop-filter: blur(1px);
+  padding: 10px;
 }
 
 .dock-transfer-hud__subtitle {

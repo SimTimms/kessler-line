@@ -204,7 +204,7 @@ export default function Spaceship({
             intensity={0}
           />
         ))}
-        {/* Docking port at ship nose — local +Z = forward direction of port */}
+        {/* Docking port at ship nose — aligns to target bay origin when docked */}
         <group ref={dockingPortRef} position={[0, -0.025, DOCKING_PORT_LOCAL_Z - 0.1]}>
           <mesh>
             <boxGeometry args={[1, 0.05, 0.4]} />

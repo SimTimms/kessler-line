@@ -118,7 +118,7 @@ export default function LandingPadConfigScene() {
       />
       <DustCloud
         radius={2200}
-        particleSize={900000}
+        particleSize={280}
         radialSpread={LandingPadConfig.dustCloud.radialSpread}
         yInitial={-160}
       />

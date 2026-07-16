@@ -367,6 +367,7 @@ const TRADER: DockContact = {
 /** Sandbox mineral asteroid dock — resources + interior comms contacts. */
 export const ASTEROID_DOCK_CONFIG: DockConfig = {
   label: 'Asteroid Dock',
+  backgroundImage: '/station.jpg',
   fuel: { amount: 100, capacity: 100 },
   o2: { amount: 100, capacity: 100 },
   power: { amount: 100, capacity: 100 },

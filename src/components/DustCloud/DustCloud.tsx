@@ -2,7 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-const HALO_PARTICLE_COUNT = 55;
+const HALO_PARTICLE_COUNT = 50;
 
 const HALO_COLORS = [
   new THREE.Color('#757aff'),
@@ -20,8 +20,9 @@ interface DustCloudProps {
 
 export default function DustCloud({
   yInitial = 0,
-  radius = 5500000,
-  particleSize = 2500000,
+  radius = 550000,
+  /** World-unit point size (scales with camera distance / zoom). */
+  particleSize,
   radialSpread = 9,
   colors = HALO_COLORS,
   opacity = 0.1,
@@ -31,6 +32,8 @@ export default function DustCloud({
   const haloMaterialRef = useRef<THREE.PointsMaterial>(null!);
   const texture = useTexture('/cloud.png');
   const paletteKey = colors.map((color) => color.getHexString()).join('|');
+  // Default ~12% of cloud radius — tuned for world-space size attenuation.
+  const resolvedParticleSize = particleSize ?? radius * 0.12;
 
   const { haloPositions, haloColors } = useMemo(() => {
     const makeRing = (
@@ -80,7 +83,7 @@ export default function DustCloud({
           </bufferGeometry>
           <pointsMaterial
             ref={haloMaterialRef}
-            size={particleSize}
+            size={resolvedParticleSize}
             transparent
             opacity={opacity}
             map={texture}

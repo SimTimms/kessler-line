@@ -5,12 +5,12 @@ import { fuel, o2, power, shipCrew } from '../../../context/ShipState';
 import { SHIP_CREW_CAPACITY, SHIP_RESOURCE_MAX } from '../../../config/dockTransferConfig';
 import {
   DOCKABLE_PARTNER_CHANGED,
+  getDock,
   getDockablePartnerLabel,
   getDockContact,
   getDockContacts,
   getDockJob,
   getDockJobs,
-  hasDockablePartner,
   listPartnerResources,
   readPartnerAmount,
   readPartnerCapacity,
@@ -20,6 +20,7 @@ import {
 } from '../../../context/DockablePartnerStore';
 import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
 import {
+  DEFAULT_DOCK_BACKGROUND_IMAGE,
   DOCK_ROLE_LABELS,
   dockContactThreadId,
   dockJobThreadId,
@@ -27,6 +28,11 @@ import {
   type DockContact,
   type DockDialogueTree,
 } from '../../../config/dockConfig';
+import {
+  DOCK_TRANSFER_UI_CHANGED,
+  getDockTransferUi,
+  minimizeDockTransferPanel,
+} from '../../../context/DockTransferUi';
 import {
   ContactsHudDialog,
   type SelectionItem,
@@ -176,32 +182,32 @@ function TransferRow({ partnerId, kind }: TransferRowProps) {
 }
 
 const DockTransferHUD = memo(function DockTransferHUD() {
-  const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [ui, setUi] = useState(getDockTransferUi);
   const [contactsOpen, setContactsOpen] = useState(false);
   const [dockThreadId, setDockThreadId] = useState<string | null>(null);
   const [, bump] = useState(0);
 
   useEffect(() => {
-    const onDocked = (e: Event) => {
-      const id = (e as CustomEvent<{ stationId: string | null }>).detail?.stationId ?? null;
-      setPartnerId(hasDockablePartner(id) ? id : null);
-    };
-    const onUndocked = () => {
-      setPartnerId(null);
-      setContactsOpen(false);
-      setDockThreadId(null);
+    const onUi = () => {
+      const next = getDockTransferUi();
+      setUi(next);
+      if (!next.partnerId || !next.panelOpen) {
+        setContactsOpen(false);
+        setDockThreadId(null);
+      }
     };
     const onChanged = () => bump((n) => n + 1);
 
-    window.addEventListener('ShipDocked', onDocked);
-    window.addEventListener('ShipUndocked', onUndocked);
+    window.addEventListener(DOCK_TRANSFER_UI_CHANGED, onUi);
     window.addEventListener(DOCKABLE_PARTNER_CHANGED, onChanged);
     return () => {
-      window.removeEventListener('ShipDocked', onDocked);
-      window.removeEventListener('ShipUndocked', onUndocked);
+      window.removeEventListener(DOCK_TRANSFER_UI_CHANGED, onUi);
       window.removeEventListener(DOCKABLE_PARTNER_CHANGED, onChanged);
     };
   }, []);
+
+  const partnerId = ui.partnerId;
+  const panelOpen = ui.panelOpen;
 
   useEffect(() => {
     let raf = 0;
@@ -209,9 +215,9 @@ const DockTransferHUD = memo(function DockTransferHUD() {
       bump((n) => n + 1);
       raf = requestAnimationFrame(tick);
     };
-    if (partnerId) raf = requestAnimationFrame(tick);
+    if (partnerId && panelOpen) raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [partnerId]);
+  }, [partnerId, panelOpen]);
 
   function resolveDockInteriorChat(
     threadId: string
@@ -245,7 +251,7 @@ const DockTransferHUD = memo(function DockTransferHUD() {
     return null;
   }
 
-  if (!partnerId) return null;
+  if (!partnerId || !panelOpen) return null;
 
   const kinds = listPartnerResources(partnerId);
   const dockInteriorItems: SelectionItem[] = [
@@ -267,79 +273,106 @@ const DockTransferHUD = memo(function DockTransferHUD() {
   if (kinds.length === 0 && dockInteriorItems.length === 0) return null;
 
   const label = getDockablePartnerLabel(partnerId);
+  const backgroundImage = getDock(partnerId)?.backgroundImage ?? DEFAULT_DOCK_BACKGROUND_IMAGE;
+  const backgroundUrl = `url(${backgroundImage})`;
+  const towable = ui.towable;
 
   return (
-    <div className="dock-transfer-hud helmet-hud">
-      <div className="dock-transfer-hud__header">
-        <span className="dock-transfer-hud__title">{label}</span>
+    <div className="dock-transfer-hud__background">
+      <div className="dock-transfer-hud helmet-hud">
+        <div
+          className="dock-transfer-hud__header"
+          style={{
+            background: `${backgroundUrl} no-repeat center center`,
+            backgroundSize: 'cover',
+            padding: '30px 10px 30px 10px',
+          }}
+        >
+          <span className="dock-transfer-hud__title">{label}</span>
+        </div>
         <span className="dock-transfer-hud__subtitle">Transfer</span>
-      </div>
-      {kinds.length > 0 ? (
-        <>
-          <div className="dock-transfer-hud__cols">
-            <span>Ship</span>
-            <span />
-            <span>Dock</span>
-          </div>
-          {kinds.map((kind) => (
-            <TransferRow key={kind} partnerId={partnerId} kind={kind} />
-          ))}
-        </>
-      ) : null}
-      {dockInteriorItems.length > 0 ? (
-        <>
-          <div className="dock-transfer-hud__divider" />
-          <div className="dock-transfer-hud__contacts-row">
-            <span className="dock-transfer-hud__label">Contacts</span>
+
+        {kinds.length > 0 ? (
+          <>
+            <div className="dock-transfer-hud__cols">
+              <span>Ship</span>
+              <span />
+              <span>Dock</span>
+            </div>
+            {kinds.map((kind) => (
+              <TransferRow key={kind} partnerId={partnerId} kind={kind} />
+            ))}
+          </>
+        ) : null}
+        {dockInteriorItems.length > 0 ? (
+          <>
+            <div className="dock-transfer-hud__divider" />
+            <div className="dock-transfer-hud__contacts-row">
+              <span className="dock-transfer-hud__label">Contacts</span>
+              <button
+                type="button"
+                className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
+                onClick={() => setContactsOpen(true)}
+                title={`Open ${label} contacts`}
+              >
+                OPEN
+              </button>
+            </div>
+          </>
+        ) : null}
+        {contactsOpen ? (
+          <ContactsHudDialog
+            title={`${label} CONTACTS`}
+            dockInteriorItems={dockInteriorItems}
+            dockInteriorLabel={label}
+            savedItems={[]}
+            inRangeItems={[]}
+            onSave={() => {}}
+            onSelect={(id) => {
+              setDockThreadId(id);
+              setContactsOpen(false);
+            }}
+            onClose={() => setContactsOpen(false)}
+          />
+        ) : null}
+        {dockThreadId
+          ? (() => {
+              const dockChat = resolveDockInteriorChat(dockThreadId);
+              if (!dockChat) return null;
+              return (
+                <DockInteriorDialogue
+                  threadId={dockThreadId}
+                  contact={dockChat.contact}
+                  dialogue={dockChat.dialogue}
+                  onClose={() => setDockThreadId(null)}
+                />
+              );
+            })()
+          : null}
+        <div className="dock-transfer-hud__footer">
+          {towable ? (
             <button
               type="button"
               className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
-              onClick={() => setContactsOpen(true)}
-              title={`Open ${label} contacts`}
+              onClick={() => {
+                setContactsOpen(false);
+                setDockThreadId(null);
+                minimizeDockTransferPanel();
+              }}
+              title="Minimize transfer panel"
             >
-              OPEN
+              MINIMIZE
             </button>
-          </div>
-        </>
-      ) : null}
-      {contactsOpen ? (
-        <ContactsHudDialog
-          title={`${label} CONTACTS`}
-          dockInteriorItems={dockInteriorItems}
-          dockInteriorLabel={label}
-          savedItems={[]}
-          inRangeItems={[]}
-          onSave={() => {}}
-          onSelect={(id) => {
-            setDockThreadId(id);
-            setContactsOpen(false);
-          }}
-          onClose={() => setContactsOpen(false)}
-        />
-      ) : null}
-      {dockThreadId
-        ? (() => {
-            const dockChat = resolveDockInteriorChat(dockThreadId);
-            if (!dockChat) return null;
-            return (
-              <DockInteriorDialogue
-                threadId={dockThreadId}
-                contact={dockChat.contact}
-                dialogue={dockChat.dialogue}
-                onClose={() => setDockThreadId(null)}
-              />
-            );
-          })()
-        : null}
-      <div className="dock-transfer-hud__footer">
-        <button
-          type="button"
-          className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
-          onClick={() => window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK))}
-          title="Undock from current bay"
-        >
-          UNDOCK
-        </button>
+          ) : null}
+          <button
+            type="button"
+            className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
+            onClick={() => window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK))}
+            title="Undock from current bay"
+          >
+            UNDOCK
+          </button>
+        </div>
       </div>
     </div>
   );

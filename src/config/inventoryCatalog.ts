@@ -88,6 +88,28 @@ export function resolveInventoryItemId(itemIdOrLabel: string): string {
   return getInventoryItemDef(itemIdOrLabel)?.id ?? itemIdOrLabel;
 }
 
+/** HUD presentation for cargo hold cells. */
+export type InventoryItemUi = {
+  color: string;
+  /** Short tag shown in the detail strip alongside the label. */
+  tag: string;
+};
+
+export const INVENTORY_ITEM_UI: Record<string, InventoryItemUi> = {
+  'iron-slag': { color: '#c4a35a', tag: 'ORE' },
+  'o2-cells': { color: '#5ec8ff', tag: 'LIFE' },
+  'reaction-mass': { color: '#6ad4a8', tag: 'FUEL' },
+  'power-cells': { color: '#f0d060', tag: 'PWR' },
+  'unmarked-canister': { color: '#e078a0', tag: '???' },
+  organics: { color: '#8fd45a', tag: 'ORG' },
+  'spare-parts': { color: '#9aa4b2', tag: 'PART' },
+};
+
+export function getInventoryItemUi(itemIdOrLabel: string): InventoryItemUi {
+  const id = resolveInventoryItemId(itemIdOrLabel);
+  return INVENTORY_ITEM_UI[id] ?? { color: '#00cfff', tag: 'CRG' };
+}
+
 /**
  * Effective barter value for one unit.
  * High demand raises value; high supply lowers it.

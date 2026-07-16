@@ -25,6 +25,12 @@ import {
 } from './PowerHUDHelpers';
 import { resourceRateRefs } from '../../../context/ResourceRates';
 import Cargo from './Cargo/Cargo';
+import CargoHoldPanel from './Cargo/CargoHoldPanel';
+import PartnerCargoHoldPanel from './Cargo/PartnerCargoHoldPanel';
+import {
+  DOCK_TRANSFER_UI_CHANGED,
+  getDockTransferUi,
+} from '../../../context/DockTransferUi';
 import { VentResourceModal } from './VentResourceModal';
 import { canVentResource } from '../../../context/ventResource';
 import type { VentResourceKind } from '../../../config/ventResourceConfig';
@@ -349,6 +355,7 @@ export default function PowerHUD({
   const [displayCrew, setDisplayCrew] = useState(() => Math.floor(shipCrew));
   const [ejectState, setEjectState] = useState<EjectState | null>(null);
   const [ventKind, setVentKind] = useState<VentResourceKind | null>(null);
+  const [dockTransferUi, setDockTransferUi] = useState(getDockTransferUi);
 
   useEffect(() => {
     let rafId: number;
@@ -366,6 +373,14 @@ export default function PowerHUD({
     rafId = requestAnimationFrame(update);
     return () => cancelAnimationFrame(rafId);
   }, []);
+
+  useEffect(() => {
+    const onUi = () => setDockTransferUi(getDockTransferUi());
+    window.addEventListener(DOCK_TRANSFER_UI_CHANGED, onUi);
+    return () => window.removeEventListener(DOCK_TRANSFER_UI_CHANGED, onUi);
+  }, []);
+
+  const cargoTransferEnabled = dockTransferUi.partnerId != null;
 
   const orangeStats: StatDef[] = [
     {
@@ -478,22 +493,14 @@ export default function PowerHUD({
           onVentRequest={setVentKind}
         />
         {ventKind && <VentResourceModal kind={ventKind} onClose={() => setVentKind(null)} />}
-        {displayCargo.length > 0 && (
-          <div className="power-hud power-hud--cargo-flyout" aria-live="polite">
-            <div className="power-hud-section">CARGO</div>
-            {displayCargo.map((item) => (
-              <button
-                key={item.name}
-                type="button"
-                title="Click to eject"
-                className="power-hud-cargo-item"
-                onClick={() => setEjectState({ item, step: 'confirm', amount: item.quantity })}
-              >
-                {item.quantity}x {item.name.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="cargo-hold-flyout-stack power-hud--cargo-flyout">
+          <PartnerCargoHoldPanel />
+          <CargoHoldPanel
+            items={displayCargo}
+            transferEnabled={cargoTransferEnabled}
+            onEjectItem={(item) => setEjectState({ item, step: 'confirm', amount: item.quantity })}
+          />
+        </div>
         {ejectState && (
           <Cargo
             ejectState={ejectState}
@@ -561,23 +568,13 @@ export default function PowerHUD({
           />
         ))}
 
-        {displayCargo.length > 0 && (
-          <>
-            <div className="power-hud-divider">───────</div>
-            <div className="power-hud-section">CARGO HOLD</div>
-            {displayCargo.map((item) => (
-              <button
-                key={item.name}
-                type="button"
-                title="Click to eject"
-                className="power-hud-cargo-item"
-                onClick={() => setEjectState({ item, step: 'confirm', amount: item.quantity })}
-              >
-                {item.quantity}x {item.name.toUpperCase()}
-              </button>
-            ))}
-          </>
-        )}
+        <div className="power-hud-divider">───────</div>
+        <PartnerCargoHoldPanel />
+        <CargoHoldPanel
+          items={displayCargo}
+          transferEnabled={cargoTransferEnabled}
+          onEjectItem={(item) => setEjectState({ item, step: 'confirm', amount: item.quantity })}
+        />
       </div>
 
       {ejectState && (

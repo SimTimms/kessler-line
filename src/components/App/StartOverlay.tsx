@@ -45,6 +45,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
   { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
   { id: 'ship-config', label: 'Landing Pad Config', selection: GAME_MODES.shipConfig },
   { id: 'inventory-config', label: 'Inventory Config', selection: GAME_MODES.inventoryConfig },
+  { id: 'salvage-config', label: 'Salvage Config', selection: GAME_MODES.salvageConfig },
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
@@ -57,6 +58,7 @@ const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.modelConfig,
   GAME_MODES.shipConfig,
   GAME_MODES.inventoryConfig,
+  GAME_MODES.salvageConfig,
 ]);
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {

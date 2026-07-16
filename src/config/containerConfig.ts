@@ -46,3 +46,9 @@ export const CONTAINER_DOCK_OFFSET_Z = 7;
  * 0 = instant stop. Applied each frame via Math.pow(damping, delta).
  */
 export const CONTAINER_VELOCITY_DAMPING = 0.85;
+
+// ── Docking port on the crate (not the hull itself) ─────────────────────────
+/** Local offset of the docking-port capture volume from the crate origin. */
+export const CARGO_CONTAINER_PORT_LOCAL_OFFSET: [number, number, number] = [0, 0, 5.5];
+/** Full-size dimensions of the docking-port capture box. */
+export const CARGO_CONTAINER_PORT_DIMENSIONS: [number, number, number] = [3, 1.5, 0.001];
