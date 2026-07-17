@@ -23,7 +23,13 @@ export default function Asteroid({
   // Clone so each instance is independent (shared GLTF cache is not mutated).
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   //go through the object and change the material to a mesh standard material with a color of red
-
+  useEffect(() => {
+    modelScene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = new THREE.MeshStandardMaterial({ color: 'black' });
+      }
+    });
+  }, [modelScene]);
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <primitive object={modelScene} />

@@ -68,6 +68,28 @@ export const SalvageConfigData = {
    * each with a distinct yaw.
    */
   asteroids: buildSalvageAsteroidField(),
+  /** Non-player mothership (low-res garbage scow). */
+  backgroundScow: {
+    url: '/space_garbage_truck-low.glb',
+    position: [120, 0, 140] as Vec3,
+    rotation: [0, -0.8, 0] as Vec3,
+    scale: 6,
+  },
+  /** Scavenger drones that patrol the field using the low-res scow mesh. */
+  scowDroneFleet: {
+    url: '/space_garbage_truck-low.glb',
+    count: 8,
+    scale: 0.45,
+    spawnCenter: [120, -600, 140] as Vec3,
+    spawnRadius: 1060,
+    waypoints: [
+      [40, 0, 25], // cargo container
+      [300, 0, 0], // landing pad / berth
+      [0, 0, 0], // player spawn vicinity
+      [-80, 0, 120],
+      [200, 0, -80],
+    ] as Vec3[],
+  },
 };
 
 function buildSalvageAsteroidField(): Array<{

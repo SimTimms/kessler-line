@@ -2,7 +2,6 @@ import { Suspense, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { Perf } from 'r3f-perf';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
@@ -12,8 +11,10 @@ import DustCloud from '../DustCloud/DustCloud';
 import LandingPad from '../WorldObjects/LandingPad';
 import CargoContainer from '../CargoContainer/CargoContainer';
 import Asteroid from '../Asteroid/Asteroid';
+import BackgroundGarbageScow from '../Ship/BackgroundGarbageScow';
+import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
 import { SalvageConfigData } from './SalvageConfigFile';
-import Spaceship from '../Ship/Spaceship';
+import GarbageScow from '../Ship/GarbageScow';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -42,7 +43,8 @@ export default function SalvageConfigScene() {
     minimapShipPosition.set(0, 0, 0);
   }, []);
 
-  const { scene, dustCloud, dock, cargoContainer, asteroids } = SalvageConfigData;
+  const { scene, dustCloud, dock, cargoContainer, asteroids, backgroundScow, scowDroneFleet } =
+    SalvageConfigData;
 
   return (
     <Canvas
@@ -84,11 +86,11 @@ export default function SalvageConfigScene() {
       {/* <axesHelper args={[180]} /> */}
 
       <Suspense fallback={null}>
-        <Spaceship
-          url={SalvageConfigData.playerShipUrl}
+        <GarbageScow
+          url={'/space_garbage_truck.glb'}
           initialPosition={[0, 1.2, 0]}
           initialRotation={[0, 0, 0]}
-          scale={SalvageConfigData.playerShipScale}
+          scale={4}
           initialVelocity={[0, 0, 0]}
           shipParticleCloudProps={{
             count: 100,
@@ -138,6 +140,15 @@ export default function SalvageConfigScene() {
             scale={asteroid.scale}
           />
         ))}
+
+        <GarbageScowDroneFleet
+          url={scowDroneFleet.url}
+          count={scowDroneFleet.count}
+          scale={scowDroneFleet.scale}
+          spawnCenter={scowDroneFleet.spawnCenter}
+          spawnRadius={scowDroneFleet.spawnRadius}
+          waypoints={scowDroneFleet.waypoints}
+        />
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
