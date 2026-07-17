@@ -11,7 +11,14 @@ import {
 } from '../../context/ShipState';
 import { SHIP_COLLISION_SAMPLES } from '../../config/shipConfig';
 import { PLANET_IMPACT_MIN_SPEED } from '../../config/planetImpactConfig';
+import { MINING_MODULE_ID } from '../../config/miningConfig';
+import { isClampDockProfile } from '../../config/dockCaptureConfig';
+import { getDockCaptureProfile } from '../../utils/dockingCapture';
+import { hasVesselModule, ensureVesselState } from '../../context/VesselStateStore';
+import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { attachShipToDock } from './docking';
 import { triggerShipDestruction } from './destruction';
+import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
 
 const _shipWorldPos = new THREE.Vector3();
 const _shipWorldQuat = new THREE.Quaternion();
@@ -58,12 +65,69 @@ function getCollidableWorldVelocity(collidable: CollidableEntry, target: THREE.V
   return target.set(0, 0, 0);
 }
 
+export interface CollisionResolveOptions {
+  vesselId?: string;
+  dockedTo?: { current: string | null };
+  emitDockingEvents?: boolean;
+  dockReentryBlock?: { current: string | null };
+  dockingPortDisabledUntil?: { current: number };
+}
+
+function tryMiningClamp(
+  collidable: CollidableEntry,
+  group: THREE.Object3D,
+  velocity: THREE.Vector3,
+  options: CollisionResolveOptions | undefined
+): boolean {
+  if (!(group instanceof THREE.Group)) return false;
+  if (!options?.dockedTo || options.dockedTo.current) return false;
+  if (options.dockReentryBlock?.current === collidable.id) return false;
+  if (
+    options.dockingPortDisabledUntil &&
+    performance.now() < options.dockingPortDisabledUntil.current
+  ) {
+    return false;
+  }
+
+  const profile = getDockCaptureProfile(collidable);
+  if (!isClampDockProfile(profile)) return false;
+
+  const vesselId = options.vesselId ?? PLAYER_VESSEL_ID;
+  if (!hasVesselModule(vesselId, MINING_MODULE_ID)) return false;
+
+  getCollidableWorldVelocity(collidable, _collidableVel);
+  const relSpeed = _relVelocity.subVectors(velocity, _collidableVel).length();
+  if (relSpeed >= profile.maxRelativeSpeed) return false;
+
+  if (options.emitDockingEvents !== false && autopilotActive.current) {
+    disableAutopilot();
+    window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
+  }
+
+  velocity.set(0, 0, 0);
+  options.dockedTo.current = collidable.id;
+  attachShipToDock(group, collidable);
+
+  if (options.emitDockingEvents !== false) {
+    window.dispatchEvent(
+      new CustomEvent('ShipDocked', {
+        detail: {
+          stationId: collidable.stationId ?? collidable.id,
+          clamp: true,
+        },
+      })
+    );
+  }
+  return true;
+}
+
 function resolveEntryCollision(
   collidable: CollidableEntry,
   shipPos: THREE.Vector3,
   velocity: THREE.Vector3,
   group: THREE.Object3D,
-  sampleRadius = SHIP_RADIUS
+  sampleRadius = SHIP_RADIUS,
+  options?: CollisionResolveOptions
 ) {
   // Docking bays are capture volumes, not solid walls — `checkDockingPort` handles attach.
   if (isDockingBayCollidable(collidable.id)) return;
@@ -153,6 +217,10 @@ function resolveEntryCollision(
   }
 
   if (colliding) {
+    if (tryMiningClamp(collidable, group, velocity, options)) {
+      return;
+    }
+
     // Closing speed must be measured relative to the collidable. Kinematic
     // movers (orbiting bodies, stations) carry their own world velocity; using
     // the ship's absolute velocity here makes a body the ship is travelling
@@ -192,7 +260,12 @@ function resolveEntryCollision(
       group.position.addScaledVector(_collisionNormal, overlap);
       shipPos.addScaledVector(_collisionNormal, overlap);
       velocity.set(0, 0, 0);
-      triggerShipDestruction('planet');
+      const vesselId = options?.vesselId ?? PLAYER_VESSEL_ID;
+      triggerShipDestruction({
+        vesselId,
+        vesselState: ensureVesselState(vesselId),
+        cause: 'planet',
+      });
       return;
     }
 
@@ -215,8 +288,11 @@ function resolveEntryCollision(
 export function resolveCollisions(
   group: THREE.Object3D,
   velocity: THREE.Vector3,
-  selfCollisionId = SHIP_COLLISION_ID
+  selfCollisionId = SHIP_COLLISION_ID,
+  options?: CollisionResolveOptions
 ) {
+  if (options?.dockedTo?.current) return;
+
   group.getWorldPosition(_shipWorldPos);
   group.getWorldQuaternion(_shipWorldQuat);
 
@@ -225,10 +301,11 @@ export function resolveCollisions(
     collidable.getWorldPosition(_collidablePos);
 
     for (const sample of SHIP_COLLISION_SAMPLES) {
+      if (options?.dockedTo?.current) return;
       group.getWorldPosition(_shipWorldPos);
       _localSample.set(sample.local[0], sample.local[1], sample.local[2]);
       _samplePos.copy(_localSample).applyQuaternion(_shipWorldQuat).add(_shipWorldPos);
-      resolveEntryCollision(collidable, _samplePos, velocity, group, sample.radius);
+      resolveEntryCollision(collidable, _samplePos, velocity, group, sample.radius, options);
     }
   }
 }

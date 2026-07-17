@@ -80,6 +80,8 @@ interface RunPrimaryPhysicsFrameParams {
   yawThrustScale: number;
   yawPivotLocal: THREE.Vector3 | null;
   dockingTransitionActive?: boolean;
+  dockReentryBlock?: MutableRefObject<string | null>;
+  dockingPortDisabledUntil?: MutableRefObject<number>;
 }
 
 export function runPrimaryPhysicsFrame({
@@ -119,6 +121,8 @@ export function runPrimaryPhysicsFrame({
   yawThrustScale,
   yawPivotLocal,
   dockingTransitionActive = false,
+  dockReentryBlock,
+  dockingPortDisabledUntil,
 }: RunPrimaryPhysicsFrameParams): void {
   if (dockingPhysicsEnabled && dockingTransitionActive) {
     didApplyInitialVelocity.current = true;
@@ -365,6 +369,7 @@ export function runPrimaryPhysicsFrame({
 
   let remaining = cappedDelta;
   while (remaining > 0) {
+    if (dockingPhysicsEnabled && dockedTo.current) break;
     const dt = Math.min(remaining, maxStep);
     remaining -= dt;
     applyPhysicsStep({
@@ -390,6 +395,13 @@ export function runPrimaryPhysicsFrame({
       strR,
       radOut,
       radIn,
+      collisionOptions: {
+        vesselId,
+        dockedTo,
+        emitDockingEvents: publishToPlayerRefs,
+        dockReentryBlock,
+        dockingPortDisabledUntil,
+      },
     });
 
     updateThrusterLights({

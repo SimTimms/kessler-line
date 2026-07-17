@@ -15,6 +15,7 @@ import BackgroundGarbageScow from '../Ship/BackgroundGarbageScow';
 import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
 import { SalvageConfigData } from './SalvageConfigFile';
 import GarbageScow from '../Ship/GarbageScow';
+import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -92,6 +93,7 @@ export default function SalvageConfigScene() {
           initialRotation={[0, 0, 0]}
           scale={4}
           initialVelocity={[0, 0, 0]}
+          modulesInstalled={GARBAGE_SCOW_MODULES}
           shipParticleCloudProps={{
             count: 100,
             enableSpeedGate: true,
@@ -106,6 +108,14 @@ export default function SalvageConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
+        <Asteroid
+          key="salvage-asteroid-near"
+          position={[45, 0, -55]}
+          rotation={[0.2, 0.8, 0.1]}
+          scale={18}
+          mineableId="salvage-asteroid-near"
+          label="Mineral Asteroid"
+        />
         <group position={dock.position}>
           <LandingPad
             id={dock.id}
@@ -116,10 +126,12 @@ export default function SalvageConfigScene() {
             debugJumpDockOnClick
           />
           <Asteroid
-            key={`salvage-asteroid-1000`}
+            key={`salvage-asteroid-mineable`}
             position={[-150, -480, -70]}
             rotation={[0, 0, 0]}
             scale={260}
+            mineableId="salvage-asteroid-a"
+            label="Mineral Asteroid"
           />
         </group>
         <CargoContainer

@@ -28,6 +28,9 @@ const _desiredDockPos = new THREE.Vector3();
 const _desiredDockQuat = new THREE.Quaternion();
 const _shipWorldPos = new THREE.Vector3();
 const _dockWorldPos = new THREE.Vector3();
+const _clampWorldPos = new THREE.Vector3();
+const _clampWorldQuat = new THREE.Quaternion();
+const _clampParentWorldQuat = new THREE.Quaternion();
 
 function isInHierarchy(root: THREE.Object3D, candidate: THREE.Object3D): boolean {
   let node: THREE.Object3D | null = candidate;
@@ -61,6 +64,14 @@ export function isShipWithinDockCaptureRange(
     const dz = _shipWorldPos.z - _dockWorldPos.z;
     return Math.hypot(dx, dz) < dockingProfile.captureRadius;
   }
+  if (dockingProfile.mode === 'clamp') {
+    group.getWorldPosition(_shipWorldPos);
+    dockEntry.getWorldPosition(_dockWorldPos);
+    const radius =
+      dockEntry.shape.type === 'sphere' ? dockEntry.shape.radius : dockingProfile.captureRadius;
+    // Still "in range" while overlapping the asteroid body (post-undock re-entry guard).
+    return _shipWorldPos.distanceTo(_dockWorldPos) < radius + 8;
+  }
   shipLocalOffsetToWorld(group, dockingProfile.probeLocalOffset, _portWorldPos);
   return pointDistanceToDockBox(_portWorldPos, dockEntry) < dockingProfile.captureRadius;
 }
@@ -89,6 +100,29 @@ function computeDockedWorldPose(dockerEntry: CollidableEntry): {
 export function attachShipToDock(group: THREE.Group, dockerEntry: CollidableEntry): void {
   const dockObject = dockerEntry.getObject3D?.() ?? null;
   const profile = getDockCaptureProfile(dockerEntry);
+
+  // Clamp docks: lock impact XZ on the asteroid, but keep the ship on the
+  // gameplay plane (world Y = 0). Rotation is preserved from the impact pose.
+  if (profile.mode === 'clamp') {
+    if (!dockObject) return;
+
+    group.updateWorldMatrix(true, false);
+    group.getWorldPosition(_clampWorldPos);
+    group.getWorldQuaternion(_clampWorldQuat);
+    _clampWorldPos.y = 0;
+
+    if (group.parent !== dockObject) {
+      dockObject.attach(group);
+    }
+
+    dockObject.updateWorldMatrix(true, false);
+    dockObject.getWorldQuaternion(_clampParentWorldQuat);
+    group.position.copy(_clampWorldPos);
+    dockObject.worldToLocal(group.position);
+    group.quaternion.copy(_clampParentWorldQuat).invert().multiply(_clampWorldQuat);
+    return;
+  }
+
   const { position, quaternion } = computeDockedWorldPose(dockerEntry);
 
   if (dockObject) {
@@ -260,6 +294,7 @@ export function checkDockingPort({
       return false;
     }
     const dockingProfile = getDockCaptureProfile(c);
+    if (dockingProfile.mode === 'clamp') return false;
     if (dockingProfile.mode === 'nose') {
       dockingPort.getWorldPosition(_portWorldPos);
       const isCaptured = pointDistanceToDockBox(_portWorldPos, c) < dockingProfile.captureRadius;
@@ -279,7 +314,7 @@ export function checkDockingPort({
     {
       shipLocalOffsetToWorld(group, dockingProfile.probeLocalOffset, _portWorldPos);
       const isCaptured = pointDistanceToDockBox(_portWorldPos, c) < dockingProfile.captureRadius;
-      if (isCaptured) capturedProfileMode = dockingProfile.mode;
+      if (isCaptured) capturedProfileMode = 'nose';
       return isCaptured;
     }
   });
@@ -297,7 +332,7 @@ export function checkDockingPort({
     window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
   }
 
-  const captureMode = capturedProfileMode ?? dockingProfile.mode;
+  const captureMode: 'nose' | 'hover' = capturedProfileMode ?? (dockingProfile.mode === 'hover' ? 'hover' : 'nose');
   if (
     onBeforeDock?.({
       bayEntry,

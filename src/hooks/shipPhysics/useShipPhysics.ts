@@ -386,6 +386,8 @@ export function useShipPhysics({
       dockingTransitionActive: Boolean(
         hoverDockingTransition.current || hoverUndockingTransition.current
       ),
+      dockReentryBlock,
+      dockingPortDisabledUntil,
     });
   }, -1);
 

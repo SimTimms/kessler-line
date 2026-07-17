@@ -54,6 +54,8 @@ export interface VesselRuntimeState {
   effectiveYawRight: { current: boolean };
   effectiveThrustStrL: { current: boolean };
   effectiveThrustStrR: { current: boolean };
+  /** Installed ship tools / modules (e.g. `"mining module"`). */
+  modulesInstalled: string[];
 }
 
 export const DEFAULT_VESSEL_STATE = {
@@ -127,6 +129,7 @@ function createDefaultVesselRuntimeState(): VesselRuntimeState {
     effectiveYawRight: { current: false },
     effectiveThrustStrL: { current: false },
     effectiveThrustStrR: { current: false },
+    modulesInstalled: [],
   };
 }
 
@@ -197,4 +200,14 @@ export function damageVesselHull(vesselId: string, amount: number): number {
 
 export function canVesselUsePropulsion(vesselId: string): boolean {
   return ensureVesselState(vesselId).fuel > 0;
+}
+
+export function setVesselModules(vesselId: string, modules: string[]): string[] {
+  const state = ensureVesselState(vesselId);
+  state.modulesInstalled = [...modules];
+  return state.modulesInstalled;
+}
+
+export function hasVesselModule(vesselId: string, moduleId: string): boolean {
+  return ensureVesselState(vesselId).modulesInstalled.includes(moduleId);
 }

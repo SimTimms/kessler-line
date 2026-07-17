@@ -81,7 +81,7 @@ export const SalvageConfigData = {
     count: 8,
     scale: 0.45,
     spawnCenter: [120, -600, 140] as Vec3,
-    spawnRadius: 1060,
+    spawnRadius: 2060,
     waypoints: [
       [40, 0, 25], // cargo container
       [300, 0, 0], // landing pad / berth

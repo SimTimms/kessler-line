@@ -27,10 +27,12 @@ import { resourceRateRefs } from '../../../context/ResourceRates';
 import Cargo from './Cargo/Cargo';
 import CargoHoldPanel from './Cargo/CargoHoldPanel';
 import PartnerCargoHoldPanel from './Cargo/PartnerCargoHoldPanel';
+import MiningHUD from './Mining/MiningHUD';
 import {
   DOCK_TRANSFER_UI_CHANGED,
   getDockTransferUi,
 } from '../../../context/DockTransferUi';
+import '../../../context/MiningState';
 import { VentResourceModal } from './VentResourceModal';
 import { canVentResource } from '../../../context/ventResource';
 import type { VentResourceKind } from '../../../config/ventResourceConfig';
@@ -494,6 +496,7 @@ export default function PowerHUD({
         />
         {ventKind && <VentResourceModal kind={ventKind} onClose={() => setVentKind(null)} />}
         <div className="cargo-hold-flyout-stack power-hud--cargo-flyout">
+          <MiningHUD />
           <PartnerCargoHoldPanel />
           <CargoHoldPanel
             items={displayCargo}
@@ -569,6 +572,7 @@ export default function PowerHUD({
         ))}
 
         <div className="power-hud-divider">───────</div>
+        <MiningHUD />
         <PartnerCargoHoldPanel />
         <CargoHoldPanel
           items={displayCargo}

@@ -3,8 +3,12 @@ import {
   SHIP_DOCK_ATTACH_OFFSET_LOCAL,
   SHIP_DOCKING_PORT_LOCAL,
 } from './shipConfig';
+import {
+  MINING_CLAMP_MAX_RELATIVE_SPEED,
+  MINING_CLAMP_UNDOCK_RELEASE_SPEED,
+} from './miningConfig';
 
-export type DockCaptureMode = 'nose' | 'hover';
+export type DockCaptureMode = 'nose' | 'hover' | 'clamp';
 
 /**
  * World-unit gap kept between ship and partner docking ports while attached.
@@ -79,7 +83,24 @@ export const CARGO_CONTAINER_DOCK_CAPTURE_PROFILE: DockCaptureProfile = {
   disablePhysicsOnDock: false,
 };
 
+/**
+ * Asteroid mining clamp — ship freezes at the impact pose (no port alignment).
+ * Capture fields are unused; clamp is triggered by hull collision instead.
+ */
+export const ASTEROID_CLAMP_CAPTURE_PROFILE: DockCaptureProfile = {
+  mode: 'clamp',
+  maxRelativeSpeed: MINING_CLAMP_MAX_RELATIVE_SPEED,
+  probeLocalOffset: [0, 0, 0],
+  captureRadius: 0,
+  attachOffsetLocal: [0, 0, 0],
+  undockReleaseSpeed: MINING_CLAMP_UNDOCK_RELEASE_SPEED,
+  disablePhysicsOnDock: true,
+};
+
 /** True when docking should freeze the ship (stations / landing pads). */
 export function disablesShipPhysicsWhenDocked(profile: DockCaptureProfile): boolean {
   return profile.disablePhysicsOnDock !== false;
 }
+
+export function isClampDockProfile(profile: DockCaptureProfile): boolean {
+  return profile.mode === 'clamp';}

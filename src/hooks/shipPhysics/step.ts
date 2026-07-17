@@ -4,7 +4,7 @@ import { gravityBodies } from '../../context/GravityRegistry';
 import { applyYawAndRoll, getYawFromQuaternion } from '../../orbitalRoll/shipYawRoll';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
 import { applyGravityStep } from './gravity';
-import { resolveCollisions } from './collisions';
+import { resolveCollisions, type CollisionResolveOptions } from './collisions';
 
 const _localForward = new THREE.Vector3();
 const _localRight = new THREE.Vector3();
@@ -36,6 +36,7 @@ interface StepParams {
   strR: boolean;
   radOut: boolean;
   radIn: boolean;
+  collisionOptions?: CollisionResolveOptions;
 }
 
 export function applyPhysicsStep({
@@ -61,6 +62,7 @@ export function applyPhysicsStep({
   strR,
   radOut,
   radIn,
+  collisionOptions,
 }: StepParams) {
   const forwardThrustMultiplier = thrustMultiplierRef.current;
   // Cap RCS/reverse authority so maneuvering remains controllable at high global thrust.
@@ -116,6 +118,6 @@ export function applyPhysicsStep({
 
   group.position.addScaledVector(velocity, dt);
   if (!freezeCollisions) {
-    resolveCollisions(group, velocity, selfCollisionId);
+    resolveCollisions(group, velocity, selfCollisionId, collisionOptions);
   }
 }

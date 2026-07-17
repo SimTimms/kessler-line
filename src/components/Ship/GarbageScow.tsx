@@ -19,6 +19,7 @@ import TargetIndicatorLine from '../TargetIndicatorLine';
 import VelocityIndicator from '../VelocityIndicator';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { setVesselModules } from '../../context/VesselStateStore';
 import { DEBUG_THRUSTER_HITBOXES } from '../../config/debugConfig';
 import {
   MAIN_ENGINE_LOCAL_POS_A,
@@ -81,6 +82,8 @@ interface SpaceshipProps {
   collisionId?: string;
   /** Optional feature gates for reusable vessel physics behavior. */
   physicsOptions?: ShipPhysicsOptions;
+  /** Ship tools / modules installed on this vessel (e.g. `"mining module"`). */
+  modulesInstalled?: string[];
 }
 
 export default function Spaceship({
@@ -97,10 +100,16 @@ export default function Spaceship({
   vesselId = PLAYER_VESSEL_ID,
   collisionId = SHIP_COLLISION_ID,
   physicsOptions,
+  modulesInstalled,
 }: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
   const shadowLightTarget = useRef(new THREE.Object3D());
+
+  useEffect(() => {
+    if (!modulesInstalled) return;
+    setVesselModules(vesselId, modulesInstalled);
+  }, [vesselId, modulesInstalled]);
 
   useEffect(() => {
     gltf.scene.traverse((child) => {
