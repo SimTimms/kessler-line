@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { isWithinRadioRange } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
@@ -210,7 +210,19 @@ function driveStatusPulse(hs: HailStatus, radioActive: boolean): boolean {
 interface ContactsHUDProps {
   /** When true, only in-scene radio registrations and drive contacts (no static inbox contacts). */
   sceneRadioContactsOnly?: boolean;
+  /**
+   * Custom trigger (e.g. Comms HUD button). When provided, the floating
+   * bottom-right button is not rendered.
+   */
+  children?: (api: ContactsTriggerApi) => ReactNode;
 }
+
+export type ContactsTriggerApi = {
+  open: () => void;
+  contactCount: number;
+  hasIncoming: boolean;
+  isActive: boolean;
+};
 
 function resolveDockInteriorChat(threadId: string): {
   contact: DockContact;
@@ -245,7 +257,10 @@ function resolveDockInteriorChat(threadId: string): {
   return null;
 }
 
-export default function ContactsHUD({ sceneRadioContactsOnly = false }: ContactsHUDProps) {
+export default function ContactsHUD({
+  sceneRadioContactsOnly = false,
+  children,
+}: ContactsHUDProps) {
   const [open, setOpen] = useState(false);
   const [chatShipId, setChatShipId] = useState<string | null>(null);
   const [dockedPartnerId, setDockedPartnerId] = useState<string | null>(null);
@@ -685,28 +700,37 @@ export default function ContactsHUD({ sceneRadioContactsOnly = false }: Contacts
     return undefined;
   }
 
+  const rosterCount = inRangeDrives.length + dockInteriorItems.length;
+  const contactsActive = rosterCount > 0;
+  const hasIncoming = incomingHails.size > 0;
+
   return (
     <>
-      <div className="contacts-hud-wrapper">
-        <button
-          className={`contacts-hud-btn${inRangeDrives.length > 0 || dockInteriorItems.length > 0 ? ' contacts-hud-btn--active' : ''}`}
-          onClick={() => setOpen(true)}
-          title="Open contacts"
-        >
-          <span className="contacts-hud-icon" aria-hidden>
-            ⊙
-          </span>
-          <span className="contacts-hud-label">CONTACTS</span>
-          {(inRangeDrives.length > 0 || dockInteriorItems.length > 0) && (
-            <span className="contacts-hud-badge">
-              {inRangeDrives.length + dockInteriorItems.length}
+      {children ? (
+        children({
+          open: () => setOpen(true),
+          contactCount: rosterCount,
+          hasIncoming,
+          isActive: contactsActive,
+        })
+      ) : (
+        <div className="contacts-hud-wrapper">
+          <button
+            className={`contacts-hud-btn${contactsActive ? ' contacts-hud-btn--active' : ''}`}
+            onClick={() => setOpen(true)}
+            title="Open contacts"
+          >
+            <span className="contacts-hud-icon" aria-hidden>
+              ⊙
             </span>
-          )}
-          {incomingHails.size > 0 && (
-            <span className="contacts-hud-badge contacts-hud-badge--incoming">!</span>
-          )}
-        </button>
-      </div>
+            <span className="contacts-hud-label">CONTACTS</span>
+            {contactsActive && <span className="contacts-hud-badge">{rosterCount}</span>}
+            {hasIncoming && (
+              <span className="contacts-hud-badge contacts-hud-badge--incoming">!</span>
+            )}
+          </button>
+        </div>
+      )}
 
       {open && (
         <ContactsHudDialog

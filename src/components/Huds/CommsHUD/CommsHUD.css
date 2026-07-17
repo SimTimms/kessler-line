@@ -1,0 +1,204 @@
+.mech-comms {
+  --mech-cyan: #00c8ff;
+  --mech-cyan-dim: rgba(0, 200, 255, 0.38);
+  --mech-amber: #ffb020;
+  --mech-metal: #2a2e32;
+  --mech-metal-lo: #141618;
+  --mech-crt-bg: #05080c;
+  --mech-label: rgba(180, 200, 220, 0.55);
+  position: fixed;
+  right: 12px;
+  bottom: 14px;
+  z-index: 96;
+  pointer-events: auto;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mech-cyan);
+  box-sizing: border-box;
+}
+
+.mech-comms-bezel {
+  position: relative;
+  padding: 10px 10px 8px;
+  background: linear-gradient(145deg, #222222 0%, var(--mech-metal) 38%, var(--mech-metal-lo) 100%);
+  border: 1px solid #5a616a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.mech-comms-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 2px 8px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.22);
+}
+
+.mech-comms-lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mech-cyan);
+  box-shadow:
+    0 0 6px rgba(0, 200, 255, 0.85),
+    inset 0 0 2px rgba(180, 240, 255, 0.9);
+  animation: mech-comms-lamp-pulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes mech-comms-lamp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.mech-comms-title {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--mech-label);
+  line-height: 1;
+}
+
+.mech-comms-sub {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  color: var(--mech-label);
+  line-height: 1;
+}
+
+.mech-comms-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mech-comms .helmet-scanner-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mech-comms .helmet-scanner-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.mech-comms .helmet-scanner-section-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mech-comms .helmet-scanner-title-icon {
+  flex-shrink: 0;
+  color: var(--mech-label);
+  opacity: 0.9;
+}
+
+.mech-comms .helmet-scanner-abbr {
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--mech-label);
+  line-height: 1;
+}
+
+.mech-comms .helmet-scanner-readouts {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mech-comms-pad .helmet-pad-scan {
+  display: grid;
+  grid-template-columns: 22px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  color: var(--mech-cyan-dim);
+  padding: 4px 6px;
+  background: var(--mech-crt-bg);
+  border-radius: 3px;
+  border: 1px solid #0a0c10;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.65);
+}
+
+.mech-comms-pad .helmet-pad-scan-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.mech-comms-pad .helmet-pad-scan-wave {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2px;
+  height: 16px;
+  padding: 0 2px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 200, 255, 0.12);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.mech-comms-pad .helmet-pad-scan-bar {
+  flex: 1;
+  min-width: 2px;
+  max-width: 4px;
+  height: 22%;
+  border-radius: 0;
+  background: currentColor;
+  opacity: 0.45;
+  transform-origin: bottom center;
+}
+
+.mech-comms-pad .helmet-pad-scan-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-align: right;
+  color: inherit;
+}
+
+.mech-comms-pad .helmet-pad-scan--active {
+  color: var(--mech-cyan);
+}
+
+.mech-comms-pad .helmet-pad-scan--active .helmet-pad-scan-icon {
+  filter: drop-shadow(0 0 4px rgba(0, 200, 255, 0.65));
+}
+
+.mech-comms-pad .helmet-pad-scan--active .helmet-pad-scan-bar {
+  opacity: 1;
+  animation: helmet-pad-scan-wave 0.55s ease-in-out infinite alternate;
+  box-shadow: 0 0 4px rgba(0, 200, 255, 0.5);
+}
+
+.mech-comms-pad .helmet-pad-scan--active .helmet-pad-scan-label {
+  color: #7ef3ff;
+  text-shadow: 0 0 6px rgba(0, 200, 255, 0.45);
+}
+
+.mech-comms .mech-comms-cont--incoming {
+  border-color: color-mix(in srgb, var(--mech-amber) 45%, #0a0c10);
+}
+
+.mech-comms .mech-comms-cont--incoming .helmet-scanner-drain {
+  color: var(--mech-amber);
+  text-shadow: 0 0 5px rgba(255, 176, 32, 0.4);
+}

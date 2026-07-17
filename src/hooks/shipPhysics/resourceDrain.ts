@@ -1,7 +1,6 @@
-import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
-import { spotlightOnRef } from '../../context/SpotlightState';
 import { resourceRateRefs } from '../../context/ResourceRates';
 import { o2DrainRateForCrew, FUEL_BURN_RATE } from '../../config/damageConfig';
+import { getTotalScannerPowerDrain } from '../../config/scanRanges';
 import {
   setVesselFuel,
   setVesselO2,
@@ -75,18 +74,10 @@ export function applyResourceDrain({
       setVesselFuel(vesselId, nextFuel);
     }
   }
-  if (spotlightOnRef.current) {
-    powerRate -= 1;
-    const nextPower = Math.max(0, vesselState.power - rawDelta);
-    if (vesselId === PLAYER_VESSEL_ID) {
-      setPower(nextPower);
-    } else {
-      setVesselPower(vesselId, nextPower);
-    }
-  }
-  if (driveSignatureOnRef.current) {
-    powerRate -= 2;
-    const nextPower = Math.max(0, vesselState.power - 2 * rawDelta);
+  const scannerDrain = getTotalScannerPowerDrain();
+  if (scannerDrain > 0) {
+    powerRate -= scannerDrain;
+    const nextPower = Math.max(0, vesselState.power - scannerDrain * rawDelta);
     if (vesselId === PLAYER_VESSEL_ID) {
       setPower(nextPower);
     } else {

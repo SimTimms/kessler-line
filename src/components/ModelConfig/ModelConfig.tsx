@@ -4,7 +4,7 @@ import ModelConfigScene from './ModelConfigScene';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
 import { ScannerHUD, ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
 import SharedScannerOverlayHuds from '../Huds/SharedScannerOverlayHuds';
-import ContactsHUD from '../ContactsHUD/ContactsHUD';
+import CommsHUD from '../Huds/CommsHUD/CommsHUD';
 import DockTransferHUD from '../Huds/DockTransferHUD/DockTransferHUD';
 import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
@@ -195,17 +195,21 @@ export default function ModelConfig() {
         setDriveSignatureOn={setDriveSignatureOn}
         proximity={proximity}
         setProximity={setProximity}
-        radioOn={radioOn}
-        setRadioOn={setRadioOn}
         spotlightOnRef={spotlightOnRef}
         magneticOnRef={magneticOnRef}
         driveSignatureOnRef={driveSignatureOnRef}
         proximityScanOnRef={proximityScanOnRef}
-        radioOnRef={radioOnRef}
         disableElements={[...MODEL_CONFIG_DISABLED_HUD_ELEMENTS]}
         initialPowers={MODEL_CONFIG_SCANNER_INITIAL_POWERS}
       />
-      <ContactsHUD sceneRadioContactsOnly />
+      <CommsHUD
+        radioOn={radioOn}
+        setRadioOn={setRadioOn}
+        radioOnRef={radioOnRef}
+        disableElements={[...MODEL_CONFIG_DISABLED_HUD_ELEMENTS]}
+        initialRadioPower={MODEL_CONFIG_SCANNER_INITIAL_POWERS[ScannerHUDElements.RADIO]}
+        sceneRadioContactsOnly
+      />
       <DockTransferHUD />
       <SharedScannerOverlayHuds />
     </AppContainer>

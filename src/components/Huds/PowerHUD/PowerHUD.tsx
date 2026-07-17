@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Zap, Shield, Droplets, Wind, Gauge, Activity, AlertTriangle, User } from 'lucide-react';
+import { Zap, Shield, Droplets, Wind, Activity, AlertTriangle, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
   power,
@@ -7,7 +7,6 @@ import {
   fuel,
   o2,
   shipCrew,
-  shipAcceleration,
   getShipSpeedMps,
 } from '../../../context/ShipState';
 import { SHIP_CREW_CAPACITY } from '../../../config/dockTransferConfig';
@@ -17,7 +16,6 @@ import './PowerHUD.css';
 import '../HelmetHUD/HelmetHUD.css';
 import {
   velocityLevel,
-  gforceLevel,
   resourceLevel,
   levelToColor,
   formatResourceRate,
@@ -186,154 +184,177 @@ function HelmetVitalsView({
     if (canVentResource(kind)) onVentRequest(kind);
   };
   return (
-    <div className="helmet-vitals" aria-live="polite">
-      {bars.map((bar) => {
-        const disabled = disableElements.includes(bar.id);
-        const highlight = focusElements.includes(bar.id);
-        const rateLabel = formatResourceRate(bar.ratePerSec);
-        const valClass =
-          bar.level === 'red'
-            ? 'helmet-vital-val--crit'
-            : bar.level === 'orange'
-              ? 'helmet-vital-val--warn'
-              : '';
-        const segLevelClass =
-          bar.level === 'red' ? 'helmet-seg--crit' : bar.level === 'orange' ? 'helmet-seg--warn' : '';
-        const litCount = litSegmentCount(bar.pct);
-        const ventKind = ventKindForBarId(bar.id);
-        const ventable = ventKind !== null && !disabled && canVentResource(ventKind);
-        return (
-          <div
-            key={bar.id}
-            role={ventable ? 'button' : undefined}
-            tabIndex={ventable ? 0 : undefined}
-            className={`helmet-vital${disabled ? ' helmet-vital--disabled' : ''}${highlight ? ' helmet-vital--highlight' : ''}${ventable ? ' helmet-vital--ventable' : ''}`}
-            title={ventable ? `${bar.tag} — click to vent` : bar.tag}
-            onClick={ventable && ventKind ? () => requestVent(ventKind) : undefined}
-            onKeyDown={
-              ventable && ventKind
-                ? (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      requestVent(ventKind);
-                    }
-                  }
-                : undefined
-            }
-          >
-            <span
-              className={`helmet-vital-rate${rateLabel ? '' : ' helmet-vital-rate--empty'}${rateLabel && bar.ratePerSec > 0 ? ' helmet-vital-rate--gain' : ''}`}
-              aria-hidden={!rateLabel}
-            >
-              {rateLabel ?? '\u00a0'}
-            </span>
-            <span className={`helmet-vital-val ${valClass}`}>{bar.display}</span>
-            <div className="helmet-vital-segments" aria-hidden>
-              {Array.from({ length: VITAL_SEGMENT_COUNT }, (_, i) => {
-                const tierFromBottom = i + 1;
-                const lit = tierFromBottom <= litCount;
-                return (
+    <div className="helmet-vitals mech-vitals" aria-live="polite">
+      <div className="mech-vitals-bezel">
+        <div className="mech-vitals-head">
+          <span className="mech-vitals-lamp" aria-hidden />
+          <span className="mech-vitals-title">RES</span>
+          <span className="mech-vitals-sub">SYSTEMS</span>
+        </div>
+        <div className="mech-vitals-modules">
+          {bars.map((bar) => {
+            const disabled = disableElements.includes(bar.id);
+            const highlight = focusElements.includes(bar.id);
+            const rateLabel = formatResourceRate(bar.ratePerSec);
+            const valClass =
+              bar.level === 'red'
+                ? 'helmet-vital-val--crit'
+                : bar.level === 'orange'
+                  ? 'helmet-vital-val--warn'
+                  : '';
+            const segLevelClass =
+              bar.level === 'red'
+                ? 'helmet-seg--crit'
+                : bar.level === 'orange'
+                  ? 'helmet-seg--warn'
+                  : '';
+            const litCount = litSegmentCount(bar.pct);
+            const ventKind = ventKindForBarId(bar.id);
+            const ventable = ventKind !== null && !disabled && canVentResource(ventKind);
+            return (
+              <div
+                key={bar.id}
+                role={ventable ? 'button' : undefined}
+                tabIndex={ventable ? 0 : undefined}
+                className={`helmet-vital${disabled ? ' helmet-vital--disabled' : ''}${highlight ? ' helmet-vital--highlight' : ''}${ventable ? ' helmet-vital--ventable' : ''}`}
+                title={ventable ? `${bar.tag} — click to vent` : bar.tag}
+                onClick={ventable && ventKind ? () => requestVent(ventKind) : undefined}
+                onKeyDown={
+                  ventable && ventKind
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          requestVent(ventKind);
+                        }
+                      }
+                    : undefined
+                }
+              >
+                <div className="helmet-vital-head">
+                  <span className="helmet-vital-tag">{bar.tag}</span>
+                  <span className="helmet-vital-amount-screen" title={bar.tag}>
+                    <span className={`helmet-vital-val ${valClass}`}>{bar.display}</span>
+                  </span>
+                </div>
+                <div className="helmet-vital-crt">
+                  <span
+                    className={`helmet-vital-rate${rateLabel ? '' : ' helmet-vital-rate--empty'}${rateLabel && bar.ratePerSec > 0 ? ' helmet-vital-rate--gain' : ''}`}
+                    aria-hidden={!rateLabel}
+                  >
+                    {rateLabel ?? '\u00a0'}
+                  </span>
+                  <div className="helmet-vital-segments" aria-hidden>
+                    {Array.from({ length: VITAL_SEGMENT_COUNT }, (_, i) => {
+                      const tierFromBottom = i + 1;
+                      const lit = tierFromBottom <= litCount;
+                      return (
+                        <div
+                          key={tierFromBottom}
+                          className={`helmet-seg helmet-seg--v${lit ? ' helmet-seg--lit' : ''}${lit ? ` ${segLevelClass}` : ''}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {(showCrew || showCargo) && (
+            <div className="helmet-vitals-meta">
+              <span className="helmet-vital-tag">AUX</span>
+              <div className="helmet-vital-crt helmet-vitals-meta-crt">
+                {showCrew && (
                   <div
-                    key={tierFromBottom}
-                    className={`helmet-seg helmet-seg--v${lit ? ' helmet-seg--lit' : ''}${lit ? ` ${segLevelClass}` : ''}`}
-                  />
-                );
-              })}
-            </div>
-            <span className="helmet-vital-tag">{bar.tag}</span>
-          </div>
-        );
-      })}
-      {(showCrew || showCargo) && (
-        <div className="helmet-vitals-meta">
-          {showCrew && (
-            <div
-              role={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
-                canVentResource('crew')
-                  ? 'button'
-                  : undefined
-              }
-              tabIndex={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
-                canVentResource('crew')
-                  ? 0
-                  : undefined
-              }
-              className={`helmet-vitals-crew${disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? ' helmet-vital--disabled' : ''}${!disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) && canVentResource('crew') ? ' helmet-vital--ventable' : ''}`}
-              title={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) && canVentResource('crew')
-                  ? 'Crew — click to vent'
-                  : undefined
-              }
-              onClick={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS)
-                  ? () => requestVent('crew')
-                  : undefined
-              }
-              onKeyDown={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
-                canVentResource('crew')
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        requestVent('crew');
-                      }
+                    role={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
+                      canVentResource('crew')
+                        ? 'button'
+                        : undefined
                     }
-                  : undefined
-              }
-            >
-              <CrewIcons count={crewCount} size={11} />
-            </div>
-          )}
-          {showCargo && (
-            <div
-              role={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
-                canVentResource('cargo')
-                  ? 'button'
-                  : undefined
-              }
-              tabIndex={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
-                canVentResource('cargo')
-                  ? 0
-                  : undefined
-              }
-              className={`helmet-vitals-cargo${disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) ? ' helmet-vital--disabled' : ''}${!disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) && canVentResource('cargo') ? ' helmet-vital--ventable' : ''}`}
-              title={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
-                canVentResource('cargo')
-                  ? 'Cargo — click to vent'
-                  : undefined
-              }
-              onClick={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY)
-                  ? () => requestVent('cargo')
-                  : undefined
-              }
-              onKeyDown={
-                !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
-                canVentResource('cargo')
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        requestVent('cargo');
-                      }
+                    tabIndex={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
+                      canVentResource('crew')
+                        ? 0
+                        : undefined
                     }
-                  : undefined
-              }
-            >
-              {([0, 1, 2, 3] as const).map((i) => (
-                <div
-                  key={i}
-                  className={`power-hud-cargo-slot${i === 0 ? ' power-hud-cargo-slot--filled' : ''}`}
-                />
-              ))}
+                    className={`helmet-vitals-crew${disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) ? ' helmet-vital--disabled' : ''}${!disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) && canVentResource('crew') ? ' helmet-vital--ventable' : ''}`}
+                    title={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
+                      canVentResource('crew')
+                        ? 'Crew — click to vent'
+                        : undefined
+                    }
+                    onClick={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS)
+                        ? () => requestVent('crew')
+                        : undefined
+                    }
+                    onKeyDown={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CREW_STATUS) &&
+                      canVentResource('crew')
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              requestVent('crew');
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    <CrewIcons count={crewCount} size={11} />
+                  </div>
+                )}
+                {showCargo && (
+                  <div
+                    role={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                      canVentResource('cargo')
+                        ? 'button'
+                        : undefined
+                    }
+                    tabIndex={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                      canVentResource('cargo')
+                        ? 0
+                        : undefined
+                    }
+                    className={`helmet-vitals-cargo${disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) ? ' helmet-vital--disabled' : ''}${!disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) && canVentResource('cargo') ? ' helmet-vital--ventable' : ''}`}
+                    title={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                      canVentResource('cargo')
+                        ? 'Cargo — click to vent'
+                        : undefined
+                    }
+                    onClick={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY)
+                        ? () => requestVent('cargo')
+                        : undefined
+                    }
+                    onKeyDown={
+                      !disableElements.includes(INVENTORY_HUD_ELEMENTS.CARGO_CAPACITY) &&
+                      canVentResource('cargo')
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              requestVent('cargo');
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    {([0, 1, 2, 3] as const).map((i) => (
+                      <div
+                        key={i}
+                        className={`power-hud-cargo-slot${i === 0 ? ' power-hud-cargo-slot--filled' : ''}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -351,7 +372,6 @@ export default function PowerHUD({
   const [displayHull, setDisplayHull] = useState(100);
   const [displayFuel, setDisplayFuel] = useState(100);
   const [displayO2, setDisplayO2] = useState(100);
-  const [displayGForce, setDisplayGForce] = useState(0);
   const [displayVelocity, setDisplayVelocity] = useState(0);
   const [displayCargo, setDisplayCargo] = useState<CargoItem[]>([]);
   const [displayCrew, setDisplayCrew] = useState(() => Math.floor(shipCrew));
@@ -366,7 +386,6 @@ export default function PowerHUD({
       setDisplayHull(Math.floor(hullIntegrity));
       setDisplayFuel(Math.floor(fuel));
       setDisplayO2(Math.floor(o2));
-      setDisplayGForce((shipAcceleration.current * 10) / 9.81);
       setDisplayVelocity(getShipSpeedMps());
       setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
       setDisplayCrew(Math.floor(shipCrew));
@@ -394,17 +413,6 @@ export default function PowerHUD({
       level: velocityLevel(displayVelocity),
       group: 'orange',
     },
-    /*
-    {
-      id: MOVEMENT_HUD_ELEMENTS.GFORCE,
-      label: 'G-FORCE',
-      icon: Gauge,
-      value: `${displayGForce.toFixed(1)}g`,
-      ratePerSec: 0,
-      level: gforceLevel(displayGForce),
-      group: 'orange',
-    },
-    */
   ];
 
   const blueStats: StatDef[] = [

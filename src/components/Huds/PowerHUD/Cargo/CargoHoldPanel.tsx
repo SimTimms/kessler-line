@@ -93,104 +93,113 @@ export default function CargoHoldPanel({
 
   return (
     <div
-      className={`cargo-hold-panel ${dragOver ? 'cargo-hold-panel--drop-target' : ''} ${className}`.trim()}
+      className={`cargo-hold-panel mech-cargo ${dragOver ? 'cargo-hold-panel--drop-target' : ''} ${className}`.trim()}
       aria-label="Cargo hold"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <div className="cargo-hold-panel__header">
-        <span className="cargo-hold-panel__title">Cargo</span>
-        <span className="cargo-hold-panel__count">
-          {filledCount}/{CARGO_HOLD_SLOT_COUNT}
-        </span>
-        <button
-          type="button"
-          className="cargo-hold-panel__toggle"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-        >
-          {open ? 'CLOSE' : 'OPEN'}
-        </button>
-      </div>
+      <div className="mech-cargo-bezel">
+        <div className="mech-cargo-head">
+          <span className="mech-cargo-lamp" aria-hidden />
+          <span className="mech-cargo-title">CARGO</span>
+          <span className="mech-cargo-sub">HOLD</span>
+          <span className="mech-cargo-count-screen" title="Hold capacity">
+            <span className="mech-cargo-count">
+              {filledCount}/{CARGO_HOLD_SLOT_COUNT}
+            </span>
+          </span>
+          <button
+            type="button"
+            className={`mech-cargo-toggle${open ? ' mech-cargo-toggle--open' : ''}`}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            title={open ? 'Close cargo hold' : 'Open cargo hold'}
+          >
+            <span className="mech-cargo-toggle-face" aria-hidden>
+              {open ? '−' : '+'}
+            </span>
+          </button>
+        </div>
 
-      {showOpenTransfer ? (
-        <button
-          type="button"
-          className="cargo-hold-panel__transfer-btn"
-          onClick={() => openDockTransferPanel()}
-          title="Open resource transfer with docked partner"
-        >
-          Open Resource Transfer
-        </button>
-      ) : null}
+        {showOpenTransfer ? (
+          <button
+            type="button"
+            className="cargo-hold-panel__transfer-btn"
+            onClick={() => openDockTransferPanel()}
+            title="Open resource transfer with docked partner"
+          >
+            Open Resource Transfer
+          </button>
+        ) : null}
 
-      {transferEnabled && open ? (
-        <p className="cargo-hold-panel__hint">Drag stacks to / from container</p>
-      ) : null}
+        {transferEnabled && open ? (
+          <p className="cargo-hold-panel__hint">Drag stacks to / from container</p>
+        ) : null}
 
-      {open ? (
-        <>
-          <div className="cargo-hold-panel__grid" role="list">
-            {cells.map((cell, index) => {
-              if (!cell.filled) {
+        {open ? (
+          <div className="mech-cargo-crt">
+            <div className="cargo-hold-panel__grid" role="list">
+              {cells.map((cell, index) => {
+                if (!cell.filled) {
+                  return (
+                    <div
+                      key={`empty-${index}`}
+                      className="cargo-hold-panel__cell cargo-hold-panel__cell--empty"
+                      role="listitem"
+                      onMouseEnter={() => setHovered(null)}
+                    />
+                  );
+                }
+                const { Icon, color, label, itemId, stackQuantity } = cell;
+                const ui = getInventoryItemUi(itemId);
                 return (
-                  <div
-                    key={`empty-${index}`}
-                    className="cargo-hold-panel__cell cargo-hold-panel__cell--empty"
+                  <button
+                    key={`${itemId}-${index}`}
+                    type="button"
                     role="listitem"
-                    onMouseEnter={() => setHovered(null)}
-                  />
+                    className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
+                    style={{ '--cargo-color': color } as CSSProperties}
+                    draggable={transferEnabled}
+                    onDragStart={(e) => onDragStart(e, itemId, 1)}
+                    onMouseEnter={() =>
+                      setHovered({
+                        itemId,
+                        label,
+                        stackQuantity,
+                        tag: ui.tag,
+                      })
+                    }
+                    onMouseLeave={() => setHovered(null)}
+                    onClick={() => {
+                      if (!onEjectItem) return;
+                      onEjectItem({ name: itemId, quantity: stackQuantity });
+                    }}
+                    aria-label={label}
+                    title={transferEnabled ? `Drag to transfer 1× ${label}` : label}
+                  >
+                    <Icon size={11} strokeWidth={1.75} />
+                  </button>
                 );
-              }
-              const { Icon, color, label, itemId, stackQuantity } = cell;
-              const ui = getInventoryItemUi(itemId);
-              return (
-                <button
-                  key={`${itemId}-${index}`}
-                  type="button"
-                  role="listitem"
-                  className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
-                  style={{ '--cargo-color': color } as CSSProperties}
-                  draggable={transferEnabled}
-                  onDragStart={(e) => onDragStart(e, itemId, 1)}
-                  onMouseEnter={() =>
-                    setHovered({
-                      itemId,
-                      label,
-                      stackQuantity,
-                      tag: ui.tag,
-                    })
-                  }
-                  onMouseLeave={() => setHovered(null)}
-                  onClick={() => {
-                    if (!onEjectItem) return;
-                    onEjectItem({ name: itemId, quantity: stackQuantity });
-                  }}
-                  aria-label={label}
-                  title={transferEnabled ? `Drag to transfer 1× ${label}` : label}
-                >
-                  <Icon size={11} strokeWidth={1.75} />
-                </button>
-              );
-            })}
+              })}
+            </div>
+            <div className="cargo-hold-panel__divider" aria-hidden />
+            <div className="cargo-hold-panel__detail" aria-live="polite">
+              {hovered ? (
+                <>
+                  <span className="cargo-hold-panel__detail-tag">{hovered.tag}</span>
+                  <span className="cargo-hold-panel__detail-name">{hovered.label}</span>
+                  <span className="cargo-hold-panel__detail-qty">{hovered.stackQuantity} aboard</span>
+                </>
+              ) : (
+                <span className="cargo-hold-panel__detail-idle">
+                  {transferEnabled ? 'Drag a stack' : 'Hover a cell'}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="cargo-hold-panel__divider" aria-hidden />
-          <div className="cargo-hold-panel__detail" aria-live="polite">
-            {hovered ? (
-              <>
-                <span className="cargo-hold-panel__detail-tag">{hovered.tag}</span>
-                <span className="cargo-hold-panel__detail-name">{hovered.label}</span>
-                <span className="cargo-hold-panel__detail-qty">{hovered.stackQuantity} aboard</span>
-              </>
-            ) : (
-              <span className="cargo-hold-panel__detail-idle">
-                {transferEnabled ? 'Drag a stack' : 'Hover a cell'}
-              </span>
-            )}
-          </div>
-        </>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 }

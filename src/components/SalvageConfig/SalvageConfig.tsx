@@ -27,7 +27,6 @@ const SALVAGE_CONFIG_SCANNER_INITIAL_POWERS = {
 } as const;
 
 const SALVAGE_CONFIG_DISABLED_HUD_ELEMENTS = [
-  ScannerHUDElements.SPOTLIGHT,
   ScannerHUDElements.RADIATION,
 ] as const;
 

@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import PowerHUD from '../PowerHUD/PowerHUD';
 import { NavHUD, type TutorialTargetDef } from '../NavHUD/NavHUD';
 import { ScannerHUD, type ScannerHUDElementId } from '../HUD/ScannerHUD';
-import ContactsHUD from '../../ContactsHUD/ContactsHUD';
+import CommsHUD from '../CommsHUD/CommsHUD';
 import DockTransferHUD from '../DockTransferHUD/DockTransferHUD';
 import ShipControlsHUD from '../ShipControlsHUD/ShipControlsHUD';
 import './HelmetHUD.css';
@@ -44,6 +44,9 @@ const HelmetHUD = memo(function HelmetHUD({
   thrustLevel,
   setThrustLevel,
   scannerInitialPowers,
+  radioOn,
+  setRadioOn,
+  radioOnRef,
   ...scannerProps
 }: HelmetHUDProps) {
   return (
@@ -71,7 +74,15 @@ const HelmetHUD = memo(function HelmetHUD({
           <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
         </div>
       </div>
-      <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly} />
+      <CommsHUD
+        radioOn={radioOn}
+        setRadioOn={setRadioOn}
+        radioOnRef={radioOnRef}
+        disableElements={disableElements}
+        focusElements={focusElements}
+        initialRadioPower={scannerInitialPowers?.radio}
+        sceneRadioContactsOnly={sceneRadioContactsOnly}
+      />
       <DockTransferHUD />
     </div>
   );

@@ -37,13 +37,20 @@ export const PAD_SCAN_SFX_SRC = '/audio/virtual_vibes-corrupt-data-sound-379468.
 export const DOCK_ALIGN_SFX_SRC =
   '/audio/freesound_community-047847_industrial-crane-movement-67583.mp3';
 
+/** Shared UI button press (replaces synthesized click blip). */
+export const UI_BUTTON_CLICK_SFX_SRC = '/audio/dragon-studio-button-press-382713.mp3';
+
 const DEFAULT_AMBIENT_BED_VOLUME = 0.05;
 const DEFAULT_PAD_SCAN_VOLUME = 0.35;
 const DEFAULT_DOCK_ALIGN_VOLUME = 0.35;
+const DEFAULT_UI_CLICK_VOLUME = 0.45;
 /** Base playback rate for jittered dock / pad SFX. */
 const DOCK_SFX_PLAYBACK_RATE = 0.75;
 /** Random relative variation around the base rate (±50%). */
 const DOCK_SFX_PLAYBACK_RATE_JITTER = 0.5;
+
+let uiClickPool: HTMLAudioElement[] = [];
+const UI_CLICK_POOL_MAX = 6;
 
 function jitteredDockSfxPlaybackRate(): number {
   const rateJitter = 1 + (Math.random() * 2 - 1) * DOCK_SFX_PLAYBACK_RATE_JITTER;
@@ -466,29 +473,32 @@ export function playDialogSelect(): void {
   }
 }
 
-/** Short sci-fi click blip. */
-export function playUiClick(): void {
+/** Short mechanical button press (shared by all UI buttons). */
+export function playUiClick(volume = DEFAULT_UI_CLICK_VOLUME): void {
+  resumeAudioContext();
   try {
-    const ac = getCtx();
-    if (ac.state === 'suspended') ac.resume();
-
-    const now = ac.currentTime;
-
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-
-    osc.connect(gain);
-    gain.connect(ac.destination);
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1100, now);
-    osc.frequency.exponentialRampToValueAtTime(420, now + 0.07);
-
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-
-    osc.start(now);
-    osc.stop(now + 0.09);
+    let audio: HTMLAudioElement | null = null;
+    for (const candidate of uiClickPool) {
+      if (candidate.paused || candidate.ended) {
+        audio = candidate;
+        break;
+      }
+    }
+    if (!audio) {
+      if (uiClickPool.length < UI_CLICK_POOL_MAX) {
+        audio = new Audio(UI_BUTTON_CLICK_SFX_SRC);
+        audio.preload = 'auto';
+        uiClickPool.push(audio);
+      } else {
+        audio = uiClickPool[0];
+      }
+    }
+    audio.pause();
+    audio.currentTime = 0;
+    audio.volume = Math.max(0, Math.min(1, volume));
+    audio.playbackRate = 1;
+    audio.loop = false;
+    void audio.play().catch(() => undefined);
   } catch {
     // Silently ignore — audio not critical
   }

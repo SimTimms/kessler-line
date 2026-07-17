@@ -15,3 +15,28 @@
   opacity: 0.3;
   pointer-events: none;
 }
+
+.hud-btn-levels {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.hud-btn-range {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 2px;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid transparent;
+  border-radius: 1px;
+  cursor: pointer;
+  appearance: none;
+}
+
+.hud-btn-range--on {
+  background: rgba(0, 0, 0, 0.55);
+}

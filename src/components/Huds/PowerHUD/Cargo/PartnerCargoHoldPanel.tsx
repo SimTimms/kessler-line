@@ -72,6 +72,7 @@ export default function PartnerCargoHoldPanel() {
   if (!partnerId || !dockOwner || !showPanel) return null;
 
   const label = getDockablePartnerLabel(partnerId) || 'Container';
+  const titleAbbrev = label.length > 8 ? `${label.slice(0, 7)}.` : label;
 
   function onDragStart(e: DragEvent, itemId: string, quantity: number) {
     const payload: CargoDragPayload = { itemId, quantity, from: dockOwner! };
@@ -95,85 +96,96 @@ export default function PartnerCargoHoldPanel() {
 
   return (
     <div
-      className={`cargo-hold-panel cargo-hold-panel--partner ${dragOver ? 'cargo-hold-panel--drop-target' : ''}`}
+      className={`cargo-hold-panel mech-cargo mech-cargo--partner ${dragOver ? 'cargo-hold-panel--drop-target' : ''}`}
       aria-label={`${label} cargo hold`}
       onDragOver={onDragOver}
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
     >
-      <div className="cargo-hold-panel__header">
-        <span className="cargo-hold-panel__title">{label}</span>
-        <span className="cargo-hold-panel__count">
-          {filledCount}/{CARGO_HOLD_SLOT_COUNT}
-        </span>
-        <button
-          type="button"
-          className="cargo-hold-panel__toggle"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-        >
-          {open ? 'CLOSE' : 'OPEN'}
-        </button>
-      </div>
+      <div className="mech-cargo-bezel">
+        <div className="mech-cargo-head">
+          <span className="mech-cargo-lamp" aria-hidden />
+          <span className="mech-cargo-title" title={label}>
+            {titleAbbrev}
+          </span>
+          <span className="mech-cargo-sub">HOLD</span>
+          <span className="mech-cargo-count-screen" title="Hold capacity">
+            <span className="mech-cargo-count">
+              {filledCount}/{CARGO_HOLD_SLOT_COUNT}
+            </span>
+          </span>
+          <button
+            type="button"
+            className={`mech-cargo-toggle${open ? ' mech-cargo-toggle--open' : ''}`}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            title={open ? 'Close hold' : 'Open hold'}
+          >
+            <span className="mech-cargo-toggle-face" aria-hidden>
+              {open ? '−' : '+'}
+            </span>
+          </button>
+        </div>
 
-      <p className="cargo-hold-panel__hint">Container inventory — drag to ship cargo</p>
+        <p className="cargo-hold-panel__hint">Container inventory — drag to ship cargo</p>
 
-      {open ? (
-        <>
-          <div className="cargo-hold-panel__grid" role="list">
-            {cells.map((cell, index) => {
-              if (!cell.filled) {
+        {open ? (
+          <div className="mech-cargo-crt">
+            <div className="cargo-hold-panel__grid" role="list">
+              {cells.map((cell, index) => {
+                if (!cell.filled) {
+                  return (
+                    <div
+                      key={`empty-${index}`}
+                      className="cargo-hold-panel__cell cargo-hold-panel__cell--empty"
+                      role="listitem"
+                      onMouseEnter={() => setHovered(null)}
+                    />
+                  );
+                }
+                const { Icon, color, label: itemLabel, itemId, stackQuantity } = cell;
+                const ui = getInventoryItemUi(itemId);
                 return (
-                  <div
-                    key={`empty-${index}`}
-                    className="cargo-hold-panel__cell cargo-hold-panel__cell--empty"
+                  <button
+                    key={`${itemId}-${index}`}
+                    type="button"
                     role="listitem"
-                    onMouseEnter={() => setHovered(null)}
-                  />
+                    className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
+                    style={{ '--cargo-color': color } as CSSProperties}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, itemId, 1)}
+                    onMouseEnter={() =>
+                      setHovered({
+                        itemId,
+                        label: itemLabel,
+                        stackQuantity,
+                        tag: ui.tag,
+                      })
+                    }
+                    onMouseLeave={() => setHovered(null)}
+                    aria-label={itemLabel}
+                    title={`Drag to transfer 1× ${itemLabel}`}
+                  >
+                    <Icon size={11} strokeWidth={1.75} />
+                  </button>
                 );
-              }
-              const { Icon, color, label: itemLabel, itemId, stackQuantity } = cell;
-              const ui = getInventoryItemUi(itemId);
-              return (
-                <button
-                  key={`${itemId}-${index}`}
-                  type="button"
-                  role="listitem"
-                  className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
-                  style={{ '--cargo-color': color } as CSSProperties}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, itemId, 1)}
-                  onMouseEnter={() =>
-                    setHovered({
-                      itemId,
-                      label: itemLabel,
-                      stackQuantity,
-                      tag: ui.tag,
-                    })
-                  }
-                  onMouseLeave={() => setHovered(null)}
-                  aria-label={itemLabel}
-                  title={`Drag to transfer 1× ${itemLabel}`}
-                >
-                  <Icon size={11} strokeWidth={1.75} />
-                </button>
-              );
-            })}
+              })}
+            </div>
+            <div className="cargo-hold-panel__divider" aria-hidden />
+            <div className="cargo-hold-panel__detail" aria-live="polite">
+              {hovered ? (
+                <>
+                  <span className="cargo-hold-panel__detail-tag">{hovered.tag}</span>
+                  <span className="cargo-hold-panel__detail-name">{hovered.label}</span>
+                  <span className="cargo-hold-panel__detail-qty">{hovered.stackQuantity} stored</span>
+                </>
+              ) : (
+                <span className="cargo-hold-panel__detail-idle">Drag a stack</span>
+              )}
+            </div>
           </div>
-          <div className="cargo-hold-panel__divider" aria-hidden />
-          <div className="cargo-hold-panel__detail" aria-live="polite">
-            {hovered ? (
-              <>
-                <span className="cargo-hold-panel__detail-tag">{hovered.tag}</span>
-                <span className="cargo-hold-panel__detail-name">{hovered.label}</span>
-                <span className="cargo-hold-panel__detail-qty">{hovered.stackQuantity} stored</span>
-              </>
-            ) : (
-              <span className="cargo-hold-panel__detail-idle">Drag a stack</span>
-            )}
-          </div>
-        </>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 }

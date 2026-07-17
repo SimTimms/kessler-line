@@ -1,18 +1,543 @@
-.button-panel {
-  font-family: monospace;
-  font-size: 14px;
+/* ── Mechanical CRT scanner (40s–90s console aesthetic) ───────────────────── */
+
+.mech-scanner {
+  --mech-cyan: #00c8ff;
+  --mech-cyan-dim: rgba(0, 200, 255, 0.38);
+  --mech-amber: #ffb020;
+  --mech-amber-dim: rgba(255, 176, 32, 0.45);
+  --mech-metal: #2a2e32;
+  --mech-metal-lo: #141618;
+  --mech-crt-bg: #05080c;
+  --mech-font: 'Share Tech Mono', 'Courier New', monospace;
+  --mech-label: rgba(180, 200, 220, 0.55);
+  font-family: var(--mech-font);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mech-cyan);
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.mech-scanner-bezel {
+  position: relative;
+  padding: 10px 10px 8px;
+  background: linear-gradient(145deg, #222222 0%, var(--mech-metal) 38%, var(--mech-metal-lo) 100%);
+  border: 1px solid #5a616a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.mech-scanner-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 2px 8px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.22);
+}
+
+.mech-scanner-lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mech-cyan);
+  box-shadow:
+    0 0 6px rgba(0, 200, 255, 0.85),
+    inset 0 0 2px rgba(180, 240, 255, 0.9);
+  animation: mech-lamp-pulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes mech-lamp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.mech-scanner-title {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--mech-label);
+  text-shadow: none;
+  line-height: 1;
+}
+
+.mech-scanner-sub {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  color: var(--mech-label);
+  line-height: 1;
+}
+
+/* Two columns of three scanners, grey bezel showing between */
+.mech-scanner-modules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 30px;
+  row-gap: 8px;
+}
+
+.mech-scanner .helmet-scanner-section {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mech-scanner .helmet-scanner-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.mech-scanner .helmet-scanner-section-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mech-scanner .helmet-scanner-title-icon {
+  flex-shrink: 0;
+  color: var(--mech-label);
+  opacity: 0.9;
+}
+
+.mech-scanner .helmet-scanner-readouts {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mech-scanner .helmet-scanner-abbr {
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--mech-label);
+  text-shadow: none;
+  line-height: 1;
+}
+
+.mech-scanner .helmet-scanner-row--on .helmet-scanner-abbr,
+.mech-scanner .helmet-scanner-row--on .helmet-scanner-title-icon {
+  color: var(--mech-label);
+  text-shadow: none;
+  opacity: 0.9;
+}
+
+.mech-scanner .helmet-scanner-drain-screen {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 3px 6px;
+  background: var(--mech-crt-bg);
+  border-radius: 2px;
+  border: 1px solid #0a0c10;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 200, 255, 0.08),
+    inset 0 2px 6px rgba(0, 0, 0, 0.7),
+    inset 0 0 10px rgba(0, 200, 255, 0.03);
+  overflow: hidden;
+}
+
+button.helmet-scanner-drain-screen {
+  appearance: none;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+}
+
+.mech-scanner .helmet-scanner-cont-btn--clickable {
+  cursor: pointer;
+}
+
+.mech-scanner .helmet-scanner-cont-btn--clickable:hover:not(:disabled) {
+  border-color: rgba(0, 200, 255, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 200, 255, 0.14),
+    inset 0 2px 6px rgba(0, 0, 0, 0.7),
+    0 0 8px rgba(0, 200, 255, 0.2);
+}
+
+.mech-scanner .helmet-scanner-cont-btn:disabled {
+  cursor: default;
+}
+
+.mech-scanner .helmet-scanner-drain-screen::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 3px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.45;
+}
+
+.mech-scanner .helmet-scanner-drain {
+  position: relative;
+  z-index: 1;
+  font-family: inherit;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(0, 200, 255, 0.28);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mech-scanner .helmet-scanner-drain-screen--active .helmet-scanner-drain {
+  color: var(--mech-cyan);
+  text-shadow: 0 0 5px rgba(0, 200, 255, 0.4);
+}
+
+/* Power drain uses amber when actively draining */
+.mech-scanner
+  .helmet-scanner-readouts
+  .helmet-scanner-drain-screen:last-child.helmet-scanner-drain-screen--active
+  .helmet-scanner-drain {
+  color: var(--mech-amber);
+  text-shadow: 0 0 5px rgba(255, 176, 32, 0.35);
+}
+
+/* Per-sensor sunken CRT strip */
+.mech-scanner .helmet-scanner-section-crt {
+  position: relative;
+  padding: 4px;
+  border-radius: 3px;
+  border: 1px solid #0a0c10;
+  box-shadow:
+    inset 1px 1px 3px rgba(255, 255, 255, 0.1),
+    inset -1px -1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.mech-scanner .helmet-scanner-section-crt::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 3px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+.mech-scanner .helmet-scanner-section-crt::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(0, 200, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 200, 255, 0.04) 1px, transparent 1px);
+  background-size: 10px 10px;
+  opacity: 0.65;
+}
+
+/* ── Helmet layout overrides ─────────────────────────────────────────────── */
+
+.mech-scanner.helmet-scanner-deck {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+  font-family: var(--mech-font);
+}
+
+.helmet-scanner-controls-row .mech-scanner.helmet-scanner-deck {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.mech-scanner .helmet-scanner-deck-head {
+  display: none;
+}
+
+.mech-scanner .helmet-scanner-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+}
+
+/* Shared chunky switch strip: 0/I + S/M/L */
+.mech-scanner .helmet-scanner-switches {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.mech-scanner .helmet-scanner-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(0, 200, 255, 0.35);
+  cursor: pointer;
+}
+
+.mech-scanner .helmet-scanner-switch-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
+  border: 1px solid #5a616a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.55),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0;
+  line-height: 1;
+  color: inherit;
+}
+
+.mech-scanner .helmet-scanner-switch--on,
+.mech-scanner .helmet-scanner-switch--selected {
+  color: var(--scan-accent, var(--mech-cyan));
+}
+
+.mech-scanner .helmet-scanner-switch--on .helmet-scanner-switch-face,
+.mech-scanner .helmet-scanner-switch--selected .helmet-scanner-switch-face {
+  border-color: color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 55%, #5a616a);
+  box-shadow:
+    inset 0 0 8px color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 35%, transparent),
+    0 0 8px color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 25%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 2px 2px 4px rgba(0, 0, 0, 1);
+  background: #111;
+}
+
+.mech-scanner .helmet-scanner-switch--off {
+  color: #fff;
+}
+
+.mech-scanner .helmet-scanner-switch--off .helmet-scanner-switch-face {
+  border-color: color-mix(in srgb, #fff 55%, #5a616a);
+}
+
+.mech-scanner .helmet-scanner-switch--off:hover:not(:disabled) .helmet-scanner-switch-face {
+  border-color: color-mix(in srgb, #fff 70%, white);
+  color: #fff;
+}
+
+.mech-scanner .helmet-scanner-switch--lit:not(.helmet-scanner-switch--selected) {
+  color: color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 55%, transparent);
+}
+
+.mech-scanner
+  .helmet-scanner-switch--lit:not(.helmet-scanner-switch--selected)
+  .helmet-scanner-switch-face {
+  border-color: color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 30%, #5a616a);
+  box-shadow:
+    inset 0 0 4px color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mech-scanner .helmet-scanner-switch:hover:not(:disabled) .helmet-scanner-switch-face {
+  border-color: color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 70%, white);
+  color: color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 85%, white);
+}
+
+.mech-scanner .helmet-scanner-switch:active:not(:disabled) .helmet-scanner-switch-face {
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.7),
+    0 0 4px color-mix(in srgb, var(--scan-accent, var(--mech-cyan)) 20%, transparent);
+  transform: translateY(1px);
+}
+
+.mech-scanner .helmet-scanner-row--highlight {
+  filter: drop-shadow(0 0 6px rgba(0, 200, 255, 0.7));
+  animation: mech-scanner-pulse 0.9s ease-in-out infinite;
+}
+
+.mech-scanner .helmet-scanner-row--disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  filter: grayscale(100%);
+}
+
+@keyframes mech-scanner-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgba(0, 200, 255, 0.85));
+  }
+  50% {
+    filter: drop-shadow(0 0 4px rgba(0, 200, 255, 0.3));
+  }
+}
+
+/* Pad link / RF waveform */
+.mech-scanner .helmet-pad-scan-divider,
+.mech-scanner .classic-pad-scan-divider {
+  margin: 2px 0 6px;
+  border-top: 1px solid rgba(0, 200, 255, 0.18);
+  border-bottom: none;
+}
+
+.mech-scanner .helmet-pad-scan {
+  display: grid;
+  grid-template-columns: 22px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  color: var(--mech-cyan-dim);
+  padding: 4px 6px;
+  background: var(--mech-crt-bg);
+  border-radius: 3px;
+  border: 1px solid #0a0c10;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.65);
+}
+
+.mech-scanner .helmet-pad-scan-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.mech-scanner .helmet-pad-scan-wave {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2px;
+  height: 16px;
+  padding: 0 2px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 200, 255, 0.12);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.mech-scanner .helmet-pad-scan-bar {
+  flex: 1;
+  min-width: 2px;
+  max-width: 4px;
+  height: 22%;
+  border-radius: 0;
+  background: currentColor;
+  opacity: 0.45;
+  transform-origin: bottom center;
+}
+
+.mech-scanner .helmet-pad-scan-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-align: right;
+  color: inherit;
+}
+
+.mech-scanner .helmet-pad-scan--active {
+  color: var(--mech-cyan);
+}
+
+.mech-scanner .helmet-pad-scan--active .helmet-pad-scan-icon {
+  filter: drop-shadow(0 0 4px rgba(0, 200, 255, 0.65));
+}
+
+.mech-scanner .helmet-pad-scan--active .helmet-pad-scan-bar {
+  opacity: 1;
+  animation: helmet-pad-scan-wave 0.55s ease-in-out infinite alternate;
+  box-shadow: 0 0 4px rgba(0, 200, 255, 0.5);
+}
+
+.mech-scanner .helmet-pad-scan--active .helmet-pad-scan-label {
+  color: #7ef3ff;
+  text-shadow: 0 0 6px rgba(0, 200, 255, 0.45);
+}
+
+/* ── Classic layout (config scenes) ──────────────────────────────────────── */
+
+.mech-scanner.button-panel {
   position: fixed;
   left: 16px;
   bottom: 50px;
-  pointer-events: auto;
+  font-size: 13px;
   transform: translateY(0);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(14px);
+  backdrop-filter: none;
+  min-width: 180px;
 }
 
-/* ── Scanner panel slide wrapper ─────────────────────────────────────────── */
+.classic-scanner-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mech-scanner .classic-scanner-cell .power-hud-label {
+  font-family: var(--mech-font);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--mech-label);
+  margin-top: 2px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.18);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mech-scanner .classic-scanner-drain {
+  letter-spacing: 0.08em;
+  color: rgba(180, 200, 220, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+.mech-scanner .classic-scanner-drain--active {
+  color: var(--mech-amber);
+  text-shadow: 0 0 5px rgba(255, 176, 32, 0.35);
+}
+
+.mech-scanner .classic-scanner-cell .hud-btn {
+  gap: 5px;
+}
+
+.button-panel .helmet-pad-scan {
+  padding: 2px 0 4px;
+  min-width: 120px;
+}
+
+/* ── Scanner panel slide wrapper / toggle ────────────────────────────────── */
+
 .hud-scanner-wrap {
   position: fixed;
   left: 16px;
@@ -20,7 +545,7 @@
   pointer-events: auto;
   transform: translateY(0);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(14px);
+  backdrop-filter: none;
 }
 
 .hud-button-disabled {
@@ -34,7 +559,6 @@
   pointer-events: none;
 }
 
-/* ── Scanner toggle button ───────────────────────────────────────────────── */
 .hud-scanner-toggle {
   position: fixed;
   left: 16px;
@@ -43,42 +567,39 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 8, 18, 0.7);
-  border: 1px solid rgba(0, 200, 255, 0.25);
-  border-radius: 0px;
+  background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
+  border: 1px solid #5a616a;
+  border-radius: 2px;
   padding: 5px 11px;
-  font-family: 'Space Grotesk', monospace;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
   font-size: 10px;
-  letter-spacing: 0.12em;
-  color: rgba(0, 200, 255, 0.5);
+  letter-spacing: 0.14em;
+  color: rgba(0, 200, 255, 0.45);
   cursor: pointer;
   pointer-events: auto;
   user-select: none;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.4);
   transition:
     border-color 0.2s,
     color 0.2s,
     box-shadow 0.2s;
-  backdrop-filter: blur(4px);
 }
 
 .hud-scanner-toggle:hover {
   border-color: rgba(0, 200, 255, 0.55);
-  color: #00cfff;
-  box-shadow: 0 0 12px rgba(0, 200, 255, 0.15);
+  color: var(--mech-cyan, #00c8ff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 10px rgba(0, 200, 255, 0.2);
 }
 
 .hud-scanner-toggle--active {
   border-color: rgba(0, 200, 255, 0.45);
-  color: rgba(0, 200, 255, 0.85);
-  box-shadow: 0 0 8px rgba(0, 200, 255, 0.1);
-}
-
-.classic-pad-scan-divider {
-  margin: 10px 0 6px;
-  border-top: 1px solid rgba(0, 200, 255, 0.22);
-}
-
-.button-panel .helmet-pad-scan {
-  padding: 2px 0 4px;
-  min-width: 120px;
+  color: rgba(0, 200, 255, 0.9);
+  box-shadow:
+    inset 0 0 8px rgba(0, 200, 255, 0.15),
+    0 0 8px rgba(0, 200, 255, 0.12);
 }

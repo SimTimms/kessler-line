@@ -172,7 +172,6 @@ function StarChartPanel({
           onMouseLeave={() => setHoverCard(null)}
         />
       ))}
-      <div className="sandbox-map-title">STAR CHART</div>
       {hoverCard && (
         <div
           className="sandbox-map-hover-card"
@@ -244,7 +243,6 @@ function DockingAssistPanel({
           />
         </>
       )}
-      <div className="sandbox-map-title">DOCKING ASSIST</div>
       {dockingReadouts && (
         <>
           <div className="sandbox-map-docking-mps">MPS {dockingReadouts.relSpeedText}</div>
@@ -794,45 +792,56 @@ export default function SandboxHtmlMiniMap({
 
   return (
     <div
-      ref={containerRef}
-      className={`sandbox-map-overlay${isDragging ? ' sandbox-map-overlay--dragging' : ''}${dockingAssist ? ' sandbox-map-overlay--docking' : ''}`}
-      onWheel={handleWheel}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={stopDrag}
-      onMouseLeave={stopDrag}
+      className={`sandbox-map-overlay mech-chart${isDragging ? ' sandbox-map-overlay--dragging' : ''}${dockingAssist ? ' sandbox-map-overlay--docking' : ''}`}
     >
-      <div className="sandbox-map-grid" />
-      {dockingAssist ? (
-        <DockingAssistPanel
-          dockingAssist={dockingAssist}
-          dockingAssistProjection={dockingAssistProjection}
-          dockingReadouts={dockingReadouts}
-          dockingCaptureActive={dockingCaptureActive}
-        />
-      ) : (
-        <StarChartPanel
-          orbitRings={orbitRings}
-          scannerRings={scannerRings}
-          visibleMarkers={visibleMarkers}
-          shipHeadingDeg={shipHeadingDeg}
-          markerClass={markerClass}
-          setHoverCard={setHoverCard}
-          hoverCard={hoverCard}
-          describeMarker={describeMarker}
-        />
-      )}
-      <div className="sandbox-map-actions">
-        <button
-          type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={toggleFollowShip}
-          className={followShip ? 'sandbox-map-action--active' : ''}
-          title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
-          disabled={Boolean(dockingAssist)}
+      <div className="mech-chart-bezel">
+        <div className="mech-chart-head">
+          <span className="mech-chart-lamp" aria-hidden />
+          <span className="mech-chart-title">{dockingAssist ? 'DOCK' : 'STAR'}</span>
+          <span className="mech-chart-sub">{dockingAssist ? 'ASSIST' : 'CHART'}</span>
+          <div className="sandbox-map-actions">
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={toggleFollowShip}
+              className={followShip ? 'sandbox-map-action--active' : ''}
+              title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
+              disabled={Boolean(dockingAssist)}
+            >
+              {dockingAssist ? 'DOCK' : `CTR ${followShip ? 'ON' : 'OFF'}`}
+            </button>
+          </div>
+        </div>
+        <div
+          ref={containerRef}
+          className="mech-chart-crt"
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={stopDrag}
+          onMouseLeave={stopDrag}
         >
-          {dockingAssist ? 'DOCK MODE' : `CENTER ${followShip ? 'ON' : 'OFF'}`}
-        </button>
+          <div className="sandbox-map-grid" />
+          {dockingAssist ? (
+            <DockingAssistPanel
+              dockingAssist={dockingAssist}
+              dockingAssistProjection={dockingAssistProjection}
+              dockingReadouts={dockingReadouts}
+              dockingCaptureActive={dockingCaptureActive}
+            />
+          ) : (
+            <StarChartPanel
+              orbitRings={orbitRings}
+              scannerRings={scannerRings}
+              visibleMarkers={visibleMarkers}
+              shipHeadingDeg={shipHeadingDeg}
+              markerClass={markerClass}
+              setHoverCard={setHoverCard}
+              hoverCard={hoverCard}
+              describeMarker={describeMarker}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

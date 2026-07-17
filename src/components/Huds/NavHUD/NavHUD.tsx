@@ -38,6 +38,7 @@ import { SHIP_COLLISION_ID } from '../../../context/ShipState';
 import {
   NAV_SCAN_PICKER_ORDER,
   getNavScanPickerTheme,
+  isNavScanPickerVariant,
   type NavScanPickerId,
 } from '../../../config/navScanPickerConfig';
 import {
@@ -47,6 +48,8 @@ import {
 import { humanizeCollidableId, type NavScanContact } from './navScanPickerContacts';
 import { computeOrbitHudMetrics, orbitBodyLabel } from './orbitHudMetrics';
 import { KM_PER_UNIT } from '../../../config/commsConfig';
+import { setScannerContactCount } from '../../../context/ScannerContactCounts';
+import { EVENT_OPEN_SCAN_PICKER } from '../../../context/NavHud';
 import {
   autopilotActive,
   autopilotMode,
@@ -392,10 +395,12 @@ export const NavHUD = ({
         if (sig !== prevMagSigRef.current) {
           prevMagSigRef.current = sig;
           setMagneticContacts(inRange);
+          setScannerContactCount('magnet', inRange.length);
         }
       } else if (prevMagSigRef.current !== '') {
         prevMagSigRef.current = '';
         setMagneticContacts([]);
+        setScannerContactCount('magnet', 0);
       }
 
       // Drive signature contacts
@@ -422,10 +427,12 @@ export const NavHUD = ({
         if (sig !== prevDriveSigRef.current) {
           prevDriveSigRef.current = sig;
           setDriveContacts(inRange);
+          setScannerContactCount('drive', inRange.length);
         }
       } else if (prevDriveSigRef.current !== '') {
         prevDriveSigRef.current = '';
         setDriveContacts([]);
+        setScannerContactCount('drive', 0);
       }
 
       // Proximity contacts (collidables in range)
@@ -453,10 +460,12 @@ export const NavHUD = ({
         if (sig !== prevProximitySigRef.current) {
           prevProximitySigRef.current = sig;
           setProximityContacts(inRange);
+          setScannerContactCount('proximity', inRange.length);
         }
       } else if (prevProximitySigRef.current !== '') {
         prevProximitySigRef.current = '';
         setProximityContacts([]);
+        setScannerContactCount('proximity', 0);
       }
 
       // Radio broadcasts in range (scene-registered only)
@@ -481,10 +490,12 @@ export const NavHUD = ({
         if (sig !== prevRadioSigRef.current) {
           prevRadioSigRef.current = sig;
           setRadioContacts(inRange);
+          setScannerContactCount('radio', inRange.length);
         }
       } else if (prevRadioSigRef.current !== '') {
         prevRadioSigRef.current = '';
         setRadioContacts([]);
+        setScannerContactCount('radio', 0);
       }
 
       // Radiation sources in range
@@ -512,10 +523,12 @@ export const NavHUD = ({
         if (sig !== prevRadiationSigRef.current) {
           prevRadiationSigRef.current = sig;
           setRadiationContacts(inRange);
+          setScannerContactCount('radiation', inRange.length);
         }
       } else if (prevRadiationSigRef.current !== '') {
         prevRadiationSigRef.current = '';
         setRadiationContacts([]);
+        setScannerContactCount('radiation', 0);
       }
 
       if (undockBtnRef.current) {
@@ -589,6 +602,18 @@ export const NavHUD = ({
       window.removeEventListener('NavContactHighlightStart', onStart);
       window.removeEventListener('NavContactHighlightStop', onStop);
     };
+  }, []);
+
+  // Scanner HUD / external requests to open a filtered scan-contact picker
+  useEffect(() => {
+    const onOpenScanPicker = (e: Event) => {
+      const { scanId } = (e as CustomEvent<{ scanId: string }>).detail ?? {};
+      if (!scanId || !isNavScanPickerVariant(scanId)) return;
+      setDialogOpen(false);
+      setOpenScanPicker(scanId);
+    };
+    window.addEventListener(EVENT_OPEN_SCAN_PICKER, onOpenScanPicker);
+    return () => window.removeEventListener(EVENT_OPEN_SCAN_PICKER, onOpenScanPicker);
   }, []);
 
   const customGeneralMatch = customGeneralTargets?.find((t) => t.id === targetId);
@@ -829,100 +854,107 @@ export const NavHUD = ({
   if (layout === 'helmet') {
     return (
       <>
-        <div className="helmet-nav">
-          {isDocked ? (
-            <div className="helmet-nav-docked">
-              <span className="helmet-nav-tag">DOCK</span>
-              <span className="helmet-nav-name">
-                {displayNameForDockedStation(dockedStationId)}
-              </span>
-              <span className="helmet-nav-tag">SPD</span>
-              <span ref={speedRef} className="helmet-nav-speed hud-value" />
-              <button
-                ref={undockBtnRef}
-                type="button"
-                className="helmet-nav-btn"
-                onClick={requestUndock}
-              >
-                UNDOCK
-              </button>
+        <div className="helmet-nav mech-nav">
+          <div className="mech-nav-bezel">
+            <div className="mech-nav-head">
+              <span className="mech-nav-lamp" aria-hidden />
+              <span className="mech-nav-title">NAV</span>
+              <span className="mech-nav-sub">CONTACTS</span>
             </div>
-          ) : (
-            <>
-              <div className="helmet-nav-target-line">
-                <div className="helmet-nav-scan-chip helmet-nav-scan-chip--tgt">
-                  <span className="helmet-nav-scan-label">TGT</span>
-                  <button
-                    type="button"
-                    className={`helmet-nav-btn helmet-nav-btn--scan helmet-nav-btn--tgt${hasActiveNavTarget ? ' helmet-nav-btn--tgt-filled' : ''}${navTargetHighlight ? ' helmet-nav-btn--highlight' : ''}`}
-                    onClick={openNavTargetDialog}
-                    title={displayLabel || `Select nav target (${totalNavContactCount} contacts)`}
-                    aria-label={
-                      hasActiveNavTarget
-                        ? `Nav target: ${displayLabel}`
-                        : `${totalNavContactCount} nav contacts`
-                    }
-                  >
-                    {hasActiveNavTarget ? displayLabel || '—' : `${totalNavContactCount} CONTACTS`}
-                  </button>
-                </div>
-                {hasActiveNavTarget ? (
-                  <button
-                    type="button"
-                    className="helmet-nav-btn helmet-nav-btn--clear-target"
-                    onClick={handleClearNavTarget}
-                    title="Clear nav target"
-                    aria-label="Clear nav target"
-                  >
-                    ✕
-                  </button>
-                ) : (
-                  scanPickersWithContacts.map((scanId) => {
-                    const count = scanContactsByPicker[scanId].length;
-                    const theme = getNavScanPickerTheme(scanId);
-                    return (
-                      <div key={scanId} className="helmet-nav-scan-chip">
-                        <span className="helmet-nav-scan-label">{theme.abbrev}</span>
-                        <button
-                          type="button"
-                          className={`helmet-nav-btn helmet-nav-btn--scan${scanTargetActiveByPicker[scanId] ? ' helmet-nav-btn--scan-active' : ''}`}
-                          onClick={() => openScanPickerDialog(scanId)}
-                          title={theme.pickerTitle}
-                          aria-label={`${theme.abbrev}: ${count} ${theme.pickerTitle.toLowerCase()}`}
-                        >
-                          {count}
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
+            {isDocked ? (
+              <div className="helmet-nav-docked">
+                <span className="helmet-nav-tag">DOCK</span>
+                <span className="helmet-nav-name">
+                  {displayNameForDockedStation(dockedStationId)}
+                </span>
+                <span className="helmet-nav-tag">SPD</span>
+                <span ref={speedRef} className="helmet-nav-speed hud-value" />
                 <button
+                  ref={undockBtnRef}
                   type="button"
-                  className={`helmet-nav-btn helmet-nav-btn--ap${!autopilotEnabled ? ' helmet-nav-btn--disabled' : ''}`}
-                  onClick={handleAutopilot}
-                  disabled={!autopilotEnabled}
-                  title={autopilotEnabled ? 'Autopilot' : 'Set a nav target first'}
+                  className="helmet-nav-btn"
+                  onClick={requestUndock}
                 >
-                  AP <span ref={autopilotBtnRef} className="helmet-ap-state" />
+                  UNDOCK
                 </button>
               </div>
-              <div className="helmet-nav-row helmet-nav-metrics">
-                <div className="helmet-nav-metric">
-                  <span className="helmet-nav-tag">SPD</span>
-                  <span ref={speedRef} className="helmet-nav-speed hud-value" />
+            ) : (
+              <>
+                <div className="helmet-nav-target-line">
+                  <div className="helmet-nav-scan-chip helmet-nav-scan-chip--tgt">
+                    <span className="helmet-nav-scan-label">TGT</span>
+                    <button
+                      type="button"
+                      className={`helmet-nav-btn helmet-nav-btn--contacts${hasActiveNavTarget ? ' helmet-nav-btn--contacts-filled' : ''}${navTargetHighlight ? ' helmet-nav-btn--highlight' : ''}`}
+                      onClick={openNavTargetDialog}
+                      title={
+                        hasActiveNavTarget
+                          ? displayLabel || 'Nav target'
+                          : `Select nav target (${totalNavContactCount} contacts)`
+                      }
+                      aria-label={
+                        hasActiveNavTarget
+                          ? `Nav target: ${displayLabel}`
+                          : 'Open contacts'
+                      }
+                    >
+                      <span className="helmet-nav-btn--contacts-face">
+                        {hasActiveNavTarget ? displayLabel || '—' : 'CONTACTS'}
+                      </span>
+                    </button>
+                  </div>
+                  {hasActiveNavTarget ? (
+                    <button
+                      type="button"
+                      className="helmet-nav-btn helmet-nav-btn--clear-target"
+                      onClick={handleClearNavTarget}
+                      title="Clear nav target"
+                      aria-label="Clear nav target"
+                    >
+                      ✕
+                    </button>
+                  ) : (
+                    <div className="helmet-nav-scan-chip">
+                      <span className="helmet-nav-scan-label">CON</span>
+                      <button
+                        type="button"
+                        className="helmet-nav-btn helmet-nav-btn--scan"
+                        onClick={openNavTargetDialog}
+                        title="All contacts"
+                        aria-label={`${totalNavContactCount} contacts`}
+                      >
+                        {totalNavContactCount}
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className={`helmet-nav-btn helmet-nav-btn--ap${!autopilotEnabled ? ' helmet-nav-btn--disabled' : ''}`}
+                    onClick={handleAutopilot}
+                    disabled={!autopilotEnabled}
+                    title={autopilotEnabled ? 'Autopilot' : 'Set a nav target first'}
+                  >
+                    AP <span ref={autopilotBtnRef} className="helmet-ap-state" />
+                  </button>
                 </div>
-                <div className="helmet-nav-metric helmet-nav-metric--rel">
-                  <span className="helmet-nav-tag">Δv</span>
-                  <span
-                    ref={relativeVelRef}
-                    className="helmet-nav-dv hud-value nav-relative-velocity"
-                  />
-                  <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                <div className="helmet-nav-row helmet-nav-metrics">
+                  <div className="helmet-nav-metric">
+                    <span className="helmet-nav-tag">SPD</span>
+                    <span ref={speedRef} className="helmet-nav-speed hud-value" />
+                  </div>
+                  <div className="helmet-nav-metric helmet-nav-metric--rel">
+                    <span className="helmet-nav-tag">Δv</span>
+                    <span
+                      ref={relativeVelRef}
+                      className="helmet-nav-dv hud-value nav-relative-velocity"
+                    />
+                    <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                  </div>
                 </div>
-              </div>
-              <span ref={orbitLineRef} className="helmet-nav-orbit" />
-            </>
-          )}
+                <span ref={orbitLineRef} className="helmet-nav-orbit" />
+              </>
+            )}
+          </div>
         </div>
         {navTargetDialog}
         {scanPickerDialog}
