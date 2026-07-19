@@ -19,6 +19,21 @@
   pointer-events: auto;
 }
 
+/* Ship power depleted — kill interactive decks; keep RES vitals + dock transfer usable. */
+.helmet-hud--powerless .helmet-nav,
+.helmet-hud--powerless .helmet-scanner-deck,
+.helmet-hud--powerless .mech-comms,
+.helmet-hud--powerless .mech-thrust,
+.helmet-hud--powerless .cargo-hold-flyout-stack {
+  opacity: 0.28;
+  pointer-events: none;
+  filter: grayscale(0.9) brightness(0.7);
+}
+
+.helmet-hud--powerless .helmet-vitals {
+  opacity: 0.85;
+}
+
 /* Shared segment primitives (scanner horizontal, vitals vertical) */
 .helmet-seg {
   background: rgba(80, 120, 140, 0.45);
@@ -217,6 +232,7 @@
 
 .helmet-vital-head {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: space-between;
   gap: 4px;
@@ -443,6 +459,8 @@
 /* ── Nav + scanner stack (bottom-left) ───────────────────────────────────── */
 
 .helmet-sensor-stack {
+  /* Matches prior scan-panel width (stack used to share space with thrust). */
+  --helmet-sensor-stack-width: min(242px, 48vw);
   position: fixed;
   left: 12px;
   bottom: 14px;
@@ -920,23 +938,32 @@
   font-family: inherit;
 }
 
-/* ── Scanner + ship controls (below nav) ─────────────────────────────────── */
+/* ── Scanner (below nav; full stack width) ───────────────────────────────── */
 
 .helmet-scanner-controls-row {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 6px;
+  display: block;
   width: 100%;
   min-height: 0;
 }
 
 .helmet-scanner-controls-row .helmet-scanner-deck {
-  flex: 1 1 0;
+  width: 100%;
   min-width: 0;
 }
 
 /* ── Scanner deck (in sensor stack, below nav) ───────────────────────────── */
+
+/* Mech shell owns chrome; neutralize legacy glass deck when paired with mech-scanner. */
+.mech-scanner.helmet-scanner-deck {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 0;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+}
 
 .helmet-scanner-deck {
   position: relative;

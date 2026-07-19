@@ -7,29 +7,34 @@ import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipVelocity } from '../../context/ShipState';
 import { clearHoveredObject, hoveredObject, setHoveredObject } from '../../context/HoveredObject';
 import { getCollidables, type CollidableEntry } from '../../context/CollisionRegistry';
-import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
+import { selectTarget, selectedTargetKey } from '../../context/TargetSelection';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
 const DOCKING_BAY_ID_PREFIX = 'docking-bay-';
-const DRIVE_MARKER_COLOR = '#ff4444';
+/** Matches HUD warn / amber vitals segments. */
+const DRIVE_MARKER_COLOR = '#ffaa00';
 const BAY_MARKER_COLOR = '#ffb14a';
 const MARKER_SMOOTHING = 0.35;
 const MARKER_MIN_MOVE_PX = 0.25;
 const EDGE_HYSTERESIS_PX = 8;
+const DOT_SIZE_ON_SCREEN = 5;
+const DOT_SIZE_OFF_SCREEN = 4;
+const DOT_HIT_PAD = 10; // larger click/hover target around the visible dot
 
 // ─── Marker DOM structure ────────────────────────────────────────────────────
 function createMarker(container: HTMLElement) {
   const root = document.createElement('div');
   root.style.cssText = `
     position: absolute;
-    pointer-events: none;
+    pointer-events: auto;
     display: none;
     flex-direction: column;
     align-items: center;
+    cursor: pointer;
   `;
 
   const box = document.createElement('div');
-  box.className = 'dshud-box';
+  box.className = 'dshud-dot';
 
   const label = document.createElement('div');
   label.className = 'dshud-label';
@@ -40,9 +45,10 @@ function createMarker(container: HTMLElement) {
     text-align: center;
     white-space: pre-line;
     line-height: 1.25;
-    text-shadow: 0 0 4px rgba(255,68,68,0.8);
-    margin-top: 4px;
+    text-shadow: 0 0 4px rgba(255,170,0,0.8);
+    margin-top: 3px;
     max-width: min(220px, 40vw);
+    pointer-events: none;
   `;
 
   root.appendChild(box);
@@ -58,25 +64,17 @@ type MarkerScreenState = {
   onScreen: boolean;
 };
 
-// ─── On-screen bracket style ─────────────────────────────────────────────────
-function styleOnScreen(marker: Marker, size: number, color: string) {
+function styleDot(marker: Marker, size: number, color: string, selected: boolean) {
+  const glow = selected ? `0 0 8px ${color}` : `0 0 4px ${color}aa`;
   marker.box.style.cssText = `
     width: ${size}px;
     height: ${size}px;
-    border: 1px solid ${color};
-    box-shadow: 0 0 8px ${color}80, inset 0 0 4px ${color}1a;
-  `;
-}
-
-// ─── Off-screen diamond style ─────────────────────────────────────────────────
-function styleOffScreen(marker: Marker, color: string) {
-  marker.box.style.cssText = `
-    width: 10px;
-    height: 10px;
-    background: ${color}cc;
-    box-shadow: 0 0 6px ${color};
-    transform: rotate(45deg);
-    margin: 2px;
+    background: ${color};
+    border: none;
+    border-radius: 50%;
+    box-shadow: ${glow};
+    margin: ${DOT_HIT_PAD}px;
+    transform: none;
   `;
 }
 
@@ -155,6 +153,7 @@ export default function DriveSignatureHUD() {
     const driveMarkerStates = new Map<string, MarkerScreenState>();
     const bayMarkerStates = new Map<string, MarkerScreenState>();
     let hoveredDriveId: string | null = null;
+    let hoveredBayId: string | null = null;
 
     let rafId: number;
     const update = () => {
@@ -165,6 +164,7 @@ export default function DriveSignatureHUD() {
           clearHoveredObject();
         }
         hoveredDriveId = null;
+        hoveredBayId = null;
         for (const m of markerMap.values()) m.root.style.display = 'none';
         for (const m of dockingBayMarkerMap.values()) m.root.style.display = 'none';
         return;
@@ -175,16 +175,12 @@ export default function DriveSignatureHUD() {
       const H = window.innerHeight;
       const cx = W * 0.5;
       const cy = H * 0.5;
+      const selectedId = selectedTargetKey;
 
       const entries = getDriveSignatures();
       const dockingBayCollidables = getCollidables().filter((c) =>
         c.id.startsWith(DOCKING_BAY_ID_PREFIX)
       );
-      const allowMarkerHover = tutorialNavViewModeRef.current;
-      if (!allowMarkerHover && hoveredDriveId && hoveredObject.id === hoveredDriveId) {
-        clearHoveredObject();
-        hoveredDriveId = null;
-      }
 
       // Ensure a marker exists for each registered entry
       const seenIds = new Set<string>();
@@ -202,6 +198,15 @@ export default function DriveSignatureHUD() {
             hoveredDriveId = null;
             if (hoveredObject.id === id) clearHoveredObject();
           });
+          marker.root.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            const sig = getDriveSignatures().find((s) => s.id === id);
+            if (!sig) return;
+            sig.getPosition(_pos);
+            if (sig.getVelocity) sig.getVelocity(_targetVel);
+            else _targetVel.set(0, 0, 0);
+            selectTarget(sig.label, _targetVel, _pos, id, 'ship');
+          });
           markerMap.set(entry.id, marker);
         }
       }
@@ -215,7 +220,7 @@ export default function DriveSignatureHUD() {
           }
           marker.root.remove();
           markerMap.delete(id);
-            driveMarkerStates.delete(id);
+          driveMarkerStates.delete(id);
         }
       }
       for (const entry of entries) {
@@ -237,10 +242,10 @@ export default function DriveSignatureHUD() {
         _toTgt.subVectors(_pos, minimapShipPosition);
         const len = _toTgt.length();
         let relVelStr = '—';
+        if (entry.getVelocity) entry.getVelocity(_targetVel);
+        else _targetVel.set(0, 0, 0);
         if (len > 1e-5) {
           const inv = 1 / len;
-          if (entry.getVelocity) entry.getVelocity(_targetVel);
-          else _targetVel.set(0, 0, 0);
           const rel =
             ((shipVelocity.x - _targetVel.x) * _toTgt.x +
               (shipVelocity.y - _targetVel.y) * _toTgt.y +
@@ -249,7 +254,9 @@ export default function DriveSignatureHUD() {
           relVelStr = `${rel >= 0 ? '+' : ''}${rel.toFixed(1)} m/s`;
         }
 
-        if (hoveredDriveId === entry.id) {
+        const isSelected = selectedId === entry.id;
+        const isHovered = hoveredDriveId === entry.id;
+        if (isHovered) {
           setHoveredObject(entry.id, entry.label, _pos, _targetVel);
         }
 
@@ -271,17 +278,23 @@ export default function DriveSignatureHUD() {
           prevDriveState?.onScreen ?? false
         );
 
-        const distText = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
-
         marker.root.style.display = 'flex';
-        marker.root.style.pointerEvents = allowMarkerHover ? 'auto' : 'none';
+        marker.root.style.pointerEvents = 'auto';
         marker.label.style.color = DRIVE_MARKER_COLOR;
-        marker.label.style.textShadow = '0 0 4px rgba(255,68,68,0.8)';
-        marker.label.textContent = `${entry.label}\n${distText}\n${relVelStr}`;
+        marker.label.style.textShadow = '0 0 4px rgba(255,170,0,0.8)';
+        if (isSelected) {
+          marker.label.textContent = `${entry.label}\n${relVelStr}`;
+          marker.label.style.display = 'block';
+        } else if (isHovered) {
+          marker.label.textContent = entry.label;
+          marker.label.style.display = 'block';
+        } else {
+          marker.label.textContent = '';
+          marker.label.style.display = 'none';
+        }
 
         if (onScreen) {
-          const SIZE = 28;
-          styleOnScreen(marker, SIZE, DRIVE_MARKER_COLOR);
+          styleDot(marker, DOT_SIZE_ON_SCREEN, DRIVE_MARKER_COLOR, isSelected);
           const smoothed = smoothMarkerPosition(driveMarkerStates, entry.id, sx, sy);
           marker.root.style.left = `${Math.round(smoothed.x)}px`;
           marker.root.style.top = `${Math.round(smoothed.y)}px`;
@@ -305,7 +318,7 @@ export default function DriveSignatureHUD() {
           const ex = scale < 1 ? cx + dx * scale : sx;
           const ey = scale < 1 ? cy + dy * scale : sy;
 
-          styleOffScreen(marker, DRIVE_MARKER_COLOR);
+          styleDot(marker, DOT_SIZE_OFF_SCREEN, DRIVE_MARKER_COLOR, isSelected);
           const smoothed = smoothMarkerPosition(driveMarkerStates, entry.id, ex, ey);
           marker.root.style.left = `${Math.round(smoothed.x)}px`;
           marker.root.style.top = `${Math.round(smoothed.y)}px`;
@@ -319,9 +332,22 @@ export default function DriveSignatureHUD() {
         );
         for (const dock of matchingDockingBays) {
           const dockMarkerId = markerKeyForDockingBay(entry.id, dock.id);
+          const bayLabel = `${entry.label} BAY`;
           seenDockingBayMarkerIds.add(dockMarkerId);
           if (!dockingBayMarkerMap.has(dockMarkerId)) {
-            dockingBayMarkerMap.set(dockMarkerId, createMarker(container));
+            const bayMarker = createMarker(container);
+            bayMarker.root.addEventListener('pointerenter', () => {
+              hoveredBayId = dockMarkerId;
+            });
+            bayMarker.root.addEventListener('pointerleave', () => {
+              if (hoveredBayId === dockMarkerId) hoveredBayId = null;
+            });
+            bayMarker.root.addEventListener('pointerdown', (e) => {
+              e.stopPropagation();
+              dock.getWorldPosition(_dockPos);
+              selectTarget(bayLabel, undefined, _dockPos, dock.id, 'default');
+            });
+            dockingBayMarkerMap.set(dockMarkerId, bayMarker);
           }
           const dockMarker = dockingBayMarkerMap.get(dockMarkerId)!;
 
@@ -350,15 +376,25 @@ export default function DriveSignatureHUD() {
             prevBayState?.onScreen ?? false
           );
 
-          const dockDistText =
-            dockDist >= 1000 ? `${(dockDist / 1000).toFixed(1)} km` : `${Math.round(dockDist)} m`;
+          const baySelected = selectedId === dock.id;
+          const bayHovered = hoveredBayId === dockMarkerId;
           dockMarker.root.style.display = 'flex';
+          dockMarker.root.style.pointerEvents = 'auto';
           dockMarker.label.style.color = BAY_MARKER_COLOR;
           dockMarker.label.style.textShadow = '0 0 4px rgba(255,177,74,0.8)';
-          dockMarker.label.textContent = `${entry.label} BAY\n${dockDistText}`;
+          if (baySelected) {
+            dockMarker.label.textContent = bayLabel;
+            dockMarker.label.style.display = 'block';
+          } else if (bayHovered) {
+            dockMarker.label.textContent = bayLabel;
+            dockMarker.label.style.display = 'block';
+          } else {
+            dockMarker.label.textContent = '';
+            dockMarker.label.style.display = 'none';
+          }
 
           if (dockOnScreen) {
-            styleOnScreen(dockMarker, 22, BAY_MARKER_COLOR);
+            styleDot(dockMarker, DOT_SIZE_ON_SCREEN, BAY_MARKER_COLOR, baySelected);
             const smoothed = smoothMarkerPosition(
               bayMarkerStates,
               dockMarkerId,
@@ -383,7 +419,7 @@ export default function DriveSignatureHUD() {
             );
             const dockEx = dockScale < 1 ? cx + dockDx * dockScale : dockSx;
             const dockEy = dockScale < 1 ? cy + dockDy * dockScale : dockSy;
-            styleOffScreen(dockMarker, BAY_MARKER_COLOR);
+            styleDot(dockMarker, DOT_SIZE_OFF_SCREEN, BAY_MARKER_COLOR, baySelected);
             const smoothed = smoothMarkerPosition(
               bayMarkerStates,
               dockMarkerId,

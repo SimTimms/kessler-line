@@ -13,7 +13,7 @@ export const LandingPadConfig = {
   playerShipUrl: '/shuttle-low.glb',
   playerShipScale: 1,
   landingPadOffsetFromSpawn: [0, -20, -76] as Vec3,
-  landingPadScale: 10,
+  landingPadScale: 2,
   landingPadThreshold: 28,
   targetLabel,
   targetScale: 30,

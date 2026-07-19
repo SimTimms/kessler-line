@@ -3,7 +3,10 @@ import {
   DOCK_TRANSFER_UI_CHANGED,
   getDockTransferUi,
 } from '../../../../context/DockTransferUi';
-import { getDockablePartnerLabel } from '../../../../context/DockablePartnerStore';
+import {
+  getDockablePartnerLabel,
+  getDockInventoryOwner,
+} from '../../../../context/DockablePartnerStore';
 import {
   getInventory,
   INVENTORY_CHANGED,
@@ -37,6 +40,7 @@ export default function PartnerCargoHoldPanel() {
     label: string;
     stackQuantity: number;
     tag: string;
+    provenanceLabel?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export default function PartnerCargoHoldPanel() {
 
   const partnerId = dockUi.partnerId;
   const dockOwner: InventoryOwnerRef | null = partnerId
-    ? { kind: 'dock', dockId: partnerId }
+    ? getDockInventoryOwner(partnerId)
     : null;
   const dockInv = dockOwner ? getInventory(dockOwner) : undefined;
   // Towable crates always show (deposit/withdraw). Stations only if they have cargo slots.
@@ -62,9 +66,9 @@ export default function PartnerCargoHoldPanel() {
     (dockUi.towable || dockInv.slots.length > 0);
 
   const items = useMemo(() => {
-    if (!partnerId || !showPanel) return [];
-    return slotsToCargoItems(listInventorySlots({ kind: 'dock', dockId: partnerId }));
-  }, [partnerId, showPanel, invTick]);
+    if (!dockOwner || !showPanel) return [];
+    return slotsToCargoItems(listInventorySlots(dockOwner));
+  }, [dockOwner, showPanel, invTick]);
 
   const cells = useMemo(() => expandCargoToCells(items), [items]);
   const filledCount = cells.filter((c) => c.filled).length;
@@ -74,8 +78,13 @@ export default function PartnerCargoHoldPanel() {
   const label = getDockablePartnerLabel(partnerId) || 'Container';
   const titleAbbrev = label.length > 8 ? `${label.slice(0, 7)}.` : label;
 
-  function onDragStart(e: DragEvent, itemId: string, quantity: number) {
-    const payload: CargoDragPayload = { itemId, quantity, from: dockOwner! };
+  function onDragStart(
+    e: DragEvent,
+    itemId: string,
+    quantity: number,
+    salvagedBy?: string
+  ) {
+    const payload: CargoDragPayload = { itemId, quantity, from: dockOwner!, salvagedBy };
     writeCargoDragPayload(e.dataTransfer, payload);
   }
 
@@ -91,7 +100,13 @@ export default function PartnerCargoHoldPanel() {
     e.preventDefault();
     const payload = readCargoDragPayload(e.dataTransfer);
     if (!payload) return;
-    transferCargoStack(payload.from, dockOwner!, payload.itemId, payload.quantity);
+    transferCargoStack(
+      payload.from,
+      dockOwner!,
+      payload.itemId,
+      payload.quantity,
+      payload.salvagedBy
+    );
   }
 
   return (
@@ -143,23 +158,32 @@ export default function PartnerCargoHoldPanel() {
                     />
                   );
                 }
-                const { Icon, color, label: itemLabel, itemId, stackQuantity } = cell;
+                const {
+                  Icon,
+                  color,
+                  label: itemLabel,
+                  itemId,
+                  stackQuantity,
+                  salvagedBy,
+                  provenanceLabel,
+                } = cell;
                 const ui = getInventoryItemUi(itemId);
                 return (
                   <button
-                    key={`${itemId}-${index}`}
+                    key={`${itemId}-${salvagedBy ?? 'plain'}-${index}`}
                     type="button"
                     role="listitem"
                     className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
                     style={{ '--cargo-color': color } as CSSProperties}
                     draggable
-                    onDragStart={(e) => onDragStart(e, itemId, 1)}
+                    onDragStart={(e) => onDragStart(e, itemId, 1, salvagedBy)}
                     onMouseEnter={() =>
                       setHovered({
                         itemId,
                         label: itemLabel,
                         stackQuantity,
                         tag: ui.tag,
+                        provenanceLabel,
                       })
                     }
                     onMouseLeave={() => setHovered(null)}
@@ -178,6 +202,9 @@ export default function PartnerCargoHoldPanel() {
                   <span className="cargo-hold-panel__detail-tag">{hovered.tag}</span>
                   <span className="cargo-hold-panel__detail-name">{hovered.label}</span>
                   <span className="cargo-hold-panel__detail-qty">{hovered.stackQuantity} stored</span>
+                  {hovered.provenanceLabel ? (
+                    <span className="cargo-hold-panel__detail-qty">{hovered.provenanceLabel}</span>
+                  ) : null}
                 </>
               ) : (
                 <span className="cargo-hold-panel__detail-idle">Drag a stack</span>

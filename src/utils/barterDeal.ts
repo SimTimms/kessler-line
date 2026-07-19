@@ -1,7 +1,9 @@
 import { getInventoryItemDef } from '../config/inventoryCatalog';
+import { PLAYER_SALVAGED_BY } from '../config/inventoryTypes';
 import {
   getItemQuantity,
   getOwnerUnitValue,
+  inventoryTaggedQtyMap,
   listInventorySlots,
   transferInventoryItem,
   type InventoryOwnerRef,
@@ -207,9 +209,124 @@ export function buildCounterDeal(
 export function inventoryQtyMap(owner: InventoryOwnerRef): Record<string, number> {
   const map: Record<string, number> = {};
   for (const slot of listInventorySlots(owner)) {
-    if (slot.quantity > 0) map[slot.itemId] = Math.floor(slot.quantity);
+    if (slot.quantity > 0) {
+      map[slot.itemId] = (map[slot.itemId] ?? 0) + Math.floor(slot.quantity);
+    }
   }
   return map;
+}
+
+export interface SalvageClaimConfig {
+  /** Max fraction of tagged depot value the player may claim for accept. Default 0.5. */
+  playerShareRatio?: number;
+  /** When true, fair asks may still be refused. */
+  unscrupulous?: boolean;
+  /** Session stance — negative makes unscrupulous refuse more likely. */
+  tradeStance?: number;
+}
+
+/**
+ * Claim negotiation: player requests tagged salvage from the depot without offering goods.
+ * Scores claim value against total tagged depot value.
+ */
+export function evaluateSalvageClaimDeal(
+  deal: BarterDeal,
+  depot: InventoryOwnerRef,
+  config: SalvageClaimConfig = {}
+): BarterEval {
+  if (sumBarterSide(deal.contactGives) <= 0) return { kind: 'empty' };
+
+  const taggedMax = inventoryTaggedQtyMap(depot, PLAYER_SALVAGED_BY);
+  const claim = clampBarterSide(deal.contactGives, taggedMax);
+  if (sumBarterSide(claim) <= 0) return { kind: 'empty' };
+
+  let taggedTotalValue = 0;
+  for (const [itemId, qty] of Object.entries(taggedMax)) {
+    taggedTotalValue += qty * getOwnerUnitValue(depot, itemId);
+  }
+  if (taggedTotalValue <= 0.0001) return { kind: 'empty' };
+
+  const claimValue = valueBarterSide(depot, claim);
+  const fraction = claimValue / taggedTotalValue;
+  const playerShare = config.playerShareRatio ?? 0.5;
+
+  if (config.unscrupulous) {
+    const stance = config.tradeStance ?? 0;
+    const refuseChance =
+      0.35 + Math.max(0, -stance) * 0.12 + Math.max(0, fraction - playerShare) * 0.55;
+    if (Math.random() < Math.min(0.92, refuseChance)) {
+      return { kind: 'insult', valueIn: 0, valueOut: claimValue, ratio: 0 };
+    }
+  }
+
+  if (fraction <= playerShare + 0.001) {
+    return { kind: 'accept', valueIn: 0, valueOut: claimValue, ratio: fraction };
+  }
+
+  // Soft over-ask → counter down to the fair share.
+  if (fraction <= playerShare * 1.45) {
+    return {
+      kind: 'counter',
+      valueIn: 0,
+      valueOut: claimValue,
+      ratio: fraction,
+      deal: {
+        playerGives: {},
+        contactGives: scaleClaimToShare(claim, depot, taggedTotalValue, playerShare),
+      },
+    };
+  }
+
+  return { kind: 'insult', valueIn: 0, valueOut: claimValue, ratio: fraction };
+}
+
+/** Shrink a claim until its value is at most `share` of taggedTotalValue. */
+function scaleClaimToShare(
+  claim: BarterSide,
+  depot: InventoryOwnerRef,
+  taggedTotalValue: number,
+  share: number
+): BarterSide {
+  const next: BarterSide = { ...claim };
+  const target = taggedTotalValue * share;
+  for (let step = 0; step < 80; step++) {
+    const value = valueBarterSide(depot, next);
+    if (value <= target + 0.0001) break;
+    const entry = Object.entries(next)
+      .filter(([, qty]) => qty > 0)
+      .sort(
+        (a, b) =>
+          getOwnerUnitValue(depot, b[0]) * b[1] - getOwnerUnitValue(depot, a[0]) * a[1]
+      )[0];
+    if (!entry) break;
+    const [itemId, qty] = entry;
+    if (qty > 1) next[itemId] = qty - 1;
+    else delete next[itemId];
+  }
+  return next;
+}
+
+/** Transfer tagged claim stacks from depot → player. */
+export function commitSalvageClaimDeal(
+  deal: BarterDeal,
+  player: InventoryOwnerRef,
+  depot: InventoryOwnerRef
+): { ok: true } | { ok: false; reason: string } {
+  const claim = deal.contactGives;
+  for (const [itemId, qty] of Object.entries(claim)) {
+    if (qty > getItemQuantity(depot, itemId, { salvagedBy: PLAYER_SALVAGED_BY })) {
+      return { ok: false, reason: `Depot no longer has enough tagged ${itemId}.` };
+    }
+  }
+  for (const [itemId, qty] of Object.entries(claim)) {
+    if (qty > 0) {
+      transferInventoryItem(depot, player, itemId, qty, {
+        salvagedBy: PLAYER_SALVAGED_BY,
+        setSalvagedBy: PLAYER_SALVAGED_BY,
+      });
+    }
+  }
+  return { ok: true };
 }
 
 /**

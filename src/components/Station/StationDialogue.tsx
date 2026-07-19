@@ -15,6 +15,7 @@ import type {
 } from '../../config/dockConfig';
 import { parseDockThreadId } from '../../config/dockConfig';
 import { getInventoryItemDef } from '../../config/inventoryCatalog';
+import { PLAYER_SALVAGED_BY } from '../../config/inventoryTypes';
 import {
   fuel,
   o2,
@@ -26,8 +27,13 @@ import {
   setShipCrew,
 } from '../../context/ShipState';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
+import { getDockInventoryOwner } from '../../context/DockablePartnerStore';
 import { refreshPlayerCargoBinding } from '../../context/Inventory';
-import { INVENTORY_CHANGED, type InventoryOwnerRef } from '../../context/InventoryStore';
+import {
+  inventoryTaggedQtyMap,
+  INVENTORY_CHANGED,
+  type InventoryOwnerRef,
+} from '../../context/InventoryStore';
 import { SHIP_MIN_CREW_ONBOARD } from '../../config/dockTransferConfig';
 import { speakNpcLine } from '../../sound/PiperTTS';
 import DialogueThread from '../CommsChat/DialogueThread';
@@ -37,8 +43,10 @@ import {
   clampBarterDeal,
   cloneBarterDeal,
   commitBarterDeal,
+  commitSalvageClaimDeal,
   emptyBarterDeal,
   evaluateBarterDeal,
+  evaluateSalvageClaimDeal,
   formatBarterDeal,
   inventoryQtyMap,
   isBarterDealEmpty,
@@ -240,6 +248,11 @@ export default function DockInteriorDialogue({
     if (!parsed?.dockId || !parsed.contactId) return null;
     return { kind: 'contact', dockId: parsed.dockId, contactId: parsed.contactId };
   }, [threadId]);
+  const depotOwner: InventoryOwnerRef | null = useMemo(() => {
+    const parsed = parseDockThreadId(threadId);
+    if (!parsed?.dockId) return null;
+    return getDockInventoryOwner(parsed.dockId);
+  }, [threadId]);
 
   useEffect(() => {
     const onUpdate = (e: Event) => {
@@ -303,10 +316,19 @@ export default function DockInteriorDialogue({
     (currentTurn?.playerOptions.length ?? 0) > 0;
   const isEnded = !!thread && thread.currentTurnId === null && !thread.awaitingNpc;
   const activeTradeConfig = tradeOpen ? (currentTurn?.trade ?? null) : null;
-  const useCargoBarter = !!(activeTradeConfig?.cargoBarter && contactOwner);
+  const useSalvageClaim = !!(activeTradeConfig?.salvageClaim && depotOwner);
+  const useCargoBarter = !!(
+    activeTradeConfig?.cargoBarter &&
+    (useSalvageClaim || contactOwner)
+  );
 
-  const playerMax = useCargoBarter ? inventoryQtyMap(playerOwner) : {};
-  const contactMax = useCargoBarter && contactOwner ? inventoryQtyMap(contactOwner) : {};
+  const playerMax = useCargoBarter && !useSalvageClaim ? inventoryQtyMap(playerOwner) : {};
+  const contactMax =
+    useSalvageClaim && depotOwner
+      ? inventoryTaggedQtyMap(depotOwner, PLAYER_SALVAGED_BY)
+      : useCargoBarter && contactOwner
+        ? inventoryQtyMap(contactOwner)
+        : {};
 
   const handleTradeOfferChange = (kind: DockTradeResourceKind, value: number) => {
     const max = maxOfferFromShip();
@@ -341,15 +363,21 @@ export default function DockInteriorDialogue({
   };
 
   const submitCargoOffer = () => {
-    if (!activeTradeConfig || !thread || !contactOwner) return;
+    if (!activeTradeConfig || !thread) return;
+    if (!useSalvageClaim && !contactOwner) return;
     const deal = clampBarterDeal(cargoDeal, playerMax, contactMax);
     if (isBarterDealEmpty(deal)) {
       setTradeStatus(activeTradeConfig.panelStatusEmptyOffer);
       return;
     }
 
-    // Asking for goods without putting anything up is never a free take.
-    if (sumBarterSide(deal.playerGives) <= 0 && sumBarterSide(deal.contactGives) > 0) {
+    // Asking for goods without putting anything up is never a free take —
+    // unless this is a tagged-salvage claim negotiation.
+    if (
+      !useSalvageClaim &&
+      sumBarterSide(deal.playerGives) <= 0 &&
+      sumBarterSide(deal.contactGives) > 0
+    ) {
       setTradeStatus(activeTradeConfig.panelStatusEmptyOffer);
       addChatMessage(threadId, {
         id: `npc-${threadId}-trade-need-offer-${Date.now()}`,
@@ -369,14 +397,20 @@ export default function DockInteriorDialogue({
     });
 
     const stanceAdjust = tradeStance * 0.04;
-    const evalResult = evaluateBarterDeal(deal, playerOwner, contactOwner, {
-      acceptRatio: (activeTradeConfig.acceptRatio ?? 1) - stanceAdjust,
-      insultRatio: Math.max(
-        0.15,
-        (activeTradeConfig.insultRatio ?? 0.4) - Math.max(0, tradeStance) * 0.03
-      ),
-      counterTargetRatio: activeTradeConfig.counterTargetRatio ?? 1.15,
-    });
+    const evalResult = useSalvageClaim
+      ? evaluateSalvageClaimDeal(deal, depotOwner!, {
+          playerShareRatio: activeTradeConfig.playerShareRatio,
+          unscrupulous: contact.unscrupulous,
+          tradeStance,
+        })
+      : evaluateBarterDeal(deal, playerOwner, contactOwner!, {
+          acceptRatio: (activeTradeConfig.acceptRatio ?? 1) - stanceAdjust,
+          insultRatio: Math.max(
+            0.15,
+            (activeTradeConfig.insultRatio ?? 0.4) - Math.max(0, tradeStance) * 0.03
+          ),
+          counterTargetRatio: activeTradeConfig.counterTargetRatio ?? 1.15,
+        });
 
     if (evalResult.kind === 'empty') {
       setTradeStatus(activeTradeConfig.panelStatusEmptyOffer);
@@ -491,10 +525,14 @@ export default function DockInteriorDialogue({
   };
 
   const acceptPendingCargoTrade = () => {
-    if (!pendingCargoTrade || !activeTradeConfig || !contactOwner) return;
+    if (!pendingCargoTrade || !activeTradeConfig) return;
+    if (!useSalvageClaim && !contactOwner) return;
+    if (useSalvageClaim && !depotOwner) return;
     const tradeConfig = activeTradeConfig;
     const deal = cloneBarterDeal(pendingCargoTrade.deal);
-    const commit = commitBarterDeal(deal, playerOwner, contactOwner);
+    const commit = useSalvageClaim
+      ? commitSalvageClaimDeal(deal, playerOwner, depotOwner!)
+      : commitBarterDeal(deal, playerOwner, contactOwner!);
     if (!commit.ok) {
       setTradeStatus(commit.reason);
       addChatMessage(threadId, {

@@ -33,6 +33,8 @@ import { checkShipDestruction } from '../destruction';
 import { clampShipToWorldXZPlane } from './clampShipToWorldXZPlane';
 import { syncShipWorldRefs } from './syncShipWorldRefs';
 import { getCollidables } from '../../../context/CollisionRegistry';
+import { getDockCaptureProfile } from '../../../utils/dockingCapture';
+import { disablesShipPhysicsWhenDocked } from '../../../config/dockCaptureConfig';
 
 const _spinEuler = new THREE.Vector3();
 const _scrapperOffset = new THREE.Vector3();
@@ -146,8 +148,7 @@ export function runPrimaryPhysicsFrame({
   if (dockingPhysicsEnabled && dockedTo.current) {
     const dockEntry = getCollidables().find((c) => c.id === dockedTo.current);
     const freezeShip =
-      !dockEntry ||
-      dockEntry.dockingProfile?.disablePhysicsOnDock !== false;
+      !dockEntry || disablesShipPhysicsWhenDocked(getDockCaptureProfile(dockEntry));
     if (freezeShip) {
       didApplyInitialVelocity.current = true;
       velocity.current.set(0, 0, 0);
@@ -369,7 +370,8 @@ export function runPrimaryPhysicsFrame({
 
   let remaining = cappedDelta;
   while (remaining > 0) {
-    if (dockingPhysicsEnabled && dockedTo.current) break;
+    // Freeze-on-dock partners already returned above. Towable cargo must keep
+    // integrating so the ship can fly while the container follows.
     const dt = Math.min(remaining, maxStep);
     remaining -= dt;
     applyPhysicsStep({

@@ -42,12 +42,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--mech-cyan);
-  box-shadow:
-    0 0 6px rgba(0, 200, 255, 0.85),
-    inset 0 0 2px rgba(180, 240, 255, 0.9);
-  animation: mech-lamp-pulse 2.4s ease-in-out infinite;
-  flex-shrink: 0;
+  background: #fff;
 }
 
 @keyframes mech-lamp-pulse {
@@ -80,7 +75,7 @@
 .mech-scanner-modules {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 30px;
+  column-gap: 10px;
   row-gap: 8px;
 }
 
@@ -301,12 +296,9 @@ button.helmet-scanner-drain-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
   padding: 0;
-  border: none;
   background: transparent;
-  color: rgba(0, 200, 255, 0.35);
+  color: rgba(200, 200, 200, 0.35);
   cursor: pointer;
 }
 
@@ -314,8 +306,8 @@ button.helmet-scanner-drain-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: 2px;
   background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
   border: 1px solid #5a616a;

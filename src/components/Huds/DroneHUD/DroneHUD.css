@@ -1,0 +1,183 @@
+.drone-hud {
+  --drone-accent: #6ec8ff;
+  --drone-accent-soft: rgba(110, 200, 255, 0.9);
+  --drone-border: rgba(110, 200, 255, 0.35);
+  --drone-bg: rgba(4, 14, 22, 0.86);
+
+  pointer-events: auto;
+  position: absolute;
+  right: 18px;
+  top: 18%;
+  width: min(280px, 42vw);
+  z-index: 40;
+  font-family: var(--helmet-font, 'Space Grotesk', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--drone-accent-soft);
+  background: var(--drone-bg);
+  border: 1px solid var(--drone-border);
+  padding: 10px 12px 12px;
+  box-sizing: border-box;
+}
+
+.drone-hud__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.drone-hud__title {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: rgba(180, 230, 255, 0.95);
+}
+
+.drone-hud__status {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(110, 200, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.drone-hud__minimize {
+  border: 1px solid rgba(110, 200, 255, 0.35);
+  background: transparent;
+  color: rgba(160, 220, 255, 0.8);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.drone-hud--minimized {
+  width: auto;
+  padding: 8px 10px;
+}
+
+.drone-hud__status-line {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: rgba(140, 200, 230, 0.7);
+  margin-bottom: 10px;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.drone-hud__vitals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+  margin-bottom: 10px;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: rgba(120, 190, 220, 0.65);
+}
+
+.drone-hud__vitals strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: rgba(200, 235, 255, 0.95);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.drone-hud__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.drone-hud__btn {
+  width: 100%;
+  height: 28px;
+  border: 1px solid rgba(110, 200, 255, 0.55);
+  background: rgba(10, 40, 60, 0.65);
+  color: rgba(190, 230, 255, 0.95);
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.drone-hud__btn:hover:not(:disabled) {
+  border-color: rgba(150, 220, 255, 0.9);
+  background: rgba(20, 70, 100, 0.75);
+}
+
+.drone-hud__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.drone-hud__btn--danger {
+  border-color: rgba(255, 140, 100, 0.55);
+  color: rgba(255, 190, 160, 0.95);
+  background: rgba(50, 20, 10, 0.55);
+}
+
+.drone-hud__progress {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.drone-hud__seg {
+  flex: 1;
+  height: 40%;
+  min-width: 2px;
+  background: rgba(110, 200, 255, 0.12);
+  border: 1px solid rgba(110, 200, 255, 0.18);
+  box-sizing: border-box;
+}
+
+.drone-hud__seg--lit {
+  height: 100%;
+  background: rgba(110, 200, 255, 0.75);
+  border-color: rgba(160, 220, 255, 0.7);
+}
+
+.drone-hud__transfers {
+  border-top: 1px solid rgba(110, 200, 255, 0.2);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drone-hud__transfer-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: rgba(140, 200, 230, 0.75);
+}
+
+.drone-hud__transfer-row span:nth-child(2) {
+  font-variant-numeric: tabular-nums;
+  color: rgba(200, 235, 255, 0.9);
+}
+
+.drone-hud__xfer {
+  width: 26px;
+  height: 22px;
+  border: 1px solid rgba(110, 200, 255, 0.4);
+  background: rgba(8, 30, 45, 0.7);
+  color: rgba(180, 230, 255, 0.9);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.drone-hud__xfer:hover {
+  border-color: rgba(160, 220, 255, 0.85);
+}

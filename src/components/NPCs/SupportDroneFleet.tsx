@@ -261,4 +261,4 @@ export default function SupportDroneFleet() {
   );
 }
 
-useGLTF.preload('/supportDrone.glb');
+useGLTF.preload('/drone/untitled.gltf');

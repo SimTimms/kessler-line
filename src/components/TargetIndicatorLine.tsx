@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { hasNavTarget, navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
-import { shipQuaternion, shipVelocity } from '../context/ShipState';
+import { shipVelocity } from '../context/ShipState';
 import {
   selectedTargetKey,
   selectedTargetName,
@@ -12,61 +12,73 @@ import {
   selectedTargetType,
   selectedTargetVelocity,
 } from '../context/TargetSelection';
-import { DOCKING_PORT_LOCAL_Z } from '../config/shipConfig';
 import { navHudEnabledRef } from '../context/NavHud';
+import { minimapOverlayActiveRef } from '../context/MinimapUi';
 import { getMagneticTargets } from '../context/MagneticRegistry';
 import { getDriveSignatures } from '../context/DriveSignatureRegistry';
 import { getCollidables } from '../context/CollisionRegistry';
 import { gravityBodies } from '../context/GravityRegistry';
 import { MOON_BODY_ID } from '../config/moonConfig';
+import { FUEL_STATION_DEF } from '../config/worldConfig';
+import {
+  SHIP_DIRECTION_MAGNETIC_COLOR,
+  SHIP_DIRECTION_TARGET_COLOR,
+  SHIP_DIRECTION_VELOCITY_ARROW_SCALE,
+} from '../config/shipDirectionIndicatorConfig';
+import { formatCompactDistance } from '../utils/formatCompactDistance';
+import {
+  createShipDirectionArrow,
+  placeShipDirectionArrow,
+  setShipDirectionArrowColor,
+} from './shipDirectionArrow';
 
 const TUTORIAL_NAV_DAEDALUS_ID = 'tutorial-daedalus';
 const TUTORIAL_NAV_LUNA_ID = 'tutorial-luna';
 const TUTORIAL_DOCKING_BAY_COLLIDER_ID = 'docking-bay-tutorial-space-station';
 
+function resolveTargetLabel(): string {
+  if (selectedTargetName) return selectedTargetName;
+  const id = navTargetIdRef.current.trim();
+  if (!id) return '';
+  if (id === TUTORIAL_NAV_DAEDALUS_ID) return 'Daedalus';
+  if (id === TUTORIAL_NAV_LUNA_ID) return 'Luna';
+  if (id === FUEL_STATION_DEF.id) return FUEL_STATION_DEF.label;
+  return id.replace(/-/g, ' ');
+}
+
 // Scratch vectors — avoid allocating on every frame
 const _tgtWorld = new THREE.Vector3();
 const _shipWorld = new THREE.Vector3();
-const _nose = new THREE.Vector3();
-const _fwd = new THREE.Vector3(0, 0, 1);
 const _targetVel = new THREE.Vector3();
 const _toTgt = new THREE.Vector3();
-const _dir = new THREE.Vector3();
-const _labelPos = new THREE.Vector3();
+const _colorDefault = new THREE.Color(SHIP_DIRECTION_TARGET_COLOR);
+const _colorMagnetic = new THREE.Color(SHIP_DIRECTION_MAGNETIC_COLOR);
 
-const COLOR_DEFAULT = new THREE.Color('#9fdfff');
-const COLOR_MAGNETIC = new THREE.Color('#ffaa00');
-const TARGET_LINE_OPACITY = 0.34;
+/** Local +Z offset past the arrow tip — keeps Html in ship-relative space. */
+const TARGET_LABEL_LOCAL_Z = 22;
 
+/**
+ * Circumference arrow around the ship pointing at the active nav / selected target.
+ * The full ship→target line lives on the minimap.
+ */
 export default function TargetIndicatorLine({
   shipGroupRef,
 }: {
   shipGroupRef: React.RefObject<THREE.Group>;
 }) {
-  const opacity = TARGET_LINE_OPACITY;
-  const { line, mat } = useMemo(() => {
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(6); // 2 points × 3 components
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const m = new THREE.LineBasicMaterial({
-      color: COLOR_DEFAULT,
-      transparent: true,
-      opacity: opacity,
-      depthTest: false,
-      depthWrite: false,
-    });
-    const l = new THREE.Line(geo, m);
-    l.frustumCulled = false;
-    return { line: l, mat: m };
+  const arrow = useMemo(() => {
+    const a = createShipDirectionArrow(SHIP_DIRECTION_TARGET_COLOR);
+    a.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
+    return a;
   }, []);
 
   const labelGroupRef = useRef<THREE.Group>(null!);
-  const distRef = useRef<HTMLDivElement>(null!);
-  const relVelRef = useRef<HTMLDivElement>(null!);
+  const nameRef = useRef<HTMLDivElement>(null!);
+  const metricsRef = useRef<HTMLDivElement>(null!);
 
   useFrame(() => {
     if (!navHudEnabledRef.current) {
-      line.visible = false;
+      arrow.visible = false;
       if (labelGroupRef.current) labelGroupRef.current.visible = false;
       return;
     }
@@ -74,16 +86,16 @@ export default function TargetIndicatorLine({
     shipGroupRef.current.updateWorldMatrix(true, false);
     shipGroupRef.current.getWorldPosition(_shipWorld);
 
-    // Show line only when an explicit target exists (selected contact or nav target id).
     const isMagnetic = selectedTargetType === 'magnetic';
     const hasSelectedPos = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
     const hasNavTargetId = hasNavTarget();
     if (!hasSelectedPos && !hasNavTargetId) {
-      line.visible = false;
+      arrow.visible = false;
       if (labelGroupRef.current) labelGroupRef.current.visible = false;
       return;
     }
-    line.visible = true;
+
+    const targetLabel = resolveTargetLabel();
 
     // Magnetic / drive scan HUD already shows distance + rel speed on the screen-space bracket.
     const scanHudShowsReadout =
@@ -132,7 +144,6 @@ export default function TargetIndicatorLine({
       }
     }
 
-    // Target velocity for floating line label (nav targets, non-scan contacts).
     _targetVel.set(0, 0, 0);
     if (!scanHudShowsReadout) {
       if (hasSelectedPos && selectedTargetKey) {
@@ -156,27 +167,49 @@ export default function TargetIndicatorLine({
       }
     }
 
-    // Update line color
-    mat.color.copy(isMagnetic && hasSelectedPos ? COLOR_MAGNETIC : COLOR_DEFAULT);
+    setShipDirectionArrowColor(
+      arrow,
+      isMagnetic && hasSelectedPos ? _colorMagnetic : _colorDefault
+    );
 
-    // Anchor line object at ship world position so geometry stays in small
-    // ship-relative coords — avoids float32 precision loss in computeLineDistances.
-    line.position.copy(_shipWorld);
-
-    const attr = line.geometry.attributes.position as THREE.BufferAttribute;
-    // Start the line from the ship's nose tip rather than its center
-    _nose.copy(_fwd).multiplyScalar(DOCKING_PORT_LOCAL_Z).applyQuaternion(shipQuaternion);
-    attr.setXYZ(0, _nose.x, _nose.y, _nose.z);
-    attr.setXYZ(1, tgt.x - _shipWorld.x, tgt.y - _shipWorld.y, tgt.z - _shipWorld.z);
-    attr.needsUpdate = true;
-    line.computeLineDistances();
-
-    if (scanHudShowsReadout) {
+    const placed = placeShipDirectionArrow(
+      arrow,
+      _shipWorld.x,
+      _shipWorld.y,
+      _shipWorld.z,
+      tgt.x - _shipWorld.x,
+      tgt.z - _shipWorld.z
+    );
+    if (!placed) {
       if (labelGroupRef.current) labelGroupRef.current.visible = false;
+      return;
+    }
+
+    _toTgt.subVectors(tgt, _shipWorld);
+    const distWorld = _toTgt.length();
+
+    // Label is a child of the arrow (local +Z) so Html stays near the indicator.
+    // Hide while fullscreen/dock map overlays the scene (Html would stack on top).
+    if (labelGroupRef.current) {
+      labelGroupRef.current.visible =
+        Boolean(targetLabel) && !minimapOverlayActiveRef.current;
+    }
+
+    const magneticStyle = isMagnetic && hasSelectedPos;
+    const nameColor = magneticStyle ? SHIP_DIRECTION_MAGNETIC_COLOR : SHIP_DIRECTION_TARGET_COLOR;
+    const nameShadow = magneticStyle
+      ? '0 0 8px rgba(255,170,0,0.55)'
+      : '0 0 8px rgba(159,223,255,0.55)';
+    if (nameRef.current) {
+      nameRef.current.textContent = targetLabel;
+      nameRef.current.style.color = nameColor;
+      nameRef.current.style.textShadow = nameShadow;
+    }
+
+    // Distance | closing speed — hidden when scan HUD already shows those readouts.
+    if (scanHudShowsReadout) {
+      if (metricsRef.current) metricsRef.current.style.display = 'none';
     } else {
-      if (labelGroupRef.current) labelGroupRef.current.visible = true;
-      _toTgt.subVectors(tgt, _shipWorld);
-      const distWorld = _toTgt.length();
       let relVelStr = '—';
       if (distWorld > 1e-5) {
         const inv = 1 / distWorld;
@@ -186,37 +219,19 @@ export default function TargetIndicatorLine({
             (shipVelocity.z - _targetVel.z) * _toTgt.z) *
           inv;
         relVelStr = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
-        _dir.copy(_toTgt).multiplyScalar(inv);
-      } else {
-        _dir.set(0, 0, -1);
       }
-      _labelPos.copy(_shipWorld).addScaledVector(_dir, 100);
-
-      if (labelGroupRef.current) labelGroupRef.current.position.copy(_labelPos);
-
-      const distRounded = Math.round(distWorld);
-      const magneticStyle = isMagnetic && hasSelectedPos;
-      const color = magneticStyle ? '#ffaa00' : 'rgba(255, 255, 255, 0.25)';
-      const shadow = magneticStyle
-        ? '0 0 8px rgba(255,170,0,0.5)'
-        : '0 0 8px rgba(255, 255, 255, 0.5)';
-      if (distRef.current) {
-        distRef.current.textContent = `${distRounded.toLocaleString()} u`;
-        distRef.current.style.color = color;
-        distRef.current.style.textShadow = shadow;
-      }
-      if (relVelRef.current) {
-        relVelRef.current.textContent = relVelStr;
-        relVelRef.current.style.color = color;
-        relVelRef.current.style.textShadow = shadow;
+      if (metricsRef.current) {
+        metricsRef.current.style.display = '';
+        metricsRef.current.textContent = `${formatCompactDistance(distWorld, { unitSuffix: 'm' })} | ${relVelStr}`;
+        metricsRef.current.style.color = nameColor;
+        metricsRef.current.style.textShadow = nameShadow;
       }
     }
   });
 
   return (
-    <>
-      <primitive object={line} />
-      <group ref={labelGroupRef} visible={false}>
+    <primitive object={arrow}>
+      <group ref={labelGroupRef} position={[0, 0, TARGET_LABEL_LOCAL_Z]} visible={false}>
         <Html center>
           <div
             style={{
@@ -226,32 +241,35 @@ export default function TargetIndicatorLine({
               gap: '2px',
               fontFamily: 'monospace',
               pointerEvents: 'none',
-              opacity: opacity * 10,
+              opacity: 0.92,
               textAlign: 'center',
             }}
           >
             <div
-              ref={distRef}
+              ref={nameRef}
               style={{
-                fontSize: '12px',
+                fontSize: '9px', // 75% of previous 12px
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
                 whiteSpace: 'nowrap',
-                color: 'rgba(255, 255, 255, 0.25)',
-                textShadow: '0 0 8px rgba(255, 255, 255, 0.5)',
+                color: SHIP_DIRECTION_TARGET_COLOR,
+                textShadow: '0 0 8px rgba(159,223,255,0.55)',
               }}
             />
             <div
-              ref={relVelRef}
+              ref={metricsRef}
               style={{
-                fontSize: '10px',
-                whiteSpace: 'nowrap',
+                fontSize: '9px',
                 letterSpacing: '0.02em',
-                color: 'rgba(255, 255, 255, 0.22)',
-                textShadow: '0 0 8px rgba(255, 255, 255, 0.45)',
+                whiteSpace: 'nowrap',
+                color: SHIP_DIRECTION_TARGET_COLOR,
+                textShadow: '0 0 8px rgba(159,223,255,0.55)',
               }}
             />
           </div>
         </Html>
       </group>
-    </>
+    </primitive>
   );
 }

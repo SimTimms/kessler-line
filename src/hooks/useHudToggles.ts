@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { KEY_TOGGLE_MINIMAP } from '../config/keybindings';
+import { EVENT_SHIP_POWER_DEPLETED } from '../context/shipPowerSystems';
 
 export function useHudToggles() {
   const [spotlightOn, setSpotlightOn] = useState(false);
@@ -14,11 +15,20 @@ export function useHudToggles() {
       if (e.code === KEY_TOGGLE_MINIMAP) setShowMinimap((v) => !v);
     };
     const onOpen = () => setShowMinimap(true);
+    const onPowerDepleted = () => {
+      setSpotlightOn(false);
+      setMagneticOn(false);
+      setDriveSignatureOn(false);
+      setProximity(false);
+      setRadioOn(false);
+    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('open-minimap', onOpen);
+    window.addEventListener(EVENT_SHIP_POWER_DEPLETED, onPowerDepleted);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('open-minimap', onOpen);
+      window.removeEventListener(EVENT_SHIP_POWER_DEPLETED, onPowerDepleted);
     };
   }, []);
 

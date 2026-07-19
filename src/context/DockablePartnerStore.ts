@@ -14,6 +14,7 @@ import { fuel, o2, power, setFuel, setO2, setPower, shipCrew, setShipCrew } from
 import {
   registerDockInventories,
   unregisterDockInventories,
+  type InventoryOwnerRef,
 } from './InventoryStore';
 
 export type DockableResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
@@ -67,15 +68,23 @@ export function registerDock(config: RegisteredDockConfig) {
       id: c.id,
       name: c.name,
       inventory: c.inventory,
-    }))
+    })),
+    cloned.inventoryOwnerId
   );
 }
 
 export function unregisterDock(dockId: string) {
   const existing = docks.get(dockId);
   const contactIds = existing?.contacts?.map((c) => c.id) ?? [];
+  const inventoryOwnerId = existing?.inventoryOwnerId;
   docks.delete(dockId);
-  unregisterDockInventories(dockId, contactIds);
+  unregisterDockInventories(dockId, contactIds, inventoryOwnerId);
+}
+
+/** Resolve the inventory bag for a dock partner (honours inventoryOwnerId). */
+export function getDockInventoryOwner(partnerId: string): InventoryOwnerRef {
+  const dock = docks.get(partnerId);
+  return { kind: 'dock', dockId: dock?.inventoryOwnerId ?? partnerId };
 }
 
 /** @deprecated Use registerDock */

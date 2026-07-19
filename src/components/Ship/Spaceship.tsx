@@ -251,7 +251,7 @@ export default function Spaceship({
       {enableShipExplosion && <ShipExplosion shipGroupRef={groupRef} />}
       {enableShipExplosion && <ShipBreakApart shipGroupRef={groupRef} />}
       <TargetIndicatorLine shipGroupRef={groupRef} />
-      <VelocityIndicator />
+      <VelocityIndicator shipGroupRef={groupRef} />
     </>
   );
 }

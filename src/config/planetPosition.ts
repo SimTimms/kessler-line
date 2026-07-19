@@ -20,6 +20,28 @@ export function getPlanetPosition(planetName: string, target = new THREE.Vector3
   return target.set(Math.cos(planet.initialAngle) * r, 0, -Math.sin(planet.initialAngle) * r);
 }
 
+/**
+ * Static world point at `altitudeAboveSurface` above the planet, on the side
+ * facing the Sun (inward along the Sun→planet radial). Does not follow orbits.
+ */
+export function getPositionTowardSunFromPlanetSurface(
+  planetName: string,
+  altitudeAboveSurface: number,
+  target = new THREE.Vector3()
+): THREE.Vector3 {
+  const planetPos = getPlanetPosition(planetName);
+  const worldRadius = getPlanetWorldRadius(planetName);
+  const towardSun = planetPos.clone().negate().setY(0);
+  if (towardSun.lengthSq() < 1e-6) {
+    towardSun.set(-1, 0, 0);
+  } else {
+    towardSun.normalize();
+  }
+  return target
+    .copy(planetPos)
+    .addScaledVector(towardSun, worldRadius + altitudeAboveSurface);
+}
+
 export interface ShipSpawnNearPlanet {
   position: [number, number, number];
   yaw: number;

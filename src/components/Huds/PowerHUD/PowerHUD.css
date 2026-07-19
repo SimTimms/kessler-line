@@ -104,17 +104,3 @@
   font-size: 14px;
   letter-spacing: 0.05em;
 }
-
-.power-hud-cargo-item {
-  color: #00ff88;
-  font-size: 14px;
-  pointer-events: auto;
-  cursor: pointer;
-  user-select: none;
-  text-decoration: underline dotted;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  font-family: inherit;
-}

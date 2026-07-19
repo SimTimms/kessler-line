@@ -9,6 +9,7 @@ import {
   drainVesselPower,
   damageVesselHull,
 } from './VesselStateStore';
+import { onPlayerPowerChanged } from './shipPowerSystems';
 import {
   PLAYER_VESSEL_ID,
   mobileThrustForward,
@@ -58,7 +59,9 @@ export let o2 = playerState.o2; // 0–100, depletes constantly, refills while d
 export let shipCrew = playerState.shipCrew; // crew aboard (0–SHIP_CREW_CAPACITY)
 
 export function setPower(v: number) {
-  setVesselPower(PLAYER_VESSEL_ID, v);
+  const previous = playerState.power;
+  const next = onPlayerPowerChanged(previous, v);
+  setVesselPower(PLAYER_VESSEL_ID, next);
   syncPlayerResourceBindings();
 }
 export function setFuel(v: number) {
@@ -82,8 +85,10 @@ export function setHullIntegrity(v: number) {
 }
 
 export function drainPower(amount: number) {
+  const previous = playerState.power;
   drainVesselPower(PLAYER_VESSEL_ID, amount);
   syncPlayerResourceBindings();
+  onPlayerPowerChanged(previous, playerState.power);
 }
 
 export function damageHull(amount: number) {

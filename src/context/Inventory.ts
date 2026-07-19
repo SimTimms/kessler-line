@@ -12,6 +12,7 @@ import { PLAYER_VESSEL_ID } from './PlayerShipState';
 export interface CargoItem {
   name: string;
   quantity: number;
+  salvagedBy?: string;
 }
 
 const playerOwner = { kind: 'vessel' as const, vesselId: PLAYER_VESSEL_ID };
@@ -21,7 +22,11 @@ ensureVesselInventory(PLAYER_VESSEL_ID, undefined, 'Player Ship');
 function toCargoItems(slots: InventorySlot[]): CargoItem[] {
   return slots
     .filter((slot) => slot.quantity > 0)
-    .map((slot) => ({ name: slot.itemId, quantity: slot.quantity }));
+    .map((slot) => ({
+      name: slot.itemId,
+      quantity: slot.quantity,
+      salvagedBy: slot.salvagedBy,
+    }));
 }
 
 /** Player cargo view — mirrors the player vessel inventory. */

@@ -3,6 +3,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { ASTEROID_CLAMP_CAPTURE_PROFILE } from '../../config/dockCaptureConfig';
+import { selectTarget } from '../../context/TargetSelection';
 
 const DEFAULT_URL = '/asteroid.glb';
 
@@ -69,7 +70,22 @@ export default function Asteroid({
   }, [mineableId, collisionRadius, scale, label]);
 
   return (
-    <group ref={groupRef} position={position} rotation={rotation} scale={scale}>
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      scale={scale}
+      onClick={
+        mineableId
+          ? (e) => {
+              e.stopPropagation();
+              const world = new THREE.Vector3();
+              groupRef.current?.getWorldPosition(world);
+              selectTarget(label, undefined, world, mineableId);
+            }
+          : undefined
+      }
+    >
       <primitive object={modelScene} />
     </group>
   );

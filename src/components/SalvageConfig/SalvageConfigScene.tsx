@@ -7,14 +7,9 @@ import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
-import DustCloud from '../DustCloud/DustCloud';
-import LandingPad from '../WorldObjects/LandingPad';
-import CargoContainer from '../CargoContainer/CargoContainer';
-import Asteroid from '../Asteroid/Asteroid';
-import BackgroundGarbageScow from '../Ship/BackgroundGarbageScow';
-import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
 import { SalvageConfigData } from './SalvageConfigFile';
-import GarbageScow from '../Ship/GarbageScow';
+import SalvageField from './SalvageField';
+import Spaceship from '../Ship/Spaceship';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
 
 function CameraCapture() {
@@ -44,8 +39,7 @@ export default function SalvageConfigScene() {
     minimapShipPosition.set(0, 0, 0);
   }, []);
 
-  const { scene, dustCloud, dock, cargoContainer, asteroids, backgroundScow, scowDroneFleet } =
-    SalvageConfigData;
+  const { scene } = SalvageConfigData;
 
   return (
     <Canvas
@@ -68,7 +62,6 @@ export default function SalvageConfigScene() {
       shadows={true}
     >
       <CameraCapture />
-      {/* <Perf position="top-left" /> */}
       <fogExp2 attach="fog" args={[scene.fogColor, 0.000001]} />
       <ambientLight intensity={scene.ambientIntensity} />
       <directionalLight
@@ -84,14 +77,13 @@ export default function SalvageConfigScene() {
       <gridHelper
         args={[SalvageConfigData.gridSize, SalvageConfigData.gridDivisions, '#aa7744', '#553311']}
       />
-      {/* <axesHelper args={[180]} /> */}
 
       <Suspense fallback={null}>
-        <GarbageScow
-          url={'/space_garbage_truck.glb'}
+        <Spaceship
+          url={'/shuttle-low-british.glb'}
           initialPosition={[0, 1.2, 0]}
           initialRotation={[0, 0, 0]}
-          scale={4}
+          scale={1}
           initialVelocity={[0, 0, 0]}
           modulesInstalled={GARBAGE_SCOW_MODULES}
           shipParticleCloudProps={{
@@ -108,59 +100,7 @@ export default function SalvageConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <Asteroid
-          key="salvage-asteroid-near"
-          position={[45, 0, -55]}
-          rotation={[0.2, 0.8, 0.1]}
-          scale={18}
-          mineableId="salvage-asteroid-near"
-          label="Mineral Asteroid"
-        />
-        <group position={dock.position}>
-          <LandingPad
-            id={dock.id}
-            label={dock.label}
-            scale={SalvageConfigData.landingPadScale}
-            dock={dock.dock}
-            landingPadThreshold={SalvageConfigData.landingPadThreshold}
-            debugJumpDockOnClick
-          />
-          <Asteroid
-            key={`salvage-asteroid-mineable`}
-            position={[-150, -480, -70]}
-            rotation={[0, 0, 0]}
-            scale={260}
-            mineableId="salvage-asteroid-a"
-            label="Mineral Asteroid"
-          />
-        </group>
-        <CargoContainer
-          id={cargoContainer.id}
-          label={cargoContainer.label}
-          position={cargoContainer.position}
-          rotation={cargoContainer.rotation}
-          scale={cargoContainer.scale}
-          dock={cargoContainer.dock}
-          showCaptureMesh
-          debugJumpDockOnClick
-        />
-        {asteroids.map((asteroid, index) => (
-          <Asteroid
-            key={`salvage-asteroid-${index}`}
-            position={asteroid.position}
-            rotation={asteroid.rotation}
-            scale={asteroid.scale}
-          />
-        ))}
-
-        <GarbageScowDroneFleet
-          url={scowDroneFleet.url}
-          count={scowDroneFleet.count}
-          scale={scowDroneFleet.scale}
-          spawnCenter={scowDroneFleet.spawnCenter}
-          spawnRadius={scowDroneFleet.spawnRadius}
-          waypoints={scowDroneFleet.waypoints}
-        />
+        <SalvageField origin={[0, 0, 0]} debugJumpDockOnClick />
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
@@ -174,16 +114,6 @@ export default function SalvageConfigScene() {
         enableZoom
         enableRotate
       />
-      <Suspense fallback={null}>
-        <DustCloud
-          radius={dustCloud.radius}
-          particleSize={1500}
-          radialSpread={dustCloud.radialSpread}
-          yInitial={-700}
-          opacity={dustCloud.opacity}
-          colors={[...dustCloud.colors]}
-        />
-      </Suspense>
     </Canvas>
   );
 }

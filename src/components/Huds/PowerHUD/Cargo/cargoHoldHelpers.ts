@@ -20,6 +20,7 @@ import {
   getInventoryItemUi,
   resolveInventoryItemId,
 } from '../../../../config/inventoryCatalog';
+import { PLAYER_SALVAGED_BY } from '../../../../config/inventoryTypes';
 import { CARGO_HOLD_SLOT_COUNT } from './cargoHoldConstants';
 
 export const ITEM_ICONS: Record<string, LucideIcon> = {
@@ -41,6 +42,8 @@ export type HoldCell =
       stackQuantity: number;
       color: string;
       Icon: LucideIcon;
+      salvagedBy?: string;
+      provenanceLabel?: string;
     };
 
 /** HTML5 DnD mime type for cargo stack transfers. */
@@ -50,7 +53,14 @@ export type CargoDragPayload = {
   itemId: string;
   quantity: number;
   from: InventoryOwnerRef;
+  salvagedBy?: string;
 };
+
+export function provenanceLabelFor(salvagedBy: string | undefined): string | undefined {
+  if (!salvagedBy) return undefined;
+  if (salvagedBy === PLAYER_SALVAGED_BY) return 'Salvaged by you';
+  return `Salvaged by ${salvagedBy}`;
+}
 
 export function expandCargoToCells(
   items: CargoItem[],
@@ -63,6 +73,7 @@ export function expandCargoToCells(
     const ui = getInventoryItemUi(itemId);
     const Icon = ITEM_ICONS[itemId] ?? Package;
     const qty = Math.max(0, Math.floor(item.quantity));
+    const provenanceLabel = provenanceLabelFor(item.salvagedBy);
     for (let i = 0; i < qty && cells.length < slotCount; i++) {
       cells.push({
         filled: true,
@@ -71,6 +82,8 @@ export function expandCargoToCells(
         stackQuantity: qty,
         color: ui.color,
         Icon,
+        salvagedBy: item.salvagedBy,
+        provenanceLabel,
       });
     }
   }
@@ -85,7 +98,11 @@ export function slotsToCargoItems(
 ): CargoItem[] {
   return slots
     .filter((slot) => slot.quantity > 0)
-    .map((slot) => ({ name: slot.itemId, quantity: slot.quantity }));
+    .map((slot) => ({
+      name: slot.itemId,
+      quantity: slot.quantity,
+      salvagedBy: slot.salvagedBy,
+    }));
 }
 
 export function countCargoUnits(owner: InventoryOwnerRef): number {
@@ -139,7 +156,8 @@ export function transferCargoStack(
   from: InventoryOwnerRef,
   to: InventoryOwnerRef,
   itemId: string,
-  quantity: number
+  quantity: number,
+  salvagedBy?: string
 ): number {
   if (sameOwner(from, to) || quantity <= 0) return 0;
 
@@ -150,7 +168,13 @@ export function transferCargoStack(
   }
   if (qty <= 0) return 0;
 
-  const moved = transferInventoryItem(from, to, itemId, qty);
+  const moved = transferInventoryItem(
+    from,
+    to,
+    itemId,
+    qty,
+    salvagedBy !== undefined ? { salvagedBy } : undefined
+  );
   if (moved > 0) {
     if (from.kind === 'vessel' || to.kind === 'vessel') {
       refreshPlayerCargoBinding();

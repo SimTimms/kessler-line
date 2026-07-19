@@ -1,13 +1,31 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { shipVelocity } from './Ship/Spaceship';
 import { gravityBodies } from '../context/GravityRegistry';
 import { orbitStatusRef, trajectoryApsisRef } from '../context/ShipState';
 import { shipPosRef } from '../context/ShipPos';
 import { navHudEnabledRef } from '../context/NavHud';
+import { minimapOverlayActiveRef } from '../context/MinimapUi';
+import {
+  SHIP_DIRECTION_MIN_SPEED,
+  SHIP_DIRECTION_RING_OPACITY,
+  SHIP_DIRECTION_VELOCITY_ARROW_SCALE,
+  SHIP_DIRECTION_VELOCITY_COLOR,
+} from '../config/shipDirectionIndicatorConfig';
+import {
+  createShipDirectionArrow,
+  createShipDirectionRing,
+  placeShipDirectionArrow,
+} from './shipDirectionArrow';
 
-const MIN_SPEED = 0.05;
+/** Local +Z offset past the arrow tip — keeps Html in ship-relative space (no large-world jitter). */
+const SPEED_LABEL_LOCAL_Z = 22;
+
+const _shipWorld = new THREE.Vector3();
+
+const MIN_SPEED = SHIP_DIRECTION_MIN_SPEED;
 const TRAJ_STEPS = 400;
 const TRAJ_DT = 0.9; // seconds per step — stable symplectic Euler (covers ~360 s, enough for gas giant orbits ~300-350 s)
 const ORBIT_MIN_STEPS = 25; // steps before orbit-closure check starts
@@ -15,19 +33,7 @@ const ORBIT_CLOSE_DIST = 150; // world units to declare orbit closed
 // Trajectory must travel at least this far from start before closure is checked.
 // Prevents approach arcs that curve near the start from being mistaken for orbits.
 const ORBIT_AWAY_DIST = 500;
-const HUD_BLUE = 0x00c8ff;
-const VELOCITY_ORANGE = 0x00ffff;
 const VELOCITY_X_OFFSET = 0;
-const TRAJECTORY_OPACITY_BASE = 0.42;
-const TRAJECTORY_OPACITY_HIGHLIGHT_MIN = 0.5;
-const TRAJECTORY_OPACITY_HIGHLIGHT_RANGE = 0.4;
-const TRAJECTORY_FADE_LAYERS = [
-  // Standard fade: bright near ship, darker farther away.
-  { endFraction: 1, opacityScale: 0.22 },
-  { endFraction: 0.72, opacityScale: 0.42 },
-  { endFraction: 0.5, opacityScale: 0.62 },
-  { endFraction: 0.3, opacityScale: 0.88 },
-] as const;
 
 // Module-level scratch — no GC per frame
 const _simPos = new THREE.Vector3();
@@ -90,9 +96,15 @@ function drawApsisLabel(ctx: CanvasRenderingContext2D, color: string, label: str
   ctx.fillText(`${label}  ${alt}`, 128, 56);
 }
 
-export default function VelocityIndicator() {
+export default function VelocityIndicator({
+  shipGroupRef,
+}: {
+  shipGroupRef: RefObject<THREE.Group>;
+}) {
   const shipPositionRef = shipPosRef;
   const trajectoryHighlightRef = useRef(false);
+  const speedLabelGroupRef = useRef<THREE.Group>(null!);
+  const speedRef = useRef<HTMLDivElement>(null!);
 
   useEffect(() => {
     const onStart = () => {
@@ -109,9 +121,8 @@ export default function VelocityIndicator() {
     };
   }, []);
   const {
-    trajectoryLines,
-    sprite,
-    spriteCtx,
+    velocityArrow,
+    directionRing,
     posArr,
     orbitLine,
     orbitSprite,
@@ -121,23 +132,6 @@ export default function VelocityIndicator() {
     apoMarker,
   } = useMemo(() => {
     const arr = new Float32Array(TRAJ_STEPS * 3);
-    const layers = TRAJECTORY_FADE_LAYERS.map(() => {
-      const geo = new THREE.BufferGeometry();
-      const layerArr = new Float32Array(TRAJ_STEPS * 3);
-      geo.setAttribute('position', new THREE.BufferAttribute(layerArr, 3));
-      const mat = new THREE.LineDashedMaterial({
-        color: VELOCITY_ORANGE,
-        dashSize: 5,
-        gapSize: 1.2,
-        opacity: TRAJECTORY_OPACITY_BASE,
-        transparent: true,
-        depthTest: false,
-        blending: THREE.AdditiveBlending,
-      });
-      const line = new THREE.Line(geo, mat);
-      line.frustumCulled = false;
-      return { line, posArr: layerArr };
-    });
 
     const orbitGeo = new THREE.BufferGeometry();
     const orbitArr = new Float32Array(TRAJ_STEPS * 3);
@@ -154,22 +148,6 @@ export default function VelocityIndicator() {
 
     const ol = new THREE.Line(orbitGeo, orbitMat);
     ol.frustumCulled = false;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas 2D context unavailable');
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const spriteMat = new THREE.SpriteMaterial({
-      map: texture,
-      depthTest: false,
-      transparent: true,
-    });
-    const s = new THREE.Sprite(spriteMat);
-    s.frustumCulled = false;
-    s.visible = false;
 
     const orbitCanvas = document.createElement('canvas');
     orbitCanvas.width = 256;
@@ -190,10 +168,12 @@ export default function VelocityIndicator() {
     const peri = makeApsisSprite('#00e5ff');
     const apo = makeApsisSprite('#00e5ff');
 
+    const velocityArrow = createShipDirectionArrow(SHIP_DIRECTION_VELOCITY_COLOR);
+    velocityArrow.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
+
     return {
-      trajectoryLines: layers,
-      sprite: s,
-      spriteCtx: ctx,
+      velocityArrow,
+      directionRing: createShipDirectionRing(SHIP_DIRECTION_VELOCITY_COLOR),
       posArr: arr,
       orbitLine: ol,
       orbitSprite,
@@ -206,27 +186,44 @@ export default function VelocityIndicator() {
 
   useFrame(({ camera, size }) => {
     if (!navHudEnabledRef.current) {
-      for (const { line } of trajectoryLines) line.visible = false;
-      sprite.visible = false;
+      velocityArrow.visible = false;
+      directionRing.visible = false;
+      if (speedLabelGroupRef.current) speedLabelGroupRef.current.visible = false;
       orbitLine.visible = false;
       orbitSprite.visible = false;
       periMarker.sprite.visible = false;
       apoMarker.sprite.visible = false;
       return;
     }
+    if (!shipGroupRef.current) return;
+    shipGroupRef.current.updateWorldMatrix(true, false);
+    shipGroupRef.current.getWorldPosition(_shipWorld);
+
     const speed = shipVelocity.length();
-    for (const { line } of trajectoryLines) line.visible = speed > MIN_SPEED;
-    sprite.visible = speed > MIN_SPEED;
+    directionRing.visible = true;
+
+    // Place ring/arrow from the rendered ship pose (same space as TargetIndicatorLine).
+    directionRing.position.copy(_shipWorld);
+    const arrowPlaced = placeShipDirectionArrow(
+      velocityArrow,
+      _shipWorld.x,
+      _shipWorld.y,
+      _shipWorld.z,
+      shipVelocity.x,
+      shipVelocity.z
+    );
+    const showSpeedLabel =
+      arrowPlaced && speed > MIN_SPEED && !minimapOverlayActiveRef.current;
+    if (speedLabelGroupRef.current) {
+      speedLabelGroupRef.current.visible = showSpeedLabel;
+    }
+    if (speedRef.current && showSpeedLabel) {
+      speedRef.current.textContent = `${speed.toFixed(1)} m/s`;
+    }
 
     const ship = shipPositionRef.current;
-    const sx = ship.x,
-      sz = ship.z;
-
-    // Anchor line at ship world position — geometry stored in ship-relative coords
-    // so computeLineDistances works on small values (no float32 precision loss).
-    for (const { line } of trajectoryLines) {
-      line.position.set(sx, 0, sz);
-    }
+    const sx = ship.x;
+    const sz = ship.z;
 
     let primaryBody: (typeof gravityBodies extends Map<string, infer T> ? T : never) | null = null;
     let primaryBodyId: string | null = null;
@@ -404,17 +401,6 @@ export default function VelocityIndicator() {
       }
     }
 
-    const activePointCount = orbitClosedAt >= 0 ? orbitClosedAt + 1 : TRAJ_STEPS;
-    for (let i = 0; i < trajectoryLines.length; i++) {
-      const layer = trajectoryLines[i]!;
-      layer.posArr.set(posArr);
-      const layerPos = layer.line.geometry.attributes.position;
-      layerPos.needsUpdate = true;
-      layer.line.computeLineDistances();
-      const count = Math.max(2, Math.floor(activePointCount * TRAJECTORY_FADE_LAYERS[i]!.endFraction));
-      layer.line.geometry.setDrawRange(0, count);
-    }
-
     // Publish trajectory-simulated apsides so other systems (e.g. autopilot status) can read them
     trajectoryApsisRef.current.periapsis =
       primaryBody && periStep >= 0 && periDist < Infinity ? periDist : 0;
@@ -422,35 +408,15 @@ export default function VelocityIndicator() {
       primaryBody && apoStep >= 0 && orbitClosedAt >= 0 ? apoDist : 0;
     trajectoryApsisRef.current.surfaceRadius = primaryBody?.surfaceRadius ?? 0;
 
-    const fadeBaseOpacity = trajectoryHighlightRef.current
-      ? TRAJECTORY_OPACITY_HIGHLIGHT_MIN +
-        TRAJECTORY_OPACITY_HIGHLIGHT_RANGE * (0.25 + 0.25 * Math.sin(Date.now() * 0.004))
-      : TRAJECTORY_OPACITY_BASE;
-    for (let i = 0; i < trajectoryLines.length; i++) {
-      const lineMat = trajectoryLines[i]!.line.material as THREE.LineDashedMaterial;
-      lineMat.dashSize = 6;
-      lineMat.gapSize = 6;
-      lineMat.color.set(orbitClosedAt >= 0 ? HUD_BLUE : VELOCITY_ORANGE);
-      lineMat.opacity = fadeBaseOpacity * TRAJECTORY_FADE_LAYERS[i]!.opacityScale;
+    // Pulse the ring slightly while trajectory highlight is active (autopilot cues).
+    const ringMat = directionRing.material as THREE.LineBasicMaterial;
+    if (trajectoryHighlightRef.current) {
+      ringMat.opacity =
+        SHIP_DIRECTION_RING_OPACITY +
+        0.14 * (0.5 + 0.5 * Math.sin(Date.now() * 0.004));
+    } else {
+      ringMat.opacity = SHIP_DIRECTION_RING_OPACITY;
     }
-
-    // Speed label at the midpoint of the active trajectory
-    const activeEnd = orbitClosedAt >= 0 ? orbitClosedAt : TRAJ_STEPS - 1;
-    const mid = Math.floor(activeEnd / 2);
-    // posArr is ship-relative — convert back to world for sprites
-    const lx = posArr[mid * 3] + sx;
-    const lz = posArr[mid * 3 + 2] + sz;
-    const labelScale = Math.min(Math.max(speed * 0.25, 8), 36);
-    sprite.scale.set(labelScale * 3.8, labelScale, 1);
-    sprite.position.set(lx, 0, lz);
-
-    spriteCtx.clearRect(0, 0, 256, 64);
-    spriteCtx.fillStyle = '#ff8800';
-    spriteCtx.font = 'bold 12px monospace';
-    spriteCtx.textAlign = 'center';
-    spriteCtx.textBaseline = 'middle';
-    spriteCtx.fillText(`${speed.toFixed(1)} m/s`, 128, 34);
-    (sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
 
     // ── Apsis markers ────────────────────────────────────────────────────────
     // Fixed ~screen-pixel size so they stay small and readable at any zoom / orbit radius.
@@ -556,10 +522,28 @@ export default function VelocityIndicator() {
 
   return (
     <>
-      {trajectoryLines.map(({ line }, index) => (
-        <primitive key={`trajectory-layer-${index}`} object={line} />
-      ))}
-      <primitive object={sprite} />
+      <primitive object={directionRing} />
+      <primitive object={velocityArrow}>
+        {/* Child of the arrow so Html stays in local space (matches target-indicator placement). */}
+        <group ref={speedLabelGroupRef} position={[0, 0, SPEED_LABEL_LOCAL_Z]} visible={false}>
+          <Html center>
+            <div
+              ref={speedRef}
+              style={{
+                fontFamily: 'monospace',
+                fontSize: '9px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                whiteSpace: 'nowrap',
+                pointerEvents: 'none',
+                color: SHIP_DIRECTION_VELOCITY_COLOR,
+                textShadow: '0 0 8px rgba(255, 136, 0, 0.55)',
+                opacity: 0.92,
+              }}
+            />
+          </Html>
+        </group>
+      </primitive>
       <primitive object={orbitLine} />
       <primitive object={orbitSprite} />
       <primitive object={periMarker.sprite} />

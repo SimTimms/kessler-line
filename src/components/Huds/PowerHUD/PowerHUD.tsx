@@ -26,10 +26,7 @@ import Cargo from './Cargo/Cargo';
 import CargoHoldPanel from './Cargo/CargoHoldPanel';
 import PartnerCargoHoldPanel from './Cargo/PartnerCargoHoldPanel';
 import MiningHUD from './Mining/MiningHUD';
-import {
-  DOCK_TRANSFER_UI_CHANGED,
-  getDockTransferUi,
-} from '../../../context/DockTransferUi';
+import { DOCK_TRANSFER_UI_CHANGED, getDockTransferUi } from '../../../context/DockTransferUi';
 import '../../../context/MiningState';
 import { VentResourceModal } from './VentResourceModal';
 import { canVentResource } from '../../../context/ventResource';

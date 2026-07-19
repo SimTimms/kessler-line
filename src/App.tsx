@@ -31,6 +31,8 @@ import ModelConfig from './components/ModelConfig/ModelConfig';
 import LandingPadConfig from './components/LandingPadConfig/LandingPadConfig';
 import InventoryConfig from './components/InventoryConfig/InventoryConfig';
 import SalvageConfig from './components/SalvageConfig/SalvageConfig';
+import DroneConfig from './components/DroneConfig/DroneConfig';
+import LongDistanceTravelConfig from './components/LongDistanceTravelConfig/LongDistanceTravelConfig';
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
 function resetShipState(forTutorial = false) {
@@ -94,6 +96,10 @@ function App() {
       return <InventoryConfig />;
     case GAME_MODES.salvageConfig:
       return <SalvageConfig />;
+    case GAME_MODES.droneConfig:
+      return <DroneConfig />;
+    case GAME_MODES.longDistanceTravelConfig:
+      return <LongDistanceTravelConfig />;
     case GAME_MODES.sandbox:
       return <Sandbox />;
     case GAME_MODES.tutorial:

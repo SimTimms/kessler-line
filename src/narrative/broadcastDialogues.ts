@@ -280,6 +280,52 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
       },
     },
   },
+  {
+    id: 'salvage-intake-delivery',
+    captainName: 'Salvage Intake',
+    vesselName: 'Salvage Depot',
+    openingTurnId: 'open',
+    kind: 'broadcast',
+    turns: {
+      open: {
+        id: 'open',
+        npcText:
+          'Intake confirms recovery. Your delivery is tagged and logged in the depot hold. Dock at Salvage Berth and speak with the Salvage Master to negotiate your claim share.',
+        playerOptions: [
+          {
+            id: 'ack',
+            label: 'Copy.',
+            text: 'Copy. Heading for the berth.',
+            nextTurnId: 'ack',
+          },
+          {
+            id: 'ask',
+            label: 'What is my share?',
+            text: 'What cut am I looking at?',
+            nextTurnId: 'share',
+          },
+        ],
+      },
+      ack: {
+        id: 'ack',
+        npcText: 'Berth is lit. Master will take your claim when you land.',
+        playerOptions: [],
+      },
+      share: {
+        id: 'share',
+        npcText:
+          'Standard cut is half of tagged recovery, subject to negotiation. Some masters are fair. Some are not. Bring your logs.',
+        playerOptions: [
+          {
+            id: 'out',
+            label: 'Understood.',
+            text: 'Understood. Out.',
+            nextTurnId: null,
+          },
+        ],
+      },
+    },
+  },
 ];
 
 export const MINERAL_ASTEROID_HAIL_TREE_ID = 'mineral-asteroid-hail';
@@ -287,3 +333,4 @@ export const MINERAL_ASTEROID_HAIL_FOOD_LOW_TREE_ID = 'mineral-asteroid-hail-foo
 export const MINERAL_ASTEROID_HAIL_FOOD_DESPERATE_TREE_ID = 'mineral-asteroid-hail-food-desperate';
 export const MINERAL_ASTEROID_HAIL_FOOD_STARVING_TREE_ID = 'mineral-asteroid-hail-food-starving';
 export const MINERAL_ASTEROID_HAIL_WATER_LOW_TREE_ID = 'mineral-asteroid-hail-water-low';
+export const SALVAGE_INTAKE_DELIVERY_TREE_ID = 'salvage-intake-delivery';

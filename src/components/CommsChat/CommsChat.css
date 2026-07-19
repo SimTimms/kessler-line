@@ -329,18 +329,15 @@
   line-height: 1.55;
   letter-spacing: 0.03em;
   border-radius: 2px;
+  text-transform: none;
 }
 
 .comms-chat-bubble--npc {
-  background: var(--cc-npc-bg);
-  border: 1px solid var(--cc-npc-border);
   color: var(--cc-npc-text);
   border-bottom-left-radius: 0;
 }
 
 .comms-chat-bubble--player {
-  background: var(--cc-player-bg);
-  border: 1px solid var(--cc-player-border);
   color: var(--cc-player-text);
   border-bottom-right-radius: 0;
 }

@@ -166,6 +166,7 @@ export default function SandboxScene() {
           zoomMax={tutorialCameraZoomMax}
           attachTo={spaceshipGroupRef}
           flattenBanking
+          lockPolarAngle
           planetImpactCameraHoldMaxAltitude={planetImpactCameraHoldMaxAltitude}
           framePriority={SANDBOX_CAMERA_FRAME_PRIORITY}
         />
@@ -176,7 +177,7 @@ export default function SandboxScene() {
         )}
         <SunGravity />
         <SharedInteractionSceneTools />
-        <ShipDepthOfField saturation={-0.9} />
+        <ShipDepthOfField saturation={-0.1} />
       </Canvas>
     </>
   );

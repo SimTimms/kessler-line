@@ -8,15 +8,20 @@ interface ShipControlsHUDProps {
   setThrustLevel?: Dispatch<SetStateAction<number>>;
 }
 
-/** Vertical thrust slider beside the scanner deck. */
+/** Vertical thrust slider — mech console, bottom-right beside Dock Assist / Star Chart. */
 const ShipControlsHUD = memo(function ShipControlsHUD({
   thrustLevel,
   setThrustLevel,
 }: ShipControlsHUDProps) {
   return (
-    <div className="helmet-ship-controls" aria-label="Thrust">
-      <div className="helmet-ship-controls-head">THRUST</div>
-      <ThrustPanel embedded thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
+    <div className="mech-thrust" aria-label="Thrust">
+      <div className="mech-thrust-bezel">
+        <div className="mech-thrust-head">
+          <span className="mech-thrust-lamp" aria-hidden />
+          <span className="mech-thrust-title">ENG</span>
+        </div>
+        <ThrustPanel embedded thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
+      </div>
     </div>
   );
 });

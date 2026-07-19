@@ -362,7 +362,7 @@
 .tutorial-powerhud-focus .power-hud-row,
 .tutorial-powerhud-focus .power-hud-divider,
 .tutorial-powerhud-focus .power-hud-section,
-.tutorial-powerhud-focus .power-hud-cargo-item {
+.tutorial-powerhud-focus .cargo-hold-panel {
   opacity: 0.3;
 }
 

@@ -75,19 +75,9 @@ export default function HoverTrajectoryIndicator() {
     line.position.set(ox, 0, oz);
 
     if (speed <= HOVER_TRAJ_MIN_SPEED) {
-      // Stationary object — show a small orbit ring so hover is still visible.
-      line.visible = true;
+      // Stationary pads/stations — no dashed ring; hover is handled by HUD labels.
+      line.visible = false;
       sprite.visible = false;
-      const ringRadius = 120;
-      for (let i = 0; i < HOVER_TRAJ_STEPS; i++) {
-        const t = (i / (HOVER_TRAJ_STEPS - 1)) * Math.PI * 2;
-        posArr[i * 3] = Math.cos(t) * ringRadius;
-        posArr[i * 3 + 1] = 0;
-        posArr[i * 3 + 2] = Math.sin(t) * ringRadius;
-      }
-      const pos = line.geometry.attributes.position;
-      pos.needsUpdate = true;
-      line.computeLineDistances();
       return;
     }
 

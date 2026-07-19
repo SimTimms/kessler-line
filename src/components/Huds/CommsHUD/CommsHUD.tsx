@@ -26,6 +26,11 @@ import {
   EVENT_PAD_SCAN_STARTED,
   padScanActiveRef,
 } from '../../../context/PadScanState';
+import {
+  areShipSystemsForcedOffline,
+  EVENT_SHIP_POWER_DEPLETED,
+} from '../../../context/shipPowerSystems';
+import { power as shipPower } from '../../../context/ShipState';
 import '../HUD/ScannerHUD.css';
 import './CommsHUD.css';
 
@@ -136,6 +141,7 @@ export default function CommsHUD({
   function applyPower(level: number) {
     const clamped = clampScannerPowerLevel(level);
     const on = isScannerPowerOn(clamped);
+    if (on && (areShipSystemsForcedOffline() || shipPower <= 0)) return;
     if (on) lastPower.current = clamped;
     scannerPowerLevelRefs.radio.current = on ? clamped : SCANNER_OFF_LEVEL;
     setPower(clamped);
@@ -143,6 +149,16 @@ export default function CommsHUD({
     radioOnRef.current = on;
     setRadioOn(on);
   }
+
+  useEffect(() => {
+    const shutDown = () => applyPower(SCANNER_OFF_LEVEL);
+    window.addEventListener(EVENT_SHIP_POWER_DEPLETED, shutDown);
+    if (areShipSystemsForcedOffline() || shipPower <= 0) {
+      shutDown();
+    }
+    return () => window.removeEventListener(EVENT_SHIP_POWER_DEPLETED, shutDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + depletion sync only
+  }, []);
 
   return (
     <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly}>

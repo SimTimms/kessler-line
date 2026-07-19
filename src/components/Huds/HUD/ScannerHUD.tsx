@@ -1,11 +1,5 @@
 import { useState, useRef, useEffect, type CSSProperties, type ReactNode } from 'react';
-import {
-  Flashlight,
-  Magnet,
-  HardDrive,
-  Radar,
-  Radiation,
-} from 'lucide-react';
+import { Flashlight, Magnet, HardDrive, Radar, Radiation } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HudButton } from '../HudButton';
 import { shipPosRef } from '../../../context/ShipPos';
@@ -44,6 +38,11 @@ import {
   setProximityScannerState,
   setRadiationScannerState,
 } from '../../../context/scannerStateMutators';
+import {
+  areShipSystemsForcedOffline,
+  EVENT_SHIP_POWER_DEPLETED,
+} from '../../../context/shipPowerSystems';
+import { power as shipPower } from '../../../context/ShipState';
 
 export const ScannerHUDElements = {
   SPOTLIGHT: 'spotlight',
@@ -393,6 +392,29 @@ export const ScannerHUD = ({
     }
   };
 
+  const shutDownAllSensors = () => {
+    for (const { id } of BUTTON_DEFS) {
+      applyPower(id, SCANNER_OFF_LEVEL);
+    }
+    setPowers((prev) => {
+      const next = { ...prev };
+      for (const { id } of BUTTON_DEFS) {
+        next[id] = SCANNER_OFF_LEVEL;
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const onDepleted = () => shutDownAllSensors();
+    window.addEventListener(EVENT_SHIP_POWER_DEPLETED, onDepleted);
+    if (areShipSystemsForcedOffline() || shipPower <= 0) {
+      shutDownAllSensors();
+    }
+    return () => window.removeEventListener(EVENT_SHIP_POWER_DEPLETED, onDepleted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + depletion sync only
+  }, []);
+
   const getIsActive = (id: string): boolean => {
     switch (id) {
       case ScannerHUDElements.SPOTLIGHT:
@@ -412,6 +434,12 @@ export const ScannerHUD = ({
 
   const handlePower = (id: string, level: number) => {
     const clamped = clampScannerPowerLevel(level);
+    if (
+      isScannerPowerOn(clamped) &&
+      (areShipSystemsForcedOffline() || shipPower <= 0)
+    ) {
+      return;
+    }
     if (isScannerPowerOn(clamped)) lastPowers.current[id] = clamped;
     setPowers((prev) => ({ ...prev, [id]: clamped }));
     applyPower(id, clamped);

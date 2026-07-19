@@ -1,5 +1,6 @@
 import { MOON_BODY_ID } from '../../../config/moonConfig';
 import { orbitStatusRef, trajectoryApsisRef } from '../../../context/ShipState';
+import { formatCompactDistance } from '../../../utils/formatCompactDistance';
 import { getAltitudeAboveSurface } from '../../../utils/orbitAltitude';
 
 const DASH = '—';
@@ -28,7 +29,7 @@ export function computeOrbitHudMetrics(): OrbitHudMetrics {
     return { alt: DASH, peri: DASH, apo: DASH };
   }
 
-  const alt = `${Math.round(Math.max(0, altitude))}`;
+  const alt = formatCompactDistance(Math.max(0, altitude));
 
   const traj = trajectoryApsisRef.current;
   const analyticPeri =
@@ -43,12 +44,12 @@ export function computeOrbitHudMetrics(): OrbitHudMetrics {
 
   let peri = DASH;
   if (periRadial > 0) {
-    peri = `${Math.round(Math.max(0, periRadial - periSurface))}`;
+    peri = formatCompactDistance(Math.max(0, periRadial - periSurface));
   }
 
   let apo = DASH;
   if (apoRadial > 0) {
-    apo = `${Math.round(Math.max(0, apoRadial - apoSurface))}`;
+    apo = formatCompactDistance(Math.max(0, apoRadial - apoSurface));
   }
 
   return { alt, peri, apo };

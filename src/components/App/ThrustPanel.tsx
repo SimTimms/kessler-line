@@ -73,9 +73,7 @@ const ThrustPanel = memo(function ThrustPanel({
   if (embedded) {
     return (
       <div className="thrust-panel thrust-panel--embedded" aria-label="Thrust multiplier">
-        <div
-          className={`thrust-label-text${isDanger ? ' thrust-label-text--danger' : ''}`}
-        >
+        <div className={`thrust-label-text${isDanger ? ' thrust-label-text--danger' : ''}`}>
           {thrustLevel.toFixed(1)}×{isDanger ? ' ⚠' : ''}
         </div>
         <div className="thrust-slider-column">

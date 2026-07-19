@@ -1,89 +1,152 @@
-.helmet-ship-controls {
-  flex: 0 0 48px;
-  width: 48px;
+/* Thrust — mech console, fixed left of Dock Assist / Star Chart */
+
+.mech-thrust {
+  --mech-cyan: #00c8ff;
+  --mech-metal: #2a2e32;
+  --mech-metal-lo: #141618;
+  --mech-crt-bg: #05080c;
+  --mech-label: rgba(180, 200, 220, 0.55);
+  --mech-chart-width: min(192px, 38vw);
+  --mech-hud-gap: 8px;
+  position: fixed;
+  right: calc(12px + var(--mech-chart-width) + var(--mech-hud-gap));
+  bottom: 14px;
+  z-index: 96;
+  width: 56px;
   box-sizing: border-box;
+  pointer-events: auto;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mech-cyan);
+}
+
+.mech-thrust-bezel {
+  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 8px 6px;
-  background: var(--helmet-bg);
-  border: 1px solid var(--helmet-panel-border);
-  backdrop-filter: var(--helmet-panel-blur);
-  font-family: var(--helmet-font);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  min-height: 0;
+  padding: 10px 8px 8px;
+  background: linear-gradient(145deg, #222222 0%, var(--mech-metal) 38%, var(--mech-metal-lo) 100%);
+  border: 1px solid #5a616a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.45);
+  min-height: 168px;
 }
 
-.helmet-ship-controls-head {
-  font-size: 8px;
-  letter-spacing: 0.2em;
-  color: var(--helmet-muted);
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(0, 200, 255, 0.12);
+.mech-thrust-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0 0 6px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.22);
+}
+
+.mech-thrust-lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mech-cyan);
+  box-shadow:
+    0 0 6px rgba(0, 200, 255, 0.85),
+    inset 0 0 2px rgba(180, 240, 255, 0.9);
+  animation: mech-thrust-lamp-pulse 2.4s ease-in-out infinite;
   flex-shrink: 0;
-  text-align: center;
 }
 
-.helmet-ship-controls .thrust-panel--embedded {
+@keyframes mech-thrust-lamp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.mech-thrust-title {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--mech-label);
+  line-height: 1;
+}
+
+.mech-thrust .thrust-panel--embedded {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
   min-height: 0;
   user-select: none;
 }
 
-.helmet-ship-controls .thrust-panel--embedded .thrust-label-text {
-  font-size: 9px;
+.mech-thrust .thrust-panel--embedded .thrust-label-text {
+  font-size: 11px;
   letter-spacing: 0.08em;
-  color: var(--helmet-accent);
+  color: var(--mech-cyan);
   text-align: center;
   font-weight: 600;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 4px;
+  background: var(--mech-crt-bg);
+  border: 1px solid #0a0c10;
+  border-radius: 2px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.helmet-ship-controls .thrust-panel--embedded .thrust-label-text--danger {
+.mech-thrust .thrust-panel--embedded .thrust-label-text--danger {
   color: rgba(255, 60, 140, 0.95);
+  text-shadow: 0 0 6px rgba(255, 40, 140, 0.45);
 }
 
-.helmet-ship-controls .thrust-slider-column {
+.mech-thrust .thrust-slider-column {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   flex: 1;
-  min-height: 56px;
+  min-height: 96px;
   width: 100%;
+  padding: 6px 4px;
+  background: var(--mech-crt-bg);
+  border: 1px solid #0a0c10;
+  border-radius: 3px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.65);
+  box-sizing: border-box;
 }
 
-.helmet-ship-controls .thrust-tick {
+.mech-thrust .thrust-tick {
   font-size: 7px;
   letter-spacing: 0.06em;
-  color: var(--helmet-muted);
+  color: var(--mech-label);
   line-height: 1;
   flex-shrink: 0;
 }
 
-.helmet-ship-controls .thrust-slider-wrap {
+.mech-thrust .thrust-slider-wrap {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
+  min-height: 72px;
   width: 100%;
 }
 
-.helmet-ship-controls .thrust-slider--vertical {
+.mech-thrust .thrust-slider--vertical {
   -webkit-appearance: slider-vertical;
   appearance: auto;
   writing-mode: vertical-lr;
   direction: rtl;
   width: 10px;
   height: 100%;
-  min-height: 48px;
-  max-height: 96px;
+  min-height: 72px;
+  max-height: 120px;
   margin: 0;
   cursor: pointer;
   background: linear-gradient(
@@ -92,31 +155,34 @@
     rgba(0, 0, 0, 0.65) 55%,
     rgba(255, 40, 140, 0.8) 100%
   );
-  border-radius: 4px;
+  border-radius: 0;
+  border: 1px solid rgba(0, 200, 255, 0.2);
 }
 
-.helmet-ship-controls .thrust-slider--vertical::-webkit-slider-thumb {
+.mech-thrust .thrust-slider--vertical::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: 1px;
   background: #00cfff;
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 6px rgba(0, 200, 255, 0.55);
 }
 
-.helmet-ship-controls .thrust-slider--vertical.danger::-webkit-slider-thumb {
+.mech-thrust .thrust-slider--vertical.danger::-webkit-slider-thumb {
   background: rgba(255, 40, 140, 0.9);
   box-shadow: 0 0 6px rgba(255, 50, 50, 0.85);
 }
 
-.helmet-ship-controls .thrust-slider--vertical::-moz-range-thumb {
+.mech-thrust .thrust-slider--vertical::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: 1px;
   background: #00cfff;
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 6px rgba(0, 200, 255, 0.55);
 }
 
-.helmet-ship-controls .thrust-slider--vertical.danger::-moz-range-thumb {
+.mech-thrust .thrust-slider--vertical.danger::-moz-range-thumb {
   background: rgba(255, 40, 140, 0.9);
 }

@@ -1,6 +1,13 @@
 import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
-import { SALVAGE_DOCK_CONFIG } from '../../config/docks/salvageDockConfig';
+import {
+  SALVAGE_DOCK_CONFIG,
+  SALVAGE_DROPOFF_DOCK_CONFIG,
+} from '../../config/docks/salvageDockConfig';
 import { CARGO_CONTAINER_DOCK } from '../../config/docks/cargoContainerDockConfig';
+import {
+  SALVAGE_DROPOFF_PAD_ID,
+  SALVAGE_DROPOFF_PAD_LABEL,
+} from '../../config/salvageDropOffConfig';
 import type { DockConfig } from '../../config/dockConfig';
 import * as THREE from 'three';
 
@@ -20,14 +27,22 @@ export const SalvageConfigData = {
   gridDivisions: 1,
   playerShipUrl: '/shuttle-low-british.glb',
   playerShipScale: 1,
-  landingPadScale: 10,
+  landingPadScale: 3,
+  salvageBayScale: 2,
   landingPadThreshold: 28,
-  /** Single dock ~300 units off world origin. */
+  /** Ship berth ~300 units off world origin. */
   dock: {
     id: 'salvage-berth',
     label: 'Salvage Berth',
     position: [300, -20, 0] as Vec3,
     dock: SALVAGE_DOCK_CONFIG as DockConfig,
+  },
+  /** Crate-only intake pad near the berth (shared depot inventory). */
+  dropOffPad: {
+    id: SALVAGE_DROPOFF_PAD_ID,
+    label: SALVAGE_DROPOFF_PAD_LABEL,
+    position: [380, -20, 130] as Vec3,
+    dock: SALVAGE_DROPOFF_DOCK_CONFIG as DockConfig,
   },
   /** Clonable cargo-container dock near spawn. */
   cargoContainer: {
@@ -68,6 +83,25 @@ export const SalvageConfigData = {
    * each with a distinct yaw.
    */
   asteroids: buildSalvageAsteroidField(),
+  /** Mineable rocks authored with the field (local to SalvageField origin). */
+  mineableAsteroids: [
+    {
+      id: 'salvage-asteroid-near',
+      position: [45, 0, -55] as Vec3,
+      rotation: [0.2, 0.8, 0.1] as Vec3,
+      scale: 18,
+      label: 'Mineral Asteroid',
+    },
+    {
+      id: 'salvage-asteroid-a',
+      /** Relative to the ship berth group. */
+      position: [-150, -480, -70] as Vec3,
+      rotation: [0, 0, 0] as Vec3,
+      scale: 260,
+      label: 'Mineral Asteroid',
+      parent: 'dock' as const,
+    },
+  ],
   /** Non-player mothership (low-res garbage scow). */
   backgroundScow: {
     url: '/space_garbage_truck-low.glb',
@@ -85,6 +119,7 @@ export const SalvageConfigData = {
     waypoints: [
       [40, 0, 25], // cargo container
       [300, 0, 0], // landing pad / berth
+      [300, 0, 80], // salvage intake pad
       [0, 0, 0], // player spawn vicinity
       [-80, 0, 120],
       [200, 0, -80],

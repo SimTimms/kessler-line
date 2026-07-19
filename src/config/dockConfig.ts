@@ -34,6 +34,17 @@ export interface DockTradeTurnConfig {
    * When true, the negotiation panel uses inventories instead of fuel/O2/power/crew.
    */
   cargoBarter?: boolean;
+  /**
+   * Claim negotiation over player-tagged salvage in the dock depot.
+   * Allows requesting goods without offering first; pulls from dock inventory
+   * (via inventoryOwnerId) rather than the contact's personal hold.
+   */
+  salvageClaim?: boolean;
+  /**
+   * Max fraction of tagged depot value the player may claim for an accept
+   * (salvageClaim). Default 0.5.
+   */
+  playerShareRatio?: number;
   /** Contact accepts when value received / value given >= this (cargo barter). Default 1. */
   acceptRatio?: number;
   /** Contact insults when value ratio falls below this (cargo barter). Default 0.4. */
@@ -128,6 +139,11 @@ export interface DockContact {
   dialogue: DockDialogueTree;
   /** Personal hold used for barter / supply-demand with this contact. */
   inventory?: InventoryBlueprint;
+  /**
+   * When true, claim negotiations are likelier to refuse / hold tagged salvage
+   * even when the ask is within a fair share.
+   */
+  unscrupulous?: boolean;
 }
 
 /** Optional job-board entry shown alongside dock contacts while docked. */
@@ -150,6 +166,12 @@ export interface DockConfig {
    * Falls back to `/station.jpg` when omitted.
    */
   backgroundImage?: string;
+  /**
+   * Optional shared inventory bag id. When set, this dock reads/writes
+   * `dock:${inventoryOwnerId}` instead of `dock:${id}` so multiple pads can
+   * share one depot.
+   */
+  inventoryOwnerId?: string;
   fuel?: DockableResourceSlot;
   o2?: DockableResourceSlot;
   power?: DockableResourceSlot;

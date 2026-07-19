@@ -13,13 +13,17 @@ const EDGE_HYSTERESIS_PX = 8;
 
 function getLabelFromId(id: string): string {
   if (id.startsWith('debris-')) return 'DEBRIS';
-  if (id.startsWith('asteroid-') || id.startsWith('tutorial-asteroid-') || id.startsWith('cluster-asteroid-')) {
+  if (
+    id.startsWith('asteroid-') ||
+    id.startsWith('tutorial-asteroid-') ||
+    id.startsWith('cluster-asteroid-')
+  ) {
     return 'ASTEROID';
   }
   if (id.startsWith('ai-ship')) return 'VESSEL';
   if (id === 'space-station') return 'STATION';
   if (id === 'fuel-station') return 'SIRIX STATION';
-  if (id.startsWith('docking-bay-')) return 'DOCK PORT';
+  if (id.startsWith('docking-bay-')) return '';
   return 'OBJECT';
 }
 
@@ -92,8 +96,7 @@ function isOnScreenWithHysteresis(
   wasOnScreen: boolean
 ): boolean {
   if (isBehind) return false;
-  const inPrimary =
-    x > EDGE_PAD && x < width - EDGE_PAD && y > EDGE_PAD && y < height - EDGE_PAD;
+  const inPrimary = x > EDGE_PAD && x < width - EDGE_PAD && y > EDGE_PAD && y < height - EDGE_PAD;
   if (inPrimary) return true;
   if (!wasOnScreen) return false;
   return (
@@ -185,14 +188,7 @@ export default function ProximityHUD() {
         let sx = (_ndc.x * 0.5 + 0.5) * W;
         let sy = (-_ndc.y * 0.5 + 0.5) * H;
 
-        const onScreen = isOnScreenWithHysteresis(
-          sx,
-          sy,
-          isBehind,
-          W,
-          H,
-          state.onScreen
-        );
+        const onScreen = isOnScreenWithHysteresis(sx, sy, isBehind, W, H, state.onScreen);
 
         if (onScreen) {
           const SIZE = 18;

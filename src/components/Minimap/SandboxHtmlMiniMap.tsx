@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import * as THREE from 'three';
 import { PLANETS } from '../Planets/SolarSystem';
 import { SOLAR_SYSTEM_SCALE, SUN_WORLD_RADIUS } from '../../config/solarConfig';
@@ -6,7 +7,7 @@ import { shipPosRef } from '../../context/ShipPos';
 import { shipQuaternion, shipVelocity } from '../../context/ShipState';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { getPlanetPosition } from '../../config/planetPosition';
-import { navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
+import { hasNavTarget, navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
 import { getDriveSignatures } from '../../context/DriveSignatureRegistry';
 import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
 import { getMagneticTargets } from '../../context/MagneticRegistry';
@@ -17,6 +18,19 @@ import { getCollidables } from '../../context/CollisionRegistry';
 import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
 import { beginPadScan } from '../../context/PadScanState';
+import {
+  selectedTargetName,
+  selectedTargetPosition,
+} from '../../context/TargetSelection';
+import {
+  MINIMAP_TRAJECTORY_DT,
+  MINIMAP_TRAJECTORY_STEPS,
+  SHIP_DIRECTION_MIN_SPEED,
+  SHIP_DIRECTION_TARGET_COLOR,
+  SHIP_DIRECTION_VELOCITY_COLOR,
+} from '../../config/shipDirectionIndicatorConfig';
+import { sampleShipTrajectoryXZ } from '../../utils/sampleShipTrajectoryXZ';
+import { minimapOverlayActiveRef } from '../../context/MinimapUi';
 import './SandboxHtmlMiniMap.css';
 
 interface SandboxHtmlMiniMapProps {
@@ -79,10 +93,24 @@ type ScannerRings = {
   shipSy: number;
   rings: Array<{ id: string; pxRadius: number; color: string }>;
 };
+type ChartNavLine = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+};
+
+type ChartVelocityPath = {
+  points: string;
+  color: string;
+};
 
 function StarChartPanel({
   orbitRings,
   scannerRings,
+  chartNavLine,
+  chartVelocityPath,
   visibleMarkers,
   shipHeadingDeg,
   markerClass,
@@ -92,6 +120,8 @@ function StarChartPanel({
 }: {
   orbitRings: OrbitRing[];
   scannerRings: ScannerRings | null;
+  chartNavLine: ChartNavLine | null;
+  chartVelocityPath: ChartVelocityPath | null;
   visibleMarkers: VisibleMarker[];
   shipHeadingDeg: number;
   markerClass: (kind: MarkerKind) => string;
@@ -101,6 +131,27 @@ function StarChartPanel({
 }) {
   return (
     <>
+      {(chartNavLine || chartVelocityPath) && (
+        <svg className="sandbox-map-vectors" aria-hidden>
+          {chartVelocityPath && (
+            <polyline
+              className="sandbox-map-vector sandbox-map-vector--velocity"
+              points={chartVelocityPath.points}
+              stroke={chartVelocityPath.color}
+            />
+          )}
+          {chartNavLine && (
+            <line
+              className="sandbox-map-vector sandbox-map-vector--nav"
+              x1={chartNavLine.x1}
+              y1={chartNavLine.y1}
+              x2={chartNavLine.x2}
+              y2={chartNavLine.y2}
+              stroke={chartNavLine.color}
+            />
+          )}
+        </svg>
+      )}
       {orbitRings.map((ring) => (
         <div
           key={ring.id}
@@ -304,13 +355,25 @@ export default function SandboxHtmlMiniMap({
   showSolarSystem = true,
 }: SandboxHtmlMiniMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const fullscreenContainerRef = useRef<HTMLDivElement | null>(null);
+  const fullscreenRootRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
   const dragAnchorRef = useRef<{ x: number; y: number; panX: number; panZ: number } | null>(null);
+  const panCenterRef = useRef<{ x: number; z: number }>({ x: 0, z: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [zoomHalfSpan, setZoomHalfSpan] = useState(showSolarSystem ? ZOOM_DEFAULT_HALF_SPAN : 1500);
   const [panCenter, setPanCenter] = useState<{ x: number; z: number }>({ x: 0, z: 0 });
+  panCenterRef.current = panCenter;
   const [followShip, setFollowShip] = useState(false);
   const [markers, setMarkers] = useState<Marker[]>([]);
+  /** World-space nav endpoint + predicted velocity/trajectory path (projected each render). */
+  const [vectorWorld, setVectorWorld] = useState<{
+    nav: { x: number; z: number } | null;
+    velocityPath: Array<{ x: number; z: number }>;
+    shipX: number;
+    shipZ: number;
+  }>({ nav: null, velocityPath: [], shipX: 0, shipZ: 0 });
   const [shipHeadingDeg, setShipHeadingDeg] = useState(0);
   const [hoverCard, setHoverCard] = useState<HoverCardState | null>(null);
   const [dockingAssist, setDockingAssist] = useState<DockingAssistData | null>(null);
@@ -319,6 +382,8 @@ export default function SandboxHtmlMiniMap({
   /** Fires pad scan once when docking assist first engages (or switches pads). */
   const lastPadScanDockIdRef = useRef<string | null>(null);
 
+  const activeChartRef = fullscreen ? fullscreenContainerRef : containerRef;
+
   useEffect(() => {
     const ship = shipPosRef.current;
     setPanCenter({ x: ship.x, z: ship.z });
@@ -326,14 +391,24 @@ export default function SandboxHtmlMiniMap({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' || e.code === 'KeyM') {
+      if (e.code === 'Escape') {
         e.preventDefault();
+        if (fullscreen) {
+          setFullscreen(false);
+          return;
+        }
+        onClose();
+        return;
+      }
+      if (e.code === 'KeyM') {
+        e.preventDefault();
+        if (fullscreen) setFullscreen(false);
         onClose();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, [onClose, fullscreen]);
 
   useEffect(() => {
     const onCaptureStarted = () => setDockingCaptureActive(true);
@@ -348,6 +423,78 @@ export default function SandboxHtmlMiniMap({
       window.removeEventListener('ShipUndocked', onShipUndocked);
     };
   }, []);
+
+  // Dock assist takes over the corner chart — exit fullscreen so we don't leave it dimmed/empty.
+  useEffect(() => {
+    if (dockingAssist && fullscreen) {
+      setFullscreen(false);
+    }
+  }, [dockingAssist, fullscreen]);
+
+  // Hide scene Html labels (speed / target name) while the map overlay covers them.
+  useEffect(() => {
+    minimapOverlayActiveRef.current = fullscreen || Boolean(dockingAssist);
+    return () => {
+      minimapOverlayActiveRef.current = false;
+    };
+  }, [fullscreen, dockingAssist]);
+
+  // While fullscreen, disable page overscroll / swipe-back at the document level.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overscrollBehavior;
+    const prevBody = body.style.overscrollBehavior;
+    html.style.overscrollBehavior = 'none';
+    body.style.overscrollBehavior = 'none';
+    return () => {
+      html.style.overscrollBehavior = prevHtml;
+      body.style.overscrollBehavior = prevBody;
+    };
+  }, [fullscreen]);
+
+  // React's onWheel is passive in many browsers — attach a non-passive listener so
+  // preventDefault actually blocks trackpad navigation gestures (back/forward, new tab).
+  useEffect(() => {
+    if (!fullscreen) return;
+    const root = fullscreenRootRef.current;
+    const chart = fullscreenContainerRef.current;
+    if (!root || !chart) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = chart.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+      setZoomHalfSpan((prevZoom) => {
+        const prevScale = rect.height / (2 * prevZoom);
+        const worldUnderCursorX = panCenterRef.current.x + (cursorX - rect.width / 2) / prevScale;
+        const worldUnderCursorZ = panCenterRef.current.z + (cursorY - rect.height / 2) / prevScale;
+        const factor = e.deltaY > 0 ? 1.15 : 0.86;
+        const nextZoom = clamp(prevZoom * factor, ZOOM_MIN_HALF_SPAN, ZOOM_MAX_HALF_SPAN);
+        const nextScale = rect.height / (2 * nextZoom);
+        const nextPanX = worldUnderCursorX - (cursorX - rect.width / 2) / nextScale;
+        const nextPanZ = worldUnderCursorZ - (cursorY - rect.height / 2) / nextScale;
+        setPanCenter({
+          x: clamp(nextPanX, -PAN_LIMIT, PAN_LIMIT),
+          z: clamp(nextPanZ, -PAN_LIMIT, PAN_LIMIT),
+        });
+        return nextZoom;
+      });
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+
+    root.addEventListener('wheel', onWheel, { passive: false });
+    root.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      root.removeEventListener('wheel', onWheel);
+      root.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [fullscreen]);
 
   useEffect(() => {
     let raf = 0;
@@ -396,12 +543,40 @@ export default function SandboxHtmlMiniMap({
         kind: 'ship',
       });
 
-      next.push({
-        id: 'nav-target',
-        label: navTargetIdRef.current ? `Nav Target (${navTargetIdRef.current})` : 'Nav Target',
-        x: navTargetPosRef.current.x,
-        z: navTargetPosRef.current.z,
-        kind: 'nav',
+      if (hasNavTarget()) {
+        next.push({
+          id: 'nav-target',
+          label: `Nav Target (${navTargetIdRef.current})`,
+          x: navTargetPosRef.current.x,
+          z: navTargetPosRef.current.z,
+          kind: 'nav',
+        });
+      }
+
+      let navLineTarget: { x: number; z: number } | null = null;
+      if (selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01) {
+        navLineTarget = { x: selectedTargetPosition.x, z: selectedTargetPosition.z };
+      } else if (hasNavTarget()) {
+        navLineTarget = { x: navTargetPosRef.current.x, z: navTargetPosRef.current.z };
+      }
+
+      const velLen = Math.hypot(shipVelocity.x, shipVelocity.z);
+      const velocityPath =
+        velLen > SHIP_DIRECTION_MIN_SPEED
+          ? sampleShipTrajectoryXZ(
+              ship.x,
+              ship.z,
+              shipVelocity.x,
+              shipVelocity.z,
+              MINIMAP_TRAJECTORY_STEPS,
+              MINIMAP_TRAJECTORY_DT
+            )
+          : [];
+      setVectorWorld({
+        nav: navLineTarget,
+        velocityPath,
+        shipX: ship.x,
+        shipZ: ship.z,
       });
 
       const driveOn = driveSignatureOnRef.current && driveSignatureRangeRef.current > 0;
@@ -574,6 +749,7 @@ export default function SandboxHtmlMiniMap({
   const dockingAssistProjection = useMemo(() => {
     const node = containerRef.current;
     if (!node || !dockingAssist) return null;
+    // Dock assist always uses the corner CRT, never the fullscreen chart.
     const rect = node.getBoundingClientRect();
     const halfSpan = clamp(
       Math.max(Math.abs(dockingAssist.lateralX), Math.abs(dockingAssist.lateralZ)) +
@@ -616,7 +792,7 @@ export default function SandboxHtmlMiniMap({
   }, [dockingAssist]);
 
   const visibleMarkers = useMemo(() => {
-    const node = containerRef.current;
+    const node = activeChartRef.current;
     if (!node) return [];
     const rect = node.getBoundingClientRect();
     const scale = rect.height / (2 * zoomHalfSpan);
@@ -631,12 +807,45 @@ export default function SandboxHtmlMiniMap({
       .filter(
         (m) => m.sx >= -80 && m.sx <= rect.width + 80 && m.sy >= -80 && m.sy <= rect.height + 80
       );
-  }, [markers, panCenter, zoomHalfSpan]);
+  }, [activeChartRef, markers, panCenter, zoomHalfSpan, fullscreen]);
+
+  const chartNavLine = useMemo<ChartNavLine | null>(() => {
+    if (!vectorWorld.nav) return null;
+    const node = activeChartRef.current;
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    const scale = rect.height / (2 * zoomHalfSpan);
+    const shipSx = (vectorWorld.shipX - panCenter.x) * scale + rect.width / 2;
+    const shipSy = (vectorWorld.shipZ - panCenter.z) * scale + rect.height / 2;
+    return {
+      x1: shipSx,
+      y1: shipSy,
+      x2: (vectorWorld.nav.x - panCenter.x) * scale + rect.width / 2,
+      y2: (vectorWorld.nav.z - panCenter.z) * scale + rect.height / 2,
+      color: SHIP_DIRECTION_TARGET_COLOR,
+    };
+  }, [activeChartRef, vectorWorld, panCenter, zoomHalfSpan, fullscreen]);
+
+  const chartVelocityPath = useMemo<ChartVelocityPath | null>(() => {
+    if (vectorWorld.velocityPath.length < 2) return null;
+    const node = activeChartRef.current;
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    const scale = rect.height / (2 * zoomHalfSpan);
+    const points = vectorWorld.velocityPath
+      .map((p) => {
+        const sx = (p.x - panCenter.x) * scale + rect.width / 2;
+        const sy = (p.z - panCenter.z) * scale + rect.height / 2;
+        return `${sx},${sy}`;
+      })
+      .join(' ');
+    return { points, color: SHIP_DIRECTION_VELOCITY_COLOR };
+  }, [activeChartRef, vectorWorld, panCenter, zoomHalfSpan, fullscreen]);
 
   const orbitRings = useMemo<
     Array<{ id: string; sx: number; sy: number; pxRadius: number; color: string }>
   >(() => {
-    const node = containerRef.current;
+    const node = activeChartRef.current;
     if (!node) return [];
     const rect = node.getBoundingClientRect();
     const scale = rect.height / (2 * zoomHalfSpan);
@@ -650,14 +859,14 @@ export default function SandboxHtmlMiniMap({
       pxRadius: planet.orbitRadius * SOLAR_SYSTEM_SCALE * scale,
       color: planet.name === 'Earth' ? '#3399ff' : planet.color,
     })).filter((ring) => ring.pxRadius > 1.5);
-  }, [panCenter, showSolarSystem, zoomHalfSpan]);
+  }, [activeChartRef, panCenter, showSolarSystem, zoomHalfSpan, fullscreen]);
 
   const scannerRings = useMemo<{
     shipSx: number;
     shipSy: number;
     rings: Array<{ id: string; pxRadius: number; color: string }>;
   } | null>(() => {
-    const node = containerRef.current;
+    const node = activeChartRef.current;
     if (!node) return null;
     const rect = node.getBoundingClientRect();
     const scale = rect.height / (2 * zoomHalfSpan);
@@ -686,7 +895,7 @@ export default function SandboxHtmlMiniMap({
       });
     }
     return { shipSx, shipSy, rings };
-  }, [panCenter, zoomHalfSpan, markers]);
+  }, [activeChartRef, panCenter, zoomHalfSpan, markers, fullscreen]);
 
   function markerClass(kind: MarkerKind): string {
     if (kind === 'ship') return 'sandbox-map-marker sandbox-map-marker--ship';
@@ -729,8 +938,9 @@ export default function SandboxHtmlMiniMap({
 
   function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
     e.preventDefault();
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+    const node = activeChartRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
     const cursorX = e.clientX - rect.left;
     const cursorY = e.clientY - rect.top;
     const prevScale = rect.height / (2 * zoomHalfSpan);
@@ -762,8 +972,8 @@ export default function SandboxHtmlMiniMap({
   }
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (!draggingRef.current || !containerRef.current || !dragAnchorRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+    if (!draggingRef.current || !activeChartRef.current || !dragAnchorRef.current) return;
+    const rect = activeChartRef.current.getBoundingClientRect();
     const unitsPerPixel = (2 * zoomHalfSpan) / rect.height;
     const dx = e.clientX - dragAnchorRef.current.x;
     const dy = e.clientY - dragAnchorRef.current.y;
@@ -790,59 +1000,146 @@ export default function SandboxHtmlMiniMap({
     });
   }
 
+  function openFullscreen() {
+    setFollowShip(false);
+    setPanCenter({ x: 0, z: 0 });
+    setZoomHalfSpan(showSolarSystem ? ZOOM_DEFAULT_HALF_SPAN : zoomHalfSpan);
+    setHoverCard(null);
+    setFullscreen(true);
+  }
+
+  function closeFullscreen() {
+    setFullscreen(false);
+    setHoverCard(null);
+  }
+
+  const chartPanel = !dockingAssist ? (
+    <StarChartPanel
+      orbitRings={orbitRings}
+      scannerRings={scannerRings}
+      chartNavLine={chartNavLine}
+      chartVelocityPath={chartVelocityPath}
+      visibleMarkers={visibleMarkers}
+      shipHeadingDeg={shipHeadingDeg}
+      markerClass={markerClass}
+      setHoverCard={setHoverCard}
+      hoverCard={hoverCard}
+      describeMarker={describeMarker}
+    />
+  ) : null;
+
+  const fullscreenOverlay =
+    fullscreen && !dockingAssist
+      ? createPortal(
+          <div
+            ref={fullscreenRootRef}
+            className={`sandbox-map-fullscreen${isDragging ? ' sandbox-map-overlay--dragging' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Full screen star chart"
+          >
+            <div className="sandbox-map-fullscreen-bezel">
+              <div className="mech-chart-head">
+                <span className="mech-chart-lamp" aria-hidden />
+                <span className="mech-chart-title">STAR</span>
+                <span className="mech-chart-sub">FULL</span>
+                <div className="sandbox-map-actions">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={toggleFollowShip}
+                    className={followShip ? 'sandbox-map-action--active' : ''}
+                    title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
+                  >
+                    {`CTR ${followShip ? 'ON' : 'OFF'}`}
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={closeFullscreen}
+                    title="Exit full screen (Esc)"
+                  >
+                    CLS
+                  </button>
+                </div>
+              </div>
+              <div
+                ref={fullscreenContainerRef}
+                className="sandbox-map-fullscreen-crt"
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={stopDrag}
+                onMouseLeave={stopDrag}
+              >
+                <div className="sandbox-map-grid" />
+                {chartPanel}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
-    <div
-      className={`sandbox-map-overlay mech-chart${isDragging ? ' sandbox-map-overlay--dragging' : ''}${dockingAssist ? ' sandbox-map-overlay--docking' : ''}`}
-    >
-      <div className="mech-chart-bezel">
-        <div className="mech-chart-head">
-          <span className="mech-chart-lamp" aria-hidden />
-          <span className="mech-chart-title">{dockingAssist ? 'DOCK' : 'STAR'}</span>
-          <span className="mech-chart-sub">{dockingAssist ? 'ASSIST' : 'CHART'}</span>
-          <div className="sandbox-map-actions">
-            <button
-              type="button"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={toggleFollowShip}
-              className={followShip ? 'sandbox-map-action--active' : ''}
-              title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
-              disabled={Boolean(dockingAssist)}
-            >
-              {dockingAssist ? 'DOCK' : `CTR ${followShip ? 'ON' : 'OFF'}`}
-            </button>
+    <>
+      <div
+        className={`sandbox-map-overlay mech-chart${isDragging && !fullscreen ? ' sandbox-map-overlay--dragging' : ''}${dockingAssist ? ' sandbox-map-overlay--docking' : ''}`}
+      >
+        <div className="mech-chart-bezel">
+          <div className="mech-chart-head">
+            <span className="mech-chart-lamp" aria-hidden />
+            <span className="mech-chart-title">{dockingAssist ? 'DOCK' : 'STAR'}</span>
+            {dockingAssist ? <span className="mech-chart-sub">ASSIST</span> : null}
+            <div className="sandbox-map-actions">
+              {!dockingAssist && showSolarSystem ? (
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={openFullscreen}
+                  className={fullscreen ? 'sandbox-map-action--active' : ''}
+                  title="Open full-screen star chart"
+                >
+                  FLL
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={toggleFollowShip}
+                className={followShip ? 'sandbox-map-action--active' : ''}
+                title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
+                disabled={Boolean(dockingAssist)}
+              >
+                {dockingAssist ? 'DOCK' : `CTR ${followShip ? 'ON' : 'OFF'}`}
+              </button>
+            </div>
+          </div>
+          <div
+            ref={containerRef}
+            className="mech-chart-crt"
+            onWheel={fullscreen ? undefined : handleWheel}
+            onMouseDown={fullscreen ? undefined : handleMouseDown}
+            onMouseMove={fullscreen ? undefined : handleMouseMove}
+            onMouseUp={fullscreen ? undefined : stopDrag}
+            onMouseLeave={fullscreen ? undefined : stopDrag}
+          >
+            <div className="sandbox-map-grid" />
+            {dockingAssist ? (
+              <DockingAssistPanel
+                dockingAssist={dockingAssist}
+                dockingAssistProjection={dockingAssistProjection}
+                dockingReadouts={dockingReadouts}
+                dockingCaptureActive={dockingCaptureActive}
+              />
+            ) : fullscreen ? (
+              <div className="sandbox-map-status">FULL SCREEN</div>
+            ) : (
+              chartPanel
+            )}
           </div>
         </div>
-        <div
-          ref={containerRef}
-          className="mech-chart-crt"
-          onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={stopDrag}
-          onMouseLeave={stopDrag}
-        >
-          <div className="sandbox-map-grid" />
-          {dockingAssist ? (
-            <DockingAssistPanel
-              dockingAssist={dockingAssist}
-              dockingAssistProjection={dockingAssistProjection}
-              dockingReadouts={dockingReadouts}
-              dockingCaptureActive={dockingCaptureActive}
-            />
-          ) : (
-            <StarChartPanel
-              orbitRings={orbitRings}
-              scannerRings={scannerRings}
-              visibleMarkers={visibleMarkers}
-              shipHeadingDeg={shipHeadingDeg}
-              markerClass={markerClass}
-              setHoverCard={setHoverCard}
-              hoverCard={hoverCard}
-              describeMarker={describeMarker}
-            />
-          )}
-        </div>
       </div>
-    </div>
+      {fullscreenOverlay}
+    </>
   );
 }

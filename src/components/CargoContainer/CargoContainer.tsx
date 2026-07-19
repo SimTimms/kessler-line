@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { selectTarget } from '../../context/TargetSelection';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
+import {
+  registerCargoContainer,
+  unregisterCargoContainer,
+} from '../../context/CargoContainerRegistry';
 import DockingBay from '../WorldObjects/DockingBay';
 import { boxColliderFromObject } from '../../utils/colliderFromObject';
 import type { DockConfig } from '../../config/dockConfig';
@@ -83,12 +87,17 @@ export default function CargoContainer({
   const structureCollisionId = `${id}-structure`;
   const displayLabel = label ?? dock.label ?? 'Cargo Container';
 
-  // Crates always slide on the XZ plane (Y locked to 0).
+  // Crates always slide on the XZ plane (Y locked to 0) unless on a drop-off pad.
   const posRef = useRef(new THREE.Vector3(position[0], 0, position[2]));
   const velRef = useRef(new THREE.Vector3());
   const quatRef = useRef(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotation[1], 0)));
   /** True while the player ship is towing this container. */
   const towedRef = useRef(false);
+  /** True while a salvage intake pad owns positioning. */
+  const dropOffRef = useRef(false);
+  /** True after intake finished — crate is hidden. */
+  const consumedRef = useRef(false);
+  const [consumed, setConsumed] = useState(false);
 
   const resolvedProfile = useMemo(
     () => ({
@@ -147,7 +156,7 @@ export default function CargoContainer({
         shape: { type: 'box', halfExtents: halfExtents.clone() },
         physicalCollision,
         applyImpulse: (impulse: THREE.Vector3) => {
-          if (towedRef.current) return;
+          if (towedRef.current || dropOffRef.current || consumedRef.current) return;
           velRef.current.addScaledVector(impulse, CONTAINER_IMPULSE_SCALE);
           // Never leave the XZ plane.
           velRef.current.y = 0;
@@ -169,6 +178,7 @@ export default function CargoContainer({
     const onDocked = (e: Event) => {
       const stationId = (e as CustomEvent<{ stationId?: string | null }>).detail?.stationId;
       if (stationId !== id) return;
+      if (dropOffRef.current || consumedRef.current) return;
       towedRef.current = !disablePhysicsOnDock;
       velRef.current.set(0, 0, 0);
       // Avoid ship↔crate collision fighting while towing.
@@ -177,6 +187,7 @@ export default function CargoContainer({
     const onUndocked = (e: Event) => {
       if (!towedRef.current) return;
       towedRef.current = false;
+      if (dropOffRef.current || consumedRef.current) return;
       const releaseVel = (e as CustomEvent<ShipUndockedDetail>).detail?.partnerReleaseVelocity;
       if (releaseVel) {
         velRef.current.set(releaseVel.x, 0, releaseVel.z);
@@ -193,8 +204,57 @@ export default function CargoContainer({
     };
   }, [disablePhysicsOnDock, id, registerStructureCollider]);
 
+  useEffect(() => {
+    registerCargoContainer({
+      id,
+      getWorldPosition: (target) => target.copy(posRef.current),
+      getWorldVelocity: (target) => target.copy(velRef.current),
+      getGroup: () => groupRef.current,
+      isTowed: () => towedRef.current,
+      isDropOffBusy: () => dropOffRef.current,
+      isConsumed: () => consumedRef.current,
+      beginDropOff: (padAnchor) => {
+        if (towedRef.current || dropOffRef.current || consumedRef.current) return false;
+        const group = groupRef.current;
+        if (!group) return false;
+        dropOffRef.current = true;
+        towedRef.current = false;
+        velRef.current.set(0, 0, 0);
+        unregisterCollidable(structureCollisionId);
+        padAnchor.attach(group);
+        return true;
+      },
+      syncFromGroup: () => {
+        const group = groupRef.current;
+        if (!group) return;
+        group.getWorldPosition(posRef.current);
+        group.getWorldQuaternion(quatRef.current);
+        velRef.current.set(0, 0, 0);
+      },
+      completeDropOff: () => {
+        dropOffRef.current = false;
+        consumedRef.current = true;
+        velRef.current.set(0, 0, 0);
+        const group = groupRef.current;
+        if (group) {
+          group.visible = false;
+        }
+        unregisterCollidable(structureCollisionId);
+        setConsumed(true);
+      },
+    });
+    return () => unregisterCargoContainer(id);
+  }, [id, structureCollisionId]);
+
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || consumedRef.current) return;
+
+    if (dropOffRef.current) {
+      // Pad owns local transform; keep world refs in sync for sensors.
+      groupRef.current.getWorldPosition(posRef.current);
+      groupRef.current.getWorldQuaternion(quatRef.current);
+      return;
+    }
 
     if (towedRef.current) {
       // Align container docking port with the ship nose port, then push it a little
@@ -231,6 +291,7 @@ export default function CargoContainer({
       ref={setGroupRef}
       onClick={(e) => {
         e.stopPropagation();
+        if (consumedRef.current) return;
         selectTarget(displayLabel);
         if (debugJumpDockOnClick) {
           window.dispatchEvent(
@@ -243,15 +304,17 @@ export default function CargoContainer({
         <primitive object={modelScene} scale={scale} />
       </group>
       {/* Dedicated docking port — not the physical hull. */}
-      <DockingBay
-        stationId={id}
-        dimensions={portBox}
-        position={portLocal}
-        rotation={[0, 0, 0]}
-        dock={dock}
-        dockingProfile={resolvedProfile}
-        showCaptureMesh={showCaptureMesh}
-      />
+      {!consumed ? (
+        <DockingBay
+          stationId={id}
+          dimensions={portBox}
+          position={portLocal}
+          rotation={[0, 0, 0]}
+          dock={dock}
+          dockingProfile={resolvedProfile}
+          showCaptureMesh={showCaptureMesh}
+        />
+      ) : null}
     </group>
   );
 }

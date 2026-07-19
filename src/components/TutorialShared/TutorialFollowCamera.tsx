@@ -43,6 +43,11 @@ interface TutorialFollowCameraProps {
    * distance from the primary body so the view stays on the planet's outskirts.
    */
   planetImpactCameraHoldMaxAltitude?: number;
+  /**
+   * Lock follow elevation to the initial {@link followOffset} polar angle.
+   * Mouse drag yaws around the ship; pitch up/down is disabled (Drone Config style).
+   */
+  lockPolarAngle?: boolean;
 }
 
 const _offset = new THREE.Vector3();
@@ -69,10 +74,12 @@ export default function TutorialFollowCamera({
   followShipOrientation = false,
   framePriority = 0,
   planetImpactCameraHoldMaxAltitude,
+  lockPolarAngle = false,
 }: TutorialFollowCameraProps) {
   const { camera, gl, scene } = useThree();
   const followSpherical = useRef(new THREE.Spherical(10, Math.PI / 2, Math.PI));
   const navSpherical = useRef(new THREE.Spherical(NAVVIEW_HEIGHT, NAVVIEW_TOPDOWN_PHI, Math.PI));
+  const lockedFollowPhi = useRef<number | null>(null);
   const didInit = useRef(false);
   const didInitCameraPose = useRef(false);
   const smoothedCameraUp = useRef(new THREE.Vector3(0, 1, 0));
@@ -91,12 +98,13 @@ export default function TutorialFollowCamera({
   useEffect(() => {
     _offset.set(...followOffset);
     followSpherical.current.setFromVector3(_offset);
+    lockedFollowPhi.current = lockPolarAngle ? followSpherical.current.phi : null;
     // Start navview above ship using current follow yaw so switching feels natural.
     navSpherical.current.theta = followSpherical.current.theta;
     navSpherical.current.phi = NAVVIEW_TOPDOWN_PHI;
     navSpherical.current.radius = NAVVIEW_HEIGHT;
     didInit.current = true;
-  }, [followOffset]);
+  }, [followOffset, lockPolarAngle]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -117,12 +125,16 @@ export default function TutorialFollowCamera({
         navSpherical.current.theta -= dx * CAMERA_MOUSE_SENSITIVITY;
       } else {
         followSpherical.current.theta -= dx * CAMERA_MOUSE_SENSITIVITY;
-        followSpherical.current.phi -= dy * CAMERA_MOUSE_SENSITIVITY;
-        followSpherical.current.phi = THREE.MathUtils.clamp(
-          followSpherical.current.phi,
-          0.05,
-          Math.PI - 0.05
-        );
+        if (!lockPolarAngle) {
+          followSpherical.current.phi -= dy * CAMERA_MOUSE_SENSITIVITY;
+          followSpherical.current.phi = THREE.MathUtils.clamp(
+            followSpherical.current.phi,
+            0.05,
+            Math.PI - 0.05
+          );
+        } else if (lockedFollowPhi.current != null) {
+          followSpherical.current.phi = lockedFollowPhi.current;
+        }
       }
     };
 
@@ -185,7 +197,7 @@ export default function TutorialFollowCamera({
       canvas.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [followOffset, gl, zoomMax]);
+  }, [followOffset, gl, zoomMax, lockPolarAngle]);
 
   useFrame((_, delta) => {
     if (shipDestroyed.current) return; // lock camera at last pose on destruction
@@ -193,6 +205,9 @@ export default function TutorialFollowCamera({
     if (!didInit.current) {
       _offset.set(...followOffset);
       followSpherical.current.setFromVector3(_offset);
+      if (lockPolarAngle) {
+        lockedFollowPhi.current = followSpherical.current.phi;
+      }
       didInit.current = true;
     }
 
@@ -207,6 +222,9 @@ export default function TutorialFollowCamera({
       _offset.setFromSpherical(navSpherical.current);
       _desiredCameraPos.copy(_target).add(_offset);
     } else {
+      if (lockPolarAngle && lockedFollowPhi.current != null) {
+        followSpherical.current.phi = lockedFollowPhi.current;
+      }
       if (followShipOrientation) {
         if (attachTo?.current) {
           attachTo.current.getWorldQuaternion(_followQuat);

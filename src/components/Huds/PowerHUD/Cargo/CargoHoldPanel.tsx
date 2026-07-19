@@ -52,6 +52,7 @@ export default function CargoHoldPanel({
     label: string;
     stackQuantity: number;
     tag: string;
+    provenanceLabel?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -65,9 +66,14 @@ export default function CargoHoldPanel({
   const showOpenTransfer =
     dockTransferUi.partnerId != null && dockTransferUi.towable && !dockTransferUi.panelOpen;
 
-  function onDragStart(e: DragEvent, itemId: string, quantity: number) {
+  function onDragStart(
+    e: DragEvent,
+    itemId: string,
+    quantity: number,
+    salvagedBy?: string
+  ) {
     if (!transferEnabled) return;
-    const payload: CargoDragPayload = { itemId, quantity, from: PLAYER_OWNER };
+    const payload: CargoDragPayload = { itemId, quantity, from: PLAYER_OWNER, salvagedBy };
     writeCargoDragPayload(e.dataTransfer, payload);
   }
 
@@ -88,7 +94,13 @@ export default function CargoHoldPanel({
     e.preventDefault();
     const payload = readCargoDragPayload(e.dataTransfer);
     if (!payload) return;
-    transferCargoStack(payload.from, PLAYER_OWNER, payload.itemId, payload.quantity);
+    transferCargoStack(
+      payload.from,
+      PLAYER_OWNER,
+      payload.itemId,
+      payload.quantity,
+      payload.salvagedBy
+    );
   }
 
   return (
@@ -151,29 +163,35 @@ export default function CargoHoldPanel({
                     />
                   );
                 }
-                const { Icon, color, label, itemId, stackQuantity } = cell;
+                const { Icon, color, label, itemId, stackQuantity, salvagedBy, provenanceLabel } =
+                  cell;
                 const ui = getInventoryItemUi(itemId);
                 return (
                   <button
-                    key={`${itemId}-${index}`}
+                    key={`${itemId}-${salvagedBy ?? 'plain'}-${index}`}
                     type="button"
                     role="listitem"
                     className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
                     style={{ '--cargo-color': color } as CSSProperties}
                     draggable={transferEnabled}
-                    onDragStart={(e) => onDragStart(e, itemId, 1)}
+                    onDragStart={(e) => onDragStart(e, itemId, 1, salvagedBy)}
                     onMouseEnter={() =>
                       setHovered({
                         itemId,
                         label,
                         stackQuantity,
                         tag: ui.tag,
+                        provenanceLabel,
                       })
                     }
                     onMouseLeave={() => setHovered(null)}
                     onClick={() => {
                       if (!onEjectItem) return;
-                      onEjectItem({ name: itemId, quantity: stackQuantity });
+                      onEjectItem({
+                        name: itemId,
+                        quantity: stackQuantity,
+                        salvagedBy,
+                      });
                     }}
                     aria-label={label}
                     title={transferEnabled ? `Drag to transfer 1× ${label}` : label}
@@ -190,6 +208,9 @@ export default function CargoHoldPanel({
                   <span className="cargo-hold-panel__detail-tag">{hovered.tag}</span>
                   <span className="cargo-hold-panel__detail-name">{hovered.label}</span>
                   <span className="cargo-hold-panel__detail-qty">{hovered.stackQuantity} aboard</span>
+                  {hovered.provenanceLabel ? (
+                    <span className="cargo-hold-panel__detail-qty">{hovered.provenanceLabel}</span>
+                  ) : null}
                 </>
               ) : (
                 <span className="cargo-hold-panel__detail-idle">
