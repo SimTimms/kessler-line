@@ -1,7 +1,6 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import type React from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { hasNavTarget, navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
 import { shipVelocity } from '../context/ShipState';
@@ -31,6 +30,11 @@ import {
   placeShipDirectionArrow,
   setShipDirectionArrowColor,
 } from './shipDirectionArrow';
+import {
+  SHIP_DIRECTION_INDICATOR_FRAME_PRIORITY,
+  syncShipDirectionScreenLabel,
+  useShipDirectionScreenLabelRoot,
+} from './ShipDirectionScreenLabel';
 
 const TUTORIAL_NAV_DAEDALUS_ID = 'tutorial-daedalus';
 const TUTORIAL_NAV_LUNA_ID = 'tutorial-luna';
@@ -46,7 +50,6 @@ function resolveTargetLabel(): string {
   return id.replace(/-/g, ' ');
 }
 
-// Scratch vectors — avoid allocating on every frame
 const _tgtWorld = new THREE.Vector3();
 const _shipWorld = new THREE.Vector3();
 const _targetVel = new THREE.Vector3();
@@ -54,7 +57,7 @@ const _toTgt = new THREE.Vector3();
 const _colorDefault = new THREE.Color(SHIP_DIRECTION_TARGET_COLOR);
 const _colorMagnetic = new THREE.Color(SHIP_DIRECTION_MAGNETIC_COLOR);
 
-/** Local +Z offset past the arrow tip — keeps Html in ship-relative space. */
+/** Local +Z offset past the arrow tip — label projects from this anchor. */
 const TARGET_LABEL_LOCAL_Z = 22;
 
 /**
@@ -72,14 +75,44 @@ export default function TargetIndicatorLine({
     return a;
   }, []);
 
-  const labelGroupRef = useRef<THREE.Group>(null!);
-  const nameRef = useRef<HTMLDivElement>(null!);
-  const metricsRef = useRef<HTMLDivElement>(null!);
+  const labelAnchorRef = useRef<THREE.Group>(null!);
+  const screenLabelRef = useShipDirectionScreenLabelRoot();
+  const nameRef = useRef<HTMLDivElement | null>(null);
+  const metricsRef = useRef<HTMLDivElement | null>(null);
 
-  useFrame(() => {
+  useLayoutEffect(() => {
+    const root = screenLabelRef.current;
+    if (!root) return;
+
+    root.replaceChildren();
+    const col = document.createElement('div');
+    col.style.cssText =
+      'display:flex;flex-direction:column;align-items:center;gap:2px;font-family:monospace;pointer-events:none;opacity:0.92;text-align:center;';
+
+    const name = document.createElement('div');
+    name.style.cssText =
+      'font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;color:#9fdfff;text-shadow:0 0 8px rgba(159,223,255,0.55);';
+
+    const metrics = document.createElement('div');
+    metrics.style.cssText =
+      'font-size:9px;letter-spacing:0.02em;white-space:nowrap;color:#9fdfff;text-shadow:0 0 8px rgba(159,223,255,0.55);';
+
+    col.append(name, metrics);
+    root.append(col);
+    nameRef.current = name;
+    metricsRef.current = metrics;
+
+    return () => {
+      nameRef.current = null;
+      metricsRef.current = null;
+      root.replaceChildren();
+    };
+  }, [screenLabelRef]);
+
+  useFrame(({ camera, size }) => {
     if (!navHudEnabledRef.current) {
       arrow.visible = false;
-      if (labelGroupRef.current) labelGroupRef.current.visible = false;
+      syncShipDirectionScreenLabel(null, screenLabelRef.current, camera, size, false);
       return;
     }
     if (!shipGroupRef.current) return;
@@ -91,13 +124,12 @@ export default function TargetIndicatorLine({
     const hasNavTargetId = hasNavTarget();
     if (!hasSelectedPos && !hasNavTargetId) {
       arrow.visible = false;
-      if (labelGroupRef.current) labelGroupRef.current.visible = false;
+      syncShipDirectionScreenLabel(null, screenLabelRef.current, camera, size, false);
       return;
     }
 
     const targetLabel = resolveTargetLabel();
 
-    // Magnetic / drive scan HUD already shows distance + rel speed on the screen-space bracket.
     const scanHudShowsReadout =
       hasSelectedPos && (selectedTargetType === 'magnetic' || selectedTargetType === 'ship');
     const tgt = _tgtWorld;
@@ -181,19 +213,23 @@ export default function TargetIndicatorLine({
       tgt.z - _shipWorld.z
     );
     if (!placed) {
-      if (labelGroupRef.current) labelGroupRef.current.visible = false;
+      syncShipDirectionScreenLabel(null, screenLabelRef.current, camera, size, false);
       return;
     }
+
+    arrow.updateWorldMatrix(true, true);
 
     _toTgt.subVectors(tgt, _shipWorld);
     const distWorld = _toTgt.length();
 
-    // Label is a child of the arrow (local +Z) so Html stays near the indicator.
-    // Hide while fullscreen/dock map overlays the scene (Html would stack on top).
-    if (labelGroupRef.current) {
-      labelGroupRef.current.visible =
-        Boolean(targetLabel) && !minimapOverlayActiveRef.current;
-    }
+    const showLabel = Boolean(targetLabel) && !minimapOverlayActiveRef.current;
+    syncShipDirectionScreenLabel(
+      labelAnchorRef.current,
+      screenLabelRef.current,
+      camera,
+      size,
+      showLabel
+    );
 
     const magneticStyle = isMagnetic && hasSelectedPos;
     const nameColor = magneticStyle ? SHIP_DIRECTION_MAGNETIC_COLOR : SHIP_DIRECTION_TARGET_COLOR;
@@ -206,7 +242,6 @@ export default function TargetIndicatorLine({
       nameRef.current.style.textShadow = nameShadow;
     }
 
-    // Distance | closing speed — hidden when scan HUD already shows those readouts.
     if (scanHudShowsReadout) {
       if (metricsRef.current) metricsRef.current.style.display = 'none';
     } else {
@@ -227,49 +262,11 @@ export default function TargetIndicatorLine({
         metricsRef.current.style.textShadow = nameShadow;
       }
     }
-  });
+  }, SHIP_DIRECTION_INDICATOR_FRAME_PRIORITY);
 
   return (
     <primitive object={arrow}>
-      <group ref={labelGroupRef} position={[0, 0, TARGET_LABEL_LOCAL_Z]} visible={false}>
-        <Html center>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '2px',
-              fontFamily: 'monospace',
-              pointerEvents: 'none',
-              opacity: 0.92,
-              textAlign: 'center',
-            }}
-          >
-            <div
-              ref={nameRef}
-              style={{
-                fontSize: '9px', // 75% of previous 12px
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
-                color: SHIP_DIRECTION_TARGET_COLOR,
-                textShadow: '0 0 8px rgba(159,223,255,0.55)',
-              }}
-            />
-            <div
-              ref={metricsRef}
-              style={{
-                fontSize: '9px',
-                letterSpacing: '0.02em',
-                whiteSpace: 'nowrap',
-                color: SHIP_DIRECTION_TARGET_COLOR,
-                textShadow: '0 0 8px rgba(159,223,255,0.55)',
-              }}
-            />
-          </div>
-        </Html>
-      </group>
+      <group ref={labelAnchorRef} position={[0, 0, TARGET_LABEL_LOCAL_Z]} />
     </primitive>
   );
 }

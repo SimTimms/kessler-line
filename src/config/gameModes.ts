@@ -6,6 +6,7 @@ export const GAME_MODES = {
   salvageConfig: 'salvageConfig',
   droneConfig: 'droneConfig',
   longDistanceTravelConfig: 'longDistanceTravelConfig',
+  combatConfig: 'combatConfig',
   sandbox: 'sandbox',
   tutorial: 'tutorial',
   resources: 'resources',
@@ -23,6 +24,7 @@ export type TutorialMenuSelection =
   | typeof GAME_MODES.salvageConfig
   | typeof GAME_MODES.droneConfig
   | typeof GAME_MODES.longDistanceTravelConfig
+  | typeof GAME_MODES.combatConfig
   | typeof GAME_MODES.sandbox
   | typeof GAME_MODES.tutorial
   | typeof GAME_MODES.resources

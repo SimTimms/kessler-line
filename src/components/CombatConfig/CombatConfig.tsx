@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppContainer from '../App/AppContainer';
-import LongDistanceTravelConfigScene from './LongDistanceTravelConfigScene';
+import CombatConfigScene from './CombatConfigScene';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
 import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
 import AllHuds from '../Huds/AllHuds';
@@ -20,7 +20,7 @@ import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 
-const LTD_SCANNER_INITIAL_POWERS = {
+const COMBAT_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.DRIVE]: 2,
   [ScannerHUDElements.PROXIMITY]: 2,
   [ScannerHUDElements.MAGNET]: 2,
@@ -29,28 +29,28 @@ const LTD_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.SPOTLIGHT]: 1,
 } as const;
 
-const LTD_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
+const COMBAT_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
 
-function applyLtdScannerDefaults(): void {
+function applyCombatScannerDefaults(): void {
   spotlightOnRef.current = false;
   magneticOnRef.current = true;
-  magneticScanRangeRef.current = getScannerRange('magnet', LTD_SCANNER_INITIAL_POWERS.magnet);
+  magneticScanRangeRef.current = getScannerRange('magnet', COMBAT_SCANNER_INITIAL_POWERS.magnet);
   driveSignatureOnRef.current = true;
-  driveSignatureRangeRef.current = getScannerRange('drive', LTD_SCANNER_INITIAL_POWERS.drive);
+  driveSignatureRangeRef.current = getScannerRange('drive', COMBAT_SCANNER_INITIAL_POWERS.drive);
   proximityScanOnRef.current = true;
   proximityScanRangeRef.current = getScannerRange(
     'proximity',
-    LTD_SCANNER_INITIAL_POWERS.proximity
+    COMBAT_SCANNER_INITIAL_POWERS.proximity
   );
   radioOnRef.current = true;
-  radioRangeRef.current = getScannerRange('radio', LTD_SCANNER_INITIAL_POWERS.radio);
+  radioRangeRef.current = getScannerRange('radio', COMBAT_SCANNER_INITIAL_POWERS.radio);
 }
 
 /**
- * Long-distance travel authoring scene: full solar system + the reusable
- * salvage field parked statically near Neptune (sunward), with AllHuds.
+ * Combat authoring scene: mineable rocks for clamp-on-impact tuning
+ * plus a drone fleet for combat target practice. No solar system or salvage field.
  */
-export default function LongDistanceTravelConfig() {
+export default function CombatConfig() {
   const [spotlightOn, setSpotlightOn] = useState(false);
   const [magneticOn, setMagneticOn] = useState(true);
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
@@ -65,7 +65,7 @@ export default function LongDistanceTravelConfig() {
     tutorialNavViewModeRef.current = false;
     setNavHudEnabled(true);
     resetScannerRefs();
-    applyLtdScannerDefaults();
+    applyCombatScannerDefaults();
     clearAllIncomingHails();
   }, []);
 
@@ -86,7 +86,7 @@ export default function LongDistanceTravelConfig() {
 
   return (
     <AppContainer>
-      <LongDistanceTravelConfigScene />
+      <CombatConfigScene />
       <AllHuds
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
@@ -98,11 +98,11 @@ export default function LongDistanceTravelConfig() {
         setProximity={setProximity}
         radioOn={radioOn}
         setRadioOn={setRadioOn}
-        disabledHudElementsState={[...LTD_DISABLED_HUD_ELEMENTS]}
-        scannerInitialPowers={LTD_SCANNER_INITIAL_POWERS}
+        disabledHudElementsState={[...COMBAT_DISABLED_HUD_ELEMENTS]}
+        scannerInitialPowers={COMBAT_SCANNER_INITIAL_POWERS}
       />
       {showMinimap && (
-        <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />
+        <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem={false} />
       )}
       <DeathOverlay />
     </AppContainer>

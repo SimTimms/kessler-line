@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
 
-export type DeathCause = 'o2' | 'hull' | 'radiation';
+export type DeathCause = 'o2' | 'hull' | 'radiation' | 'speed';
 
 const CAUSE_CONFIG: Record<
   DeathCause,
@@ -24,6 +24,12 @@ const CAUSE_CONFIG: Record<
     subtitle: 'HULL INTEGRITY LOST',
     titleColor: '#88ff44',
     subtitleColor: '#5a9e3a',
+  },
+  speed: {
+    title: 'SHIP DESTROYED',
+    subtitle: 'STRUCTURAL FAILURE',
+    titleColor: '#707580',
+    subtitleColor: '#3d4657',
   },
 };
 
@@ -48,7 +54,9 @@ export function DeathOverlay({ onRestart, restartLabel = 'Restart' }: DeathOverl
     const onO2 = () => trigger('o2');
     const onHull = (e: Event) => {
       const detail = (e as CustomEvent<{ cause?: DeathCause }>).detail;
-      trigger(detail?.cause === 'radiation' ? 'radiation' : 'hull');
+      if (detail?.cause === 'radiation') trigger('radiation');
+      else if (detail?.cause === 'speed') trigger('speed');
+      else trigger('hull');
     };
     window.addEventListener('O2Depleted', onO2);
     window.addEventListener('ShipDestroyed', onHull);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -27,6 +27,10 @@ import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipPosRef } from '../../context/ShipPos';
 import { shipQuaternion, shipVelocity } from '../../context/ShipState';
+import {
+  renderToSimulationSpace,
+  simulationToRenderSpace,
+} from '../../context/FloatingOrigin';
 import type { ShipUndockedDetail } from '../../hooks/shipPhysics/docking';
 
 const DEFAULT_URL = '/container.glb';
@@ -36,6 +40,25 @@ const _shipPortWorld = new THREE.Vector3();
 const _portLocal = new THREE.Vector3();
 const _noseDir = new THREE.Vector3();
 const _euler = new THREE.Euler();
+const _renderPos = new THREE.Vector3();
+const _localPos = new THREE.Vector3();
+
+/** Write simulation-space posRef onto the group, respecting parent + floating origin. */
+function applySimPositionToGroup(group: THREE.Group, simPos: THREE.Vector3): void {
+  simulationToRenderSpace(simPos, _renderPos);
+  if (group.parent) {
+    group.parent.worldToLocal(_localPos.copy(_renderPos));
+    group.position.copy(_localPos);
+  } else {
+    group.position.copy(_renderPos);
+  }
+}
+
+/** Read the group's simulation-space world position into target. */
+function readGroupSimPosition(group: THREE.Group, target: THREE.Vector3): void {
+  group.getWorldPosition(_renderPos);
+  renderToSimulationSpace(_renderPos, target);
+}
 
 export interface CargoContainerProps {
   /** Unique dock id — required when multiple containers share a scene. */
@@ -88,6 +111,7 @@ export default function CargoContainer({
   const displayLabel = label ?? dock.label ?? 'Cargo Container';
 
   // Crates always slide on the XZ plane (Y locked to 0) unless on a drop-off pad.
+  // posRef is simulation-space world position (not parent-local).
   const posRef = useRef(new THREE.Vector3(position[0], 0, position[2]));
   const velRef = useRef(new THREE.Vector3());
   const quatRef = useRef(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotation[1], 0)));
@@ -138,11 +162,22 @@ export default function CargoContainer({
     groupRef.current = el!;
   }, []);
 
-  useEffect(() => {
-    posRef.current.set(position[0], 0, position[2]);
-    // Keep upright — yaw only.
+  // Props are parent-local (e.g. SalvageField origin). Resolve to sim-world once mounted.
+  useLayoutEffect(() => {
+    const group = groupRef.current;
+    if (!group) {
+      posRef.current.set(position[0], 0, position[2]);
+    } else {
+      group.position.set(position[0], 0, position[2]);
+      group.updateWorldMatrix(true, false);
+      readGroupSimPosition(group, posRef.current);
+      posRef.current.y = 0;
+    }
     quatRef.current.setFromEuler(new THREE.Euler(0, rotation[1], 0));
     velRef.current.set(0, 0, 0);
+    if (group) {
+      group.quaternion.copy(quatRef.current);
+    }
   }, [position, rotation]);
 
   const registerStructureCollider = useCallback(
@@ -227,7 +262,7 @@ export default function CargoContainer({
       syncFromGroup: () => {
         const group = groupRef.current;
         if (!group) return;
-        group.getWorldPosition(posRef.current);
+        readGroupSimPosition(group, posRef.current);
         group.getWorldQuaternion(quatRef.current);
         velRef.current.set(0, 0, 0);
       },
@@ -251,7 +286,7 @@ export default function CargoContainer({
 
     if (dropOffRef.current) {
       // Pad owns local transform; keep world refs in sync for sensors.
-      groupRef.current.getWorldPosition(posRef.current);
+      readGroupSimPosition(groupRef.current, posRef.current);
       groupRef.current.getWorldQuaternion(quatRef.current);
       return;
     }
@@ -282,7 +317,7 @@ export default function CargoContainer({
       velRef.current.y = 0;
     }
 
-    groupRef.current.position.copy(posRef.current);
+    applySimPositionToGroup(groupRef.current, posRef.current);
     groupRef.current.quaternion.copy(quatRef.current);
   });
 

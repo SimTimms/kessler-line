@@ -4,6 +4,9 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { drainPower } from '../Ship/Spaceship';
 import { radioBeaconHitRef } from '../Radio/RadioBeacon';
+import { laserAimRef } from '../../context/LaserAim';
+import { querySegmentCollidableHit } from '../../utils/collidableSegmentHit';
+import { SHIP_FLIGHT_FORWARD_LOCAL } from '../../config/shipConfig';
 import {
   LASER_SPOTLIGHT_COLOR,
   LASER_SPOTLIGHT_INTENSITY,
@@ -11,9 +14,10 @@ import {
   LASER_SPOTLIGHT_PENUMBRA,
   LASER_SPOTLIGHT_DECAY,
   LASER_SPOTLIGHT_DISTANCE,
+  CANNON_AIM_RAY_RANGE,
+  CANNON_BULLET_HIT_RADIUS,
 } from '../../config/combatConfig';
 import { spotlightOnRef } from '../../context/SpotlightState';
-import { laserAimRef } from '../../context/LaserAim';
 
 interface LaserRayProps {
   shipGroupRef: { current: THREE.Group | null };
@@ -36,6 +40,10 @@ const _target = new THREE.Vector3();
 const _dir = new THREE.Vector3();
 const _mid = new THREE.Vector3();
 const _q = new THREE.Quaternion();
+const _camFrom = new THREE.Vector3();
+const _camTo = new THREE.Vector3();
+const _camHitPoint = new THREE.Vector3();
+const _camHitNormal = new THREE.Vector3();
 
 // Settlement spotlight detection — tutorial use only.
 // Bounding sphere centred at SURFACE_Y (-920); radius covers the farthest dome (~1900 XZ units).
@@ -106,18 +114,54 @@ export default function LaserRay({ shipGroupRef, stationGroupRef, beaconGroupRef
 
     // Always compute origin and update spotlight — it tracks the cursor even when not firing.
     ship.getWorldPosition(_worldPos);
-    _forward.set(0, 0, 1).applyQuaternion(ship.quaternion);
+    // Muzzle on the flight nose (−Z). Physics forward thrust also travels −local +Z.
+    _forward.set(...SHIP_FLIGHT_FORWARD_LOCAL).applyQuaternion(ship.quaternion);
     _origin.copy(_worldPos).addScaledVector(_forward, 3);
 
-    // Target: project camera ray through mouse cursor 1000 units into world space.
+    // Camera ray through the cursor — resolve the world point under the mouse so the
+    // muzzle aims at that point (avoids chase-camera / muzzle parallax).
     _camRaycaster.setFromCamera(mouseNDC.current, camera);
-    _target.copy(_camRaycaster.ray.origin).addScaledVector(_camRaycaster.ray.direction, 1000);
+    _camFrom.copy(_camRaycaster.ray.origin);
+    _camTo
+      .copy(_camRaycaster.ray.origin)
+      .addScaledVector(_camRaycaster.ray.direction, CANNON_AIM_RAY_RANGE);
 
-    // Publish the aim every frame (even when not firing) so weapons can travel along the beam.
+    const cursorHit = querySegmentCollidableHit(_camFrom, _camTo, {
+      radiusPad: CANNON_BULLET_HIT_RADIUS,
+      hitPoint: _camHitPoint,
+      hitNormal: _camHitNormal,
+    });
+
+    if (cursorHit) {
+      _target.copy(cursorHit.point);
+    } else {
+      // No mesh under the cursor — intersect the camera ray with the muzzle-height plane
+      // so empty-space aim still lines up with the crosshair.
+      const camDirY = _camRaycaster.ray.direction.y;
+      if (Math.abs(camDirY) > 1e-6) {
+        const tPlane = (_origin.y - _camRaycaster.ray.origin.y) / camDirY;
+        if (tPlane > 0.01) {
+          _target
+            .copy(_camRaycaster.ray.origin)
+            .addScaledVector(_camRaycaster.ray.direction, tPlane);
+        } else {
+          _target
+            .copy(_camRaycaster.ray.origin)
+            .addScaledVector(_camRaycaster.ray.direction, 1000);
+        }
+      } else {
+        _target
+          .copy(_camRaycaster.ray.origin)
+          .addScaledVector(_camRaycaster.ray.direction, 1000);
+      }
+    }
+
+    // Publish muzzle → cursor-point aim every frame so weapons track the crosshair.
     _dir.subVectors(_target, _origin);
     const aimLen = _dir.length();
     if (aimLen > 0.001) {
       laserAimRef.origin.copy(_origin);
+      laserAimRef.target.copy(_target);
       laserAimRef.direction.copy(_dir).divideScalar(aimLen);
       laserAimRef.valid = true;
     }

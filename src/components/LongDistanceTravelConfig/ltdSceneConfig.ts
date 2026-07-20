@@ -40,6 +40,11 @@ export function getLtdShipSpawn(): {
   };
 }
 
+/** Normal-travel pocket around the salvage field; outside is fast travel. */
+export const LTD_NORMAL_TRAVEL_ZONE_ID = 'ltd-salvage-normal';
+/** Radius of the normal-travel pocket (world units). Outside = fast travel. */
+export const LTD_NORMAL_TRAVEL_ZONE_RADIUS = 2000;
+
 export const LONG_DISTANCE_TRAVEL_CONFIG = {
   fogColor: '#02040a',
   canvasNear: CANVAS_NEAR,
@@ -51,4 +56,5 @@ export const LONG_DISTANCE_TRAVEL_CONFIG = {
   tutorialCameraZoomMax: 820,
   planetImpactCameraHoldMaxAltitude: 80_000,
   shipParticleCount: 100,
+  normalTravelZoneRadius: LTD_NORMAL_TRAVEL_ZONE_RADIUS,
 };

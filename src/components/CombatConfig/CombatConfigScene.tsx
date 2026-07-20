@@ -11,44 +11,37 @@ import LaserRay from '../Combat/LaserRay';
 import PlayerBullets from '../Combat/PlayerBullets';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
-import SolarSystem from '../Planets/SolarSystem';
-import SunGravity from '../Environment/SunGravity';
 import SpaceParticles from '../Environment/SpaceParticles';
 import { FloatingOrigin } from '../Environment/FloatingOrigin';
 import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
-import SalvageField from '../SalvageConfig/SalvageField';
-import NormalTravelZoneRing from '../FastTravel/NormalTravelZoneRing';
-import {
-  getLtdSalvageFieldOrigin,
-  getLtdShipSpawn,
-  LONG_DISTANCE_TRAVEL_CONFIG,
-  LTD_NORMAL_TRAVEL_ZONE_ID,
-  LTD_NORMAL_TRAVEL_ZONE_RADIUS,
-  LTD_SALVAGE_ID_PREFIX,
-} from './ltdSceneConfig';
+import Asteroid from '../Asteroid/Asteroid';
+import DustCloud from '../DustCloud/DustCloud';
+import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
+import CollisionDebug from '../Debug/CollisionDebug';
+import { COMBAT_CONFIG, COMBAT_ID_PREFIX, getCombatShipSpawn } from './combatSceneConfig';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
-export default function LongDistanceTravelConfigScene() {
+export default function CombatConfigScene() {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const {
     fogColor,
     canvasNear,
     canvasFar,
     toneMappingExposure,
-    solarSystemScale,
     tutorialFollowOffset,
     tutorialCameraZoomMax,
     planetImpactCameraHoldMaxAltitude,
     shipParticleCount,
-  } = LONG_DISTANCE_TRAVEL_CONFIG;
+    playerShipUrl,
+    dustCloud,
+    mineableAsteroids,
+    targetDroneFleet,
+    showCollisionDebug,
+  } = COMBAT_CONFIG;
 
-  const shipSpawn = useMemo(() => getLtdShipSpawn(), []);
-  const fieldOrigin = useMemo((): [number, number, number] => {
-    const o = getLtdSalvageFieldOrigin();
-    return [o.x, o.y, o.z];
-  }, []);
+  const shipSpawn = useMemo(() => getCombatShipSpawn(), []);
 
   useLayoutEffect(() => {
     shipPosRef.current.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
@@ -63,15 +56,15 @@ export default function LongDistanceTravelConfigScene() {
   const worldContent = (
     <>
       <DefaultLighting
-        color="#ff7777"
-        intensity={1}
-        ambientIntensity={0.3}
-        position={[0, 10000, -10000]}
+        color="#ffffff"
+        intensity={4.4}
+        ambientIntensity={1.3}
+        position={[10000, 10000, -100]}
       />
       <SpaceParticles />
       <Suspense fallback={null}>
         <Spaceship
-          url="/shuttle-low-british.glb"
+          url={playerShipUrl}
           shipGroupRef={spaceshipGroupRef}
           initialPosition={shipSpawn.position}
           initialRotation={shipSpawn.rotation}
@@ -92,17 +85,43 @@ export default function LongDistanceTravelConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+        <LaserRay shipGroupRef={spaceshipGroupRef} />
         <PlayerBullets shipGroupRef={spaceshipGroupRef} />
         <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
-        <SolarSystem scale={solarSystemScale} />
-        {/* Static salvage pocket — does not orbit with Neptune. */}
-        <SalvageField origin={fieldOrigin} idPrefix={LTD_SALVAGE_ID_PREFIX} debugJumpDockOnClick />
-        {/* Inside outer ring = staged normal travel; outside = full fast travel. */}
-        <NormalTravelZoneRing
-          id={LTD_NORMAL_TRAVEL_ZONE_ID}
-          center={fieldOrigin}
-          radius={LTD_NORMAL_TRAVEL_ZONE_RADIUS}
+
+        {mineableAsteroids.map((asteroid) => (
+          <Asteroid
+            key={`${COMBAT_ID_PREFIX}${asteroid.id}`}
+            position={asteroid.position}
+            rotation={asteroid.rotation}
+            scale={asteroid.scale}
+            mineableId={`${COMBAT_ID_PREFIX}${asteroid.id}`}
+            label={asteroid.label}
+          />
+        ))}
+
+        <GarbageScowDroneFleet
+          url={targetDroneFleet.url}
+          count={targetDroneFleet.count}
+          scale={targetDroneFleet.scale}
+          spawnCenter={targetDroneFleet.spawnCenter}
+          spawnRadius={targetDroneFleet.spawnRadius}
+          waypoints={targetDroneFleet.waypoints}
+          idPrefix={`${COMBAT_ID_PREFIX}drone`}
+          registerCollision
+          collisionRadius={targetDroneFleet.collisionRadius}
+          physicalCollision
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <DustCloud
+          radius={dustCloud.radius}
+          particleSize={dustCloud.particleSize}
+          radialSpread={dustCloud.radialSpread}
+          yInitial={dustCloud.yInitial}
+          opacity={dustCloud.opacity}
+          colors={[...dustCloud.colors]}
         />
       </Suspense>
     </>
@@ -140,7 +159,6 @@ export default function LongDistanceTravelConfigScene() {
         framePriority={CAMERA_FRAME_PRIORITY}
       />
       {SANDBOX_USE_FLOATING_ORIGIN ? <FloatingOrigin>{worldContent}</FloatingOrigin> : worldContent}
-      <SunGravity />
       <SharedInteractionSceneTools />
       <ShipDepthOfField saturation={0} />
     </Canvas>

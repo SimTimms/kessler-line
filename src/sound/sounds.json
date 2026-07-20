@@ -9,6 +9,11 @@
     "loop": false,
     "volume": 0.9
   },
+  "cannonShot": {
+    "file": "/shot.mp3",
+    "loop": false,
+    "volume": 0.0075
+  },
   "radio": {
     "file": "/radio.mp3",
     "loop": false,

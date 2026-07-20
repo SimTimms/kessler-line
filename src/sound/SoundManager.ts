@@ -17,6 +17,8 @@ let railgunLoopId: ReturnType<typeof window.setInterval> | null = null;
 let impactAudio: HTMLAudioElement | null = null;
 let impactPool: HTMLAudioElement[] = [];
 const IMPACT_POOL_MAX = 8;
+let shotPool: HTMLAudioElement[] = [];
+const SHOT_POOL_MAX = 12;
 let impactAnalysisAudio: HTMLAudioElement | null = null;
 let impactAnalysisSource: MediaElementAudioSourceNode | null = null;
 let impactAnalysisAnalyser: AnalyserNode | null = null;
@@ -171,6 +173,21 @@ function getImpactFromPool(): HTMLAudioElement {
   }
 
   return impactPool[0];
+}
+
+function getShotFromPool(): HTMLAudioElement {
+  for (const audio of shotPool) {
+    if (audio.paused || audio.ended) return audio;
+  }
+
+  if (shotPool.length < SHOT_POOL_MAX) {
+    const audio = new Audio(soundsConfig.cannonShot.file);
+    audio.preload = 'auto';
+    shotPool.push(audio);
+    return audio;
+  }
+
+  return shotPool[0]!;
 }
 
 function getImpactAnalysisAudio(): HTMLAudioElement {
@@ -801,6 +818,24 @@ export function playImpactSoundOverlap(volume = 0.9): void {
     const v = volume * (1 + (Math.random() * 2 - 1) * volumeJitter);
     audio.volume = Math.min(1, Math.max(0, v));
     audio.playbackRate = 2 + Math.random() * rateJitter;
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise) void playPromise.catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
+/** Overlapping cannon shot SFX — pooled so rapid fire does not cut itself off. */
+export function playCannonShotSound(volume = soundsConfig.cannonShot.volume): void {
+  try {
+    resumeAudioContext();
+    const audio = getShotFromPool();
+    const volumeJitter = 0.12;
+    const rateJitter = 0.08;
+    const v = volume * (1 + (Math.random() * 2 - 1) * volumeJitter);
+    audio.volume = Math.min(1, Math.max(0, v));
+    audio.playbackRate = 1 + (Math.random() * 2 - 1) * rateJitter;
     audio.currentTime = 0;
     const playPromise = audio.play();
     if (playPromise) void playPromise.catch(() => undefined);

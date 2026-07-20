@@ -23,6 +23,7 @@
 .helmet-hud--powerless .helmet-nav,
 .helmet-hud--powerless .helmet-scanner-deck,
 .helmet-hud--powerless .mech-comms,
+.helmet-hud--powerless .mech-alerts,
 .helmet-hud--powerless .mech-thrust,
 .helmet-hud--powerless .cargo-hold-flyout-stack {
   opacity: 0.28;
@@ -410,12 +411,13 @@
   align-items: stretch;
   gap: 4px;
   flex: 0 0 auto;
-  min-width: 36px;
+  min-width: 44px;
 }
 
 .helmet-vitals-meta-crt {
   justify-content: flex-end;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
   padding: 6px 5px;
 }
 

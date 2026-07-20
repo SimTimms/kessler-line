@@ -1,6 +1,5 @@
-import { useMemo, useRef, useEffect, type RefObject } from 'react';
+import { useMemo, useRef, useEffect, useLayoutEffect, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { shipVelocity } from './Ship/Spaceship';
 import { gravityBodies } from '../context/GravityRegistry';
@@ -19,8 +18,13 @@ import {
   createShipDirectionRing,
   placeShipDirectionArrow,
 } from './shipDirectionArrow';
+import {
+  SHIP_DIRECTION_INDICATOR_FRAME_PRIORITY,
+  syncShipDirectionScreenLabel,
+  useShipDirectionScreenLabelRoot,
+} from './ShipDirectionScreenLabel';
 
-/** Local +Z offset past the arrow tip — keeps Html in ship-relative space (no large-world jitter). */
+/** Local +Z offset past the arrow tip — label projects from this anchor. */
 const SPEED_LABEL_LOCAL_Z = 22;
 
 const _shipWorld = new THREE.Vector3();
@@ -103,8 +107,26 @@ export default function VelocityIndicator({
 }) {
   const shipPositionRef = shipPosRef;
   const trajectoryHighlightRef = useRef(false);
-  const speedLabelGroupRef = useRef<THREE.Group>(null!);
-  const speedRef = useRef<HTMLDivElement>(null!);
+  const speedLabelAnchorRef = useRef<THREE.Group>(null!);
+  const screenLabelRef = useShipDirectionScreenLabelRoot();
+  const speedRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const root = screenLabelRef.current;
+    if (!root) return;
+
+    root.replaceChildren();
+    const speed = document.createElement('div');
+    speed.style.cssText =
+      'font-family:monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;pointer-events:none;color:#ff8800;text-shadow:0 0 8px rgba(255,136,0,0.55);opacity:0.92;';
+    root.append(speed);
+    speedRef.current = speed;
+
+    return () => {
+      speedRef.current = null;
+      root.replaceChildren();
+    };
+  }, [screenLabelRef]);
 
   useEffect(() => {
     const onStart = () => {
@@ -188,7 +210,7 @@ export default function VelocityIndicator({
     if (!navHudEnabledRef.current) {
       velocityArrow.visible = false;
       directionRing.visible = false;
-      if (speedLabelGroupRef.current) speedLabelGroupRef.current.visible = false;
+      syncShipDirectionScreenLabel(null, screenLabelRef.current, camera, size, false);
       orbitLine.visible = false;
       orbitSprite.visible = false;
       periMarker.sprite.visible = false;
@@ -212,11 +234,19 @@ export default function VelocityIndicator({
       shipVelocity.x,
       shipVelocity.z
     );
+    if (arrowPlaced) {
+      velocityArrow.updateWorldMatrix(true, true);
+    }
     const showSpeedLabel =
       arrowPlaced && speed > MIN_SPEED && !minimapOverlayActiveRef.current;
-    if (speedLabelGroupRef.current) {
-      speedLabelGroupRef.current.visible = showSpeedLabel;
-    }
+    syncShipDirectionScreenLabel(
+      speedLabelAnchorRef.current,
+      screenLabelRef.current,
+      camera,
+      size,
+      showSpeedLabel,
+      40
+    );
     if (speedRef.current && showSpeedLabel) {
       speedRef.current.textContent = `${speed.toFixed(1)} m/s`;
     }
@@ -518,31 +548,13 @@ export default function VelocityIndicator({
     }
     orbitSpriteCtx.fillText('CIRCULAR ORBIT', 128, 34);
     (orbitSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
-  });
+  }, SHIP_DIRECTION_INDICATOR_FRAME_PRIORITY);
 
   return (
     <>
       <primitive object={directionRing} />
       <primitive object={velocityArrow}>
-        {/* Child of the arrow so Html stays in local space (matches target-indicator placement). */}
-        <group ref={speedLabelGroupRef} position={[0, 0, SPEED_LABEL_LOCAL_Z]} visible={false}>
-          <Html center>
-            <div
-              ref={speedRef}
-              style={{
-                fontFamily: 'monospace',
-                fontSize: '9px',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                whiteSpace: 'nowrap',
-                pointerEvents: 'none',
-                color: SHIP_DIRECTION_VELOCITY_COLOR,
-                textShadow: '0 0 8px rgba(255, 136, 0, 0.55)',
-                opacity: 0.92,
-              }}
-            />
-          </Html>
-        </group>
+        <group ref={speedLabelAnchorRef} position={[0, 0, SPEED_LABEL_LOCAL_Z]} />
       </primitive>
       <primitive object={orbitLine} />
       <primitive object={orbitSprite} />

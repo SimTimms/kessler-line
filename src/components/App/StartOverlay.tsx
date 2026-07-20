@@ -52,6 +52,11 @@ const TUTORIAL_MENU_ITEMS: Array<{
     label: 'Long Distance Travel Config',
     selection: GAME_MODES.longDistanceTravelConfig,
   },
+  {
+    id: 'combat-config',
+    label: 'Combat Config',
+    selection: GAME_MODES.combatConfig,
+  },
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
@@ -67,6 +72,7 @@ const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.salvageConfig,
   GAME_MODES.droneConfig,
   GAME_MODES.longDistanceTravelConfig,
+  GAME_MODES.combatConfig,
 ]);
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {

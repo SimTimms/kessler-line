@@ -12,6 +12,16 @@ export const SHIP_RADIUS = 3;
 /** Oriented box half-extents used for ship hull collision + debug overlay. */
 export const SHIP_BOX_HALF_EXTENTS: [number, number, number] = [7, 3, 17];
 /**
+ * Local axis the ship travels when thrusting forward.
+ * Physics uses `local +Z` as a basis then applies −thrust, so flight nose is −Z.
+ */
+export const SHIP_FLIGHT_FORWARD_LOCAL: [number, number, number] = [0, 0, -1];
+
+/** Default magazine size for the player ship (rounds). Configurable per ship. */
+export const PLAYER_SHIP_AMMO_CAPACITY = 200;
+/** Ammo loaded when the player ship spawns / resets. */
+export const PLAYER_SHIP_AMMO_START = 60;
+/**
  * Sample points in ship-local space approximating the hull volume.
  * Physics tests each sphere against obstacles so nose/tail contacts register.
  */

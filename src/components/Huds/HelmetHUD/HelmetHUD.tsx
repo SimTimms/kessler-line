@@ -4,6 +4,7 @@ import PowerHUD from '../PowerHUD/PowerHUD';
 import { NavHUD, type TutorialTargetDef } from '../NavHUD/NavHUD';
 import { ScannerHUD, type ScannerHUDElementId } from '../HUD/ScannerHUD';
 import CommsHUD from '../CommsHUD/CommsHUD';
+import AlertsHUD from '../AlertsHUD/AlertsHUD';
 import DockTransferHUD from '../DockTransferHUD/DockTransferHUD';
 import ShipControlsHUD from '../ShipControlsHUD/ShipControlsHUD';
 import { power as shipPower } from '../../../context/ShipState';
@@ -107,6 +108,7 @@ const HelmetHUD = memo(function HelmetHUD({
         initialRadioPower={scannerInitialPowers?.radio}
         sceneRadioContactsOnly={sceneRadioContactsOnly}
       />
+      <AlertsHUD />
       <DockTransferHUD />
     </div>
   );

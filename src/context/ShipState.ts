@@ -25,6 +25,10 @@ import {
 } from './PlayerShipState';
 
 // ── Physics constants (values live in src/config/shipConfig.ts) ────────────────
+import {
+  PLAYER_SHIP_AMMO_CAPACITY,
+  PLAYER_SHIP_AMMO_START,
+} from '../config/shipConfig';
 export {
   THRUST,
   YAW_THRUST,
@@ -37,6 +41,8 @@ export {
   DOCKING_PORT_RADIUS,
   DOCKING_PORT_LOCAL_Z,
   MAIN_ENGINE_HIT_RADIUS,
+  PLAYER_SHIP_AMMO_CAPACITY,
+  PLAYER_SHIP_AMMO_START,
 } from '../config/shipConfig';
 export { COLLISION_DAMAGE_MULTIPLIER as DAMAGE_MULTIPLIER } from '../config/damageConfig';
 export const SHIP_COLLISION_ID = 'spaceship';
@@ -57,6 +63,37 @@ export let hullIntegrity = playerState.hullIntegrity; // 0–100, decreases on c
 export let fuel = playerState.fuel; // 0–100, drains while thrusting, refills while docked
 export let o2 = playerState.o2; // 0–100, depletes constantly, refills while docked
 export let shipCrew = playerState.shipCrew; // crew aboard (0–SHIP_CREW_CAPACITY)
+
+/** Current cannon rounds aboard the player ship. */
+export let ammo = PLAYER_SHIP_AMMO_START;
+/** Magazine capacity for the player ship (configurable per ship). */
+export let ammoCapacity = PLAYER_SHIP_AMMO_CAPACITY;
+
+export function setAmmoCapacity(capacity: number): void {
+  ammoCapacity = Math.max(0, Math.floor(capacity));
+  ammo = Math.min(ammo, ammoCapacity);
+}
+
+export function setAmmo(v: number): void {
+  ammo = Math.max(0, Math.min(ammoCapacity, Math.floor(v)));
+}
+
+/** Reset magazine to the configured start load for this ship. */
+export function resetAmmo(
+  start: number = PLAYER_SHIP_AMMO_START,
+  capacity: number = PLAYER_SHIP_AMMO_CAPACITY
+): void {
+  ammoCapacity = Math.max(0, Math.floor(capacity));
+  ammo = Math.max(0, Math.min(ammoCapacity, Math.floor(start)));
+}
+
+/** Consume rounds if available. Returns false when the magazine is empty. */
+export function tryConsumeAmmo(count = 1): boolean {
+  const n = Math.max(1, Math.floor(count));
+  if (ammo < n) return false;
+  ammo -= n;
+  return true;
+}
 
 export function setPower(v: number) {
   const previous = playerState.power;

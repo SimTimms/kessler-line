@@ -23,6 +23,7 @@ import { updateEngineAudio } from '../engineAudio';
 import { applyPhysicsStep } from '../step';
 import { applyResourceDrain } from '../resourceDrain';
 import { applyRadiationDamage } from '../radiation';
+import { applyFastTravelZoneUpdate, applyNormalTravelEntryBrake, applyFastTravelSpeedHazards, gateLongitudinalThrustForOverspeed } from '../fastTravel';
 import {
   updateThrusterLights,
   zeroThrusterLights,
@@ -306,6 +307,13 @@ export function runPrimaryPhysicsFrame({
     }
   }
 
+  ({ fwd, rev } = gateLongitudinalThrustForOverspeed(
+    velocity.current,
+    group.quaternion,
+    fwd,
+    rev
+  ));
+
   // Publish effective thruster states so ThrusterParticles shows the correct
   // visual for cancel-assist and stabilizer thrusts, not just raw key presses.
   vesselState.effectiveThrustFwd.current = fwd;
@@ -368,6 +376,8 @@ export function runPrimaryPhysicsFrame({
 
   const revScale = activeMainEngines / 2;
 
+  const fastTravelMultiplier = applyFastTravelZoneUpdate(physicsPosition.current);
+
   let remaining = cappedDelta;
   while (remaining > 0) {
     // Freeze-on-dock partners already returned above. Towable cargo must keep
@@ -381,6 +391,7 @@ export function runPrimaryPhysicsFrame({
       primaryGravityId,
       primaryGravityVelocity,
       thrustMultiplierRef: vesselState.thrustMultiplier,
+      fastTravelMultiplier,
       dt,
       anyThrusting,
       disableGravity: DEBUG_DISABLE_GRAVITY || !orbitalPhysicsEnabled,
@@ -413,6 +424,10 @@ export function runPrimaryPhysicsFrame({
       dt,
     });
   }
+
+  // Shed fast-travel speed after integrate so entry braking wins over thrust this frame.
+  applyNormalTravelEntryBrake(velocity, cappedDelta);
+  applyFastTravelSpeedHazards(velocity, vesselId, vesselState, publishToPlayerRefs);
 
   vesselState.shipAngularVelocity.current = angularVelocity.current;
 

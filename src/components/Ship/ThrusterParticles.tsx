@@ -5,12 +5,8 @@ import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { thrustMultiplier } from './Spaceship';
 import {
-  cinematicThrustForward,
-  cinematicThrustReverse,
   MAIN_ENGINE_LOCAL_POS,
   mainEngineDisabled,
-  mobileThrustForward,
-  mobileThrustReverse,
   mobileThrustLeft,
   mobileThrustRight,
   mobileThrustStrafeLeft,
@@ -29,7 +25,6 @@ import {
   HOVER_THRUSTER_LOCAL,
   HOVER_CUTOFF_SPEED,
 } from '../../config/shipConfig';
-import { autopilotThrustForward, autopilotThrustReverse } from '../../context/AutopilotState';
 
 const EMIT_RATE = 900; // particles per second per emitter
 const BASE_LIFETIME = 0.04; // seconds — short, intense burn (jittered ±30%)
@@ -142,8 +137,8 @@ interface ThrusterParticlesProps {
 }
 
 export default function ThrusterParticles({
-  thrustForward,
-  thrustReverse,
+  thrustForward: _thrustForward,
+  thrustReverse: _thrustReverse,
   thrustLeft,
   thrustRight,
   thrustStrafeLeft,
@@ -330,14 +325,8 @@ export default function ThrusterParticles({
     const rcsEmitRate = EMIT_RATE * Math.sqrt(RCS_VISUAL_MULTIPLIER);
     const propulsionAvailable = canUsePropulsion();
 
-    // Main engines — map to player forward thrust (W).
-    const reverseActive =
-      propulsionAvailable &&
-      (thrustForward.current ||
-        mobileThrustForward.current ||
-        cinematicThrustForward.current ||
-        autopilotThrustForward.current ||
-        effectiveThrustFwd.current);
+    // Main engines — follow effective forward thrust (includes overspeed engine cutoff).
+    const reverseActive = propulsionAvailable && effectiveThrustFwd.current;
 
     if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
@@ -356,13 +345,8 @@ export default function ThrusterParticles({
       [
         'forward',
         {
-          current:
-            propulsionAvailable &&
-            (thrustReverse.current ||
-              mobileThrustReverse.current ||
-              cinematicThrustReverse.current ||
-              autopilotThrustReverse.current ||
-              effectiveThrustRev.current),
+          // Reverse-direction RCS — follow effective reverse (includes overspeed cutoff).
+          current: propulsionAvailable && effectiveThrustRev.current,
         },
       ],
       [

@@ -20,6 +20,8 @@ interface StepParams {
   primaryGravityId: { current: string | null };
   primaryGravityVelocity: THREE.Vector3;
   thrustMultiplierRef: { current: number };
+  /** Environmental fast-travel thrust scale (1 in normal zones). */
+  fastTravelMultiplier?: number;
   dt: number;
   anyThrusting: boolean;
   disableGravity: boolean;
@@ -46,6 +48,7 @@ export function applyPhysicsStep({
   primaryGravityId,
   primaryGravityVelocity,
   thrustMultiplierRef,
+  fastTravelMultiplier = 1,
   dt,
   anyThrusting,
   disableGravity,
@@ -64,9 +67,12 @@ export function applyPhysicsStep({
   radIn,
   collisionOptions,
 }: StepParams) {
-  const forwardThrustMultiplier = thrustMultiplierRef.current;
-  // Cap RCS/reverse authority so maneuvering remains controllable at high global thrust.
-  const cappedManeuverMultiplier = Math.min(forwardThrustMultiplier, 2);
+  // Fast-travel zone scale applies to main-axis thrust only — not strafe or yaw.
+  const zoneScale = fastTravelMultiplier;
+  const forwardThrustMultiplier = thrustMultiplierRef.current * zoneScale;
+  // Cap RCS/reverse authority so maneuvering remains controllable at high player thrust.
+  const cappedManeuverMultiplier = Math.min(thrustMultiplierRef.current, 2);
+  const reverseThrustMultiplier = cappedManeuverMultiplier * zoneScale;
 
   const scaledYawThrust = YAW_THRUST * yawThrustScale;
   if (yawRight) angularVelocity.current -= scaledYawThrust * cappedManeuverMultiplier * dt;
@@ -89,7 +95,7 @@ export function applyPhysicsStep({
   _localForward.set(0, 0, 1).applyQuaternion(group.quaternion);
   if (fwd) velocity.addScaledVector(_localForward, -THRUST * forwardThrustMultiplier * dt);
   if (rev)
-    velocity.addScaledVector(_localForward, THRUST * cappedManeuverMultiplier * revScale * dt);
+    velocity.addScaledVector(_localForward, THRUST * reverseThrustMultiplier * revScale * dt);
 
   _localRight.set(1, 0, 0).applyQuaternion(group.quaternion);
   if (strL) velocity.addScaledVector(_localRight, -THRUST * cappedManeuverMultiplier * dt);
@@ -101,8 +107,8 @@ export function applyPhysicsStep({
       group.getWorldPosition(_shipPos);
       renderToSimulationSpace(_shipPos, _shipPos);
       _radialDir.subVectors(_shipPos, body.position).normalize();
-      if (radOut) velocity.addScaledVector(_radialDir, THRUST * thrustMultiplierRef.current * dt);
-      if (radIn) velocity.addScaledVector(_radialDir, -THRUST * thrustMultiplierRef.current * dt);
+      if (radOut) velocity.addScaledVector(_radialDir, THRUST * forwardThrustMultiplier * dt);
+      if (radIn) velocity.addScaledVector(_radialDir, -THRUST * forwardThrustMultiplier * dt);
     }
   }
 
