@@ -44,9 +44,9 @@ export const COMBAT_CONFIG = {
   dustCloud: {
     radius: 2200,
     particleSize: 1500,
-    radialSpread: 9,
-    yInitial: -700,
-    opacity: 0.12,
+    radialSpread: 100,
+    yInitial: -1000,
+    opacity: 0.022,
     colors: COMBAT_DUST_COLORS,
   },
   /**
@@ -101,6 +101,19 @@ export const COMBAT_CONFIG = {
       [80, 0, -120],
       [-100, 0, -250],
     ] as Vec3[],
+  },
+  /**
+   * Hostile player-class fighter. Spawns ahead of the player, faces them,
+   * and pursues with machine guns while holding a standoff.
+   */
+  hostileFighter: {
+    id: 'hostile-fighter',
+    url: '/shuttle-low-british.glb',
+    /** 500 units ahead of player spawn at origin (flight forward −Z). */
+    position: [0, 0, -500] as Vec3,
+    /** Face +Z toward the player (flight/guns use −Z). */
+    rotation: [0, Math.PI, 0] as Vec3,
+    scale: 1,
   },
   /** Draw wireframe colliders (drones, asteroids, ship). */
   showCollisionDebug: true,

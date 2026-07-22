@@ -20,6 +20,7 @@ import {
 } from '../../context/VesselStateStore';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { setFuel, setO2 } from '../../context/ShipState';
+import { playDockConnectSound } from '../../sound/SoundManager';
 
 const _portWorldPos = new THREE.Vector3();
 const _dockVel = new THREE.Vector3();
@@ -347,6 +348,10 @@ export function checkDockingPort({
 
   dockedTo.current = bayEntry.id;
   if (emitDockingEvents) {
+    // Front/nose bay latch — container, ship, or station hardpoints.
+    if (captureMode === 'nose') {
+      playDockConnectSound();
+    }
     window.dispatchEvent(
       new CustomEvent('ShipDocked', { detail: { stationId: bayEntry.stationId ?? null } })
     );

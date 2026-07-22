@@ -39,8 +39,25 @@ export const SHIP_COLLISION_SAMPLES: ReadonlyArray<{
 export const RESTITUTION = 0.4;
 /** Global cap on thrust multiplier (player slider and autopilot). */
 export const MAX_THRUST_MULTIPLIER = 1000; // TODO: revert to 3
+/**
+ * While {@link KEY_THRUST_BOOST} is held, main engines burn at this multiplier
+ * regardless of the thrust dial (dial is restored on release).
+ */
+export const THRUST_BOOST_MULTIPLIER = 20;
+/** Yaw thruster authority / max rate scale while thrust boost is held. */
+export const THRUST_BOOST_YAW_SCALE = 3;
 /** Duration of the hull-impact visual pulse in milliseconds. */
 export const SHIP_IMPACT_PULSE_MS = 1200;
+
+// ── Visual maneuver lean (mesh only — physics stays level) ────────────────
+/** Max bank into a yaw turn (radians). */
+export const SHIP_LEAN_BANK_MAX_RAD = (8 * Math.PI) / 180;
+/** Nose-down lean while thrusting forward (radians). */
+export const SHIP_LEAN_PITCH_FWD_RAD = (5 * Math.PI) / 180;
+/** Nose-up lean while thrusting reverse (radians). */
+export const SHIP_LEAN_PITCH_REV_RAD = (5 * Math.PI) / 180;
+/** How quickly lean eases toward the target / back to level (1/s). */
+export const SHIP_LEAN_RESPONSE = 2.4;
 
 // ── Docking port ─────────────────────────────────────────────────────────
 /** Detection sphere radius at the nose docking port (world units). */

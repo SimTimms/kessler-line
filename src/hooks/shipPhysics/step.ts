@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { MAX_YAW_RATE, THRUST, YAW_THRUST } from '../../context/ShipState';
+import { MAX_YAW_RATE, THRUST, YAW_THRUST, thrustBoostHeld } from '../../context/ShipState';
+import { THRUST_BOOST_YAW_SCALE } from '../../config/shipConfig';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { applyYawAndRoll, getYawFromQuaternion } from '../../orbitalRoll/shipYawRoll';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
@@ -74,13 +75,14 @@ export function applyPhysicsStep({
   const cappedManeuverMultiplier = Math.min(thrustMultiplierRef.current, 2);
   const reverseThrustMultiplier = cappedManeuverMultiplier * zoneScale;
 
-  const scaledYawThrust = YAW_THRUST * yawThrustScale;
+  const boostYaw = thrustBoostHeld.current ? THRUST_BOOST_YAW_SCALE : 1;
+  const scaledYawThrust = YAW_THRUST * yawThrustScale * boostYaw;
   if (yawRight) angularVelocity.current -= scaledYawThrust * cappedManeuverMultiplier * dt;
   if (yawLeft) angularVelocity.current += scaledYawThrust * cappedManeuverMultiplier * dt;
   angularVelocity.current = THREE.MathUtils.clamp(
     angularVelocity.current,
-    -MAX_YAW_RATE,
-    MAX_YAW_RATE
+    -MAX_YAW_RATE * boostYaw,
+    MAX_YAW_RATE * boostYaw
   );
   if (yawPivotLocal) {
     _yawPivotBefore.copy(yawPivotLocal).applyQuaternion(group.quaternion).add(group.position);

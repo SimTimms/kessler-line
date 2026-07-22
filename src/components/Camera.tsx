@@ -33,6 +33,13 @@ import {
 } from '../config/scrapperConfig';
 import { shipPosRef } from '../context/ShipPos';
 import { KEY_TOGGLE_CAMERA_DECOUPLE } from '../config/keybindings';
+import {
+  cameraModeRef,
+  EVENT_CAMERA_MODE_CHANGED,
+  setCameraMode,
+  toggleCameraMode,
+  type CameraFollowMode,
+} from '../context/CameraMode';
 
 // Scratch vectors — avoid allocating on every frame
 const _offset = new THREE.Vector3();
@@ -107,7 +114,7 @@ export function OrbitCamera({
   const spherical = useRef(new THREE.Spherical(50, Math.PI / 4, 0));
   const didInitSpherical = useRef(false);
   const shakeTime = useRef(0);
-  const [decoupled, setDecoupled] = useState(false);
+  const [decoupled, setDecoupled] = useState(() => cameraModeRef.current === 'free');
   const [scrapperMode, setScrapperMode] = useState(
     disableCinematics ? false : scrapperIntroActive.current
   );
@@ -258,24 +265,33 @@ export function OrbitCamera({
   ]);
 
   useEffect(() => {
+    const syncFromMode = (mode: CameraFollowMode) => {
+      setDecoupled(mode === 'free');
+    };
+    const onMode = (e: Event) => {
+      const mode = (e as CustomEvent<{ mode?: CameraFollowMode }>).detail?.mode;
+      if (mode === 'ship' || mode === 'free') syncFromMode(mode);
+    };
+    syncFromMode(cameraModeRef.current);
+    window.addEventListener(EVENT_CAMERA_MODE_CHANGED, onMode);
+    return () => window.removeEventListener(EVENT_CAMERA_MODE_CHANGED, onMode);
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === KEY_TOGGLE_CAMERA_DECOUPLE) {
-        setDecoupled((prev) => {
-          const next = !prev;
-          shipInstructionMessage.current = next ? 'CAMERA: FREE LOOK' : 'CAMERA: COUPLED';
-          setTimeout(() => {
-            shipInstructionMessage.current = '';
-          }, 2000);
-          return next;
-        });
-      }
+      if (e.code !== KEY_TOGGLE_CAMERA_DECOUPLE || e.repeat) return;
+      const next = toggleCameraMode();
+      shipInstructionMessage.current = next === 'free' ? 'CAMERA: FREE LOOK' : 'CAMERA: SHIP LOCK';
+      setTimeout(() => {
+        shipInstructionMessage.current = '';
+      }, 2000);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   useEffect(() => {
-    const onDestroyed = () => setDecoupled(true);
+    const onDestroyed = () => setCameraMode('free');
     window.addEventListener('ShipDestroyed', onDestroyed);
     return () => window.removeEventListener('ShipDestroyed', onDestroyed);
   }, []);
@@ -580,6 +596,7 @@ export function OrbitCamera({
 
     _offset.setFromSpherical(spherical.current);
     const target = followTarget ? followTarget.current : _target.set(0, 0, 0);
+    camera.up.set(0, 1, 0);
     camera.position.copy(target).add(_offset);
     camera.position.x += shakeX;
     camera.position.y += shakeY;

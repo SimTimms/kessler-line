@@ -9,6 +9,8 @@ import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import DefaultLighting from '../DefaultLighting';
 import LaserRay from '../Combat/LaserRay';
 import PlayerBullets from '../Combat/PlayerBullets';
+import PlayerCannonHitDamage from '../Combat/PlayerCannonHitDamage';
+import BreakupVfx from '../Combat/BreakupVfx';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import SpaceParticles from '../Environment/SpaceParticles';
@@ -18,7 +20,7 @@ import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
 import Asteroid from '../Asteroid/Asteroid';
 import DustCloud from '../DustCloud/DustCloud';
 import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
-import CollisionDebug from '../Debug/CollisionDebug';
+import NpcFighter from '../NPCs/NpcFighter';
 import { COMBAT_CONFIG, COMBAT_ID_PREFIX, getCombatShipSpawn } from './combatSceneConfig';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
@@ -38,7 +40,7 @@ export default function CombatConfigScene() {
     dustCloud,
     mineableAsteroids,
     targetDroneFleet,
-    showCollisionDebug,
+    hostileFighter,
   } = COMBAT_CONFIG;
 
   const shipSpawn = useMemo(() => getCombatShipSpawn(), []);
@@ -87,7 +89,17 @@ export default function CombatConfigScene() {
         />
         <LaserRay shipGroupRef={spaceshipGroupRef} />
         <PlayerBullets shipGroupRef={spaceshipGroupRef} />
+        <PlayerCannonHitDamage />
+        <BreakupVfx />
         <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+
+        <NpcFighter
+          id={`${COMBAT_ID_PREFIX}${hostileFighter.id}`}
+          url={hostileFighter.url}
+          position={hostileFighter.position}
+          rotation={hostileFighter.rotation}
+          scale={hostileFighter.scale}
+        />
 
         {mineableAsteroids.map((asteroid) => (
           <Asteroid

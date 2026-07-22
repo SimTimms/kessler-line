@@ -133,17 +133,27 @@ interface ThrusterParticlesProps {
   thrustStrafeRight: { current: boolean };
   /** @deprecated No longer used — particles are simulated in ship-local space. */
   shipVelocityRef?: { current: THREE.Vector3 };
-  thrustersHighlighted: string[];
+  thrustersHighlighted?: string[];
+  /**
+   * When true, ignore player ShipState inputs and drive emitters only from the
+   * thrust* props (plus optional {@link thrustMultiplierRef}). Used by NPC ships.
+   */
+  driveFromProps?: boolean;
+  /** Visual thrust dial when {@link driveFromProps} is set (defaults to player dial). */
+  thrustMultiplierRef?: { current: number };
 }
 
 export default function ThrusterParticles({
-  thrustForward: _thrustForward,
-  thrustReverse: _thrustReverse,
+  thrustForward,
+  thrustReverse,
   thrustLeft,
   thrustRight,
   thrustStrafeLeft,
   thrustStrafeRight,
-  thrustersHighlighted,
+  shipVelocityRef,
+  thrustersHighlighted = [],
+  driveFromProps = false,
+  thrustMultiplierRef,
 }: ThrusterParticlesProps) {
   // ── Material refs (for per-frame size updates) ───────────────────────────
   const mainMatRef = useRef<THREE.PointsMaterial>(null!);
@@ -320,17 +330,22 @@ export default function ThrusterParticles({
   }
 
   useFrame((_, delta) => {
-    const m = Math.min(thrustMultiplier.current, MAX_THRUSTER_VISUAL_MULTIPLIER);
+    const dial = driveFromProps
+      ? (thrustMultiplierRef?.current ?? 1)
+      : thrustMultiplier.current;
+    const m = Math.min(dial, MAX_THRUSTER_VISUAL_MULTIPLIER);
     const mainEmitRate = EMIT_RATE * Math.sqrt(m);
     const rcsEmitRate = EMIT_RATE * Math.sqrt(RCS_VISUAL_MULTIPLIER);
-    const propulsionAvailable = canUsePropulsion();
+    const propulsionAvailable = driveFromProps || canUsePropulsion();
 
-    // Main engines — follow effective forward thrust (includes overspeed engine cutoff).
-    const reverseActive = propulsionAvailable && effectiveThrustFwd.current;
+    // Main engines — player: effective forward; NPC: thrustForward prop (W).
+    const reverseActive = driveFromProps
+      ? thrustForward.current
+      : propulsionAvailable && effectiveThrustFwd.current;
 
     if (reverseActive) {
       for (const key of ['reverseA', 'reverseB'] as MainKey[]) {
-        if (mainEngineDisabled[key].current) continue;
+        if (!driveFromProps && mainEngineDisabled[key].current) continue;
         mainAccum.current[key] += mainEmitRate * delta;
         const count = Math.floor(mainAccum.current[key]);
         mainAccum.current[key] -= count;
@@ -341,51 +356,59 @@ export default function ThrusterParticles({
       mainAccum.current.reverseA = mainAccum.current.reverseB = 0;
     }
 
-    const rcsInputs: [RcsKey, { current: boolean }][] = [
-      [
-        'forward',
-        {
-          // Reverse-direction RCS — follow effective reverse (includes overspeed cutoff).
-          current: propulsionAvailable && effectiveThrustRev.current,
-        },
-      ],
-      [
-        'right',
-        {
-          current:
-            propulsionAvailable &&
-            (thrustLeft.current || mobileThrustLeft.current || effectiveYawLeft.current),
-        },
-      ],
-      [
-        'left',
-        {
-          current:
-            propulsionAvailable &&
-            (thrustRight.current || mobileThrustRight.current || effectiveYawRight.current),
-        },
-      ],
-      [
-        'strafeRight',
-        {
-          current:
-            propulsionAvailable &&
-            (thrustStrafeLeft.current ||
-              mobileThrustStrafeLeft.current ||
-              effectiveThrustStrL.current),
-        },
-      ],
-      [
-        'strafeLeft',
-        {
-          current:
-            propulsionAvailable &&
-            (thrustStrafeRight.current ||
-              mobileThrustStrafeRight.current ||
-              effectiveThrustStrR.current),
-        },
-      ],
-    ];
+    const rcsInputs: [RcsKey, { current: boolean }][] = driveFromProps
+      ? [
+          ['forward', thrustReverse],
+          ['right', thrustLeft],
+          ['left', thrustRight],
+          ['strafeRight', thrustStrafeLeft],
+          ['strafeLeft', thrustStrafeRight],
+        ]
+      : [
+          [
+            'forward',
+            {
+              // Reverse-direction RCS — follow effective reverse (includes overspeed cutoff).
+              current: propulsionAvailable && effectiveThrustRev.current,
+            },
+          ],
+          [
+            'right',
+            {
+              current:
+                propulsionAvailable &&
+                (thrustLeft.current || mobileThrustLeft.current || effectiveYawLeft.current),
+            },
+          ],
+          [
+            'left',
+            {
+              current:
+                propulsionAvailable &&
+                (thrustRight.current || mobileThrustRight.current || effectiveYawRight.current),
+            },
+          ],
+          [
+            'strafeRight',
+            {
+              current:
+                propulsionAvailable &&
+                (thrustStrafeLeft.current ||
+                  mobileThrustStrafeLeft.current ||
+                  effectiveThrustStrL.current),
+            },
+          ],
+          [
+            'strafeLeft',
+            {
+              current:
+                propulsionAvailable &&
+                (thrustStrafeRight.current ||
+                  mobileThrustStrafeRight.current ||
+                  effectiveThrustStrR.current),
+            },
+          ],
+        ];
     for (const [key, ref] of rcsInputs) {
       if (ref.current) {
         rcsAccum.current[key] += rcsEmitRate * delta;
@@ -399,7 +422,10 @@ export default function ThrusterParticles({
     }
 
     // Hover thrusters — active at low speed (cuts off when in orbit / fast flight)
-    const hoverActive = propulsionAvailable && shipVelocity.length() <= HOVER_CUTOFF_SPEED;
+    const hoverSpeed = driveFromProps
+      ? (shipVelocityRef?.current.length() ?? 0)
+      : shipVelocity.length();
+    const hoverActive = propulsionAvailable && hoverSpeed <= HOVER_CUTOFF_SPEED;
 
     for (let hi = 0; hi < HOVER_EMITTERS.length; hi++) {
       if (!hoverActive) {

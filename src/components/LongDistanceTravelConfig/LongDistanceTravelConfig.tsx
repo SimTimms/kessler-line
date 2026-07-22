@@ -8,6 +8,7 @@ import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
 import { disableAutopilot } from '../../context/AutopilotState';
 import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
+import { resetCameraMode } from '../../context/CameraMode';
 import { getScannerRange } from '../../config/scanRanges';
 import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
@@ -63,6 +64,7 @@ export default function LongDistanceTravelConfig() {
     clearSelectedTarget();
     disableAutopilot();
     tutorialNavViewModeRef.current = false;
+    resetCameraMode('ship');
     setNavHudEnabled(true);
     resetScannerRefs();
     applyLtdScannerDefaults();

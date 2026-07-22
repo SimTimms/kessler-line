@@ -4,7 +4,6 @@ import {
   type CollidableEntry,
   type ColliderShape,
 } from '../context/CollisionRegistry';
-import { SHIP_COLLISION_ID } from '../context/ShipState';
 
 export type SegmentHit = {
   collidable: CollidableEntry;
@@ -42,8 +41,9 @@ function isDockingBay(id: string): boolean {
 }
 
 function shouldTestCollidable(entry: CollidableEntry, ignoreIds: ReadonlySet<string> | undefined): boolean {
+  // Shooters pass their own id in ignoreIds (player / NPC). Do not hard-skip the
+  // player ship — NPC rounds must be able to hit `spaceship`.
   if (ignoreIds?.has(entry.id)) return false;
-  if (entry.id === SHIP_COLLISION_ID) return false;
   if (isDockingBay(entry.id)) return false;
   if (entry.physicalCollision === false) return false;
   return true;

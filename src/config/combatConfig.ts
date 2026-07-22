@@ -151,6 +151,117 @@ export const SCOW_DEBRIS_TUMBLE = 0.2;
 /** Seconds before debris pieces are removed from the scene. */
 export const SCOW_DEBRIS_LIFETIME = 204;
 
+/** Dispatched when a destructible vessel breaks into debris. */
+export const EVENT_VESSEL_BREAKUP = 'VesselBreakup';
+
+// ── Breakup VFX (venting gas + electrical shorts) ─────────────────────────
+/** Soft white gas puffs escaping the wreck. */
+export const BREAKUP_GAS_MAX_PARTICLES = 256;
+export const BREAKUP_GAS_PER_BURST = 48;
+export const BREAKUP_GAS_LIFETIME_MIN = 2.8;
+export const BREAKUP_GAS_LIFETIME_MAX = 5.5;
+export const BREAKUP_GAS_SPEED_MIN = 10;
+export const BREAKUP_GAS_SPEED_MAX = 36;
+/** Initial spawn radius around the wreck center (world units). */
+export const BREAKUP_GAS_SPREAD_RADIUS = 22;
+export const BREAKUP_GAS_SIZE = 8;
+/** Peak brightness multiplier for venting gas (additive). */
+export const BREAKUP_GAS_OPACITY = 0.35;
+export const BREAKUP_GAS_COLOR = '#ffffff';
+export const BREAKUP_GAS_DRAG = 0.85;
+
+/** Sharp electric-blue shorting flashes. */
+export const BREAKUP_ARC_MAX_PARTICLES = 128;
+export const BREAKUP_ARC_BURST_COUNT = 18;
+/** Extra random arcs spawned over this window after breakup (seconds). */
+export const BREAKUP_ARC_AFTERGLOW = 1.2;
+export const BREAKUP_ARC_AFTERGLOW_RATE = 10;
+export const BREAKUP_ARC_LIFETIME_MIN = 1.4;
+export const BREAKUP_ARC_LIFETIME_MAX = 2.8;
+export const BREAKUP_ARC_SPEED_MIN = 14;
+export const BREAKUP_ARC_SPEED_MAX = 80;
+export const BREAKUP_ARC_SIZE = 7;
+export const BREAKUP_ARC_COLOR = '#4db8ff';
+export const BREAKUP_ARC_CORE_COLOR = '#e8f7ff';
+export const BREAKUP_ARC_SPREAD_RADIUS = 28;
+/** How often an arc particle tends to pop bright while drifting (Hz-ish). */
+export const BREAKUP_ARC_FLICKER_RATE = 9;
+
+/** Dark angular hull-plating shards. */
+export const BREAKUP_PLATE_MAX = 64;
+export const BREAKUP_PLATE_PER_BURST = 28;
+export const BREAKUP_PLATE_LIFETIME_MIN = 3.5;
+export const BREAKUP_PLATE_LIFETIME_MAX = 7;
+export const BREAKUP_PLATE_SPEED_MIN = 6;
+export const BREAKUP_PLATE_SPEED_MAX = 28;
+export const BREAKUP_PLATE_SPREAD_RADIUS = 16;
+/** Thin-plate scale ranges (world units) — width / thickness / length. */
+export const BREAKUP_PLATE_SCALE_W_MIN = 1.05;
+export const BREAKUP_PLATE_SCALE_W_MAX = 4.8;
+export const BREAKUP_PLATE_SCALE_T = 0.18;
+export const BREAKUP_PLATE_SCALE_L_MIN = 1.5;
+export const BREAKUP_PLATE_SCALE_L_MAX = 7.2;
+export const BREAKUP_PLATE_TUMBLE_MIN = 1.2;
+export const BREAKUP_PLATE_TUMBLE_MAX = 5.5;
+export const BREAKUP_PLATE_DRAG = 0.55;
+export const BREAKUP_PLATE_COLOR = '#0a0a0c';
+export const BREAKUP_PLATE_ROUGHNESS = 0.92;
+export const BREAKUP_PLATE_METALNESS = 0.35;
+
+// ── Hostile NPC fighter (player-class shuttle) ────────────────────────────
+/** Preferred standoff distance while engaging (world units). */
+export const NPC_FIGHTER_STANDOFF = 120;
+/** Soft band around standoff where the fighter holds and shoots. */
+export const NPC_FIGHTER_STANDOFF_BAND = 40;
+/** Max relative closing / separation speed while pursuing (world units/s). */
+export const NPC_FIGHTER_CLOSING_SPEED = 35;
+/** PD yaw gains (match AIShip feel). */
+export const NPC_FIGHTER_YAW_P = 3.0;
+export const NPC_FIGHTER_YAW_D = 4.5;
+/** Open fire when the player is within this distance (world units). */
+export const NPC_FIGHTER_GUN_RANGE = 400;
+/** Half-angle (deg) from nose (−Z) within which the fighter will shoot. */
+export const NPC_FIGHTER_FIRE_CONE_DEG = 12;
+/** MG burst length (seconds), rolled uniformly per burst. */
+export const NPC_FIGHTER_BURST_DURATION_MIN = 0.5;
+export const NPC_FIGHTER_BURST_DURATION_MAX = 2;
+/** Pause between bursts (seconds), rolled uniformly after each burst. */
+export const NPC_FIGHTER_BURST_GAP_MIN = 0.45;
+export const NPC_FIGHTER_BURST_GAP_MAX = 1.4;
+/** Bullet pool size for a single NPC fighter. */
+export const NPC_CANNON_MAX_BULLETS = 200;
+/**
+ * How far ahead (plus own speed × time) the fighter looks for collision meshes
+ * to steer around with player-style thrusters.
+ */
+export const NPC_FIGHTER_AVOID_LOOKAHEAD = 90;
+/** Extra clearance beyond ship + obstacle radii when avoiding (world units). */
+export const NPC_FIGHTER_AVOID_CLEARANCE = 22;
+/** Blend weight of avoidance vs pursuit when an obstacle is in the path. */
+export const NPC_FIGHTER_AVOID_WEIGHT = 2.2;
+/** Seconds of travel used to extend look-ahead with current speed. */
+export const NPC_FIGHTER_AVOID_LOOKAHEAD_TIME = 1.4;
+/** Min / max thrust multiplier the fighter may select (same idea as player thrust dial). */
+export const NPC_FIGHTER_THRUST_MULT_MIN = 0.5;
+export const NPC_FIGHTER_THRUST_MULT_MAX = 10;
+/**
+ * Maneuver thrusters (strafe / reverse / yaw) are capped like the player
+ * (`Math.min(thrustMultiplier, 2)` in ship physics).
+ */
+export const NPC_FIGHTER_MANEUVER_THRUST_CAP = 2;
+/** Baseline linear drag (1/s) — enemy has artificial resistance unlike debris. */
+export const NPC_FIGHTER_LINEAR_DAMP = 0.85;
+/** Stronger linear drag when velocity is near the desired trajectory. */
+export const NPC_FIGHTER_LINEAR_DAMP_ON_TRAJECTORY = 3.2;
+/** Velocity-error threshold (units/s) to treat as “on trajectory”. */
+export const NPC_FIGHTER_TRAJECTORY_VEL_EPS = 8;
+/** Baseline angular drag (1/s) on yaw rate. */
+export const NPC_FIGHTER_ANGULAR_DAMP = 4.5;
+/** Rapid angular cancel when nose is on target (stops overshoot spin). */
+export const NPC_FIGHTER_ANGULAR_DAMP_ALIGNED = 16;
+/** |yaw error| (rad) below which alignment damping / counter-yaw engage. */
+export const NPC_FIGHTER_ALIGN_YAW_RAD = 0.12;
+
 // ── Railgun beam geometry ─────────────────────────────────────────────────
 /** Outer radius of the railgun beam cylinder (world units). */
 export const RAILGUN_BEAM_OUTER_RADIUS = 0.03;

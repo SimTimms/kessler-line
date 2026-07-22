@@ -16,6 +16,7 @@ import {
   mainEngineDisabled,
   resetAmmo,
 } from './context/ShipState';
+import { resetCameraMode } from './context/CameraMode';
 import { SHIP_CREW_CAPACITY } from './config/dockTransferConfig';
 import { shipPosRef } from './context/ShipPos';
 import { clearNavTarget } from './context/NavTarget';
@@ -45,6 +46,7 @@ function resetShipState(forTutorial = false) {
   setO2(100);
   setShipCrew(forTutorial ? SHIP_CREW_CAPACITY : 1);
   resetAmmo();
+  resetCameraMode('ship');
   shipDestroyed.current = false;
   mainEngineDisabled.reverseA.current = false;
   mainEngineDisabled.reverseB.current = false;

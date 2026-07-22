@@ -31,6 +31,8 @@ export const KEY_THRUST_INCREASE = 'Equal'; // + / = key (increase thrust multip
 export const KEY_THRUST_INCREASE_NP = 'NumpadAdd'; // numpad +
 export const KEY_THRUST_DECREASE = 'Minus'; // - key (decrease thrust multiplier)
 export const KEY_THRUST_DECREASE_NP = 'NumpadSubtract'; // numpad -
+/** Hold for temporary high thrust (restores dial on release). */
+export const KEY_THRUST_BOOST = 'ArrowUp';
 
 // ─── HUD toggles (use e.code) ────────────────────────────────────────────────
 export const KEY_TOGGLE_MINIMAP = 'KeyM';
@@ -38,7 +40,7 @@ export const KEY_TOGGLE_MINIMAP = 'KeyM';
 export const KEY_TOGGLE_NAV_HUD = 'KeyN';
 
 // ─── Camera (use e.code) ─────────────────────────────────────────────────────
-/** Free / Nav camera vs ship-follow (main `Camera` + tutorial follow camera). */
+/** Ship-lock vs free-follow chase camera (main OrbitCamera + TutorialFollowCamera). */
 export const KEY_TOGGLE_CAMERA_DECOUPLE = 'KeyC';
 
 // ─── Save / Load (use e.key) ─────────────────────────────────────────────────

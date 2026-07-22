@@ -28,5 +28,20 @@
     "file": "/radio-chatter.mp3",
     "loop": false,
     "volume": 0.01
+  },
+  "dockConnect": {
+    "file": "/freesound_community-big-impact-7054.mp3",
+    "loop": false,
+    "volume": 0.45
+  },
+  "hullCollision": {
+    "file": "/dragon-studio-boom-crash-487664.mp3",
+    "loop": false,
+    "volume": 0.55
+  },
+  "playerBulletHit": {
+    "file": "/floraphonic-metal-hit-95-200424.mp3",
+    "loop": false,
+    "volume": 0.5
   }
 }

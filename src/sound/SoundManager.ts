@@ -19,6 +19,16 @@ let impactPool: HTMLAudioElement[] = [];
 const IMPACT_POOL_MAX = 8;
 let shotPool: HTMLAudioElement[] = [];
 const SHOT_POOL_MAX = 12;
+let hullCollisionPool: HTMLAudioElement[] = [];
+const HULL_COLLISION_POOL_MAX = 6;
+let lastHullCollisionSfxAt = 0;
+/** Min ms between hull-collision SFX so scraping contact doesn't spam. */
+const HULL_COLLISION_SFX_COOLDOWN_MS = 160;
+let playerBulletHitPool: HTMLAudioElement[] = [];
+const PLAYER_BULLET_HIT_POOL_MAX = 8;
+let lastPlayerBulletHitSfxAt = 0;
+/** Min ms between player MG-hit SFX so a burst stays audible without stacking into mush. */
+const PLAYER_BULLET_HIT_SFX_COOLDOWN_MS = 45;
 let impactAnalysisAudio: HTMLAudioElement | null = null;
 let impactAnalysisSource: MediaElementAudioSourceNode | null = null;
 let impactAnalysisAnalyser: AnalyserNode | null = null;
@@ -27,6 +37,7 @@ let radioChatterClipTimer: ReturnType<typeof setTimeout> | null = null;
 let ambientBedAudio: HTMLAudioElement | null = null;
 let padScanAudio: HTMLAudioElement | null = null;
 let dockAlignAudio: HTMLAudioElement | null = null;
+let dockConnectAudio: HTMLAudioElement | null = null;
 
 /** Title / config-scene space atmosphere bed. */
 export const SPACE_ATMOSPHERE_AMBIENT_SRC =
@@ -190,6 +201,36 @@ function getShotFromPool(): HTMLAudioElement {
   return shotPool[0]!;
 }
 
+function getHullCollisionFromPool(): HTMLAudioElement {
+  for (const audio of hullCollisionPool) {
+    if (audio.paused || audio.ended) return audio;
+  }
+
+  if (hullCollisionPool.length < HULL_COLLISION_POOL_MAX) {
+    const audio = new Audio(soundsConfig.hullCollision.file);
+    audio.preload = 'auto';
+    hullCollisionPool.push(audio);
+    return audio;
+  }
+
+  return hullCollisionPool[0]!;
+}
+
+function getPlayerBulletHitFromPool(): HTMLAudioElement {
+  for (const audio of playerBulletHitPool) {
+    if (audio.paused || audio.ended) return audio;
+  }
+
+  if (playerBulletHitPool.length < PLAYER_BULLET_HIT_POOL_MAX) {
+    const audio = new Audio(soundsConfig.playerBulletHit.file);
+    audio.preload = 'auto';
+    playerBulletHitPool.push(audio);
+    return audio;
+  }
+
+  return playerBulletHitPool[0]!;
+}
+
 function getImpactAnalysisAudio(): HTMLAudioElement {
   if (!impactAnalysisAudio) {
     impactAnalysisAudio = new Audio('/impact.mp3');
@@ -289,6 +330,31 @@ export function stopDockAlignSound(): void {
   try {
     dockAlignAudio.pause();
     dockAlignAudio.currentTime = 0;
+  } catch {
+    /* non-critical */
+  }
+}
+
+/**
+ * Play when the ship's front docking bay hard-connects to another bay
+ * (station / ship / container nose dock). Fixed playback rate — no pitch jitter.
+ */
+export function playDockConnectSound(
+  volume = soundsConfig.dockConnect.volume
+): void {
+  try {
+    resumeAudioContext();
+    if (!dockConnectAudio) {
+      dockConnectAudio = new Audio(soundsConfig.dockConnect.file);
+      dockConnectAudio.preload = 'auto';
+    }
+    dockConnectAudio.pause();
+    dockConnectAudio.currentTime = 0;
+    dockConnectAudio.playbackRate = 1;
+    dockConnectAudio.volume = Math.max(0, Math.min(1, volume));
+    dockConnectAudio.loop = false;
+    const playPromise = dockConnectAudio.play();
+    if (playPromise) void playPromise.catch(() => undefined);
   } catch {
     /* non-critical */
   }
@@ -836,6 +902,60 @@ export function playCannonShotSound(volume = soundsConfig.cannonShot.volume): vo
     const v = volume * (1 + (Math.random() * 2 - 1) * volumeJitter);
     audio.volume = Math.min(1, Math.max(0, v));
     audio.playbackRate = 1 + (Math.random() * 2 - 1) * rateJitter;
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise) void playPromise.catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
+/**
+ * Hull strike against a solid collidable (asteroid, drone, station hull, etc.).
+ * Not used for docking-bay capture. Playback rate is intentionally varied.
+ */
+export function playHullCollisionSound(
+  volume = soundsConfig.hullCollision.volume
+): void {
+  try {
+    const now = performance.now();
+    if (now - lastHullCollisionSfxAt < HULL_COLLISION_SFX_COOLDOWN_MS) return;
+    lastHullCollisionSfxAt = now;
+
+    resumeAudioContext();
+    const audio = getHullCollisionFromPool();
+    const volumeJitter = 0.18;
+    const rateJitter = 0.28;
+    const v = volume * (1 + (Math.random() * 2 - 1) * volumeJitter);
+    audio.volume = Math.min(1, Math.max(0, v));
+    audio.playbackRate = Math.max(0.7, 1 + (Math.random() * 2 - 1) * rateJitter);
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise) void playPromise.catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
+/**
+ * Incoming machine-gun round striking the player hull.
+ * Playback rate is varied so rapid hits don't sound identical.
+ */
+export function playPlayerBulletHitSound(
+  volume = soundsConfig.playerBulletHit.volume
+): void {
+  try {
+    const now = performance.now();
+    if (now - lastPlayerBulletHitSfxAt < PLAYER_BULLET_HIT_SFX_COOLDOWN_MS) return;
+    lastPlayerBulletHitSfxAt = now;
+
+    resumeAudioContext();
+    const audio = getPlayerBulletHitFromPool();
+    const volumeJitter = 0.16;
+    const rateJitter = 0.28;
+    const v = volume * (1 + (Math.random() * 2 - 1) * volumeJitter);
+    audio.volume = Math.min(1, Math.max(0, v));
+    audio.playbackRate = Math.max(0.7, 1 + (Math.random() * 2 - 1) * rateJitter);
     audio.currentTime = 0;
     const playPromise = audio.play();
     if (playPromise) void playPromise.catch(() => undefined);

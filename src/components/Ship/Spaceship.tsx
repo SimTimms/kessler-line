@@ -31,6 +31,7 @@ import {
   THRUSTER_LIGHT_DECAY,
 } from '../../config/shipConfig';
 import PlanetSurfaceImpactDust from '../Environment/PlanetSurfaceImpactDust';
+import ShipManeuverLean from './ShipManeuverLean';
 
 /** Order must match `thrusterLight.ts` slot indices and `useShipPhysics` actives. */
 const THRUSTER_LIGHT_SLOTS: { key: string; position: [number, number, number] }[] = [
@@ -104,6 +105,7 @@ export default function Spaceship({
 }: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group>(null!);
+  const leanRef = useRef<THREE.Group>(null!);
   const shadowLightTarget = useRef(new THREE.Object3D());
 
   useEffect(() => {
@@ -177,42 +179,56 @@ export default function Spaceship({
   return (
     <>
       <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
-        <PlanetSurfaceImpactDust />
+        <ShipManeuverLean leanRef={leanRef} />
+        {/* Visual lean only — docking port + physics stay on the level root. */}
+        <group ref={leanRef}>
+          <PlanetSurfaceImpactDust />
 
-        <primitive object={gltf.scene} scale={scale} rotation={modelRotation} castShadow={true} />
-        <group position={[0, -2, 0]}>
-          <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
-        </group>
+          <primitive object={gltf.scene} scale={scale} rotation={modelRotation} castShadow={true} />
+          <group position={[0, -2, 0]}>
+            <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
+          </group>
 
-        <spotLight
-          position={[0, 500, 100]}
-          target={shadowLightTarget.current}
-          angle={Math.PI / 5}
-          penumbra={0.4}
-          intensity={50000}
-          distance={1000}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-radius={8}
-          shadow-camera-near={1}
-          shadow-camera-far={400}
-        />
-        <primitive object={shadowLightTarget.current} position={[0, 0, 0]} />
-        {/* Thruster point lights — one per main nozzle and RCS emitter (see ThrusterParticles). */}
-        {THRUSTER_LIGHT_SLOTS.map(({ key, position }, index) => (
-          <pointLight
-            key={key}
-            ref={(el) => {
-              thrusterLightRefs.current[index] = el;
-            }}
-            position={position}
-            color={THRUSTER_LIGHT_COLOR}
-            distance={THRUSTER_LIGHT_DISTANCE}
-            decay={THRUSTER_LIGHT_DECAY}
-            intensity={0}
+          <spotLight
+            position={[0, 500, 100]}
+            target={shadowLightTarget.current}
+            angle={Math.PI / 5}
+            penumbra={0.4}
+            intensity={50000}
+            distance={1000}
+            castShadow
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+            shadow-radius={8}
+            shadow-camera-near={1}
+            shadow-camera-far={400}
           />
-        ))}
+          <primitive object={shadowLightTarget.current} position={[0, 0, 0]} />
+          {/* Thruster point lights — one per main nozzle and RCS emitter (see ThrusterParticles). */}
+          {THRUSTER_LIGHT_SLOTS.map(({ key, position }, index) => (
+            <pointLight
+              key={key}
+              ref={(el) => {
+                thrusterLightRefs.current[index] = el;
+              }}
+              position={position}
+              color={THRUSTER_LIGHT_COLOR}
+              distance={THRUSTER_LIGHT_DISTANCE}
+              decay={THRUSTER_LIGHT_DECAY}
+              intensity={0}
+            />
+          ))}
+          {/* Particles are children of the lean group so thruster trails follow the tilt. */}
+          <ThrusterParticles
+            thrustForward={thrustForward}
+            thrustReverse={thrustReverse}
+            thrustLeft={thrustLeft}
+            thrustRight={thrustRight}
+            thrustStrafeLeft={thrustStrafeLeft}
+            thrustStrafeRight={thrustStrafeRight}
+            thrustersHighlighted={thrustersHighlighted}
+          />
+        </group>
         {/* Docking port at ship nose — aligns to target bay origin when docked */}
         <group ref={dockingPortRef} position={[0, -0.025, DOCKING_PORT_LOCAL_Z - 0.1]}>
           <mesh>
@@ -227,17 +243,6 @@ export default function Spaceship({
             />
           </mesh>
         </group>
-        {/* Particles are children of the ship group so buffer coords stay in local space —
-            avoids float32 precision jitter at large world coordinates. */}
-        <ThrusterParticles
-          thrustForward={thrustForward}
-          thrustReverse={thrustReverse}
-          thrustLeft={thrustLeft}
-          thrustRight={thrustRight}
-          thrustStrafeLeft={thrustStrafeLeft}
-          thrustStrafeRight={thrustStrafeRight}
-          thrustersHighlighted={thrustersHighlighted}
-        />
       </group>
       <group position={[0, 0, 9]}>
         <DockingReleaseParticles shipGroupRef={groupRef} triggerRef={releaseParticleTrigger} />

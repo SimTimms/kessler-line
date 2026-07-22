@@ -1,6 +1,13 @@
 import { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { MAIN_ENGINE_HIT_RADIUS } from '../../context/ShipState';
+import {
+  MAIN_ENGINE_HIT_RADIUS,
+  damageHull,
+  shipVelocity as playerShipVelocity,
+  thrustBoostHeld,
+  thrustBoostStoredMultiplier,
+  thrustMultiplier,
+} from '../../context/ShipState';
 import { playImpactSoundOverlap, playRailgunHit } from '../../sound/SoundManager';
 import { RAILGUN_DAMAGE_MIN, RAILGUN_DAMAGE_MAX } from '../../config/damageConfig';
 import {
@@ -14,6 +21,7 @@ import {
   KEY_RADIAL_IN,
   KEY_UNDOCK_CARGO,
   KEY_STABILISER,
+  KEY_THRUST_BOOST,
   EVENT_REQUEST_UNDOCK,
 } from '../../config/keybindings';
 import {
@@ -32,8 +40,7 @@ import { getDockCaptureProfile } from '../../utils/dockingCapture';
 import { disablesShipPhysicsWhenDocked } from '../../config/dockCaptureConfig';
 import { damageVesselHull, type VesselRuntimeState } from '../../context/VesselStateStore';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
-import { damageHull, shipVelocity as playerShipVelocity } from '../../context/ShipState';
-import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';
+import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS, THRUST_BOOST_MULTIPLIER } from '../../config/shipConfig';
 
 const _undockReleaseDir = new THREE.Vector3();
 
@@ -163,6 +170,19 @@ export function useInputListeners({
       return true;
     };
 
+    const beginThrustBoost = () => {
+      if (vesselId !== PLAYER_VESSEL_ID || thrustBoostHeld.current) return;
+      thrustBoostHeld.current = true;
+      thrustBoostStoredMultiplier.current = thrustMultiplier.current;
+      thrustMultiplier.current = THRUST_BOOST_MULTIPLIER;
+    };
+
+    const endThrustBoost = () => {
+      if (vesselId !== PLAYER_VESSEL_ID || !thrustBoostHeld.current) return;
+      thrustBoostHeld.current = false;
+      thrustMultiplier.current = thrustBoostStoredMultiplier.current;
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (inputEnabledRef && !inputEnabledRef.current) return;
       if (
@@ -170,6 +190,12 @@ export function useInputListeners({
         !isDockingTutorialShipKeyAllowed(e.code)
       ) {
         e.preventDefault();
+        return;
+      }
+      if (e.code === KEY_THRUST_BOOST) {
+        if (e.repeat) return;
+        e.preventDefault();
+        beginThrustBoost();
         return;
       }
       // Treat thrust keybindings in reverse so gameplay remains W=forward, S=reverse.
@@ -202,6 +228,11 @@ export function useInputListeners({
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (inputEnabledRef && !inputEnabledRef.current) return;
+      if (e.code === KEY_THRUST_BOOST) {
+        e.preventDefault();
+        endThrustBoost();
+        return;
+      }
       if (e.code === KEY_THRUST_REVERSE) thrustReverse.current = false;
       if (e.code === KEY_THRUST_FORWARD) thrustForward.current = false;
       if (e.code === KEY_YAW_LEFT) thrustLeft.current = false;
@@ -212,8 +243,10 @@ export function useInputListeners({
       if (e.code === KEY_RADIAL_IN) thrustRadialIn.current = false;
       if (e.code === KEY_STABILISER) stabilizerActive.current = false;
     };
+    const onWindowBlur = () => endThrustBoost();
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onWindowBlur);
     window.addEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
     window.addEventListener(EVENT_DOCKING_TUTORIAL_INPUT_RESET, onDockingTutorialInputReset);
 
@@ -272,10 +305,12 @@ export function useInputListeners({
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onWindowBlur);
       window.removeEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
       window.removeEventListener(EVENT_DOCKING_TUTORIAL_INPUT_RESET, onDockingTutorialInputReset);
       window.removeEventListener('RailgunHit', onRailgunHit);
       window.removeEventListener('RailgunDamagePoints', onDamagePoints);
+      endThrustBoost();
     };
     // dockedTo and velocity are stable refs — intentionally omitted from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps

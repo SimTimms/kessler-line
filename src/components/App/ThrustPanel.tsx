@@ -1,6 +1,12 @@
 import { memo, useEffect, useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
-import { thrustMultiplier, MAX_THRUST_MULTIPLIER } from '../../context/ShipState';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import {
+  thrustMultiplier,
+  thrustBoostHeld,
+  thrustBoostStoredMultiplier,
+  MAX_THRUST_MULTIPLIER,
+} from '../../context/ShipState';
+import { THRUST_BOOST_MULTIPLIER } from '../../config/shipConfig';
 import {
   KEY_THRUST_INCREASE,
   KEY_THRUST_INCREASE_NP,
@@ -18,6 +24,12 @@ interface ThrustPanelProps {
 const THRUST_STEP = 0.5;
 const THRUST_MIN = 0.5;
 
+/** Keep HUD dial + restore value in sync; physics stays at boost while ArrowUp is held. */
+function syncPhysicsMultiplier(dial: number) {
+  thrustBoostStoredMultiplier.current = dial;
+  thrustMultiplier.current = thrustBoostHeld.current ? THRUST_BOOST_MULTIPLIER : dial;
+}
+
 const ThrustPanel = memo(function ThrustPanel({
   thrustLevel: thrustLevelProp,
   setThrustLevel: setThrustLevelProp,
@@ -33,13 +45,13 @@ const ThrustPanel = memo(function ThrustPanel({
       if (e.code === KEY_THRUST_INCREASE || e.code === KEY_THRUST_INCREASE_NP) {
         setThrustLevel((prev) => {
           const next = Math.min(MAX_THRUST_MULTIPLIER, parseFloat((prev + THRUST_STEP).toFixed(1)));
-          thrustMultiplier.current = next;
+          syncPhysicsMultiplier(next);
           return next;
         });
       } else if (e.code === KEY_THRUST_DECREASE || e.code === KEY_THRUST_DECREASE_NP) {
         setThrustLevel((prev) => {
           const next = Math.max(THRUST_MIN, parseFloat((prev - THRUST_STEP).toFixed(1)));
-          thrustMultiplier.current = next;
+          syncPhysicsMultiplier(next);
           return next;
         });
       }
@@ -70,6 +82,12 @@ const ThrustPanel = memo(function ThrustPanel({
 
   const sliderClassName = `thrust-slider${isDanger ? ' danger' : ''}${embedded ? ' thrust-slider--vertical' : ''}`;
 
+  const onSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    setThrustLevel(v);
+    syncPhysicsMultiplier(v);
+  };
+
   if (embedded) {
     return (
       <div className="thrust-panel thrust-panel--embedded" aria-label="Thrust multiplier">
@@ -86,11 +104,7 @@ const ThrustPanel = memo(function ThrustPanel({
               step={THRUST_STEP}
               value={thrustLevel}
               className={sliderClassName}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value);
-                setThrustLevel(v);
-                thrustMultiplier.current = v;
-              }}
+              onChange={onSliderChange}
             />
           </div>
           <span className="thrust-tick thrust-tick--min">{THRUST_MIN}×</span>
@@ -118,11 +132,7 @@ const ThrustPanel = memo(function ThrustPanel({
         step={THRUST_STEP}
         value={thrustLevel}
         className={sliderClassName}
-        onChange={(e) => {
-          const v = parseFloat(e.target.value);
-          setThrustLevel(v);
-          thrustMultiplier.current = v;
-        }}
+        onChange={onSliderChange}
       />
       <div
         className="thrust-ticks"

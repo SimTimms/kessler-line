@@ -11,6 +11,7 @@ import {
 } from '../../config/visualConfig';
 import { KEY_TOGGLE_CAMERA_DECOUPLE } from '../../config/keybindings';
 import { sceneCamera } from '../../context/CameraRef';
+import { cameraModeRef, toggleCameraMode } from '../../context/CameraMode';
 import {
   clampCameraForInboundPlanetHold,
   shouldHoldCameraForPlanetImpact,
@@ -165,24 +166,10 @@ export default function TutorialFollowCamera({
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== KEY_TOGGLE_CAMERA_DECOUPLE) return;
-      if (e.repeat) return; // avoid repeat toggling follow ↔ nav in one held press
-      const wasNav = tutorialNavViewModeRef.current;
-      tutorialNavViewModeRef.current = !tutorialNavViewModeRef.current;
-      if (tutorialNavViewModeRef.current) {
-        // Lock navview to top-down while preserving its own stored yaw/zoom.
-        navSpherical.current.phi = NAVVIEW_TOPDOWN_PHI;
-        navSpherical.current.radius = THREE.MathUtils.clamp(
-          navSpherical.current.radius,
-          NAVVIEW_MIN_HEIGHT,
-          NAVVIEW_MAX_HEIGHT
-        );
-      }
-      if (!wasNav && tutorialNavViewModeRef.current) {
-        window.dispatchEvent(new CustomEvent('TutorialNavCameraEntered'));
-      }
-      if (wasNav && !tutorialNavViewModeRef.current) {
-        window.dispatchEvent(new CustomEvent('TutorialFollowCameraEntered'));
-      }
+      if (e.repeat) return;
+      // Leave top-down nav if active; Key C switches ship-lock ↔ free-follow.
+      tutorialNavViewModeRef.current = false;
+      toggleCameraMode();
     };
 
     canvas.addEventListener('pointerdown', onPointerDown);
@@ -225,7 +212,11 @@ export default function TutorialFollowCamera({
       if (lockPolarAngle && lockedFollowPhi.current != null) {
         followSpherical.current.phi = lockedFollowPhi.current;
       }
-      if (followShipOrientation) {
+      const freeFollow = cameraModeRef.current === 'free';
+      if (freeFollow) {
+        // World-aligned offset: follows the ship, does not rotate with it.
+        _followQuat.identity();
+      } else if (followShipOrientation) {
         if (attachTo?.current) {
           attachTo.current.getWorldQuaternion(_followQuat);
         } else {
@@ -257,7 +248,10 @@ export default function TutorialFollowCamera({
       clampCameraForInboundPlanetHold(_desiredCameraPos, planetImpactCameraHoldMaxAltitude);
     }
 
-    const rollViewWithShip = followShipOrientation && !tutorialNavViewModeRef.current;
+    const rollViewWithShip =
+      followShipOrientation &&
+      !tutorialNavViewModeRef.current &&
+      cameraModeRef.current === 'ship';
 
     if (tutorialNavViewModeRef.current) {
       if (!didInitCameraPose.current) {

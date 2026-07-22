@@ -19,6 +19,7 @@ import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { attachShipToDock } from './docking';
 import { triggerShipDestruction } from './destruction';
 import { autopilotActive, disableAutopilot } from '../../context/AutopilotState';
+import { playHullCollisionSound } from '../../sound/SoundManager';
 
 const _shipWorldPos = new THREE.Vector3();
 const _shipWorldQuat = new THREE.Quaternion();
@@ -234,6 +235,7 @@ function resolveEntryCollision(
       !shipDestroyed.current &&
       impactSpeed < -PLANET_IMPACT_MIN_SPEED
     ) {
+      playHullCollisionSound();
       if (shape.type === 'sphere') {
         _surfaceNormal.copy(_collisionNormal);
         if (_surfaceNormal.lengthSq() < 1e-8) {
@@ -270,6 +272,7 @@ function resolveEntryCollision(
     }
 
     if (impactSpeed < 0) {
+      playHullCollisionSound();
       damageHull(Math.abs(impactSpeed) * DAMAGE_MULTIPLIER);
     }
     group.position.addScaledVector(_collisionNormal, overlap);

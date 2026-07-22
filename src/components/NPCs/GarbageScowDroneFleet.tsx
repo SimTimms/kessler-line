@@ -13,6 +13,7 @@ import {
   CANNON_TARGET_HIT_DAMAGE,
   CANNON_TARGET_HULL_MAX,
   EVENT_CANNON_BULLET_HIT,
+  EVENT_VESSEL_BREAKUP,
   SCOW_DEBRIS_IMPULSE_MAX,
   SCOW_DEBRIS_IMPULSE_MIN,
   SCOW_DEBRIS_LIFETIME,
@@ -287,6 +288,15 @@ export default function GarbageScowDroneFleet({
         age: 0,
       });
     }
+
+    window.dispatchEvent(
+      new CustomEvent(EVENT_VESSEL_BREAKUP, {
+        detail: {
+          point: { x: _pos.x, y: _pos.y, z: _pos.z },
+          velocity: { x: baseVel.x, y: baseVel.y, z: baseVel.z },
+        },
+      })
+    );
   }
 
   useEffect(() => {

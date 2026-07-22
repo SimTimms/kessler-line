@@ -154,6 +154,13 @@ export const isTransferringO2 = playerState.isTransferringO2; // set by Transfer
 export const thrustMultiplier = playerState.thrustMultiplier; // range 0.5–MAX_THRUST_MULTIPLIER
 export const shipDestroyed = playerState.shipDestroyed; // set true when hull reaches 0
 
+/**
+ * Hold-ArrowUp boost: main engines forced to {@link THRUST_BOOST_MULTIPLIER},
+ * yaw thrusters scaled by {@link THRUST_BOOST_YAW_SCALE}. Dial value is kept in
+ * React state / {@link thrustBoostStoredMultiplier} and restored on release.
+ */
+export const thrustBoostHeld = { current: false };
+export const thrustBoostStoredMultiplier = { current: 1 };
 // ── Damage / control effects ───────────────────────────────────────────────
 export const shipImpactPulseUntil = playerState.shipImpactPulseUntil; // performance.now() ms
 export const shipControlDisabledUntil = playerState.shipControlDisabledUntil; // performance.now() ms

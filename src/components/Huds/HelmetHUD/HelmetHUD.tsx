@@ -7,6 +7,7 @@ import CommsHUD from '../CommsHUD/CommsHUD';
 import AlertsHUD from '../AlertsHUD/AlertsHUD';
 import DockTransferHUD from '../DockTransferHUD/DockTransferHUD';
 import ShipControlsHUD from '../ShipControlsHUD/ShipControlsHUD';
+import CameraHUD from '../CameraHUD/CameraHUD';
 import { power as shipPower } from '../../../context/ShipState';
 import {
   EVENT_SHIP_POWER_DEPLETED,
@@ -98,6 +99,7 @@ const HelmetHUD = memo(function HelmetHUD({
           {...scannerProps}
         />
       </div>
+      <CameraHUD />
       <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
       <CommsHUD
         radioOn={radioOn}
