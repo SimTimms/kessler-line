@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
-import { PLANETS } from '../Planets/SolarSystem';
+import { PLANETS } from '../SolarSystemConfig';
 import { scrapperWorldPos, scrapperWorldQuat } from '../../context/CinematicState';
 import {
   CAPITAL_RAILGUN_BEAM_OUTER_RADIUS,
@@ -46,11 +46,7 @@ export default function ScrapperRailgunFX() {
   const seqTimeRef = useRef(0);
   const chargeFiredRef = useRef([false, false, false]);
   const shotFiredRef = useRef([false, false, false]);
-  const lockedOrigins = useRef([
-    new THREE.Vector3(),
-    new THREE.Vector3(),
-    new THREE.Vector3(),
-  ]);
+  const lockedOrigins = useRef([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
 
   // Active animation indices
   const chargeIdxRef = useRef(-1);
@@ -190,11 +186,7 @@ export default function ScrapperRailgunFX() {
     const planetPos = solarPlanetPositions.Neptune;
     if (!planetPos) return;
 
-    _neptuneCenter.set(
-      planetPos.x * SOLAR_SYSTEM_SCALE,
-      0,
-      planetPos.z * SOLAR_SYSTEM_SCALE
-    );
+    _neptuneCenter.set(planetPos.x * SOLAR_SYSTEM_SCALE, 0, planetPos.z * SOLAR_SYSTEM_SCALE);
 
     // ── Lock origins + fire events ─────────────────────────────────────────
     for (let i = 0; i < 3; i++) {
@@ -209,11 +201,13 @@ export default function ScrapperRailgunFX() {
         _baseDir.subVectors(scrapperWorldPos, _neptuneCenter).normalize();
 
         // Small random spread, staying in the correct hemisphere
-        _shotDir.set(
-          _baseDir.x + (Math.random() - 0.5) * 0.3,
-          _baseDir.y + (Math.random() - 0.5) * 0.3,
-          _baseDir.z + (Math.random() - 0.5) * 0.3
-        ).normalize();
+        _shotDir
+          .set(
+            _baseDir.x + (Math.random() - 0.5) * 0.3,
+            _baseDir.y + (Math.random() - 0.5) * 0.3,
+            _baseDir.z + (Math.random() - 0.5) * 0.3
+          )
+          .normalize();
         if (_shotDir.dot(_baseDir) < 0) _shotDir.negate();
 
         lockedOrigins.current[i]
@@ -247,10 +241,7 @@ export default function ScrapperRailgunFX() {
     // ── Animate charge glow ────────────────────────────────────────────────
     const cIdx = chargeIdxRef.current;
     if (cIdx >= 0 && !shotFiredRef.current[cIdx] && chargeRef.current) {
-      const chargeT = Math.min(
-        1,
-        (t - SHOT_CHARGE_STARTS[cIdx]) / CAPITAL_RAILGUN_CHARGE_DURATION
-      );
+      const chargeT = Math.min(1, (t - SHOT_CHARGE_STARTS[cIdx]) / CAPITAL_RAILGUN_CHARGE_DURATION);
       chargeRef.current.visible = true;
       chargeRef.current.position.copy(lockedOrigins.current[cIdx]);
       chargeGlowMat.opacity = chargeT * 0.9;
@@ -273,9 +264,7 @@ export default function ScrapperRailgunFX() {
         if (len > 1) {
           _beamDir.normalize();
           const extLen = len + CAPITAL_RAILGUN_OVERSHOOT;
-          _beamMid
-            .copy(lockedOrigins.current[bIdx])
-            .addScaledVector(_beamDir, extLen * 0.5);
+          _beamMid.copy(lockedOrigins.current[bIdx]).addScaledVector(_beamDir, extLen * 0.5);
           _beamQuat.setFromUnitVectors(Y_AXIS, _beamDir);
 
           beamRef.current.visible = true;

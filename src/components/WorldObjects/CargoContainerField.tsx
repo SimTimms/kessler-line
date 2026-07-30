@@ -32,7 +32,7 @@ import {
   DOCKING_PORT_LOCAL_Z,
   DOCKING_PORT_RADIUS,
 } from '../../context/ShipState';
-import { PLANETS } from '../Planets/SolarSystem';
+import { PLANETS } from '../SolarSystemConfig';
 import { SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
 import { START_PLANET, START_DISTANCE_FROM_PLANET } from '../../config/spawnConfig';
 

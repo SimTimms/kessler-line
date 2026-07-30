@@ -11,7 +11,8 @@ import {
 } from '../../context/ShipState';
 import { playAsteroidImpact, setAsteroidHiss } from '../../sound/SoundManager';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
-import { PLANETS, SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
+import { SOLAR_SYSTEM_SCALE } from '../Planets/SolarSystem';
+import { PLANETS } from '../Planets/SolarSystemConfig';
 
 export interface ShipParticleCloudProps {
   count?: number;

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -15,8 +15,8 @@ interface PowerSourceProps {
 export default function PowerSource({ scale: _scale = 1 }: PowerSourceProps) {
   const powerMeshRef = useRef<THREE.Mesh>(null!);
   const powerMatRef = useRef<THREE.MeshBasicMaterial>(null!);
-  const powerLabelRef = useRef<HTMLDivElement>(null!);
   const isPoweredRef = useRef(false);
+  const [isPowered, setIsPowered] = useState(false);
 
   // Listen for laser hits dispatched by LaserRay. Check if the hit point landed
   // on the power source sphere; if so, permanently activate it.
@@ -31,7 +31,7 @@ export default function PowerSource({ scale: _scale = 1 }: PowerSourceProps) {
       powerMeshRef.current.getWorldPosition(_sphereWorldPos);
       if (point.distanceTo(_sphereWorldPos) < 705) {
         isPoweredRef.current = true;
-        if (powerLabelRef.current) powerLabelRef.current.style.display = 'block';
+        setIsPowered(true);
       }
     };
     window.addEventListener('SpaceStationModelHit', onHit);
@@ -46,26 +46,23 @@ export default function PowerSource({ scale: _scale = 1 }: PowerSourceProps) {
   });
 
   return (
-    <>
-      <group rotation={[0, Math.PI, 0]}>
-        {/* Power source — invisible until the laser hits it, then pulses red/blue permanently. */}
-        <mesh ref={powerMeshRef} position={[0, 0, 0]} name="power-source">
-          <sphereGeometry args={[1, 16, 16]} />
-          <meshBasicMaterial
-            ref={powerMatRef}
-            color="#ff0000"
-            transparent
-            opacity={0}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </mesh>
-
+    <group rotation={[0, Math.PI, 0]}>
+      {/* Power source — invisible until the laser hits it, then pulses red/blue permanently. */}
+      <mesh ref={powerMeshRef} position={[0, 0, 0]} name="power-source">
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshBasicMaterial
+          ref={powerMatRef}
+          color="#ff0000"
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      {isPowered ? (
         <Html position={[0, 18, 0]}>
           <div
-            ref={powerLabelRef}
             style={{
-              display: 'none',
               color: '#ff6666',
               background: 'rgba(0, 0, 0, 0.75)',
               padding: '3px 10px',
@@ -81,7 +78,7 @@ export default function PowerSource({ scale: _scale = 1 }: PowerSourceProps) {
             Power Source
           </div>
         </Html>
-      </group>
-    </>
+      ) : null}
+    </group>
   );
 }

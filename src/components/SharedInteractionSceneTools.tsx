@@ -1,5 +1,8 @@
 import HoverSceneTools from './HoverSceneTools';
 import ScannerRangeRings from './Scanners/ScannerRangeRings';
+import RenderInfoPanel from './Debug/RenderInfoPanel';
+import SceneDrawCallBreakdown from './Debug/SceneDrawCallBreakdown';
+import { DEBUG_SHOW_PERF_MONITOR } from '../config/debugConfig';
 
 interface SharedInteractionSceneToolsProps {
   showHoverTools?: boolean;
@@ -18,6 +21,8 @@ export default function SharedInteractionSceneTools({
     <>
       {showHoverTools ? <HoverSceneTools /> : null}
       {showScannerTools ? <ScannerRangeRings /> : null}
+      {DEBUG_SHOW_PERF_MONITOR ? <RenderInfoPanel /> : null}
+      {DEBUG_SHOW_PERF_MONITOR ? <SceneDrawCallBreakdown /> : null}
     </>
   );
 }

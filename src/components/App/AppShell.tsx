@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import AppContainer from './AppContainer';
-import SceneLayer from './SceneLayer';
+//import SceneLayer from './SceneLayer';
 import OverlayLayer from './OverlayLayer';
 import HudLayer from './HudLayer';
 import DialogLayer from './DialogLayer';
@@ -90,7 +90,7 @@ const AppShell = memo(function AppShell(props: AppShellProps) {
   return (
     <AppContainer>
       <NavHudKeyBinding />
-      <SceneLayer />
+      {/*<SceneLayer />*/}
       <OverlayLayer />
       <HudLayer
         spotlightOn={spotlightOn}

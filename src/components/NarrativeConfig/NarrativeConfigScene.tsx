@@ -99,6 +99,7 @@ export default function NarrativeConfigScene() {
       />
       <SpaceParticles />
       <Suspense fallback={null}>
+        {/*
         <Spaceship
           url="/shuttle-low-british.glb"
           shipGroupRef={spaceshipGroupRef}
@@ -121,11 +122,13 @@ export default function NarrativeConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
+        */}
+
         <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+
         <PlayerBullets shipGroupRef={spaceshipGroupRef} />
         <PlayerCannonHitDamage />
         <BreakupVfx />
-        <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
         <SolarSystem scale={solarSystemScale} />
         <SalvageField
           origin={primaryFieldOrigin}
@@ -141,6 +144,10 @@ export default function NarrativeConfigScene() {
           ]}
           dockRadioDockingBay="A1"
         />
+        {/*
+        <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+
+       
         <group position={primaryFieldOrigin}>
           {extraContainersLocalToPrimaryField.map((container) => (
             <CargoContainer
@@ -186,12 +193,14 @@ export default function NarrativeConfigScene() {
           center={marsZoneCenter}
           radius={marsZoneRadius}
         />
+        */}
       </Suspense>
     </>
   );
 
   return (
     <Canvas
+      dpr={[1, 2]}
       style={{
         width: '100vw',
         height: '100vh',

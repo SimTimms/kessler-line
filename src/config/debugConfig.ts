@@ -10,9 +10,9 @@ export const DEBUG_SMOOTH_RENDER = true;
 
 // ── Railgun engine hit debugging ─────────────────────────────────────────
 /** Log railgun engine hit calculations to console. */
-export const DEBUG_RAILGUN_ENGINE_HITS = true;
+export const DEBUG_RAILGUN_ENGINE_HITS = false;
 /** Log when engine disabled state changes. */
-export const DEBUG_ENGINE_DISABLE_CHANGES = true;
+export const DEBUG_ENGINE_DISABLE_CHANGES = false;
 
 // ── Scene dev spawn overrides ─────────────────────────────────────────────
 /** Spawn near Jupiter instead of Neptune (ignores autosave). */
@@ -34,7 +34,7 @@ export const SANDBOX_USE_FLOATING_ORIGIN = false;
  * docking bays = cyan, scanner-only (no hull hit) = faint yellow,
  * planet surfaces = faint orange, other obstacles = red. Magenta arrows = velocity.
  */
-export const DEBUG_SHOW_COLLIDABLES = true;
+export const DEBUG_SHOW_COLLIDABLES = false;
 
 // ── Spaceship ─────────────────────────────────────────────────────────────
 /** Show thruster hitbox debug wireframes on the spaceship. */
@@ -42,7 +42,7 @@ export const DEBUG_THRUSTER_HITBOXES = false;
 
 // ── Railgun visual debugging ──────────────────────────────────────────────
 /** Show a hit-sphere at the railgun impact point. */
-export const DEBUG_RAILGUN = true;
+export const DEBUG_RAILGUN = false;
 /** Scale factor applied to the debug hit sphere radius. */
 export const DEBUG_HIT_SCALE = 10;
 
@@ -56,3 +56,7 @@ export const DEBUG_COLLISION_PHYSICS_TESTS = false;
 export const DEBUG_COLLISION_TEST_PROJECTILE_SPEED = 90;
 /** Spawn distance (units) from the ship for incoming test projectiles. */
 export const DEBUG_COLLISION_TEST_SPAWN_DISTANCE = 220;
+
+// ── Performance overlay ───────────────────────────────────────────────────
+/** Show the realtime performance monitor in the top-right corner. */
+export const DEBUG_SHOW_PERF_MONITOR = true;

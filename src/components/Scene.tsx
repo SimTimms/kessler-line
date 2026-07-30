@@ -1,4 +1,5 @@
-import { Suspense, useRef, useEffect } from 'react';
+{
+  /*import { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useGraphicsQuality } from '../hooks/useGraphicsQuality';
@@ -35,7 +36,6 @@ import AutopilotController from './AutopilotController';
 import NeptuneNoFlyRing from './Planets/Neptune/NeptuneNoFlyRing';
 import NeptuneDustRing from './Planets/Neptune/NeptuneDustRing';
 import NeptuneInnerWispyRing from './Planets/Neptune/NeptuneInnerWispyRing';
-import RailgunWarning from './Combat/RailgunWarning';
 import NebulaClouds from './Environment/NebulaClouds';
 import StartZoneAsteroidCluster from './Environment/StartZoneAsteroidCluster';
 import GhostFleet from './NPCs/GhostFleet';
@@ -96,11 +96,14 @@ function HeavyEnvironment() {
   const settings = getGraphicsSettings();
   return (
     <>
+      
       <SkySphere />
       <AsteroidBelt />
       <EarthAsteroidRing />
       <ParticleLayer />
+  
       {settings.nebulaEnabled && <NebulaClouds center={START_ZONE_CENTER} />}
+         
     </>
   );
 }
@@ -133,7 +136,6 @@ function ProgressiveAssetPreloader({ loadStage }: { loadStage: number }) {
   return null;
 }
 
-// ── Scene ─────────────────────────────────────────────────────────────────────
 
 export default function Scene() {
   const quality = useGraphicsQuality();
@@ -169,14 +171,11 @@ export default function Scene() {
 
       <Suspense fallback={null}>
         <SolarSystem scale={SOLAR_SYSTEM_SCALE} />
-        <HeavyEnvironment key={quality} />
         <StageAdvancer toStage={1} />
       </Suspense>
 
-      {/* ── Stage 2: Static world objects (no player interaction needed yet) */}
       {loadStage >= 1 && (
         <>
-          {/* Non-suspending world geometry — render immediately at stage 1 */}
           <MarsSystem />
           <NeptuneNoFlyRing />
           <NeptuneDustRing />
@@ -187,13 +186,11 @@ export default function Scene() {
           <SpaceDebris />
           <DistressBeaconField />
           <RadioBeacons beaconGroupRef={beaconGroupRef} />
-          {/* Asteroid Dock placeholder cube */}
           <mesh position={ASTEROID_DOCK_DEF.position}>
             <boxGeometry args={[80, 80, 80]} />
             <meshStandardMaterial color="#ff9900" emissive="#331800" />
           </mesh>
 
-          {/* GLB-based world objects — suspend until models load → stage → 2 */}
           <Suspense fallback={null}>
             <group position={SPACE_STATION_DEF.position}>
               <SpaceStation
@@ -221,18 +218,12 @@ export default function Scene() {
         </>
       )}
 
-      {/* ── Stage 3: NPC vessels ─────────────────────────────────────────── */}
-      {/* By the time stage 2 completes, SolarSystem has run at least one     */}
-      {/* useFrame tick, so solarPlanetPositions['Neptune'] is populated.      */}
-      {/* The scrapper's initial orientation fix (slerp guard) is also active. */}
       {loadStage >= 2 && (
         <>
-          {/* Non-suspending NPC components */}
           <GhostFleet />
           <ScrapperRailgunFX />
           <ScrapperExplosion />
 
-          {/* GLB-based NPC models → stage → 3 */}
           <Suspense fallback={null}>
             <AIShip id="0" url="/untitled.gltf" scale={1} position={[-401000, 0, 0]} />
             <AIScrapper url="/large_ship.glb" />
@@ -243,7 +234,6 @@ export default function Scene() {
         </>
       )}
 
-      {/* ── Stage 4: Player ship + combat systems ────────────────────────── */}
       {loadStage >= 3 && (
         <Suspense fallback={null}>
           <Spaceship
@@ -268,9 +258,6 @@ export default function Scene() {
             stationGroupRef={stationGroupRef}
             beaconGroupRef={beaconGroupRef}
           />
-          <RailgunWarning shipGroupRef={spaceshipGroupRef} />
-          {/* CinematicController starts its intro timers on mount — fire only
-              once the player ship is in the scene and the world is fully set up */}
           <CinematicController />
           {settings.postProcessingEnabled && <ShipDepthOfField key={quality} />}
           <StageAdvancer toStage={4} />
@@ -281,4 +268,6 @@ export default function Scene() {
       <CollisionPhysicsTestRig />
     </Canvas>
   );
+}
+*/
 }

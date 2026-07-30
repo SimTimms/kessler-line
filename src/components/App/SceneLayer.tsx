@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import Scene from '../Scene';
+//import { memo } from 'react';
+//import Scene from '../Scene';
 
-const SceneLayer = memo(Scene);
+//const SceneLayer = memo(Scene);
 
-export default SceneLayer;
+//export default SceneLayer;

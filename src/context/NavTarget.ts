@@ -15,6 +15,17 @@ export function hasNavTarget(): boolean {
   return navTargetIdRef.current.trim().length > 0;
 }
 
+/** Set nav destination from a world-space target position. */
+export function setNavTarget(id: string, worldPos: THREE.Vector3): void {
+  navTargetIdRef.current = id;
+  navTargetPosRef.current.copy(worldPos);
+  window.dispatchEvent(
+    new CustomEvent('NavTargetChanged', {
+      detail: { id, x: worldPos.x, y: worldPos.y, z: worldPos.z },
+    })
+  );
+}
+
 /** Clear nav destination (tutorials, resets). Hides target line until player picks a target. */
 export function clearNavTarget() {
   navTargetIdRef.current = '';

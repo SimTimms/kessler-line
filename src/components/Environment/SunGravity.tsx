@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { gravityBodies } from '../../context/GravityRegistry';
-import { PLANETS } from '../Planets/SolarSystem';
+import { PLANETS } from '../Planets/SolarSystemConfig';
 import { SUN_WORLD_RADIUS, SOLAR_SYSTEM_SCALE as S } from '../../config/solarConfig';
 
 // Derive mu_sun from Earth's observed orbital speed and radius so that

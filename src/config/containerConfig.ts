@@ -47,6 +47,14 @@ export const CONTAINER_DOCK_OFFSET_Z = 7;
  */
 export const CONTAINER_VELOCITY_DAMPING = 0.85;
 
+/**
+ * Distance (world units) within which a CargoContainer's DockingBay is
+ * mounted. Beyond this range the bay is unmounted, removing it from the
+ * per-frame docking-physics collidable scan. The bay is also mounted when
+ * the container is the active nav target regardless of distance.
+ */
+export const CONTAINER_DOCKING_BAY_ACTIVATION_RANGE = 40;
+
 // ── Docking port on the crate (not the hull itself) ─────────────────────────
 /** Local offset of the docking-port capture volume from the crate origin. */
 export const CARGO_CONTAINER_PORT_LOCAL_OFFSET: [number, number, number] = [0, 0, 5.5];

@@ -28,36 +28,41 @@ const EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD: Array<{
   position: Vec3;
   rotation: Vec3;
   scale: number;
-}> = [
-  {
-    id: 'cargo-b',
-    label: 'Narrative Cargo B',
-    position: [-80, -10, 145],
-    rotation: [0, -0.55, 0],
-    scale: 1,
-  },
-  {
-    id: 'cargo-c',
-    label: 'Narrative Cargo C',
-    position: [170, -18, -120],
-    rotation: [0, 1.2, 0],
-    scale: 1,
-  },
-  {
-    id: 'cargo-d',
-    label: 'Narrative Cargo D',
-    position: [-210, -22, -25],
-    rotation: [0, 0.2, 0],
-    scale: 1,
-  },
-  {
-    id: 'cargo-e',
-    label: 'Narrative Cargo E',
-    position: [260, -16, 170],
-    rotation: [0, -1.4, 0],
-    scale: 1,
-  },
-];
+}> = (() => {
+  const basePosition: Vec3 = [-210, -22, -25];
+  const baseRotation: Vec3 = [0, 0.2, 0];
+  const containersPerRow = 10;
+  const rowCount = 3;
+  const columnGap = 22;
+  const rowGap = 64;
+
+  const containers: Array<{
+    id: string;
+    label: string;
+    position: Vec3;
+    rotation: Vec3;
+    scale: number;
+  }> = [];
+
+  for (let row = 0; row < rowCount; row += 1) {
+    for (let column = 0; column < containersPerRow; column += 1) {
+      const index = row * containersPerRow + column + 1;
+      containers.push({
+        id: `cargo-${index.toString().padStart(2, '0')}`,
+        label: '',
+        position: [
+          basePosition[0] + column * columnGap,
+          basePosition[1],
+          basePosition[2] + row * rowGap,
+        ],
+        rotation: [...baseRotation] as Vec3,
+        scale: 1,
+      });
+    }
+  }
+
+  return containers;
+})();
 
 function getMarsSoiRadius(): number {
   return getPlanetWorldRadius('Mars') * PLANET_SOI_MULTIPLIER;

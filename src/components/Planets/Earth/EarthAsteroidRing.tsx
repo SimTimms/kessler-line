@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { solarPlanetPositions } from '../../../context/SolarSystemMinimap';
 import { shipPosRef } from '../../../context/ShipPos';
-import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { PLANETS } from '../SolarSystemConfig';
 import { getGraphicsSettings } from '../../../context/GraphicsState';
 
 const ORBIT_SPEED = 0.22;
@@ -61,7 +62,12 @@ interface ImpactInstance {
 
 export default function EarthAsteroidRing() {
   // Read quality settings once at mount; HeavyEnvironment remounts on quality change
-  const { earthRingCount: COUNT, earthRingExplosionCount: EXPLOSION_COUNT, earthRingImpactCount: IMPACT_COUNT, earthRingSkipFrames: SKIP_FRAMES } = useMemo(() => getGraphicsSettings(), []);
+  const {
+    earthRingCount: COUNT,
+    earthRingExplosionCount: EXPLOSION_COUNT,
+    earthRingImpactCount: IMPACT_COUNT,
+    earthRingSkipFrames: SKIP_FRAMES,
+  } = useMemo(() => getGraphicsSettings(), []);
 
   const ringRef = useRef<THREE.Group>(null!);
   const chaosRef = useRef<THREE.Group>(null!);
@@ -236,7 +242,8 @@ export default function EarthAsteroidRing() {
 
   useFrame(({ clock }, delta) => {
     frameCountRef.current++;
-    const shouldUpdateRotations = SKIP_FRAMES === 0 || frameCountRef.current % (SKIP_FRAMES + 1) === 0;
+    const shouldUpdateRotations =
+      SKIP_FRAMES === 0 || frameCountRef.current % (SKIP_FRAMES + 1) === 0;
 
     const earthPos = solarPlanetPositions.Earth;
     if (earthPos) {

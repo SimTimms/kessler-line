@@ -9,7 +9,8 @@
 // only radio ships that are near you, so every contacted ship is in the same
 // orbital zone as the player (or an adjacent zone if they're passing through).
 
-import { PLANETS } from '../components/Planets/SolarSystem';
+import { PLANETS } from '../components/Planets/SolarSystemConfig';
+
 import { shipPosRef } from '../context/ShipPos';
 
 // ── Types ──────────────────────────────────────────────────────────────────────

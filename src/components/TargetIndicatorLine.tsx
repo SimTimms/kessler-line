@@ -172,7 +172,13 @@ export default function TargetIndicatorLine({
           tgt.copy(navTargetPosRef.current);
         }
       } else {
-        tgt.copy(navTargetPosRef.current);
+        const liveCollidable = getCollidables().find((c) => c.id === nid);
+        if (liveCollidable) {
+          liveCollidable.getWorldPosition(tgt);
+          navTargetPosRef.current.copy(tgt);
+        } else {
+          tgt.copy(navTargetPosRef.current);
+        }
       }
     }
 
@@ -195,6 +201,11 @@ export default function TargetIndicatorLine({
         if (nid === TUTORIAL_NAV_DAEDALUS_ID) {
           const bay = getCollidables().find((c) => c.id === TUTORIAL_DOCKING_BAY_COLLIDER_ID);
           if (bay?.getWorldVelocity) bay.getWorldVelocity(_targetVel);
+        } else {
+          const liveCollidable = getCollidables().find((c) => c.id === nid);
+          if (liveCollidable?.getWorldVelocity) {
+            liveCollidable.getWorldVelocity(_targetVel);
+          }
         }
       }
     }

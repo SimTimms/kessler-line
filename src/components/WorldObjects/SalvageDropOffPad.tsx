@@ -26,9 +26,11 @@ import {
   SALVAGE_DROPOFF_RADIO_ID,
   SALVAGE_DROPOFF_REST_LOCAL_Y,
   SALVAGE_DROPOFF_ROTATE_SPEED,
+  SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE,
   type CargoDropOffCompletedDetail,
   type CargoDropOffStartedDetail,
 } from '../../config/salvageDropOffConfig';
+import { shipPosRef } from '../../context/ShipPos';
 
 const LOCAL_PAD_FORWARD_QUAT = new THREE.Quaternion();
 
@@ -220,6 +222,10 @@ export default function SalvageDropOffPad({
     if (!groupRef.current) return;
     groupRef.current.getWorldPosition(_padPos);
 
+    // Skip the scan when the ship is far away — containers damp to a stop
+    // quickly and can't reach the pad from beyond this range.
+    if (shipPosRef.current.distanceTo(_padPos) > SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE) return;
+
     for (const handle of listCargoContainers()) {
       if (handle.isTowed() || handle.isDropOffBusy() || handle.isConsumed()) continue;
       handle.getWorldPosition(_cratePos);
@@ -249,7 +255,7 @@ export default function SalvageDropOffPad({
         selectTarget(label);
       }}
     >
-      <PowerSource scale={1} />
+      {/* <PowerSource scale={1} /> */}
       <primitive object={modelScene} scale={scale} />
       {/* Intake anchor — crate is parented here during align/descend. */}
       <group ref={anchorRef} position={[0, 6, 0]} />

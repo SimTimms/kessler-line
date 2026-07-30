@@ -4,6 +4,7 @@ import LandingPad from '../WorldObjects/LandingPad';
 import SalvageDropOffPad from '../WorldObjects/SalvageDropOffPad';
 import CargoContainer from '../CargoContainer/CargoContainer';
 import Asteroid from '../Asteroid/Asteroid';
+import DecorativeAsteroidField from '../Asteroid/DecorativeAsteroidField';
 import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
 import { DRONE_ATMOSPHERE_COLORS, SalvageConfigData } from './SalvageConfigFile';
 import type { DockConfig } from '../../config/dockConfig';
@@ -87,7 +88,7 @@ export default function SalvageField({
   const freeMineables = mineableAsteroids.filter((a) => a.parent !== 'dock');
 
   return (
-    <group position={origin}>
+    <group position={origin} name="salvageField">
       <Suspense fallback={null}>
         {showFreeMineables
           ? freeMineables.map((asteroid) => (
@@ -103,7 +104,7 @@ export default function SalvageField({
           : null}
 
         {showDock ? (
-          <group position={dock.position}>
+          <group position={dock.position} name="salvageField-dock">
             <LandingPad
               id={`${idPrefix}${dock.id}`}
               label={dockLabelOverride ?? dock.label}
@@ -129,7 +130,7 @@ export default function SalvageField({
         ) : null}
 
         {showDropOffPad ? (
-          <group position={dropOffPad.position}>
+          <group position={dropOffPad.position} name="salvageField-dropOffPad">
             <SalvageDropOffPad
               id={`${idPrefix}${dropOffPad.id}`}
               label={dropOffPad.label}
@@ -152,16 +153,7 @@ export default function SalvageField({
           />
         ) : null}
 
-        {showDecorativeAsteroids
-          ? asteroids.map((asteroid, index) => (
-              <Asteroid
-                key={`${idPrefix}salvage-asteroid-${index}`}
-                position={asteroid.position}
-                rotation={asteroid.rotation}
-                scale={asteroid.scale}
-              />
-            ))
-          : null}
+        {showDecorativeAsteroids ? <DecorativeAsteroidField asteroids={asteroids} /> : null}
 
         {showDroneFleet ? (
           <GarbageScowDroneFleet

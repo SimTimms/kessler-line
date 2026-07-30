@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { START_DISTANCE_FROM_PLANET, START_PLANET } from '../../config/spawnConfig';
-import { PLANETS } from '../Planets/SolarSystem';
+import { PLANETS } from '../SolarSystemConfig';
 import { SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
 import {
   registerDriveSignature,

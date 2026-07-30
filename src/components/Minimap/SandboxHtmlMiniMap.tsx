@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import * as THREE from 'three';
-import { PLANETS } from '../Planets/SolarSystem';
+import { PLANETS } from '../Planets/SolarSystemConfig';
 import { SOLAR_SYSTEM_SCALE, SUN_WORLD_RADIUS } from '../../config/solarConfig';
 import { shipPosRef } from '../../context/ShipPos';
-import {
-  orbitStatusRef,
-  shipQuaternion,
-  shipVelocity,
-} from '../../context/ShipState';
+import { orbitStatusRef, shipQuaternion, shipVelocity } from '../../context/ShipState';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { getPlanetPosition } from '../../config/planetPosition';
 import { hasNavTarget, navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
@@ -22,10 +18,7 @@ import { getCollidables } from '../../context/CollisionRegistry';
 import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
 import { beginPadScan } from '../../context/PadScanState';
-import {
-  selectedTargetName,
-  selectedTargetPosition,
-} from '../../context/TargetSelection';
+import { selectedTargetName, selectedTargetPosition } from '../../context/TargetSelection';
 import {
   MINIMAP_TRAJECTORY_DT,
   MINIMAP_TRAJECTORY_STEPS,
@@ -152,6 +145,13 @@ type OrbitAssistReadouts = {
   dvText: string;
   statusText: string;
 };
+
+/** Recompute minimap trajectory every N animation frames. */
+const MINIMAP_TRAJECTORY_UPDATE_FRAMES = 10;
+/** Use fewer trajectory points for performance while preserving total look-ahead time. */
+const MINIMAP_TRAJECTORY_RESAMPLED_STEPS = 40;
+const MINIMAP_TRAJECTORY_RESAMPLED_DT =
+  (MINIMAP_TRAJECTORY_STEPS * MINIMAP_TRAJECTORY_DT) / MINIMAP_TRAJECTORY_RESAMPLED_STEPS;
 
 type VisibleMarker = Marker & { sx: number; sy: number; pxSize: number };
 type OrbitRing = { id: string; sx: number; sy: number; pxRadius: number; color: string };
@@ -343,7 +343,9 @@ function DockingAssistPanel({
           <div className="sandbox-map-docking-port-crosshair sandbox-map-docking-port-crosshair--v" />
           <div
             className="sandbox-map-docking-port-heading"
-            style={{ transform: `translate(-50%, -50%) rotate(${dockingAssist.headingErrorDeg}deg)` }}
+            style={{
+              transform: `translate(-50%, -50%) rotate(${dockingAssist.headingErrorDeg}deg)`,
+            }}
           />
         </div>
       )}
@@ -476,16 +478,15 @@ function OrbitAssistPanel({
                 points={orbitAssistProjection.predictedPoints}
               />
             )}
-            {orbitAssistProjection.targetSx != null &&
-              orbitAssistProjection.targetSy != null && (
-                <line
-                  className="sandbox-map-orbit-assist-target"
-                  x1={orbitAssistProjection.shipSx}
-                  y1={orbitAssistProjection.shipSy}
-                  x2={orbitAssistProjection.targetSx}
-                  y2={orbitAssistProjection.targetSy}
-                />
-              )}
+            {orbitAssistProjection.targetSx != null && orbitAssistProjection.targetSy != null && (
+              <line
+                className="sandbox-map-orbit-assist-target"
+                x1={orbitAssistProjection.shipSx}
+                y1={orbitAssistProjection.shipSy}
+                x2={orbitAssistProjection.targetSx}
+                y2={orbitAssistProjection.targetSy}
+              />
+            )}
             <line
               className="sandbox-map-orbit-assist-req"
               x1={orbitAssistProjection.shipSx}
@@ -646,6 +647,8 @@ export default function SandboxHtmlMiniMap({
   const nearestDockDistance = useRef(Number.POSITIVE_INFINITY);
   /** Fires pad scan once when docking assist first engages (or switches pads). */
   const lastPadScanDockIdRef = useRef<string | null>(null);
+  const trajectoryFrameCounterRef = useRef(0);
+  const trajectoryCacheRef = useRef<Array<{ x: number; z: number }>>([]);
 
   const activeChartRef = fullscreen ? fullscreenContainerRef : containerRef;
 
@@ -826,17 +829,37 @@ export default function SandboxHtmlMiniMap({
       }
 
       const velLen = Math.hypot(shipVelocity.x, shipVelocity.z);
-      const velocityPath =
-        velLen > SHIP_DIRECTION_MIN_SPEED
-          ? sampleShipTrajectoryXZ(
-              ship.x,
-              ship.z,
-              shipVelocity.x,
-              shipVelocity.z,
-              MINIMAP_TRAJECTORY_STEPS,
-              MINIMAP_TRAJECTORY_DT
-            )
-          : [];
+      let inPlanetSoi = false;
+      for (const [id, body] of gravityBodies) {
+        if (id === 'Sun') continue;
+        const dx = ship.x - body.position.x;
+        const dz = ship.z - body.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > body.surfaceRadius && dist < body.soiRadius) {
+          inPlanetSoi = true;
+          break;
+        }
+      }
+      const isShipMovingForTrajectory = velLen > SHIP_DIRECTION_MIN_SPEED && inPlanetSoi;
+      trajectoryFrameCounterRef.current += 1;
+      if (isShipMovingForTrajectory) {
+        if (
+          trajectoryCacheRef.current.length === 0 ||
+          trajectoryFrameCounterRef.current % MINIMAP_TRAJECTORY_UPDATE_FRAMES === 0
+        ) {
+          trajectoryCacheRef.current = sampleShipTrajectoryXZ(
+            ship.x,
+            ship.z,
+            shipVelocity.x,
+            shipVelocity.z,
+            MINIMAP_TRAJECTORY_RESAMPLED_STEPS,
+            MINIMAP_TRAJECTORY_RESAMPLED_DT
+          );
+        }
+      } else {
+        trajectoryCacheRef.current = [];
+      }
+      const velocityPath = isShipMovingForTrajectory ? trajectoryCacheRef.current : [];
       setVectorWorld({
         nav: navLineTarget,
         velocityPath,
@@ -943,7 +966,11 @@ export default function SandboxHtmlMiniMap({
         const dx = _dockWorldPos.x - ship.x;
         const dz = _dockWorldPos.z - ship.z;
         const planarDist = Math.hypot(dx, dz);
-        if (profile.mode === 'hover' && radioRangeRef.current > 0 && planarDist <= radioRangeRef.current) {
+        if (
+          profile.mode === 'hover' &&
+          radioRangeRef.current > 0 &&
+          planarDist <= radioRangeRef.current
+        ) {
           next.push({
             id: `landing-pad-${col.id}`,
             label: col.label ?? col.stationId ?? 'Landing Pad',
@@ -1058,10 +1085,7 @@ export default function SandboxHtmlMiniMap({
         if (statusId && statusId !== 'Sun') {
           const statusBody = gravityBodies.get(statusId);
           if (statusBody) {
-            const dist = Math.hypot(
-              statusBody.position.x - ship.x,
-              statusBody.position.z - ship.z
-            );
+            const dist = Math.hypot(statusBody.position.x - ship.x, statusBody.position.z - ship.z);
             if (dist > statusBody.surfaceRadius && dist < statusBody.soiRadius) {
               primaryId = statusId;
               primaryBody = statusBody;
@@ -1126,17 +1150,9 @@ export default function SandboxHtmlMiniMap({
             status.bodyId === primaryId && status.apoapsis > 0
               ? Math.max(0, status.apoapsis - surfaceR)
               : Math.max(0, r - surfaceR);
-          const predictedPath =
-            Math.hypot(shipVelocity.x, shipVelocity.z) > SHIP_DIRECTION_MIN_SPEED
-              ? sampleShipTrajectoryXZ(
-                  ship.x,
-                  ship.z,
-                  shipVelocity.x,
-                  shipVelocity.z,
-                  MINIMAP_TRAJECTORY_STEPS,
-                  MINIMAP_TRAJECTORY_DT
-                )
-              : [{ x: ship.x, z: ship.z }];
+          const predictedPath = isShipMovingForTrajectory
+            ? trajectoryCacheRef.current
+            : [{ x: ship.x, z: ship.z }];
           _shipForward.set(0, 0, 1).applyQuaternion(shipQuaternion);
           setOrbitAssist({
             bodyId: primaryId,
@@ -1242,10 +1258,7 @@ export default function SandboxHtmlMiniMap({
       orbitAssist.surfaceRadius * 1.15
     );
     for (const p of orbitAssist.predictedPath) {
-      extent = Math.max(
-        extent,
-        Math.hypot(p.x - orbitAssist.bodyX, p.z - orbitAssist.bodyZ)
-      );
+      extent = Math.max(extent, Math.hypot(p.x - orbitAssist.bodyX, p.z - orbitAssist.bodyZ));
     }
     // Keep framing inside SOI so the ideal ring stays readable.
     extent = Math.min(extent, orbitAssist.soiRadius * 0.98);

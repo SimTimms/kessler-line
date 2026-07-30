@@ -43,6 +43,7 @@ export default function SalvageConfigScene() {
 
   return (
     <Canvas
+      dpr={[1, 2]}
       style={{
         width: '100vw',
         height: '100vh',

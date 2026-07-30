@@ -22,3 +22,10 @@ export const LANDING_PAD_PLATFORM_MEET_EPSILON = 0.08;
 
 /** GLB node name for the rising platform mesh. */
 export const LANDING_PAD_PLATFORM_OBJECT_NAME = 'LandPad';
+
+/**
+ * Ship-to-pad distance within which the DockingBay is mounted.
+ * Beyond this the bay is unmounted, removing it from the per-frame docking scan.
+ * Also mounted when this pad is the active nav target.
+ */
+export const LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE = 80;

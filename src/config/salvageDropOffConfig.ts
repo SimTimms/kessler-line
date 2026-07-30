@@ -13,6 +13,13 @@ export const SALVAGE_DROPOFF_HAIL_TREE_ID = 'salvage-intake-delivery';
 /** Planar capture radius around the intake pad (world units). */
 export const SALVAGE_DROPOFF_CAPTURE_RADIUS = 32;
 
+/**
+ * Ship-to-pad distance beyond which the per-frame container capture scan is
+ * skipped entirely. Containers damp to a stop quickly so they cannot reach
+ * the pad from further than this anyway.
+ */
+export const SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE = 150;
+
 /** Max crate speed (units/s) allowed for intake capture after release. */
 export const SALVAGE_DROPOFF_MAX_SPEED = 12;
 

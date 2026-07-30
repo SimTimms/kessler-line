@@ -2,8 +2,8 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { solarPlanetPositions } from '../../../context/SolarSystemMinimap';
-import { PLANETS, SOLAR_SYSTEM_SCALE } from '../SolarSystem';
-
+import { SOLAR_SYSTEM_SCALE } from '../SolarSystem';
+import { PLANETS } from '../SolarSystemConfig';
 // Moon orbits Venus once every ~35 real minutes
 const MOON_ORBIT_SPEED = (2 * Math.PI) / 10100;
 const DEBRIS_COUNT = 160;

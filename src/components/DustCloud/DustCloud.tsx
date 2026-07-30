@@ -76,7 +76,7 @@ export default function DustCloud({
   return (
     <group ref={groupRef}>
       <group ref={haloGroupRef}>
-        <points frustumCulled={false}>
+        <points>
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[haloPositions, 3]} />
             <bufferAttribute attach="attributes-color" args={[haloColors, 3]} />

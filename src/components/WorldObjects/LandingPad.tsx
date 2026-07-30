@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -13,6 +13,7 @@ import DockingBay from './DockingBay';
 import type { DockConfig } from '../../config/dockConfig';
 import { LANDING_PAD_DOCK_CAPTURE_PROFILE } from '../../config/dockCaptureConfig';
 import {
+  LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE,
   LANDING_PAD_PLATFORM_MEET_EPSILON,
   LANDING_PAD_PLATFORM_MEET_OFFSET_Y,
   LANDING_PAD_PLATFORM_MOVE_SPEED,
@@ -23,6 +24,7 @@ import {
   setLandingPadElevatorReady,
 } from '../../context/LandingPadElevator';
 import { shipPosRef } from '../../context/ShipPos';
+import { navTargetIdRef } from '../../context/NavTarget';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 
 const DEFAULT_LANDING_PAD_ID = 'landing-pad';
@@ -30,6 +32,7 @@ const EVENT_DOCKING_CAPTURE_STARTED = 'DockingCaptureStarted';
 const EVENT_DOCKING_CAPTURE_ENDED = 'DockingCaptureEnded';
 
 const _shipLocal = new THREE.Vector3();
+const _padWorldPos = new THREE.Vector3();
 const _padWorldScale = new THREE.Vector3();
 
 function moveTowardScalar(current: number, target: number, maxStep: number): number {
@@ -99,6 +102,8 @@ export default function LandingPad({
   const landPadRestLocalYRef = useRef(landPadAuthoringY);
   const trackingRef = useRef(false);
   const dockedRef = useRef(false);
+  const dockingBayActiveRef = useRef(false);
+  const [dockingBayActive, setDockingBayActive] = useState(false);
   const structureCollisionId = `${id}-structure`;
   const dockingProfile = useMemo(
     () => ({
@@ -212,6 +217,23 @@ export default function LandingPad({
     if (!landPad?.parent) return;
 
     const followShip = trackingRef.current || dockedRef.current;
+
+    // Proximity gate for the docking bay — always evaluated.
+    if (groupRef.current) {
+      groupRef.current.getWorldPosition(_padWorldPos);
+      const dist = shipPosRef.current.distanceTo(_padWorldPos);
+      const shouldBeActive =
+        dist < LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE || navTargetIdRef.current === id;
+      if (shouldBeActive !== dockingBayActiveRef.current) {
+        dockingBayActiveRef.current = shouldBeActive;
+        setDockingBayActive(shouldBeActive);
+      }
+    }
+
+    // Skip elevator animation when idle and already at rest — avoids a
+    // getWorldScale scene-graph traversal every frame per pad.
+    if (!followShip && landPad.position.y === landPadRestLocalYRef.current) return;
+
     let targetLocalY = landPadRestLocalYRef.current;
 
     if (followShip) {
@@ -255,16 +277,18 @@ export default function LandingPad({
           <primitive object={modelScene} />
         </group>
         {/* Keep the docking anchor at pad center so X/Z threshold checks match landing-pad position. */}
-        <group position={[0, 6, 0]}>
-          <DockingBay
-            stationId={id}
-            dimensions={new THREE.Vector3(40, 2, 10)}
-            rotation={[0, 0, 0]}
-            dock={dock}
-            dockingProfile={dockingProfile}
-            showCaptureMesh={false}
-          />
-        </group>
+        {dockingBayActive ? (
+          <group position={[0, 6, 0]}>
+            <DockingBay
+              stationId={id}
+              dimensions={new THREE.Vector3(40, 2, 10)}
+              rotation={[0, 0, 0]}
+              dock={dock}
+              dockingProfile={dockingProfile}
+              showCaptureMesh={false}
+            />
+          </group>
+        ) : null}
       </group>
     </>
   );

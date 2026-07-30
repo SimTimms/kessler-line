@@ -20,9 +20,11 @@ import { CARGO_CONTAINER_DOCK } from '../../config/docks/cargoContainerDockConfi
 import {
   CARGO_CONTAINER_PORT_DIMENSIONS,
   CARGO_CONTAINER_PORT_LOCAL_OFFSET,
+  CONTAINER_DOCKING_BAY_ACTIVATION_RANGE,
   CONTAINER_IMPULSE_SCALE,
   CONTAINER_VELOCITY_DAMPING,
 } from '../../config/containerConfig';
+import { navTargetIdRef } from '../../context/NavTarget';
 import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipPosRef } from '../../context/ShipPos';
@@ -122,6 +124,10 @@ export default function CargoContainer({
   /** True after intake finished — crate is hidden. */
   const consumedRef = useRef(false);
   const [consumed, setConsumed] = useState(false);
+
+  /** True when the docking bay should be mounted (ship within range or nav target). */
+  const dockingBayActiveRef = useRef(false);
+  const [dockingBayActive, setDockingBayActive] = useState(false);
 
   const resolvedProfile = useMemo(
     () => ({
@@ -319,6 +325,15 @@ export default function CargoContainer({
 
     applySimPositionToGroup(groupRef.current, posRef.current);
     groupRef.current.quaternion.copy(quatRef.current);
+
+    // Mount/unmount the docking bay based on proximity or nav target.
+    const dist = shipPosRef.current.distanceTo(posRef.current);
+    const shouldBeActive =
+      dist < CONTAINER_DOCKING_BAY_ACTIVATION_RANGE || navTargetIdRef.current === id;
+    if (shouldBeActive !== dockingBayActiveRef.current) {
+      dockingBayActiveRef.current = shouldBeActive;
+      setDockingBayActive(shouldBeActive);
+    }
   });
 
   return (
@@ -338,8 +353,8 @@ export default function CargoContainer({
       <group position={[meshOffset.x, meshOffset.y, meshOffset.z]}>
         <primitive object={modelScene} scale={scale} />
       </group>
-      {/* Dedicated docking port — not the physical hull. */}
-      {!consumed ? (
+      {/* Dedicated docking port — not the physical hull. Only mounted when nearby or nav target. */}
+      {!consumed && dockingBayActive ? (
         <DockingBay
           stationId={id}
           dimensions={portBox}
