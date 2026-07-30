@@ -24,6 +24,7 @@ import {
   KEY_THRUST_BOOST,
   EVENT_REQUEST_UNDOCK,
 } from '../../config/keybindings';
+import { getActiveThrustMultiplierCap } from '../../context/FastTravelZones';
 import {
   DOCKING_TUTORIAL_ALL_FLIGHT_KEYS,
   EVENT_DOCKING_TUTORIAL_INPUT_RESET,
@@ -174,13 +175,18 @@ export function useInputListeners({
       if (vesselId !== PLAYER_VESSEL_ID || thrustBoostHeld.current) return;
       thrustBoostHeld.current = true;
       thrustBoostStoredMultiplier.current = thrustMultiplier.current;
-      thrustMultiplier.current = THRUST_BOOST_MULTIPLIER;
+      const zoneCap = getActiveThrustMultiplierCap();
+      const boostTarget =
+        zoneCap == null ? THRUST_BOOST_MULTIPLIER : Math.min(THRUST_BOOST_MULTIPLIER, zoneCap);
+      thrustMultiplier.current = boostTarget;
     };
 
     const endThrustBoost = () => {
       if (vesselId !== PLAYER_VESSEL_ID || !thrustBoostHeld.current) return;
       thrustBoostHeld.current = false;
-      thrustMultiplier.current = thrustBoostStoredMultiplier.current;
+      const zoneCap = getActiveThrustMultiplierCap();
+      const restored = thrustBoostStoredMultiplier.current;
+      thrustMultiplier.current = zoneCap == null ? restored : Math.min(restored, zoneCap);
     };
 
     const onKeyDown = (e: KeyboardEvent) => {

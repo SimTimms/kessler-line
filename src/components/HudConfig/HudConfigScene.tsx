@@ -1,4 +1,4 @@
-import { Suspense, useLayoutEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
@@ -6,57 +6,60 @@ import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator';
 import { shipPosRef } from '../../context/ShipPos';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
+import DefaultLighting from '../DefaultLighting';
 import LaserRay from '../Combat/LaserRay';
 import PlayerBullets from '../Combat/PlayerBullets';
+import PlayerCannonHitDamage from '../Combat/PlayerCannonHitDamage';
+import BreakupVfx from '../Combat/BreakupVfx';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
-import SolarSystem from '../Planets/SolarSystem';
-import SunGravity from '../Environment/SunGravity';
 import SpaceParticles from '../Environment/SpaceParticles';
 import { FloatingOrigin } from '../Environment/FloatingOrigin';
 import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
+import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
+import Asteroid from '../Asteroid/Asteroid';
+import DustCloud from '../DustCloud/DustCloud';
 import SalvageField from '../SalvageConfig/SalvageField';
-import NormalTravelZoneRing from '../FastTravel/NormalTravelZoneRing';
-import {
-  getLtdNeptuneNormalTravelZoneRadius,
-  getLtdNeptuneZoneCenter,
-  getLtdSalvageFieldOrigin,
-  getLtdShipSpawn,
-  LONG_DISTANCE_TRAVEL_CONFIG,
-  LTD_NEPTUNE_NORMAL_TRAVEL_ZONE_ID,
-  LTD_NORMAL_TRAVEL_ZONE_ID,
-  LTD_NORMAL_TRAVEL_ZONE_RADIUS,
-  LTD_SALVAGE_ID_PREFIX,
-} from './ltdSceneConfig';
+import { HUD_CONFIG, HUD_ID_PREFIX, getHudShipSpawn } from './hudSceneConfig';
+import CameraAttachedCockpit from './CameraAttachedCockpit';
+// Secondary PIP chase view — disabled for now:
+// import ShipNoseCamera from './ShipNoseCamera';
+// import ChaseViewScissorPass from './ChaseViewScissorPass';
+// import ShipChaseViewHud from './ShipChaseViewHud';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
-export default function LongDistanceTravelConfigScene() {
+export default function HudConfigScene() {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
+
   const {
     fogColor,
     canvasNear,
     canvasFar,
     toneMappingExposure,
-    solarSystemScale,
     tutorialFollowOffset,
     tutorialCameraZoomMax,
     planetImpactCameraHoldMaxAltitude,
     shipParticleCount,
-    lighting,
-  } = LONG_DISTANCE_TRAVEL_CONFIG;
+    playerShipUrl,
+    dustCloud,
+    mineableAsteroids,
+    salvageFieldOrigin,
+    cameraCockpit,
+  } = HUD_CONFIG;
 
-  const shipSpawn = useMemo(() => getLtdShipSpawn(), []);
-  const fieldOrigin = useMemo((): [number, number, number] => {
-    const o = getLtdSalvageFieldOrigin();
-    return [o.x, o.y, o.z];
+  const shipSpawn = useMemo(() => getHudShipSpawn(), []);
+
+  useEffect(() => {
+    const onRequestUndock = () => {
+      window.dispatchEvent(new CustomEvent('ShipUndocked'));
+    };
+    window.addEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
+    return () => {
+      window.removeEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
+    };
   }, []);
-  const neptuneZoneCenter = useMemo((): [number, number, number] => {
-    const o = getLtdNeptuneZoneCenter();
-    return [o.x, o.y, o.z];
-  }, []);
-  const neptuneZoneRadius = useMemo(() => getLtdNeptuneNormalTravelZoneRadius(), []);
 
   useLayoutEffect(() => {
     shipPosRef.current.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
@@ -70,21 +73,16 @@ export default function LongDistanceTravelConfigScene() {
 
   const worldContent = (
     <>
-      <ambientLight intensity={lighting.ambientIntensity} />
-      <directionalLight
-        position={lighting.keyLight.position}
-        intensity={lighting.keyLight.intensity}
-        color={lighting.keyLight.color}
-      />
-      <directionalLight
-        position={lighting.fillLight.position}
-        intensity={lighting.fillLight.intensity}
-        color={lighting.fillLight.color}
+      <DefaultLighting
+        color="#ffffff"
+        intensity={10.2}
+        ambientIntensity={3.3}
+        position={[10000, 10000, -100]}
       />
       <SpaceParticles />
       <Suspense fallback={null}>
         <Spaceship
-          url="/shuttle-low-british.glb"
+          url={playerShipUrl}
           shipGroupRef={spaceshipGroupRef}
           initialPosition={shipSpawn.position}
           initialRotation={shipSpawn.rotation}
@@ -105,23 +103,43 @@ export default function LongDistanceTravelConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+        <LaserRay shipGroupRef={spaceshipGroupRef} />
         <PlayerBullets shipGroupRef={spaceshipGroupRef} />
+        <PlayerCannonHitDamage />
+        <BreakupVfx />
         <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
-        <SolarSystem scale={solarSystemScale} />
-        {/* Static salvage pocket — does not orbit with Neptune. */}
-        <SalvageField origin={fieldOrigin} idPrefix={LTD_SALVAGE_ID_PREFIX} debugJumpDockOnClick />
-        {/* Inside outer ring = staged normal travel; outside = full fast travel. */}
-        <NormalTravelZoneRing
-          id={LTD_NORMAL_TRAVEL_ZONE_ID}
-          center={fieldOrigin}
-          radius={LTD_NORMAL_TRAVEL_ZONE_RADIUS}
+
+        {/* Berth, salvage bay, cargo container, berth-side mineable — from Salvage Config */}
+        <SalvageField
+          origin={salvageFieldOrigin}
+          idPrefix={HUD_ID_PREFIX}
+          debugJumpDockOnClick
+          showDecorativeAsteroids={false}
+          showFreeMineables={false}
+          showDroneFleet={false}
+          showDustCloud={false}
         />
-        {/* Broader slow zone around Neptune (static start pose; matches salvage field). */}
-        <NormalTravelZoneRing
-          id={LTD_NEPTUNE_NORMAL_TRAVEL_ZONE_ID}
-          center={neptuneZoneCenter}
-          radius={neptuneZoneRadius}
+
+        {mineableAsteroids.map((asteroid) => (
+          <Asteroid
+            key={`${HUD_ID_PREFIX}${asteroid.id}`}
+            position={asteroid.position}
+            rotation={asteroid.rotation}
+            scale={asteroid.scale}
+            mineableId={`${HUD_ID_PREFIX}${asteroid.id}`}
+            label={asteroid.label}
+          />
+        ))}
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <DustCloud
+          radius={dustCloud.radius}
+          particleSize={dustCloud.particleSize}
+          radialSpread={dustCloud.radialSpread}
+          yInitial={dustCloud.yInitial}
+          opacity={dustCloud.opacity}
+          colors={[...dustCloud.colors]}
         />
       </Suspense>
     </>
@@ -148,6 +166,7 @@ export default function LongDistanceTravelConfigScene() {
       shadows={true}
     >
       <fogExp2 attach="fog" args={[fogColor, 0.0000005]} />
+      {/* Main view — same chase / follow camera as Combat Config */}
       <TutorialFollowCamera
         followTarget={shipPosRef}
         followOffset={tutorialFollowOffset}
@@ -158,8 +177,15 @@ export default function LongDistanceTravelConfigScene() {
         planetImpactCameraHoldMaxAltitude={planetImpactCameraHoldMaxAltitude}
         framePriority={CAMERA_FRAME_PRIORITY}
       />
+      <Suspense fallback={null}>
+        <CameraAttachedCockpit
+          url={cameraCockpit.url}
+          localPosition={cameraCockpit.localPosition}
+          localRotation={cameraCockpit.localRotation}
+          scale={cameraCockpit.scale}
+        />
+      </Suspense>
       {SANDBOX_USE_FLOATING_ORIGIN ? <FloatingOrigin>{worldContent}</FloatingOrigin> : worldContent}
-      <SunGravity />
       <SharedInteractionSceneTools />
       <ShipDepthOfField saturation={0} />
     </Canvas>

@@ -38,6 +38,7 @@ let ambientBedAudio: HTMLAudioElement | null = null;
 let padScanAudio: HTMLAudioElement | null = null;
 let dockAlignAudio: HTMLAudioElement | null = null;
 let dockConnectAudio: HTMLAudioElement | null = null;
+let lowO2BreathingAudio: HTMLAudioElement | null = null;
 
 /** Title / config-scene space atmosphere bed. */
 export const SPACE_ATMOSPHERE_AMBIENT_SRC =
@@ -53,10 +54,14 @@ export const DOCK_ALIGN_SFX_SRC =
 /** Shared UI button press (replaces synthesized click blip). */
 export const UI_BUTTON_CLICK_SFX_SRC = '/audio/dragon-studio-button-press-382713.mp3';
 
+/** Labored breathing loop when oxygen is at a dangerous level. */
+export const LOW_O2_BREATHING_SFX_SRC = '/freesound_community-sickly-breathing-83152.mp3';
+
 const DEFAULT_AMBIENT_BED_VOLUME = 0.05;
 const DEFAULT_PAD_SCAN_VOLUME = 0.35;
 const DEFAULT_DOCK_ALIGN_VOLUME = 0.35;
 const DEFAULT_UI_CLICK_VOLUME = 0.45;
+const DEFAULT_LOW_O2_BREATHING_VOLUME = 0.45;
 /** Base playback rate for jittered dock / pad SFX. */
 const DOCK_SFX_PLAYBACK_RATE = 0.75;
 /** Random relative variation around the base rate (±50%). */
@@ -285,6 +290,43 @@ export function stopSpaceAtmosphereAmbient(): void {
 
 export function isSpaceAtmosphereAmbientPlaying(): boolean {
   return !!ambientBedAudio && !ambientBedAudio.paused;
+}
+
+/**
+ * Loop labored breathing while oxygen is at a dangerous level.
+ * Safe to call every frame / on threshold edges — no-ops when already in the
+ * requested state.
+ */
+export function setLowO2BreathingSound(
+  enabled: boolean,
+  volume = DEFAULT_LOW_O2_BREATHING_VOLUME
+): void {
+  resumeAudioContext();
+  try {
+    if (!enabled) {
+      if (!lowO2BreathingAudio) return;
+      lowO2BreathingAudio.pause();
+      lowO2BreathingAudio.currentTime = 0;
+      return;
+    }
+    if (!lowO2BreathingAudio) {
+      lowO2BreathingAudio = new Audio(LOW_O2_BREATHING_SFX_SRC);
+      lowO2BreathingAudio.loop = true;
+      lowO2BreathingAudio.preload = 'auto';
+    }
+    lowO2BreathingAudio.volume = Math.max(0, Math.min(1, volume));
+    if (lowO2BreathingAudio.paused) {
+      void lowO2BreathingAudio.play().catch(() => {
+        /* autoplay may still fail if not in a gesture */
+      });
+    }
+  } catch {
+    /* non-critical */
+  }
+}
+
+export function isLowO2BreathingSoundPlaying(): boolean {
+  return !!lowO2BreathingAudio && !lowO2BreathingAudio.paused;
 }
 
 /**

@@ -51,8 +51,9 @@ function createDashedRing(radius: number, opacity: number): THREE.Line {
 
 /**
  * Registers a normal-travel pocket and draws outer + inner (half-radius)
- * grey dashed rings. Outside the outer ring is full fast travel; between
- * rings is half FT thrust; inside the inner ring is normal travel.
+ * grey dashed rings. Outside the outer ring is fast travel (higher thrust
+ * cap); inside is normal travel (lower thrust cap). Ring halves stage
+ * entry-brake targets only.
  */
 export default function NormalTravelZoneRing({
   id,

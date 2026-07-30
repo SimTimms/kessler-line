@@ -25,15 +25,18 @@ export type TravelBand = 'inner' | 'mid' | 'fast';
 
 const zones = new Map<string, NormalTravelZone>();
 
-/** Live thrust scale applied by ship physics (1 when inactive / in inner core). */
+/**
+ * Live thrust-multiplier ceiling from the current band.
+ * `0` means the FT system is inactive (no pockets registered).
+ */
 export const fastTravelThrustMultiplierRef: { current: number } = {
-  current: NORMAL_TRAVEL_THRUST_MULTIPLIER,
+  current: 0,
 };
 
 /** True while the ship is fully outside all normal pockets (full FT). */
 export const inFastTravelZoneRef: { current: boolean } = { current: false };
 
-/** Current band: inner core, mid (half FT), or full fast travel. */
+/** Current band: inner core, mid (outer half), or full fast travel. */
 export const travelBandRef: { current: TravelBand } = { current: 'inner' };
 
 /**
@@ -54,7 +57,7 @@ export function unregisterNormalTravelZone(id: string): void {
 
 export function clearNormalTravelZones(): void {
   zones.clear();
-  fastTravelThrustMultiplierRef.current = NORMAL_TRAVEL_THRUST_MULTIPLIER;
+  fastTravelThrustMultiplierRef.current = 0;
   inFastTravelZoneRef.current = false;
   travelBandRef.current = 'inner';
   normalTravelEntryBrakeTargetRef.current = 0;
@@ -65,22 +68,32 @@ export function getNormalTravelZones(): readonly NormalTravelZone[] {
   return Array.from(zones.values());
 }
 
-function clampZoneMultiplier(value: number): number {
-  return THREE.MathUtils.clamp(value, NORMAL_TRAVEL_THRUST_MULTIPLIER, FAST_TRAVEL_MAX_THRUST_MULTIPLIER);
+/**
+ * Max thrust multiplier the player may engage right now.
+ * When no pockets are registered, returns `null` (use ship {@link MAX_THRUST_MULTIPLIER}).
+ */
+export function getActiveThrustMultiplierCap(): number | null {
+  const cap = fastTravelThrustMultiplierRef.current;
+  return cap > 0 ? cap : null;
 }
 
-function halfFastTravelMultiplier(): number {
-  return clampZoneMultiplier(FAST_TRAVEL_THRUST_MULTIPLIER * 0.5);
+function clampZoneCap(value: number): number {
+  return THREE.MathUtils.clamp(
+    value,
+    NORMAL_TRAVEL_THRUST_MULTIPLIER,
+    FAST_TRAVEL_MAX_THRUST_MULTIPLIER
+  );
 }
 
-function fullFastTravelMultiplier(): number {
-  return clampZoneMultiplier(FAST_TRAVEL_THRUST_MULTIPLIER);
-}
-
-function multiplierForBand(band: TravelBand): number {
-  if (band === 'fast') return fullFastTravelMultiplier();
-  if (band === 'mid') return halfFastTravelMultiplier();
-  return NORMAL_TRAVEL_THRUST_MULTIPLIER;
+/**
+ * Thrust-multiplier ceiling for a band.
+ * Returns `0` when no pockets are registered (system inactive).
+ */
+function thrustCapForBand(band: TravelBand): number {
+  if (zones.size === 0) return 0;
+  if (band === 'fast') return clampZoneCap(FAST_TRAVEL_THRUST_MULTIPLIER);
+  // Inner and mid share the normal-travel thrust ceiling.
+  return clampZoneCap(NORMAL_TRAVEL_THRUST_MULTIPLIER);
 }
 
 /**
@@ -105,7 +118,7 @@ export function resolveTravelBand(shipPos: THREE.Vector3): TravelBand {
 
 /** True if inside any pocket's outer radius (mid or inner). */
 export function isInsideNormalTravelZone(shipPos: THREE.Vector3): boolean {
-  return resolveTravelBand(shipPos) !== 'fast';
+  return zones.size > 0 && resolveTravelBand(shipPos) !== 'fast';
 }
 
 function armEntryBrake(targetSpeed: number): void {
@@ -123,8 +136,8 @@ function clearEntryBrake(): void {
 }
 
 /**
- * Updates band / thrust multiplier refs from the ship's simulation-space
- * position. Arms staged entry braking when crossing into mid or inner bands.
+ * Updates band / thrust-cap refs from the ship's simulation-space position.
+ * Arms staged entry braking when crossing into mid or inner bands.
  */
 export function updateFastTravelMembership(shipPos: THREE.Vector3): {
   previousMultiplier: number;
@@ -137,7 +150,7 @@ export function updateFastTravelMembership(shipPos: THREE.Vector3): {
   const previousBand = travelBandRef.current;
   const previousMultiplier = fastTravelThrustMultiplierRef.current;
   const nextBand = resolveTravelBand(shipPos);
-  const nextMultiplier = multiplierForBand(nextBand);
+  const nextMultiplier = thrustCapForBand(nextBand);
 
   const enteredFastZone = previousBand !== 'fast' && nextBand === 'fast';
   const enteredMidFromFast = previousBand === 'fast' && nextBand === 'mid';
@@ -146,7 +159,7 @@ export function updateFastTravelMembership(shipPos: THREE.Vector3): {
   const enteredNormalZone = enteredMidFromFast || enteredInnerFromFast;
 
   travelBandRef.current = nextBand;
-  inFastTravelZoneRef.current = nextBand === 'fast';
+  inFastTravelZoneRef.current = zones.size > 0 && nextBand === 'fast';
   fastTravelThrustMultiplierRef.current = nextMultiplier;
 
   if (enteredMidFromFast) {

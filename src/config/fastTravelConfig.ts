@@ -1,22 +1,28 @@
 /**
- * Fast travel zones: when the ship is outside all registered normal-travel
- * pockets, thrust is scaled by {@link FAST_TRAVEL_THRUST_MULTIPLIER}.
- * With no pockets registered, the system is inactive (1× everywhere).
+ * Fast / normal travel zones.
  *
- * Each pocket has an outer radius and an inner radius at half that distance:
- * - outside outer → full fast-travel thrust
- * - between inner and outer → half fast-travel thrust
- * - inside inner → normal (1×) thrust
+ * When normal-travel pockets are registered:
+ * - inside any pocket → player thrust multiplier is capped at
+ *   {@link NORMAL_TRAVEL_THRUST_MULTIPLIER}
+ * - outside all pockets → capped at {@link FAST_TRAVEL_THRUST_MULTIPLIER}
+ *
+ * Crossing into a pocket still arms staged entry braking (shed speed), but
+ * zones do not continuously hard-cap velocity after that.
+ *
+ * With no pockets registered, the system is inactive (no zone thrust cap).
+ *
+ * Each pocket has an outer radius and an inner radius at half that distance
+ * (used for staged entry-brake targets and ring visuals).
  */
 
-/** Thrust scale while fully outside normal-travel pockets. */
-export const FAST_TRAVEL_THRUST_MULTIPLIER = 500;
+/** Max thrust multiplier while inside a normal-travel pocket (inner or mid). */
+export const NORMAL_TRAVEL_THRUST_MULTIPLIER = 3;
 
-/** Hard ceiling for the zone thrust multiplier (future tuning / ramp). */
-export const FAST_TRAVEL_MAX_THRUST_MULTIPLIER = 5000;
+/** Max thrust multiplier while fully outside normal-travel pockets. */
+export const FAST_TRAVEL_THRUST_MULTIPLIER = 50;
 
-/** Thrust scale inside the inner normal-travel core (or when no pockets exist). */
-export const NORMAL_TRAVEL_THRUST_MULTIPLIER = 1;
+/** Hard ceiling for zone thrust caps (future tuning / ramp). */
+export const FAST_TRAVEL_MAX_THRUST_MULTIPLIER = 50;
 
 /**
  * Inner-core entry brake target (m/s) when crossing into the half-radius ring.

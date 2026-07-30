@@ -20,6 +20,13 @@ export const SALVAGE_ATMOSPHERE_COLORS = [
   new THREE.Color('#e8a050'),
 ] as const;
 
+//dark blue atmosphere for drones
+export const DRONE_ATMOSPHERE_COLORS = [
+  new THREE.Color('#0000aa'),
+  new THREE.Color('#000000'),
+  new THREE.Color('#000000'),
+] as const;
+
 export const SalvageConfigData = {
   cameraPosition: [0, 40, 100] as Vec3,
   cameraTarget: [0, 0, 0] as Vec3,

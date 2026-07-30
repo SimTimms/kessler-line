@@ -16,6 +16,8 @@ export const SHIP_DIRECTION_TARGET_COLOR = '#9fdfff';
 export const SHIP_DIRECTION_MAGNETIC_COLOR = '#ffaa00';
 /** Velocity arrow color (matches speed readout). */
 export const SHIP_DIRECTION_VELOCITY_COLOR = '#ff8800';
+/** Ideal circular-orbit direction / required-velocity cue. */
+export const SHIP_DIRECTION_ORBIT_COLOR = '#30ff7a';
 /** Velocity arrow scale relative to the target arrow. */
 export const SHIP_DIRECTION_VELOCITY_ARROW_SCALE = 0.5;
 /** Hide velocity arrow below this speed (m/s). */

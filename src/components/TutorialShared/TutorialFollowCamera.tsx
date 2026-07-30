@@ -49,6 +49,16 @@ interface TutorialFollowCameraProps {
    * Mouse drag yaws around the ship; pitch up/down is disabled (Drone Config style).
    */
   lockPolarAngle?: boolean;
+  /**
+   * Drive this camera instead of the Canvas default (e.g. chase PIP in HUD Config).
+   * Does not claim {@link sceneCamera} when set.
+   */
+  cameraOverride?: RefObject<THREE.PerspectiveCamera | null>;
+  /**
+   * Element that receives orbit/zoom pointer events. Defaults to the WebGL canvas.
+   * Pass the chase HUD track element so PIP orbit does not steal the main view.
+   */
+  pointerRoot?: HTMLElement | null;
 }
 
 const _offset = new THREE.Vector3();
@@ -76,8 +86,10 @@ export default function TutorialFollowCamera({
   framePriority = 0,
   planetImpactCameraHoldMaxAltitude,
   lockPolarAngle = false,
+  cameraOverride,
+  pointerRoot,
 }: TutorialFollowCameraProps) {
-  const { camera, gl, scene } = useThree();
+  const { camera: defaultCamera, gl, scene } = useThree();
   const followSpherical = useRef(new THREE.Spherical(10, Math.PI / 2, Math.PI));
   const navSpherical = useRef(new THREE.Spherical(NAVVIEW_HEIGHT, NAVVIEW_TOPDOWN_PHI, Math.PI));
   const lockedFollowPhi = useRef<number | null>(null);
@@ -88,13 +100,15 @@ export default function TutorialFollowCamera({
   const lastPointer = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    sceneCamera.current = camera;
-    scene.add(camera);
+    // Secondary cameras (HUD PIP) must not own sceneCamera / default scene graph slot.
+    if (cameraOverride) return;
+    sceneCamera.current = defaultCamera;
+    scene.add(defaultCamera);
     return () => {
       sceneCamera.current = null;
-      scene.remove(camera);
+      scene.remove(defaultCamera);
     };
-  }, [camera, scene]);
+  }, [cameraOverride, defaultCamera, scene]);
 
   useEffect(() => {
     _offset.set(...followOffset);
@@ -108,12 +122,13 @@ export default function TutorialFollowCamera({
   }, [followOffset, lockPolarAngle]);
 
   useEffect(() => {
-    const canvas = gl.domElement;
+    const target = pointerRoot ?? gl.domElement;
+    if (!target) return;
 
     const onPointerDown = (e: PointerEvent) => {
       isPointerDown.current = true;
       lastPointer.current = { x: e.clientX, y: e.clientY };
-      canvas.setPointerCapture(e.pointerId);
+      target.setPointerCapture(e.pointerId);
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -144,6 +159,7 @@ export default function TutorialFollowCamera({
     };
 
     const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
       if (tutorialNavViewModeRef.current) {
         navSpherical.current.radius *= 1 + e.deltaY * CAMERA_WHEEL_SENSITIVITY;
         navSpherical.current.radius = THREE.MathUtils.clamp(
@@ -172,21 +188,23 @@ export default function TutorialFollowCamera({
       toggleCameraMode();
     };
 
-    canvas.addEventListener('pointerdown', onPointerDown);
-    canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerUp);
-    canvas.addEventListener('wheel', onWheel);
+    target.addEventListener('pointerdown', onPointerDown);
+    target.addEventListener('pointermove', onPointerMove);
+    target.addEventListener('pointerup', onPointerUp);
+    target.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKeyDown);
     return () => {
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', onPointerUp);
-      canvas.removeEventListener('wheel', onWheel);
+      target.removeEventListener('pointerdown', onPointerDown);
+      target.removeEventListener('pointermove', onPointerMove);
+      target.removeEventListener('pointerup', onPointerUp);
+      target.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [followOffset, gl, zoomMax, lockPolarAngle]);
+  }, [followOffset, gl, zoomMax, lockPolarAngle, pointerRoot]);
 
   useFrame((_, delta) => {
+    const camera = cameraOverride?.current ?? defaultCamera;
+    if (!camera) return;
     if (shipDestroyed.current) return; // lock camera at last pose on destruction
 
     if (!didInit.current) {

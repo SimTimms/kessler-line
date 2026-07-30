@@ -57,6 +57,11 @@ const TUTORIAL_MENU_ITEMS: Array<{
     label: 'Combat Config',
     selection: GAME_MODES.combatConfig,
   },
+  {
+    id: 'hud-config',
+    label: 'HUD Config',
+    selection: GAME_MODES.hudConfig,
+  },
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
@@ -73,6 +78,7 @@ const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.droneConfig,
   GAME_MODES.longDistanceTravelConfig,
   GAME_MODES.combatConfig,
+  GAME_MODES.hudConfig,
 ]);
 
 const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {

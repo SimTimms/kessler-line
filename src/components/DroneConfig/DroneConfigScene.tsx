@@ -102,7 +102,12 @@ export default function DroneConfigScene() {
           }}
         />
         <MiningDrone />
-        <SalvageField origin={[0, 0, 0]} idPrefix="drone-" debugJumpDockOnClick />
+        <SalvageField
+          origin={[0, 0, 0]}
+          idPrefix="drone-"
+          debugJumpDockOnClick
+          showDroneAtmosphere
+        />
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls

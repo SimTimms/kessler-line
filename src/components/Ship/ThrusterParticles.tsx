@@ -23,7 +23,7 @@ import {
 import {
   RCS_THRUSTER_LOCAL,
   HOVER_THRUSTER_LOCAL,
-  HOVER_CUTOFF_SPEED,
+  // HOVER_CUTOFF_SPEED, // used when underside hover particles are re-enabled
 } from '../../config/shipConfig';
 
 const EMIT_RATE = 900; // particles per second per emitter
@@ -422,10 +422,12 @@ export default function ThrusterParticles({
     }
 
     // Hover thrusters — active at low speed (cuts off when in orbit / fast flight)
-    const hoverSpeed = driveFromProps
-      ? (shipVelocityRef?.current.length() ?? 0)
-      : shipVelocity.length();
-    const hoverActive = propulsionAvailable && hoverSpeed <= HOVER_CUTOFF_SPEED;
+    // Disabled for now — underside hover particles.
+    // const hoverSpeed = driveFromProps
+    //   ? (shipVelocityRef?.current.length() ?? 0)
+    //   : shipVelocity.length();
+    // const hoverActive = propulsionAvailable && hoverSpeed <= HOVER_CUTOFF_SPEED;
+    const hoverActive = false;
 
     for (let hi = 0; hi < HOVER_EMITTERS.length; hi++) {
       if (!hoverActive) {
@@ -550,7 +552,7 @@ export default function ThrusterParticles({
         </bufferGeometry>
         <pointsMaterial ref={rcsMatRef} size={0.18} {...sharedMatProps} />
       </points>
-      {/* Hover thrusters — underside, always on */}
+      {/* Hover thrusters — underside, always on (spawn disabled above) */}
       {highlightThruster(thrustersHighlighted[0])}
       <points frustumCulled={false}>
         <bufferGeometry ref={hoverGeoRef}>

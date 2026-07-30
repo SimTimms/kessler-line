@@ -26,12 +26,11 @@
 .mech-chart-bezel {
   position: relative;
   padding: 10px 10px 8px;
-  background: linear-gradient(145deg, #222222 0%, var(--mech-metal) 38%, var(--mech-metal-lo) 100%);
-  border: 1px solid #5a616a;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.55),
-    0 4px 14px rgba(0, 0, 0, 0.45);
+  background: var(--mech-bezel-bg);
+  backdrop-filter: var(--mech-bezel-blur);
+  -webkit-backdrop-filter: var(--mech-bezel-blur);
+  border: var(--mech-bezel-border);
+  box-shadow: var(--mech-bezel-shadow);
 }
 
 .sandbox-map-overlay.mech-chart.sandbox-map-overlay--docking .mech-chart-bezel {
@@ -44,7 +43,7 @@
   gap: 8px;
   margin: 0 2px 8px;
   padding: 0 2px 6px;
-  border-bottom: 1px solid rgba(0, 200, 255, 0.22);
+  border-bottom: var(--mech-head-border);
 }
 
 .mech-chart-lamp {
@@ -269,13 +268,137 @@
   width: 124px;
   height: 124px;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
-  box-shadow:
-    inset 0 0 0 13px rgba(0, 200, 255, 0.12),
-    inset 0 0 0 26px rgba(0, 200, 255, 0.1),
-    inset 0 0 0 39px rgba(0, 200, 255, 0.08),
-    0 0 70px rgba(0, 180, 255, 0.22);
   pointer-events: none;
+}
+
+.sandbox-map-docking-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  border-style: dashed;
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.7);
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.sandbox-map-docking-ring--outer {
+  width: 100%;
+  height: 100%;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.sandbox-map-docking-ring--mid {
+  width: 78%;
+  height: 78%;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.sandbox-map-docking-ring--inner {
+  width: 56%;
+  height: 56%;
+  border-color: rgba(255, 255, 255, 0.78);
+}
+
+/* Nose / port docking assist — ship port at center, partner bay as target. */
+
+.sandbox-map-docking-port-frame {
+  position: absolute;
+  inset: 18px 22px 28px 22px;
+  pointer-events: none;
+}
+
+.sandbox-map-docking-port-reticle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  transform: translate(-50%, -50%);
+  border: 1px dashed rgba(255, 255, 255, 0.55);
+  box-sizing: border-box;
+}
+
+.sandbox-map-docking-port-crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  transform: translate(-50%, -50%);
+}
+
+.sandbox-map-docking-port-crosshair--h {
+  width: 72%;
+  height: 1px;
+}
+
+.sandbox-map-docking-port-crosshair--v {
+  width: 1px;
+  height: 72%;
+}
+
+.sandbox-map-docking-port-heading {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-top-color: rgba(0, 212, 255, 0.95);
+  border-radius: 50%;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.sandbox-map-docking-port-vectors {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.sandbox-map-docking-port-link {
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+
+.sandbox-map-docking-port-target {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1.5px solid rgba(255, 120, 140, 0.95);
+  background: rgba(255, 60, 90, 0.25);
+  box-shadow: 0 0 10px rgba(255, 80, 100, 0.55);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.sandbox-map-marker--ship-port {
+  z-index: 4;
+  /* Icon nose (docking port) is anchored at the HUD center; body trails aft. */
+  filter: drop-shadow(0 0 6px rgba(0, 214, 255, 0.75));
+}
+
+.sandbox-map-docking-port-readouts {
+  position: absolute;
+  left: 22px;
+  bottom: 8px;
+  right: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: rgba(180, 230, 255, 0.85);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .sandbox-map-docking-scale {
@@ -444,6 +567,133 @@
   }
 }
 
+.sandbox-map-overlay--orbit .mech-chart-crt {
+  background: radial-gradient(circle at 50% 50%, rgba(4, 14, 18, 0.96), var(--mech-crt-bg));
+}
+
+.sandbox-map-overlay--orbit .sandbox-map-grid {
+  opacity: 0.22;
+}
+
+.sandbox-map-overlay--orbit .sandbox-map-marker--ship {
+  z-index: 5;
+  filter: drop-shadow(0 0 4px rgba(0, 200, 255, 0.55));
+}
+
+.sandbox-map-orbit-assist-vectors {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sandbox-map-orbit-assist-surface {
+  fill: rgba(40, 90, 140, 0.45);
+  stroke: rgba(120, 180, 220, 0.55);
+  stroke-width: 1;
+}
+
+.sandbox-map-orbit-assist-ideal {
+  fill: none;
+  stroke: #30ff7a;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  opacity: 0.9;
+}
+
+.sandbox-map-orbit-assist-path {
+  fill: none;
+  stroke: #ff8800;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.92;
+}
+
+.sandbox-map-orbit-assist-target {
+  stroke: #9fdfff;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.sandbox-map-orbit-assist-req {
+  stroke: #30ff7a;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  opacity: 0.95;
+}
+
+.sandbox-map-orbit-assist-ship-ring {
+  fill: none;
+  stroke: #30ff7a;
+  stroke-width: 1.4;
+  opacity: 0.85;
+}
+
+.sandbox-map-orbit-assist-req-label {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, 0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  color: #30ff7a;
+  font-family: inherit;
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  text-shadow: 0 0 6px rgba(48, 255, 122, 0.45);
+}
+
+.sandbox-map-orbit-assist-body {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 4;
+  color: rgba(170, 235, 255, 0.88);
+  font-family: inherit;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+
+.sandbox-map-orbit-assist-readouts {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: rgba(170, 235, 255, 0.82);
+  font-family: inherit;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.sandbox-map-orbit-assist-status {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 4;
+  color: rgba(255, 170, 80, 0.95);
+  font-family: inherit;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+}
+
+.sandbox-map-orbit-assist-status--ok {
+  color: rgba(80, 255, 160, 0.95);
+}
+
 .sandbox-map-hover-card {
   position: fixed;
   z-index: 95;
@@ -562,12 +812,11 @@
   width: 100%;
   padding: 12px 14px;
   box-sizing: border-box;
-  background: linear-gradient(145deg, #222222 0%, var(--mech-metal) 38%, var(--mech-metal-lo) 100%);
-  border: 1px solid #5a616a;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.55),
-    0 4px 14px rgba(0, 0, 0, 0.45);
+  background: var(--mech-bezel-bg);
+  backdrop-filter: var(--mech-bezel-blur);
+  -webkit-backdrop-filter: var(--mech-bezel-blur);
+  border: var(--mech-bezel-border);
+  box-shadow: var(--mech-bezel-shadow);
 }
 
 .sandbox-map-fullscreen-crt {

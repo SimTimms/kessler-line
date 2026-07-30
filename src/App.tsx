@@ -36,6 +36,7 @@ import SalvageConfig from './components/SalvageConfig/SalvageConfig';
 import DroneConfig from './components/DroneConfig/DroneConfig';
 import LongDistanceTravelConfig from './components/LongDistanceTravelConfig/LongDistanceTravelConfig';
 import CombatConfig from './components/CombatConfig/CombatConfig';
+import HudConfig from './components/HudConfig/HudConfig';
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
 function resetShipState(forTutorial = false) {
@@ -46,7 +47,7 @@ function resetShipState(forTutorial = false) {
   setO2(100);
   setShipCrew(forTutorial ? SHIP_CREW_CAPACITY : 1);
   resetAmmo();
-  resetCameraMode('ship');
+  resetCameraMode('free');
   shipDestroyed.current = false;
   mainEngineDisabled.reverseA.current = false;
   mainEngineDisabled.reverseB.current = false;
@@ -107,6 +108,8 @@ function App() {
       return <LongDistanceTravelConfig />;
     case GAME_MODES.combatConfig:
       return <CombatConfig />;
+    case GAME_MODES.hudConfig:
+      return <HudConfig />;
     case GAME_MODES.sandbox:
       return <Sandbox />;
     case GAME_MODES.tutorial:

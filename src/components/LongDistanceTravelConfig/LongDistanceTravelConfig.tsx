@@ -64,7 +64,7 @@ export default function LongDistanceTravelConfig() {
     clearSelectedTarget();
     disableAutopilot();
     tutorialNavViewModeRef.current = false;
-    resetCameraMode('ship');
+    resetCameraMode('free');
     setNavHudEnabled(true);
     resetScannerRefs();
     applyLtdScannerDefaults();

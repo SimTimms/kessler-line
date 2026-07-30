@@ -21,7 +21,10 @@ interface StepParams {
   primaryGravityId: { current: string | null };
   primaryGravityVelocity: THREE.Vector3;
   thrustMultiplierRef: { current: number };
-  /** Environmental fast-travel thrust scale (1 in normal zones). */
+  /**
+   * Zone thrust-multiplier ceiling (`0` = FT system inactive / uncapped).
+   * Applied as `min(playerDial, ceiling)` on main-axis thrust.
+   */
   fastTravelMultiplier?: number;
   dt: number;
   anyThrusting: boolean;
@@ -49,7 +52,7 @@ export function applyPhysicsStep({
   primaryGravityId,
   primaryGravityVelocity,
   thrustMultiplierRef,
-  fastTravelMultiplier = 1,
+  fastTravelMultiplier = 0,
   dt,
   anyThrusting,
   disableGravity,
@@ -68,12 +71,14 @@ export function applyPhysicsStep({
   radIn,
   collisionOptions,
 }: StepParams) {
-  // Fast-travel zone scale applies to main-axis thrust only — not strafe or yaw.
-  const zoneScale = fastTravelMultiplier;
-  const forwardThrustMultiplier = thrustMultiplierRef.current * zoneScale;
+  // Zone system caps the engageable thrust multiplier (does not multiply on top).
+  const dial = thrustMultiplierRef.current;
+  const zoneCap = fastTravelMultiplier;
+  const forwardThrustMultiplier = zoneCap > 0 ? Math.min(dial, zoneCap) : dial;
   // Cap RCS/reverse authority so maneuvering remains controllable at high player thrust.
-  const cappedManeuverMultiplier = Math.min(thrustMultiplierRef.current, 2);
-  const reverseThrustMultiplier = cappedManeuverMultiplier * zoneScale;
+  const cappedManeuverMultiplier = Math.min(dial, 2);
+  const reverseThrustMultiplier =
+    zoneCap > 0 ? Math.min(cappedManeuverMultiplier, zoneCap) : cappedManeuverMultiplier;
 
   const boostYaw = thrustBoostHeld.current ? THRUST_BOOST_YAW_SCALE : 1;
   const scaledYawThrust = YAW_THRUST * yawThrustScale * boostYaw;

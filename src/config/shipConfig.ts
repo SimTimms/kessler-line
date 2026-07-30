@@ -51,11 +51,11 @@ export const SHIP_IMPACT_PULSE_MS = 1200;
 
 // ── Visual maneuver lean (mesh only — physics stays level) ────────────────
 /** Max bank into a yaw turn (radians). */
-export const SHIP_LEAN_BANK_MAX_RAD = (8 * Math.PI) / 180;
+export const SHIP_LEAN_BANK_MAX_RAD = (12 * Math.PI) / 180;
 /** Nose-down lean while thrusting forward (radians). */
-export const SHIP_LEAN_PITCH_FWD_RAD = (5 * Math.PI) / 180;
+export const SHIP_LEAN_PITCH_FWD_RAD = (2 * Math.PI) / 180;
 /** Nose-up lean while thrusting reverse (radians). */
-export const SHIP_LEAN_PITCH_REV_RAD = (5 * Math.PI) / 180;
+export const SHIP_LEAN_PITCH_REV_RAD = (2 * Math.PI) / 180;
 /** How quickly lean eases toward the target / back to level (1/s). */
 export const SHIP_LEAN_RESPONSE = 2.4;
 

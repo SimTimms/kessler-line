@@ -8,7 +8,7 @@ export type CameraFollowMode = 'ship' | 'free';
 
 export const EVENT_CAMERA_MODE_CHANGED = 'CameraModeChanged';
 
-export const cameraModeRef: { current: CameraFollowMode } = { current: 'ship' };
+export const cameraModeRef: { current: CameraFollowMode } = { current: 'free' };
 
 export function getCameraMode(): CameraFollowMode {
   return cameraModeRef.current;
@@ -28,7 +28,7 @@ export function toggleCameraMode(): CameraFollowMode {
   return next;
 }
 
-export function resetCameraMode(mode: CameraFollowMode = 'ship'): void {
+export function resetCameraMode(mode: CameraFollowMode = 'free'): void {
   cameraModeRef.current = mode;
   window.dispatchEvent(
     new CustomEvent(EVENT_CAMERA_MODE_CHANGED, { detail: { mode } })

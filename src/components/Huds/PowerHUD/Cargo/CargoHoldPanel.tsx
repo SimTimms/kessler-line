@@ -66,12 +66,7 @@ export default function CargoHoldPanel({
   const showOpenTransfer =
     dockTransferUi.partnerId != null && dockTransferUi.towable && !dockTransferUi.panelOpen;
 
-  function onDragStart(
-    e: DragEvent,
-    itemId: string,
-    quantity: number,
-    salvagedBy?: string
-  ) {
+  function onDragStart(e: DragEvent, itemId: string, quantity: number, salvagedBy?: string) {
     if (!transferEnabled) return;
     const payload: CargoDragPayload = { itemId, quantity, from: PLAYER_OWNER, salvagedBy };
     writeCargoDragPayload(e.dataTransfer, payload);
@@ -207,16 +202,14 @@ export default function CargoHoldPanel({
                 <>
                   <span className="cargo-hold-panel__detail-tag">{hovered.tag}</span>
                   <span className="cargo-hold-panel__detail-name">{hovered.label}</span>
-                  <span className="cargo-hold-panel__detail-qty">{hovered.stackQuantity} aboard</span>
+                  <span className="cargo-hold-panel__detail-qty">
+                    {hovered.stackQuantity} aboard
+                  </span>
                   {hovered.provenanceLabel ? (
                     <span className="cargo-hold-panel__detail-qty">{hovered.provenanceLabel}</span>
                   ) : null}
                 </>
-              ) : (
-                <span className="cargo-hold-panel__detail-idle">
-                  {transferEnabled ? 'Drag a stack' : 'Hover a cell'}
-                </span>
-              )}
+              ) : null}
             </div>
           </div>
         ) : null}

@@ -80,23 +80,19 @@ const HelmetHUD = memo(function HelmetHUD({
       data-power-online={powerOnline ? 'true' : 'false'}
     >
       <div className="helmet-sensor-stack">
-        <PowerHUD
-          layout="helmet"
-          disableElements={disableElements}
-          focusElements={focusElements}
-        />
-        <NavHUD
-          layout="helmet"
-          disableElements={disableElements}
-          focusElements={focusElements}
-          customPlanetaryTargets={customPlanetaryTargets}
-        />
         <ScannerHUD
           layout="helmet"
           focusElements={focusElements}
           disableElements={disableElements}
           initialPowers={scannerInitialPowers}
           {...scannerProps}
+        />
+        <PowerHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
+        <NavHUD
+          layout="helmet"
+          disableElements={disableElements}
+          focusElements={focusElements}
+          customPlanetaryTargets={customPlanetaryTargets}
         />
       </div>
       <CameraHUD />

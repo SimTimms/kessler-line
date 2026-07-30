@@ -9,6 +9,7 @@ import { navHudEnabledRef } from '../context/NavHud';
 import { minimapOverlayActiveRef } from '../context/MinimapUi';
 import {
   SHIP_DIRECTION_MIN_SPEED,
+  SHIP_DIRECTION_ORBIT_COLOR,
   SHIP_DIRECTION_RING_OPACITY,
   SHIP_DIRECTION_VELOCITY_ARROW_SCALE,
   SHIP_DIRECTION_VELOCITY_COLOR,
@@ -26,6 +27,7 @@ import {
 
 /** Local +Z offset past the arrow tip — label projects from this anchor. */
 const SPEED_LABEL_LOCAL_Z = 22;
+const ORBIT_REQ_LABEL_LOCAL_Z = 22;
 
 const _shipWorld = new THREE.Vector3();
 
@@ -111,6 +113,10 @@ export default function VelocityIndicator({
   const screenLabelRef = useShipDirectionScreenLabelRoot();
   const speedRef = useRef<HTMLDivElement | null>(null);
 
+  const orbitReqLabelAnchorRef = useRef<THREE.Group>(null!);
+  const orbitReqScreenLabelRef = useShipDirectionScreenLabelRoot();
+  const orbitReqSpeedRef = useRef<HTMLDivElement | null>(null);
+
   useLayoutEffect(() => {
     const root = screenLabelRef.current;
     if (!root) return;
@@ -127,6 +133,31 @@ export default function VelocityIndicator({
       root.replaceChildren();
     };
   }, [screenLabelRef]);
+
+  useLayoutEffect(() => {
+    const root = orbitReqScreenLabelRef.current;
+    if (!root) return;
+
+    root.replaceChildren();
+    const col = document.createElement('div');
+    col.style.cssText =
+      'display:flex;flex-direction:column;align-items:center;gap:2px;font-family:monospace;pointer-events:none;opacity:0.92;text-align:center;';
+    const title = document.createElement('div');
+    title.style.cssText =
+      'font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;color:#30ff7a;text-shadow:0 0 8px rgba(48,255,122,0.5);';
+    title.textContent = 'CIRC';
+    const speed = document.createElement('div');
+    speed.style.cssText =
+      'font-size:9px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;color:#30ff7a;text-shadow:0 0 8px rgba(48,255,122,0.55);';
+    col.append(title, speed);
+    root.append(col);
+    orbitReqSpeedRef.current = speed;
+
+    return () => {
+      orbitReqSpeedRef.current = null;
+      root.replaceChildren();
+    };
+  }, [orbitReqScreenLabelRef]);
 
   useEffect(() => {
     const onStart = () => {
@@ -145,6 +176,8 @@ export default function VelocityIndicator({
   const {
     velocityArrow,
     directionRing,
+    orbitDirArrow,
+    orbitDirRing,
     posArr,
     orbitLine,
     orbitSprite,
@@ -193,9 +226,16 @@ export default function VelocityIndicator({
     const velocityArrow = createShipDirectionArrow(SHIP_DIRECTION_VELOCITY_COLOR);
     velocityArrow.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
 
+    const orbitDirArrow = createShipDirectionArrow(SHIP_DIRECTION_ORBIT_COLOR);
+    orbitDirArrow.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
+    const orbitDirRing = createShipDirectionRing(SHIP_DIRECTION_ORBIT_COLOR);
+    (orbitDirRing.material as THREE.LineBasicMaterial).opacity = 0.005;
+
     return {
       velocityArrow,
       directionRing: createShipDirectionRing(SHIP_DIRECTION_VELOCITY_COLOR),
+      orbitDirArrow,
+      orbitDirRing,
       posArr: arr,
       orbitLine: ol,
       orbitSprite,
@@ -210,7 +250,10 @@ export default function VelocityIndicator({
     if (!navHudEnabledRef.current) {
       velocityArrow.visible = false;
       directionRing.visible = false;
+      orbitDirArrow.visible = false;
+      orbitDirRing.visible = false;
       syncShipDirectionScreenLabel(null, screenLabelRef.current, camera, size, false);
+      syncShipDirectionScreenLabel(null, orbitReqScreenLabelRef.current, camera, size, false);
       orbitLine.visible = false;
       orbitSprite.visible = false;
       periMarker.sprite.visible = false;
@@ -484,7 +527,12 @@ export default function VelocityIndicator({
     const showOrbit = Boolean(primaryBody);
     orbitLine.visible = showOrbit;
     orbitSprite.visible = showOrbit;
-    if (!showOrbit || !primaryBody) return;
+    if (!showOrbit || !primaryBody) {
+      orbitDirArrow.visible = false;
+      orbitDirRing.visible = false;
+      syncShipDirectionScreenLabel(null, orbitReqScreenLabelRef.current, camera, size, false);
+      return;
+    }
 
     const rdx = ship.x - primaryBody.position.x;
     const rdz = ship.z - primaryBody.position.z;
@@ -493,21 +541,65 @@ export default function VelocityIndicator({
       primaryBody.surfaceRadius + primaryBody.orbitAltitude,
       primaryBody.soiRadius * 0.9
     );
-    if (idealOrbitRadius <= primaryBody.surfaceRadius) return;
+    if (idealOrbitRadius <= primaryBody.surfaceRadius) {
+      orbitDirArrow.visible = false;
+      orbitDirRing.visible = false;
+      syncShipDirectionScreenLabel(null, orbitReqScreenLabelRef.current, camera, size, false);
+      return;
+    }
 
     const vx = rdx / rLen;
     const vz = rdz / rLen;
-    const vCirc = Math.sqrt(primaryBody.mu / idealOrbitRadius);
+    // Required circular speed at current altitude (circularize-here target).
+    const vCircNow = Math.sqrt(primaryBody.mu / Math.max(rLen, 1));
+    const vCircIdeal = Math.sqrt(primaryBody.mu / idealOrbitRadius);
     const tx = -vz;
     const tz = vx;
     const relVelX = shipVelocity.x - primaryBody.velocity.x;
     const relVelZ = shipVelocity.z - primaryBody.velocity.z;
     const dot = relVelX * tx + relVelZ * tz;
     const tangentSign = dot >= 0 ? 1 : -1;
+    const dirX = tx * tangentSign;
+    const dirZ = tz * tangentSign;
+
+    // Ship-local green cue: ring + arrow along the velocity needed for a
+    // circular orbit at the current radius (matches yellow / blue indicators).
+    if (primaryIsPlanet) {
+      orbitDirRing.visible = true;
+      orbitDirRing.position.copy(_shipWorld);
+      const orbitArrowPlaced = placeShipDirectionArrow(
+        orbitDirArrow,
+        _shipWorld.x,
+        _shipWorld.y,
+        _shipWorld.z,
+        dirX,
+        dirZ
+      );
+      if (orbitArrowPlaced) {
+        orbitDirArrow.updateWorldMatrix(true, true);
+      }
+      const showOrbitReqLabel =
+        orbitArrowPlaced && !minimapOverlayActiveRef.current;
+      syncShipDirectionScreenLabel(
+        orbitReqLabelAnchorRef.current,
+        orbitReqScreenLabelRef.current,
+        camera,
+        size,
+        showOrbitReqLabel,
+        40
+      );
+      if (orbitReqSpeedRef.current && showOrbitReqLabel) {
+        orbitReqSpeedRef.current.textContent = `${vCircNow.toFixed(1)} m/s`;
+      }
+    } else {
+      orbitDirArrow.visible = false;
+      orbitDirRing.visible = false;
+      syncShipDirectionScreenLabel(null, orbitReqScreenLabelRef.current, camera, size, false);
+    }
 
     _orbitDir.set(vx, 0, vz).multiplyScalar(idealOrbitRadius);
     _orbitPos.copy(primaryBody.position).add(_orbitDir);
-    _orbitVel.set(tx * vCirc * tangentSign, 0, tz * vCirc * tangentSign);
+    _orbitVel.set(tx * vCircIdeal * tangentSign, 0, tz * vCircIdeal * tangentSign);
     _orbitVel.x += primaryBody.velocity.x;
     _orbitVel.z += primaryBody.velocity.z;
 
@@ -555,6 +647,10 @@ export default function VelocityIndicator({
       <primitive object={directionRing} />
       <primitive object={velocityArrow}>
         <group ref={speedLabelAnchorRef} position={[0, 0, SPEED_LABEL_LOCAL_Z]} />
+      </primitive>
+      <primitive object={orbitDirRing} />
+      <primitive object={orbitDirArrow}>
+        <group ref={orbitReqLabelAnchorRef} position={[0, 0, ORBIT_REQ_LABEL_LOCAL_Z]} />
       </primitive>
       <primitive object={orbitLine} />
       <primitive object={orbitSprite} />

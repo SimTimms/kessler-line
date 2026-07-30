@@ -23,6 +23,7 @@ import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipVelocity } from '../../context/ShipState';
 import { playDockAlignSound } from '../../sound/SoundManager';
 import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';
+import { isLandingPadElevatorReady } from '../../context/LandingPadElevator';
 
 const LANDING_ALIGN_SPEED = 2.8; // units/s
 const LANDING_DESCEND_SPEED = 2.8; // units/s
@@ -408,7 +409,11 @@ export function useShipPhysics({
         if (!entry || !dockObject) {
           hoverUndockingTransition.current = null;
           if (publishToPlayerRefs) {
-            window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
+            window.dispatchEvent(
+              new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED, {
+                detail: { stationId: entry?.stationId ?? null },
+              })
+            );
           }
         } else {
           if (group.parent !== dockObject) {
@@ -425,7 +430,11 @@ export function useShipPhysics({
             hoverUndockingTransition.current = null;
             dockedTo.current = null;
             if (publishToPlayerRefs) {
-              window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
+              window.dispatchEvent(
+                new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED, {
+                  detail: { stationId: entry.stationId ?? null },
+                })
+              );
               window.dispatchEvent(new CustomEvent('ShipUndocked'));
             }
             detachShipFromDock(group, scene);
@@ -457,7 +466,11 @@ export function useShipPhysics({
 
         if (!entry || !dockObject) {
           if (publishToPlayerRefs) {
-            window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
+            window.dispatchEvent(
+              new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED, {
+                detail: { stationId: transition.stationId },
+              })
+            );
           }
           hoverDockingTransition.current = null;
         } else {
@@ -473,7 +486,12 @@ export function useShipPhysics({
             const nextX = moveTowardScalar(group.position.x, 0, LANDING_ALIGN_SPEED * delta);
             const nextZ = moveTowardScalar(group.position.z, 0, LANDING_ALIGN_SPEED * delta);
             group.position.set(nextX, group.position.y, nextZ);
-            if (nextX === 0 && nextZ === 0 && rotationAligned) {
+            if (
+              nextX === 0 &&
+              nextZ === 0 &&
+              rotationAligned &&
+              isLandingPadElevatorReady(transition.stationId)
+            ) {
               group.position.set(0, group.position.y, 0);
               transition.stage = 'descend';
             }
@@ -485,10 +503,14 @@ export function useShipPhysics({
               hoverDockReleaseLocalY.current.set(transition.dockEntryId, transition.releaseLocalY);
               dockedTo.current = transition.dockEntryId;
               if (publishToPlayerRefs) {
-                window.dispatchEvent(new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED));
                 window.dispatchEvent(
-                  new CustomEvent('ShipDocked', { detail: { stationId: transition.stationId } })
-                );
+                new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED, {
+                  detail: { stationId: transition.stationId },
+                })
+              );
+              window.dispatchEvent(
+                new CustomEvent('ShipDocked', { detail: { stationId: transition.stationId } })
+              );
               }
               hoverDockingTransition.current = null;
             }

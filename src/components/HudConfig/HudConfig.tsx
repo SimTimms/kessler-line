@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppContainer from '../App/AppContainer';
-import CombatConfigScene from './CombatConfigScene';
+import HudConfigScene from './HudConfigScene';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
 import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
 import AllHuds from '../Huds/AllHuds';
@@ -21,7 +21,7 @@ import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 
-const COMBAT_SCANNER_INITIAL_POWERS = {
+const HUD_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.DRIVE]: 2,
   [ScannerHUDElements.PROXIMITY]: 2,
   [ScannerHUDElements.MAGNET]: 2,
@@ -30,28 +30,28 @@ const COMBAT_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.SPOTLIGHT]: 1,
 } as const;
 
-const COMBAT_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
+const HUD_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
 
-function applyCombatScannerDefaults(): void {
+function applyHudScannerDefaults(): void {
   spotlightOnRef.current = false;
   magneticOnRef.current = true;
-  magneticScanRangeRef.current = getScannerRange('magnet', COMBAT_SCANNER_INITIAL_POWERS.magnet);
+  magneticScanRangeRef.current = getScannerRange('magnet', HUD_SCANNER_INITIAL_POWERS.magnet);
   driveSignatureOnRef.current = true;
-  driveSignatureRangeRef.current = getScannerRange('drive', COMBAT_SCANNER_INITIAL_POWERS.drive);
+  driveSignatureRangeRef.current = getScannerRange('drive', HUD_SCANNER_INITIAL_POWERS.drive);
   proximityScanOnRef.current = true;
   proximityScanRangeRef.current = getScannerRange(
     'proximity',
-    COMBAT_SCANNER_INITIAL_POWERS.proximity
+    HUD_SCANNER_INITIAL_POWERS.proximity
   );
   radioOnRef.current = true;
-  radioRangeRef.current = getScannerRange('radio', COMBAT_SCANNER_INITIAL_POWERS.radio);
+  radioRangeRef.current = getScannerRange('radio', HUD_SCANNER_INITIAL_POWERS.radio);
 }
 
 /**
- * Combat authoring scene: mineable rocks for clamp-on-impact tuning
- * plus a drone fleet for combat target practice. No solar system or salvage field.
+ * HUD authoring scene: Combat Config world with dual cameras —
+ * full-screen first-person nose view + 1/5 chase camera as a HUD element.
  */
-export default function CombatConfig() {
+export default function HudConfig() {
   const [spotlightOn, setSpotlightOn] = useState(false);
   const [magneticOn, setMagneticOn] = useState(true);
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
@@ -67,7 +67,7 @@ export default function CombatConfig() {
     resetCameraMode('free');
     setNavHudEnabled(true);
     resetScannerRefs();
-    applyCombatScannerDefaults();
+    applyHudScannerDefaults();
     clearAllIncomingHails();
   }, []);
 
@@ -88,7 +88,7 @@ export default function CombatConfig() {
 
   return (
     <AppContainer>
-      <CombatConfigScene />
+      <HudConfigScene />
       <AllHuds
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
@@ -100,8 +100,8 @@ export default function CombatConfig() {
         setProximity={setProximity}
         radioOn={radioOn}
         setRadioOn={setRadioOn}
-        disabledHudElementsState={[...COMBAT_DISABLED_HUD_ELEMENTS]}
-        scannerInitialPowers={COMBAT_SCANNER_INITIAL_POWERS}
+        disabledHudElementsState={[...HUD_DISABLED_HUD_ELEMENTS]}
+        scannerInitialPowers={HUD_SCANNER_INITIAL_POWERS}
       />
       {showMinimap && (
         <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem={false} />

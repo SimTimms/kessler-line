@@ -22,8 +22,10 @@ const _cutoffForward = new THREE.Vector3();
 const CUTOFF_SPEED_SQ = FAST_TRAVEL_ENGINE_CUTOFF_SPEED * FAST_TRAVEL_ENGINE_CUTOFF_SPEED;
 
 /**
- * Resolve zone membership for this frame. Crossing into mid/inner bands
- * arms staged entry braking (see {@link applyNormalTravelEntryBrake}).
+ * Resolve zone membership for this frame.
+ * Returns the thrust-multiplier ceiling for the current band (`0` = inactive).
+ * Crossing into mid/inner arms staged entry braking
+ * (see {@link applyNormalTravelEntryBrake}).
  */
 export function applyFastTravelZoneUpdate(shipPos: THREE.Vector3): number {
   const { nextMultiplier } = updateFastTravelMembership(shipPos);
