@@ -44,7 +44,7 @@ export default function ProximityHighlight() {
 
     const range = proximityScanRangeRef.current;
     const collidables = getCollidables().filter(
-      (c) => c.id !== SHIP_COLLISION_ID && c.getObject3D != null
+      (c) => c.id !== SHIP_COLLISION_ID && !c.id.startsWith('docking-bay-') && c.getObject3D != null
     );
     const inRange = new Set<string>();
 

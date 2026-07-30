@@ -9,8 +9,7 @@ export const RAILGUN_DAMAGE_MIN = 20;
 export const RAILGUN_DAMAGE_MAX = 30;
 
 // O2 drain rate per crew member (units per second per person, always active)
-// TEMP: raised for testing low-O2 feedback (breathing SFX / HUD). Restore to 0.05 later.
-export const O2_DRAIN_RATE = 1;
+export const O2_DRAIN_RATE = 0.05;
 
 /** Total O2 drain (units/s) scales linearly with crew aboard. */
 export function o2DrainRateForCrew(crewCount: number): number {
@@ -27,6 +26,17 @@ export const O2_REFILL_RATE = 10;
 
 /** O2 at or below this level is treated as dangerous (matches Power HUD red). */
 export const O2_DANGER_THRESHOLD = 20;
+
+/**
+ * Global scaler for powered ship systems (scanner/radio/spotlight and any
+ * future per-second system drains that feed ship power consumption).
+ */
+export const SYSTEM_POWER_DRAIN_MULTIPLIER = 1;
+
+/** Apply global balancing to per-second ship-system power drain. */
+export function scaleSystemPowerDrainPerSecond(baseDrainPerSecond: number): number {
+  return Math.max(0, baseDrainPerSecond) * SYSTEM_POWER_DRAIN_MULTIPLIER;
+}
 
 /** Propellant drain per active thrust axis per second at thrust multiplier 1. */
 export const FUEL_BURN_RATE = 0.001;

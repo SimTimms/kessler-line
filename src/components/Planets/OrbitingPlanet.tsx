@@ -544,6 +544,7 @@ function PlanetSurfaceMaterial({
 interface OrbitingPlanetProps {
   planetName: string;
   orbitRadius: number;
+  orbitY: number;
   radius: number; // world-space sphere radius (in SolarSystem local space)
   color: string;
   glowColor?: string; // tint for the background glow sprite (defaults to color)
@@ -568,6 +569,7 @@ interface OrbitingPlanetProps {
 export default function OrbitingPlanet({
   planetName,
   orbitRadius,
+  orbitY,
   radius,
   color,
   glowColor,
@@ -637,7 +639,8 @@ export default function OrbitingPlanet({
   const isNeptune = planetName === 'Neptune';
   const materialColor = isNeptune ? '#84c8ff' : color;
   const materialEmissive = showColonies ? '#ffb050' : isNeptune ? '#123d8a' : emissive;
-  const materialEmissiveIntensity = showColonies ? 1.5 : isNeptune ? 1.15 : 1.0;
+  // Lower colony emissive so Mars surface lighting remains responsive to scene lights.
+  const materialEmissiveIntensity = showColonies ? 0.45 : isNeptune ? 1.15 : 1.0;
   const materialRoughness = isNeptune ? 0.62 : 0.8;
   const materialBumpScale = useBumpMap ? (isNeptune ? -0.35 : -0.6) : 0;
   const glowOpacity = glowTextureUrl ? 0.04 : isNeptune ? 0.028 : 0.005;
@@ -755,25 +758,39 @@ export default function OrbitingPlanet({
   return (
     <group ref={orbitRef}>
       <group ref={planetCenterRef} position={[orbitRadius, 0, 0]}>
-        {showGlowSprite && (
-          <PlanetGlowSprite
-            glowTextureUrl={glowTextureUrl}
-            radius={radius}
-            tint={glowTint}
-            opacity={glowOpacity}
-          />
-        )}
-
         <group ref={meshVisRef}>
-          {/* Axial tilt applied once; spin group rotates around the tilted axis */}
-          <group rotation-x={axialTilt}>
-            <group ref={spinRef}>
-              <mesh ref={planetMeshRef}>
-                <sphereGeometry args={[radius, 64, 64]} />
-                {textureUrl ? (
-                  <Suspense
-                    fallback={
-                      <meshStandardMaterial
+          <group position={[0, orbitY, 0]}>
+            {showGlowSprite && (
+              <PlanetGlowSprite
+                glowTextureUrl={glowTextureUrl}
+                radius={radius}
+                tint={glowTint}
+                opacity={glowOpacity}
+              />
+            )}
+
+            {/* Axial tilt applied once; spin group rotates around the tilted axis */}
+            <group rotation-x={axialTilt}>
+              <group ref={spinRef}>
+                <mesh ref={planetMeshRef}>
+                  <sphereGeometry args={[radius, 64, 64]} />
+                  {textureUrl ? (
+                    <Suspense
+                      fallback={
+                        <meshStandardMaterial
+                          color={materialColor}
+                          emissive={materialEmissive}
+                          emissiveMap={coloniesTexture}
+                          emissiveIntensity={materialEmissiveIntensity}
+                          roughness={materialRoughness}
+                          bumpMap={bumpTexture}
+                          bumpScale={materialBumpScale}
+                          fog={false}
+                        />
+                      }
+                    >
+                      <PlanetSurfaceMaterial
+                        textureUrl={textureUrl}
                         color={materialColor}
                         emissive={materialEmissive}
                         emissiveMap={coloniesTexture}
@@ -781,12 +798,10 @@ export default function OrbitingPlanet({
                         roughness={materialRoughness}
                         bumpMap={bumpTexture}
                         bumpScale={materialBumpScale}
-                        fog={false}
                       />
-                    }
-                  >
-                    <PlanetSurfaceMaterial
-                      textureUrl={textureUrl}
+                    </Suspense>
+                  ) : (
+                    <meshStandardMaterial
                       color={materialColor}
                       emissive={materialEmissive}
                       emissiveMap={coloniesTexture}
@@ -794,40 +809,30 @@ export default function OrbitingPlanet({
                       roughness={materialRoughness}
                       bumpMap={bumpTexture}
                       bumpScale={materialBumpScale}
+                      fog={false}
                     />
-                  </Suspense>
-                ) : (
-                  <meshStandardMaterial
-                    color={materialColor}
-                    emissive={materialEmissive}
-                    emissiveMap={coloniesTexture}
-                    emissiveIntensity={materialEmissiveIntensity}
-                    roughness={materialRoughness}
-                    bumpMap={bumpTexture}
-                    bumpScale={materialBumpScale}
-                    fog={false}
-                  />
+                  )}
+                </mesh>
+                {isNeptune && neptuneRimMaterial && (
+                  <mesh scale={[1.018, 1.018, 1.018]}>
+                    <sphereGeometry args={[radius, 64, 64]} />
+                    <primitive object={neptuneRimMaterial} attach="material" />
+                  </mesh>
                 )}
-              </mesh>
-              {isNeptune && neptuneRimMaterial && (
-                <mesh scale={[1.018, 1.018, 1.018]}>
-                  <sphereGeometry args={[radius, 64, 64]} />
-                  <primitive object={neptuneRimMaterial} attach="material" />
-                </mesh>
-              )}
 
-              {rings && (
-                <mesh rotation-x={Math.PI / 2}>
-                  <ringGeometry args={[radius * 1.4, radius * 2.3, 64]} />
-                  <meshStandardMaterial
-                    color="#c2a878"
-                    side={THREE.DoubleSide}
-                    transparent
-                    opacity={0.75}
-                    fog={false}
-                  />
-                </mesh>
-              )}
+                {rings && (
+                  <mesh rotation-x={Math.PI / 2}>
+                    <ringGeometry args={[radius * 1.4, radius * 2.3, 64]} />
+                    <meshStandardMaterial
+                      color="#c2a878"
+                      side={THREE.DoubleSide}
+                      transparent
+                      opacity={0.75}
+                      fog={false}
+                    />
+                  </mesh>
+                )}
+              </group>
             </group>
           </group>
 

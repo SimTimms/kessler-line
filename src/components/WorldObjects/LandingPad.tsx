@@ -4,6 +4,10 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import PowerSource from './PowerSource';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
+import {
+  registerRadioBroadcast,
+  unregisterRadioBroadcast,
+} from '../../context/RadioBroadcastRegistry';
 import { selectTarget } from '../../context/TargetSelection';
 import DockingBay from './DockingBay';
 import type { DockConfig } from '../../config/dockConfig';
@@ -53,6 +57,12 @@ interface LandingPadProps {
    * Multiplied by `scale` at runtime. Defaults to {@link LANDING_PAD_PLATFORM_MEET_OFFSET_Y}.
    */
   landPadMeetOffsetY?: number;
+  /** Register this pad as a radio contact/broadcast source. */
+  radioBroadcastEnabled?: boolean;
+  /** Optional custom passive lines shown in radio contact UI. */
+  radioDialogue?: string[];
+  /** Optional docking-bay identifier shown in radio contact UI. */
+  radioDockingBay?: string;
 }
 
 export default function LandingPad({
@@ -64,6 +74,9 @@ export default function LandingPad({
   landingPadGroupRef,
   debugJumpDockOnClick = false,
   landPadMeetOffsetY = LANDING_PAD_PLATFORM_MEET_OFFSET_Y,
+  radioBroadcastEnabled = false,
+  radioDialogue,
+  radioDockingBay,
 }: LandingPadProps) {
   const gltf = useGLTF('/landing-pad.glb') as unknown as { scene: THREE.Group };
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
@@ -135,6 +148,27 @@ export default function LandingPad({
       clearLandingPadElevator(id);
     };
   }, [id, label, landingPadGroupRef, structureCollisionId]);
+
+  useEffect(() => {
+    if (!radioBroadcastEnabled) return;
+    registerRadioBroadcast({
+      id,
+      label,
+      getPosition: (target) => {
+        if (groupRef.current) groupRef.current.getWorldPosition(target);
+        return target;
+      },
+      dialogue: radioDialogue ?? [
+        `${label.toUpperCase()} BROADCASTING.`,
+        'DOCKING SERVICES AVAILABLE.',
+      ],
+      dockable: true,
+      dockingBay: radioDockingBay,
+    });
+    return () => {
+      unregisterRadioBroadcast(id);
+    };
+  }, [id, label, radioBroadcastEnabled, radioDialogue, radioDockingBay]);
 
   useEffect(() => {
     const onCaptureStarted = (event: Event) => {

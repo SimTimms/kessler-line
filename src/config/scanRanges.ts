@@ -4,6 +4,7 @@ import { proximityScanOnRef, proximityScanRangeRef } from '../context/ProximityS
 import { radioOnRef, radioRangeRef } from '../context/RadioState';
 import { radiationOnRef, radiationRangeRef } from '../context/RadiationScan';
 import { spotlightOnRef } from '../context/SpotlightState';
+import { scaleSystemPowerDrainPerSecond } from './damageConfig';
 
 /** Matches `ScannerHUDElements` ids (except spotlight, which has no range). */
 export type ScannerRangeId = 'proximity' | 'magnet' | 'drive' | 'radio' | 'radiation';
@@ -89,39 +90,39 @@ export const SCANNER_RANGE_CONFIG: Record<ScannerRangeId, ScannerRangeConfig> = 
   proximity: {
     id: 'proximity',
     ranges: [0, 500, 1500, 3000],
-    powerDrain: [0, 1, 2, 4],
+    powerDrain: [0, 0.1, 0.2, 0.4],
     ring: { color: HUD_SCANNER_ACCENT, opacity: 0.45, yOffset: 0 },
   },
   magnet: {
     id: 'magnet',
     ranges: [0, 500, 50_000, 100_000],
-    powerDrain: [0, 1, 2, 4],
+    powerDrain: [0, 0.1, 2, 4],
     ring: { color: HUD_SCANNER_ACCENT, opacity: 0.4, yOffset: 0.5 },
   },
   drive: {
     id: 'drive',
     ranges: [0, 500_000, 2_000_000, 10_000_000],
-    powerDrain: [0, 1, 2, 4],
+    powerDrain: [0, 0.1, 2, 4],
     ring: { color: HUD_SCANNER_ACCENT, opacity: 0.35, yOffset: 1 },
   },
   radio: {
     id: 'radio',
     ranges: [0, 200_000, 500_000, 4_000_000],
-    powerDrain: [0, 1, 2, 4],
+    powerDrain: [0, 0.1, 0.2, 0.5],
     rangeMultiplier: 5,
     ring: { color: HUD_SCANNER_ACCENT, opacity: 0.35, yOffset: 2 },
   },
   radiation: {
     id: 'radiation',
     ranges: [0, 500, 2000, 10000],
-    powerDrain: [0, 1, 2, 4],
+    powerDrain: [0, 0.1, 2, 4],
     ring: { color: HUD_SCANNER_ACCENT, opacity: 0.35, yOffset: 1.5 },
   },
 };
 
 /** Spotlight has no world range; drain still scales with power mode. */
 export const SCANNER_SPOTLIGHT_POWER_DRAIN: readonly [number, number, number, number] = [
-  0, 1, 2, 3,
+  0, 0.1, 2, 3,
 ];
 
 /** Live HUD power level per scanner (1 = off). Written by ScannerHUD / mutators. */
@@ -144,14 +145,35 @@ export function getScannerRange(id: ScannerRangeId, powerLevel: number): number 
 /** Power drain per second for a scanner at the given HUD level. */
 export function getScannerPowerDrain(id: ScannerElementId, powerLevel: number): number {
   const index = clampScannerPowerLevel(powerLevel) - 1;
-  if (id === 'spotlight') return SCANNER_SPOTLIGHT_POWER_DRAIN[index];
-  return SCANNER_RANGE_CONFIG[id].powerDrain[index];
+  const base =
+    id === 'spotlight' ? SCANNER_SPOTLIGHT_POWER_DRAIN[index] : SCANNER_RANGE_CONFIG[id].powerDrain[index];
+  return scaleSystemPowerDrainPerSecond(base);
+}
+
+function isScannerElementActive(id: ScannerElementId): boolean {
+  switch (id) {
+    case 'spotlight':
+      return spotlightOnRef.current;
+    case 'magnet':
+      return magneticOnRef.current && magneticScanRangeRef.current > 0;
+    case 'drive':
+      return driveSignatureOnRef.current && driveSignatureRangeRef.current > 0;
+    case 'proximity':
+      return proximityScanOnRef.current && proximityScanRangeRef.current > 0;
+    case 'radio':
+      return radioOnRef.current && radioRangeRef.current > 0;
+    case 'radiation':
+      return radiationOnRef.current && radiationRangeRef.current > 0;
+    default:
+      return false;
+  }
 }
 
 /** Sum of power drain/sec for every scanner at its current live level. */
 export function getTotalScannerPowerDrain(): number {
   let total = 0;
   (Object.keys(scannerPowerLevelRefs) as ScannerElementId[]).forEach((id) => {
+    if (!isScannerElementActive(id)) return;
     total += getScannerPowerDrain(id, scannerPowerLevelRefs[id].current);
   });
   return total;

@@ -371,10 +371,11 @@ export default function DockInteriorDialogue({
       return;
     }
 
-    // Asking for goods without putting anything up is never a free take —
-    // unless this is a tagged-salvage claim negotiation.
+    // Asking for goods without putting anything up is never a free take unless
+    // this turn explicitly allows mission-item handoff or is a salvage claim.
     if (
       !useSalvageClaim &&
+      !activeTradeConfig.allowAskingWithoutOffer &&
       sumBarterSide(deal.playerGives) <= 0 &&
       sumBarterSide(deal.contactGives) > 0
     ) {
@@ -403,6 +404,15 @@ export default function DockInteriorDialogue({
           unscrupulous: contact.unscrupulous,
           tradeStance,
         })
+      : activeTradeConfig.allowAskingWithoutOffer &&
+          sumBarterSide(deal.playerGives) <= 0 &&
+          sumBarterSide(deal.contactGives) > 0
+        ? ({
+            kind: 'accept',
+            valueIn: 0,
+            valueOut: 0,
+            ratio: 0,
+          } as const)
       : evaluateBarterDeal(deal, playerOwner, contactOwner!, {
           acceptRatio: (activeTradeConfig.acceptRatio ?? 1) - stanceAdjust,
           insultRatio: Math.max(

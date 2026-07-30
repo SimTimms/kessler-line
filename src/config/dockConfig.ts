@@ -35,6 +35,11 @@ export interface DockTradeTurnConfig {
    */
   cargoBarter?: boolean;
   /**
+   * Allow contact->player cargo handoff without any player offer.
+   * Intended for mission item pickup flows.
+   */
+  allowAskingWithoutOffer?: boolean;
+  /**
    * Claim negotiation over player-tagged salvage in the dock depot.
    * Allows requesting goods without offering first; pulls from dock inventory
    * (via inventoryOwnerId) rather than the contact's personal hold.

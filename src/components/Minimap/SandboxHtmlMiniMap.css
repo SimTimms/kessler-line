@@ -238,6 +238,28 @@
   background: #45ff88;
 }
 
+.sandbox-map-marker--landing-pad {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: rgba(95, 255, 170, 0.25);
+  border: 1px solid rgba(95, 255, 170, 0.92);
+  box-shadow: 0 0 10px rgba(95, 255, 170, 0.65);
+}
+
+.sandbox-map-marker--landing-pad::before {
+  content: 'H';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -53%);
+  color: rgba(170, 255, 220, 0.95);
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .sandbox-map-marker--hard {
   width: 9px;
   height: 9px;

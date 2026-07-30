@@ -6,6 +6,7 @@ import CargoContainer from '../CargoContainer/CargoContainer';
 import Asteroid from '../Asteroid/Asteroid';
 import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
 import { DRONE_ATMOSPHERE_COLORS, SalvageConfigData } from './SalvageConfigFile';
+import type { DockConfig } from '../../config/dockConfig';
 
 export type SalvageFieldOrigin = [number, number, number];
 
@@ -37,6 +38,16 @@ export interface SalvageFieldProps {
   showCargoContainer?: boolean;
   /** Drone atmosphere. Default false. */
   showDroneAtmosphere?: boolean;
+  /** Register ship berth landing pad as a radio contact. Default false. */
+  dockRadioBroadcastEnabled?: boolean;
+  /** Optional custom passive radio lines for the berth contact. */
+  dockRadioDialogue?: string[];
+  /** Optional docking bay label for radio contact UI. */
+  dockRadioDockingBay?: string;
+  /** Optional override for ship-berth display label. */
+  dockLabelOverride?: string;
+  /** Optional override for ship-berth dock configuration. */
+  dockConfigOverride?: DockConfig;
 }
 
 /**
@@ -56,6 +67,11 @@ export default function SalvageField({
   showDropOffPad = true,
   showCargoContainer = true,
   showDroneAtmosphere = false,
+  dockRadioBroadcastEnabled = false,
+  dockRadioDialogue,
+  dockRadioDockingBay,
+  dockLabelOverride,
+  dockConfigOverride,
 }: SalvageFieldProps) {
   const {
     dustCloud,
@@ -90,11 +106,14 @@ export default function SalvageField({
           <group position={dock.position}>
             <LandingPad
               id={`${idPrefix}${dock.id}`}
-              label={dock.label}
+              label={dockLabelOverride ?? dock.label}
               scale={SalvageConfigData.landingPadScale}
-              dock={dock.dock}
+              dock={dockConfigOverride ?? dock.dock}
               landingPadThreshold={SalvageConfigData.landingPadThreshold}
               debugJumpDockOnClick={debugJumpDockOnClick}
+              radioBroadcastEnabled={dockRadioBroadcastEnabled}
+              radioDialogue={dockRadioDialogue}
+              radioDockingBay={dockRadioDockingBay}
             />
             {showDockMineable && dockMineable ? (
               <Asteroid
@@ -163,7 +182,7 @@ export default function SalvageField({
             particleSize={1500}
             radialSpread={dustCloud.radialSpread}
             yInitial={-700}
-            opacity={dustCloud.opacity}
+            opacity={0.005}
             colors={showDroneAtmosphere ? [...DRONE_ATMOSPHERE_COLORS] : [...dustCloud.colors]}
           />
         </Suspense>

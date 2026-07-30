@@ -68,6 +68,13 @@ export const INVENTORY_ITEMS = {
     baseValue: 25,
     defaultCapacity: 20,
   },
+  churchillParcel: {
+    id: 'churchill-parcel',
+    label: 'Sealed Parcel',
+    category: 'misc',
+    baseValue: 5,
+    defaultCapacity: 1,
+  },
 } as const satisfies Record<string, InventoryItemDef>;
 
 export type InventoryItemId = (typeof INVENTORY_ITEMS)[keyof typeof INVENTORY_ITEMS]['id'];
@@ -103,6 +110,7 @@ export const INVENTORY_ITEM_UI: Record<string, InventoryItemUi> = {
   'unmarked-canister': { color: '#e078a0', tag: '???' },
   organics: { color: '#8fd45a', tag: 'ORG' },
   'spare-parts': { color: '#9aa4b2', tag: 'PART' },
+  'churchill-parcel': { color: '#c9a9ff', tag: 'TASK' },
 };
 
 export function getInventoryItemUi(itemIdOrLabel: string): InventoryItemUi {

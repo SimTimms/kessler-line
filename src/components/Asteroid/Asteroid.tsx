@@ -41,7 +41,9 @@ export default function Asteroid({
   useEffect(() => {
     modelScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.material = new THREE.MeshStandardMaterial({ color: 'black' });
+        child.material.color.setRGB(0.0, 0, 0);
+        child.material.roughness = 0.9;
+        child.material.metalness = 0.8;
       }
     });
   }, [modelScene]);

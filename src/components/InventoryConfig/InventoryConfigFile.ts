@@ -14,7 +14,7 @@ const LANDING_PAD_SPACING = 600;
 /** Circumradius of an equilateral triangle with side LANDING_PAD_SPACING. */
 const TRIANGLE_RADIUS = LANDING_PAD_SPACING / Math.sqrt(3);
 
-const triangleCenter: Vec3 = [0, -20, 0];
+const triangleCenter: Vec3 = [0, -50, 0];
 
 function equilateralPadPosition(index: 0 | 1 | 2): Vec3 {
   const [cx, cy, cz] = triangleCenter;
@@ -29,7 +29,7 @@ export const InventoryConfig = {
   cameraTarget: [0, 0, 0] as Vec3,
   gridSize: 1200,
   gridDivisions: 24,
-  landingPadScale: 10,
+  landingPadScale: 5,
   landingPadThreshold: 28,
   landingPadSpacing: LANDING_PAD_SPACING,
   triangleCenter,

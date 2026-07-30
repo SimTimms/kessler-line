@@ -46,7 +46,16 @@ interface SandboxHtmlMiniMapProps {
   showSolarSystem?: boolean;
 }
 
-type MarkerKind = 'planet' | 'ship' | 'nav' | 'drive' | 'mag' | 'radio' | 'proximity' | 'hard';
+type MarkerKind =
+  | 'planet'
+  | 'ship'
+  | 'nav'
+  | 'drive'
+  | 'mag'
+  | 'radio'
+  | 'proximity'
+  | 'hard'
+  | 'landingPad';
 
 type Marker = {
   id: string;
@@ -934,6 +943,16 @@ export default function SandboxHtmlMiniMap({
         const dx = _dockWorldPos.x - ship.x;
         const dz = _dockWorldPos.z - ship.z;
         const planarDist = Math.hypot(dx, dz);
+        if (profile.mode === 'hover' && radioRangeRef.current > 0 && planarDist <= radioRangeRef.current) {
+          next.push({
+            id: `landing-pad-${col.id}`,
+            label: col.label ?? col.stationId ?? 'Landing Pad',
+            x: _dockWorldPos.x,
+            z: _dockWorldPos.z,
+            kind: 'landingPad',
+            inRange: true,
+          });
+        }
         if (planarDist > DOCKING_ASSIST_RANGE) continue;
         const dockWorldVel = col.getWorldVelocity
           ? col.getWorldVelocity(_dockVel)
@@ -969,7 +988,14 @@ export default function SandboxHtmlMiniMap({
         nearestDockDistance.current = Number.POSITIVE_INFINITY;
       }
       for (const col of collidables) {
-        if (!proximityOn || !col.label || hardOverlayIds.has(col.id)) continue;
+        if (
+          !proximityOn ||
+          !col.label ||
+          hardOverlayIds.has(col.id) ||
+          col.id.startsWith('docking-bay-')
+        ) {
+          continue;
+        }
         col.getWorldPosition(_tmpA);
         renderToSimulationSpace(_tmpA, _tmpA);
         const dist = _tmpA.distanceTo(ship);
@@ -1391,6 +1417,7 @@ export default function SandboxHtmlMiniMap({
     if (kind === 'mag') return 'sandbox-map-marker sandbox-map-marker--mag';
     if (kind === 'radio') return 'sandbox-map-marker sandbox-map-marker--radio';
     if (kind === 'hard') return 'sandbox-map-marker sandbox-map-marker--hard';
+    if (kind === 'landingPad') return 'sandbox-map-marker sandbox-map-marker--landing-pad';
     return 'sandbox-map-marker sandbox-map-marker--proximity';
   }
 
@@ -1418,6 +1445,9 @@ export default function SandboxHtmlMiniMap({
     }
     if (marker.kind === 'hard') {
       return ['Hard Object (Physical)', `Distance: ${distKm}`];
+    }
+    if (marker.kind === 'landingPad') {
+      return ['Landing Pad (Radio)', `Distance: ${distKm}`];
     }
     return ['Proximity Contact', `Distance: ${distKm}`];
   }

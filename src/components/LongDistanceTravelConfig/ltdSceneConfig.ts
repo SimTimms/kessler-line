@@ -79,7 +79,7 @@ export const LONG_DISTANCE_TRAVEL_CONFIG = {
   /** Match Drone Config orbit pose relative to the ship. */
   tutorialFollowOffset: [0, 100, 120] as [number, number, number],
   tutorialCameraZoomMax: 820,
-  planetImpactCameraHoldMaxAltitude: 80_000,
+  planetImpactCameraHoldMaxAltitude: 5_000,
   shipParticleCount: 100,
   normalTravelZoneRadius: LTD_NORMAL_TRAVEL_ZONE_RADIUS,
   /** Match Salvage Config warm key / fill lighting. */

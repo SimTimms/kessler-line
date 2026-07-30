@@ -8,6 +8,7 @@ export const GAME_MODES = {
   longDistanceTravelConfig: 'longDistanceTravelConfig',
   combatConfig: 'combatConfig',
   hudConfig: 'hudConfig',
+  narrativeConfig: 'narrativeConfig',
   sandbox: 'sandbox',
   tutorial: 'tutorial',
   resources: 'resources',
@@ -27,6 +28,7 @@ export type TutorialMenuSelection =
   | typeof GAME_MODES.longDistanceTravelConfig
   | typeof GAME_MODES.combatConfig
   | typeof GAME_MODES.hudConfig
+  | typeof GAME_MODES.narrativeConfig
   | typeof GAME_MODES.sandbox
   | typeof GAME_MODES.tutorial
   | typeof GAME_MODES.resources

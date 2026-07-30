@@ -4,7 +4,7 @@ import { sceneCamera } from '../../context/CameraRef';
 import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
 import { getCollidables } from '../../context/CollisionRegistry';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
-import { SHIP_COLLISION_ID, drainPower } from '../../context/ShipState';
+import { SHIP_COLLISION_ID } from '../../context/ShipState';
 
 const EDGE_PAD = 30;
 const MARKER_SMOOTHING = 0.35;
@@ -134,9 +134,7 @@ export default function ProximityHUD() {
         return;
       }
 
-      // Drain power: 1 unit/s at range 500, scales linearly with range
       const range = proximityScanRangeRef.current;
-      drainPower((range / 500) * delta);
 
       const camera = sceneCamera.current;
       const W = window.innerWidth;
@@ -144,7 +142,9 @@ export default function ProximityHUD() {
       const cx = W * 0.5;
       const cy = H * 0.5;
 
-      const collidables = getCollidables().filter((c) => c.id !== SHIP_COLLISION_ID);
+      const collidables = getCollidables().filter(
+        (c) => c.id !== SHIP_COLLISION_ID && !c.id.startsWith('docking-bay-')
+      );
       const visibleIds = new Set<string>();
 
       for (const entry of collidables) {
