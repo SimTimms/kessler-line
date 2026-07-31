@@ -12,10 +12,17 @@ import {
   HOVER_TRAJ_OPACITY,
   HOVER_TRAJ_DASH_SIZE,
   HOVER_TRAJ_GAP_SIZE,
+  HOVER_TRAJ_UPDATE_INTERVAL,
 } from '../config/trajectoryConfig';
 
 const _simPos = new THREE.Vector3();
 const _simVel = new THREE.Vector3();
+
+// ── Simulation throttle ────────────────────────────────────────────────────
+// The 250-step sim runs every N frames. The tick resets when the hover target
+// changes so the new target always gets an immediate trajectory update.
+let _hoverTrajTick = HOVER_TRAJ_UPDATE_INTERVAL; // first frame always runs
+let _lastHoverId: string | null = null;
 
 export default function HoverTrajectoryIndicator() {
   const { line, sprite, spriteCtx, posArr } = useMemo(() => {
@@ -65,6 +72,7 @@ export default function HoverTrajectoryIndicator() {
     if (!hudEnabled || !hover) {
       line.visible = false;
       sprite.visible = false;
+      _lastHoverId = null;
       return;
     }
 
@@ -72,10 +80,10 @@ export default function HoverTrajectoryIndicator() {
     const ox = hover.position.x;
     const oz = hover.position.z;
 
+    // Always update line origin so it tracks the (potentially moving) target
     line.position.set(ox, 0, oz);
 
     if (speed <= HOVER_TRAJ_MIN_SPEED) {
-      // Stationary pads/stations — no dashed ring; hover is handled by HUD labels.
       line.visible = false;
       sprite.visible = false;
       return;
@@ -84,14 +92,29 @@ export default function HoverTrajectoryIndicator() {
     line.visible = true;
     sprite.visible = true;
 
+    // Reset throttle tick when the hovered target changes so the new target
+    // gets a trajectory on the very next frame rather than waiting N frames.
+    const hoverId = hover.id ?? null;
+    if (hoverId !== _lastHoverId) {
+      _lastHoverId = hoverId;
+      _hoverTrajTick = HOVER_TRAJ_UPDATE_INTERVAL;
+    }
+
+    // Only run the expensive simulation every N frames
+    _hoverTrajTick++;
+    if (_hoverTrajTick < HOVER_TRAJ_UPDATE_INTERVAL) return;
+    _hoverTrajTick = 0;
+
+    // Primary body detection — squared distances, no sqrt per body
     let primaryBody: (typeof gravityBodies extends Map<string, infer T> ? T : never) | null = null;
     let primaryAccel = 0;
     for (const [, body] of gravityBodies) {
       const dx = body.position.x - ox;
       const dz = body.position.z - oz;
       const dist2 = dx * dx + dz * dz;
-      const dist = Math.sqrt(dist2);
-      if (dist > body.surfaceRadius && dist < body.soiRadius) {
+      const srSq = body.surfaceRadius * body.surfaceRadius;
+      const soiSq = body.soiRadius * body.soiRadius;
+      if (dist2 > srSq && dist2 < soiSq) {
         const accel = body.mu / dist2;
         if (accel > primaryAccel) {
           primaryAccel = accel;
@@ -114,6 +137,7 @@ export default function HoverTrajectoryIndicator() {
 
     let activeSteps = HOVER_TRAJ_STEPS;
 
+    // 250-step symplectic Euler integration
     for (let i = 0; i < HOVER_TRAJ_STEPS; i++) {
       const worldX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
       const worldZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;

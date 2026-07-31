@@ -27,6 +27,7 @@ interface StepParams {
    */
   fastTravelMultiplier?: number;
   dt: number;
+  /** Passed through from engine audio — not used by gravity step itself. */
   anyThrusting: boolean;
   disableGravity: boolean;
   freezeCollisions: boolean;
@@ -54,7 +55,7 @@ export function applyPhysicsStep({
   thrustMultiplierRef,
   fastTravelMultiplier = 0,
   dt,
-  anyThrusting,
+  anyThrusting: _anyThrusting,
   disableGravity,
   freezeCollisions,
   selfCollisionId,
@@ -126,7 +127,6 @@ export function applyPhysicsStep({
     primaryGravityId,
     primaryGravityVelocity,
     dt,
-    anyThrusting,
   });
 
   group.position.addScaledVector(velocity, dt);

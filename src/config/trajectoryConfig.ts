@@ -6,3 +6,12 @@ export const HOVER_TRAJ_COLOR = 0x00c8ff;
 export const HOVER_TRAJ_OPACITY = 0.38;
 export const HOVER_TRAJ_DASH_SIZE = 4;
 export const HOVER_TRAJ_GAP_SIZE = 2.5;
+
+// ── Simulation throttle intervals ─────────────────────────────────────────
+// Each trajectory indicator runs its gravity simulation every N frames rather
+// than every frame. At 60 fps, interval=3 → ~20 Hz updates, which is
+// imperceptible for slowly-evolving orbital curves.
+/** VelocityIndicator trajectory simulation cadence (frames). */
+export const TRAJ_UPDATE_INTERVAL = 3;
+/** HoverTrajectoryIndicator simulation cadence (frames). Resets on target change. */
+export const HOVER_TRAJ_UPDATE_INTERVAL = 3;
