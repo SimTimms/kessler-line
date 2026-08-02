@@ -1,100 +1,44 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { NAV_TARGET_DEFS, displayNameForDockedStation } from '../../../config/worldConfig';
-import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
-import { isDockingTutorialUndockAllowed } from '../../../tutorial/tutorialDockingInputGate';
-import { dockingTutorialActiveRef, tutorialStepRef } from '../../../context/TutorialState';
-import { TUTORIAL_DOCKING_STEPS } from '../../../tutorial/tutorialDockingSteps';
-import {
-  navTargetPosRef,
-  navTargetIdRef,
-  hasNavTarget,
-  clearNavTarget,
-} from '../../../context/NavTarget';
-import { gravityBodies } from '../../../context/GravityRegistry';
-import { shipPosRef } from '../../../context/ShipPos';
-import { getShipSpeedMps, orbitStatusRef, shipVelocity } from '../../../context/ShipState';
-import { velocityLevel } from '../PowerHUD/PowerHUDHelpers';
-import {
-  selectTarget,
-  flashTarget,
-  clearSelectedTarget,
-  selectedTargetName,
-  selectedTargetPosition,
-  selectedTargetVelocity,
-  targetFlashUntil,
-} from '../../../context/TargetSelection';
-import { getCollidables } from '../../../context/CollisionRegistry';
-import { getRadioBroadcasts } from '../../../context/RadioBroadcastRegistry';
-import { getMagneticTargets } from '../../../context/MagneticRegistry';
-import { magneticOnRef, magneticScanRangeRef } from '../../../context/MagneticScan';
-import { getDriveSignatures } from '../../../context/DriveSignatureRegistry';
-import { driveSignatureOnRef, driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
-import { proximityScanOnRef, proximityScanRangeRef } from '../../../context/ProximityScan';
-import { radioOnRef, radioRangeRef } from '../../../context/RadioState';
-import { radiationOnRef, radiationRangeRef } from '../../../context/RadiationScan';
-import { activeRadiationZonesRef } from '../../../context/ActiveRadiationZones';
-import { SHIP_COLLISION_ID } from '../../../context/ShipState';
+import { navTargetIdRef, hasNavTarget } from '../../../context/NavTarget';
+import { orbitStatusRef } from '../../../context/ShipState';
 import {
   NAV_SCAN_PICKER_ORDER,
   getNavScanPickerTheme,
-  isNavScanPickerVariant,
   type NavScanPickerId,
 } from '../../../config/navScanPickerConfig';
+import type { NavScanContact } from './navScanPickerContacts';
+import { useNavHudScanning } from './useNavHudScanning';
 import {
-  resolveRadiationZoneWorldPosition,
-  horizontalDistanceToRadiationZone,
-} from '../../../utils/radiationZonePosition';
-import { humanizeCollidableId, type NavScanContact } from './navScanPickerContacts';
-import { computeOrbitHudMetrics, orbitBodyLabel } from './orbitHudMetrics';
-import { KM_PER_UNIT } from '../../../config/commsConfig';
-import { setScannerContactCount } from '../../../context/ScannerContactCounts';
-import { EVENT_OPEN_SCAN_PICKER } from '../../../context/NavHud';
+  useDockingState,
+  useSelectedTarget,
+  useTutorialHighlights,
+  useNavTargetSync,
+  useScanPickerEvents,
+  useAutoCloseScanPicker,
+} from './useNavHudEvents';
+import { toNavTargetItems } from './navHudFormatters';
 import {
-  autopilotActive,
-  autopilotMode,
-  autopilotPhase,
-  autopilotStatus,
-  enableAutopilot,
-  enableVelocityMatchAutopilot,
-  disableAutopilot,
-} from '../../../context/AutopilotState';
-import { NavTargetDialog, type NavTargetItem } from './NavTargetDialog';
+  handleNavTargetSelect,
+  toggleApproachAutopilot,
+  toggleVelocityMatch,
+  clearAllNavTargets,
+  requestUndock,
+  type SelectDispatch,
+  type ClearNavTargetDispatch,
+} from './navHudHandlers';
+import { NavTargetDialog } from './NavTargetDialog';
 import './NavHUD.css';
 import '../HelmetHUD/HelmetHUD.css';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
-const ORBIT_LABELS = new Map(NAV_TARGET_DEFS.map((p) => [p.id, p.label]));
-const _toTargetDir = new THREE.Vector3();
 
 export interface TutorialTargetDef {
   id: string;
   label: string;
   getPosition: (v: THREE.Vector3) => THREE.Vector3;
   getVelocity?: (v: THREE.Vector3) => THREE.Vector3;
-}
-
-function formatDist(distUnits: number): string {
-  const km = distUnits * KM_PER_UNIT;
-  if (km >= 1_000_000) return `${(km / 1_000_000).toFixed(2)} Gm`;
-  if (km >= 1_000) return `${(km / 1_000).toFixed(1)} Mm`;
-  return `${km.toFixed(0)} km`;
-}
-
-function contactListSignature(contacts: { id: string; distance: string }[]): string {
-  return contacts
-    .map((c) => `${c.id}:${c.distance}`)
-    .sort()
-    .join('|');
-}
-
-function toNavTargetItems(contacts: NavScanContact[]): NavTargetItem[] {
-  return contacts.map((c) => ({
-    id: c.id,
-    label: c.label,
-    sublabel: c.sublabel,
-    distance: c.distance,
-  }));
 }
 
 interface NavHUDProps {
@@ -114,507 +58,57 @@ export const NavHUD = ({
   customGeneralTargets,
   customPlanetaryTargets,
 }: NavHUDProps) => {
+  // ── State owned by this component ─────────────────────────────────
   const [targetId, setTargetId] = useState(navTargetIdRef.current);
   const [targetLabel, setTargetLabel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [openScanPicker, setOpenScanPicker] = useState<NavScanPickerId | null>(null);
-  const [selectedObjName, setSelectedObjName] = useState<string | null>(null);
-  const [navTargetHighlight, setNavTargetHighlight] = useState(false);
-  const [highlightedContactId, setHighlightedContactId] = useState<string | undefined>();
-  const [navItems, setNavItems] = useState<NavTargetItem[]>(() =>
-    customPlanetaryTargets
-      ? customPlanetaryTargets.map((t) => ({ id: t.id, label: t.label }))
-      : NAV_TARGETS.map((t) => ({ id: t.id, label: t.label }))
-  );
-  const [generalItems, setGeneralItems] = useState<NavTargetItem[]>([]);
-  const [magneticContacts, setMagneticContacts] = useState<NavScanContact[]>([]);
-  const [driveContacts, setDriveContacts] = useState<NavScanContact[]>([]);
-  const [proximityContacts, setProximityContacts] = useState<NavScanContact[]>([]);
-  const [radioContacts, setRadioContacts] = useState<NavScanContact[]>([]);
-  const [radiationContacts, setRadiationContacts] = useState<NavScanContact[]>([]);
-  const [isDocked, setIsDocked] = useState(false);
-  const [dockedStationId, setDockedStationId] = useState<string | null>(null);
-  const isDockedRef = useRef(false);
+
   const undockBtnRef = useRef<HTMLButtonElement>(null);
-
-  // Coords display — mutated directly to avoid re-renders
-  const coordsRef = useRef<HTMLSpanElement>(null!);
-  const orbitRef = useRef<HTMLSpanElement>(null!);
-  const altRef = useRef<HTMLSpanElement>(null!);
-  const periapsisRef = useRef<HTMLSpanElement>(null!);
-  const apoapsisRef = useRef<HTMLSpanElement>(null!);
-  const apsesTargetRef = useRef<HTMLSpanElement>(null!);
-  const approachRef = useRef<HTMLSpanElement>(null!);
-  const relativeVelRef = useRef<HTMLSpanElement>(null!);
-  const dockingHintRef = useRef<HTMLSpanElement>(null!);
-  const autopilotBtnRef = useRef<HTMLSpanElement>(null!);
-  const velocityMatchBtnRef = useRef<HTMLButtonElement>(null!);
-  const orbitLineRef = useRef<HTMLSpanElement>(null!);
-  const speedRef = useRef<HTMLSpanElement>(null!);
-
-  const prevNavSigRef = useRef('');
-  const prevGeneralSigRef = useRef('');
-  const prevMagSigRef = useRef('');
-  const prevDriveSigRef = useRef('');
-  const prevProximitySigRef = useRef('');
-  const prevRadioSigRef = useRef('');
-  const prevRadiationSigRef = useRef('');
-  const radioPosVec = useRef(new THREE.Vector3());
-  const scanVec = useRef(new THREE.Vector3());
-  const navVec = useRef(new THREE.Vector3());
   const velVec = useRef(new THREE.Vector3());
-  const selectedObjNameRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    const onDocked = (e: Event) => {
-      const detail = (e as CustomEvent<{ stationId: string | null }>).detail;
-      isDockedRef.current = true;
-      setIsDocked(true);
-      setDockedStationId(detail?.stationId ?? null);
-    };
-    const onUndocked = () => {
-      isDockedRef.current = false;
-      setIsDocked(false);
-      setDockedStationId(null);
-    };
-    window.addEventListener('ShipDocked', onDocked);
-    window.addEventListener('ShipUndocked', onUndocked);
-    return () => {
-      window.removeEventListener('ShipDocked', onDocked);
-      window.removeEventListener('ShipUndocked', onUndocked);
-    };
-  }, []);
+  // ── State owned by hooks ──────────────────────────────────────────
+  const { isDocked, dockedStationId, isDockedRef } = useDockingState();
+  const { selectedObjName, selectedObjNameRef, setSelectedObjName } = useSelectedTarget();
+  const { navTargetHighlight, setNavTargetHighlight, highlightedContactId } =
+    useTutorialHighlights();
 
-  useEffect(() => {
-    let raf: number;
-    const tick = () => {
-      if (coordsRef.current) {
-        const { x, z } = shipPosRef.current;
-        coordsRef.current.textContent = `${Math.round(x)}, ${Math.round(z)}`;
-      }
-      const orbitMetrics = computeOrbitHudMetrics();
+  const {
+    displayRefs,
+    navItems,
+    generalItems,
+    magneticContacts,
+    driveContacts,
+    proximityContacts,
+    radioContacts,
+    radiationContacts,
+  } = useNavHudScanning({
+    layout,
+    focusElements,
+    customGeneralTargets,
+    customPlanetaryTargets,
+    selectedObjNameRef,
+    isDockedRef,
+    undockBtnRef,
+  });
 
-      if (orbitRef.current) {
-        const { bodyId } = orbitStatusRef.current;
-        const label = bodyId ? (ORBIT_LABELS.get(bodyId) ?? orbitBodyLabel(bodyId)) : '—';
-        orbitRef.current.textContent = label;
-      }
-      if (altRef.current) {
-        altRef.current.textContent = orbitMetrics.alt;
-      }
-      if (periapsisRef.current) {
-        periapsisRef.current.textContent = orbitMetrics.peri;
-      }
-      if (apoapsisRef.current) {
-        apoapsisRef.current.textContent = orbitMetrics.apo;
-      }
-      if (apsesTargetRef.current) {
-        const { bodyId } = orbitStatusRef.current;
-        if (bodyId) {
-          const idealAlt = gravityBodies.get(bodyId)?.orbitAltitude;
-          apsesTargetRef.current.textContent = idealAlt != null ? `[${Math.round(idealAlt)}]` : '—';
-        } else {
-          apsesTargetRef.current.textContent = '—';
-        }
-      }
-      if (approachRef.current) {
-        const { bodyId, periapsis, apoapsis, surfaceRadius, radialVelocity, hyperbolicPeriapsis } =
-          orbitStatusRef.current;
-        const effectivePeri = periapsis > 0 ? periapsis : hyperbolicPeriapsis;
-        if (bodyId && effectivePeri > 0) {
-          const body = gravityBodies.get(bodyId);
-          if (body) {
-            const dx = shipPosRef.current.x - body.position.x;
-            const dy = shipPosRef.current.y - body.position.y;
-            const dz = shipPosRef.current.z - body.position.z;
-            const currentAlt = Math.max(0, Math.sqrt(dx * dx + dy * dy + dz * dz) - surfaceRadius);
-            if (radialVelocity >= 0 && apoapsis > 0) {
-              const apoAlt = Math.max(0, apoapsis - surfaceRadius);
-              approachRef.current.textContent = `APO +${Math.round(apoAlt - currentAlt)}`;
-            } else {
-              const periAlt = Math.max(0, effectivePeri - surfaceRadius);
-              approachRef.current.textContent = `PERI -${Math.round(currentAlt - periAlt)}`;
-            }
-          }
-        } else {
-          approachRef.current.textContent = '—';
-        }
-      }
-      if (relativeVelRef.current) {
-        const hasSelected = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
-        const hasNavId = navTargetIdRef.current.trim().length > 0;
-        const hasTarget = hasSelected || hasNavId;
-        let relVelNum = 0;
-        if (!hasTarget) {
-          relativeVelRef.current.textContent = '—';
-          relativeVelRef.current.className = 'hud-value nav-relative-velocity';
-        } else {
-          const targetPos = hasSelected ? selectedTargetPosition : navTargetPosRef.current;
-          const targetVel = hasSelected ? selectedTargetVelocity : _toTargetDir.set(0, 0, 0);
-          _toTargetDir.subVectors(targetPos, shipPosRef.current);
-          const dist = _toTargetDir.length();
-          if (dist < 1e-5) {
-            relativeVelRef.current.textContent = '0 m/s';
-            relVelNum = 0;
-          } else {
-            _toTargetDir.multiplyScalar(1 / dist);
-            const relVel =
-              (shipVelocity.x - targetVel.x) * _toTargetDir.x +
-              (shipVelocity.y - targetVel.y) * _toTargetDir.y +
-              (shipVelocity.z - targetVel.z) * _toTargetDir.z;
-            relVelNum = relVel;
-            relativeVelRef.current.textContent = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
-          }
-          const flash = Date.now() < targetFlashUntil;
-          relativeVelRef.current.className = `hud-value nav-relative-velocity${flash ? ' nav-relative-velocity--flash' : ''}`;
-        }
-        if (dockingHintRef.current) {
-          if (!hasTarget) {
-            dockingHintRef.current.textContent = '';
-            dockingHintRef.current.style.display = 'none';
-          } else {
-            const contactName = selectedObjNameRef.current ?? selectedTargetName;
-            if (contactName === 'Docking Bay' && Math.abs(relVelNum) < 4) {
-              dockingHintRef.current.textContent = '[docking velocity]';
-              dockingHintRef.current.style.display = '';
-            } else {
-              dockingHintRef.current.textContent = '';
-              dockingHintRef.current.style.display = 'none';
-            }
-          }
-        }
-      }
-      if (autopilotBtnRef.current) {
-        const active = autopilotActive.current && autopilotMode.current === 'approach';
-        const helmetAp = autopilotBtnRef.current.closest('.helmet-nav');
-        autopilotBtnRef.current.textContent = active
-          ? helmetAp
-            ? 'ON'
-            : autopilotStatus.current
-          : helmetAp
-            ? 'OFF'
-            : 'DISENGAGED';
-        const btn = autopilotBtnRef.current.parentElement;
-        if (btn instanceof HTMLButtonElement) {
-          if (helmetAp) {
-            btn.classList.toggle('helmet-nav-btn--active', active);
-          } else {
-            btn.className = `autopilot-btn ${active ? ' autopilot-active' : ''}`;
-          }
-        }
-      }
-      if (layout === 'helmet' && speedRef.current) {
-        const speedMps = getShipSpeedMps();
-        speedRef.current.textContent = `${speedMps.toFixed(1)} m/s`;
-        const level = velocityLevel(speedMps);
-        speedRef.current.className = `helmet-nav-speed hud-value${level === 'red' ? ' helmet-nav-speed--crit' : level === 'orange' ? ' helmet-nav-speed--warn' : ''}${focusElements.includes('velocity') ? ' helmet-nav-speed--highlight' : ''}`;
-      }
-      if (layout === 'helmet' && orbitLineRef.current) {
-        const { bodyId, isOrbiting } = orbitStatusRef.current;
-        if (!bodyId) {
-          orbitLineRef.current.textContent = '';
-          orbitLineRef.current.style.display = 'none';
-        } else {
-          const label = ORBIT_LABELS.get(bodyId) ?? orbitBodyLabel(bodyId);
-          const { alt, peri, apo } = orbitMetrics;
-          const prefix = isOrbiting === true ? 'ORB' : 'SOI';
-          orbitLineRef.current.textContent = `${prefix} ${label} · ALT ${alt} · PE ${peri} · AP ${apo}`;
-          orbitLineRef.current.style.display = '';
-        }
-      }
+  // ── Event sync hooks ──────────────────────────────────────────────
+  useNavTargetSync(setTargetId, setTargetLabel, setSelectedObjName, selectedObjNameRef);
+  useScanPickerEvents(setDialogOpen, setOpenScanPicker);
 
-      // Nav target distances
-      {
-        const newNavItems: NavTargetItem[] = customPlanetaryTargets
-          ? customPlanetaryTargets.map((def) => {
-              const pos = def.getPosition(navVec.current);
-              const dist = pos.distanceTo(shipPosRef.current);
-              return { id: def.id, label: def.label, distance: formatDist(dist) };
-            })
-          : NAV_TARGETS.map((def) => {
-              let pos: THREE.Vector3;
-              if (def.orbit) {
-                const parentBody = gravityBodies.get(def.orbit.planetName);
-                pos = parentBody ? parentBody.position : navVec.current.set(...def.position);
-              } else {
-                const gravBody =
-                  gravityBodies.get(def.id.charAt(0).toUpperCase() + def.id.slice(1)) ||
-                  gravityBodies.get(def.id);
-                pos = gravBody ? gravBody.position : navVec.current.set(...def.position);
-              }
-              const dist = pos.distanceTo(shipPosRef.current);
-              return { id: def.id, label: def.label, distance: formatDist(dist) };
-            });
-        const navSig = newNavItems.map((i) => `${i.id}:${i.distance}`).join('|');
-        if (navSig !== prevNavSigRef.current) {
-          prevNavSigRef.current = navSig;
-          setNavItems(newNavItems);
-        }
-        const activeCustom = customPlanetaryTargets?.find((t) => t.id === navTargetIdRef.current);
-        if (activeCustom) {
-          activeCustom.getPosition(navTargetPosRef.current);
-        }
-      }
-      if (customGeneralTargets) {
-        const newGeneralItems: NavTargetItem[] = customGeneralTargets.map((def) => {
-          const pos = def.getPosition(navVec.current);
-          const dist = pos.distanceTo(shipPosRef.current);
-          return { id: def.id, label: def.label, distance: formatDist(dist) };
-        });
-        const generalSig = newGeneralItems.map((i) => `${i.id}:${i.distance}`).join('|');
-        if (generalSig !== prevGeneralSigRef.current) {
-          prevGeneralSigRef.current = generalSig;
-          setGeneralItems(newGeneralItems);
-        }
-      } else if (prevGeneralSigRef.current !== '') {
-        prevGeneralSigRef.current = '';
-        setGeneralItems([]);
-      }
+  const contactCounts = useMemo<Record<NavScanPickerId, number>>(
+    () => ({
+      magnet: magneticContacts.length,
+      drive: driveContacts.length,
+      proximity: proximityContacts.length,
+      radio: radioContacts.length,
+      radiation: radiationContacts.length,
+    }),
+    [magneticContacts, driveContacts, proximityContacts, radioContacts, radiationContacts]
+  );
+  useAutoCloseScanPicker(openScanPicker, contactCounts, setOpenScanPicker);
 
-      // Magnetic contacts
-      if (magneticOnRef.current) {
-        const range = magneticScanRangeRef.current;
-        const targets = getMagneticTargets();
-        const inRange: NavScanContact[] = [];
-        for (const t of targets) {
-          t.getPosition(scanVec.current);
-          const dist = scanVec.current.distanceTo(shipPosRef.current);
-          if (dist <= range) {
-            inRange.push({
-              id: t.id,
-              label: t.label,
-              sublabel: 'MAGNETIC',
-              distance: formatDist(dist),
-              type: 'magnetic',
-              getPosition: t.getPosition,
-              getVelocity: t.getVelocity,
-            });
-          }
-        }
-        const sig = contactListSignature(inRange);
-        if (sig !== prevMagSigRef.current) {
-          prevMagSigRef.current = sig;
-          setMagneticContacts(inRange);
-          setScannerContactCount('magnet', inRange.length);
-        }
-      } else if (prevMagSigRef.current !== '') {
-        prevMagSigRef.current = '';
-        setMagneticContacts([]);
-        setScannerContactCount('magnet', 0);
-      }
-
-      // Drive signature contacts
-      if (driveSignatureOnRef.current) {
-        const range = driveSignatureRangeRef.current;
-        const sigs = getDriveSignatures();
-        const inRange: NavScanContact[] = [];
-        for (const s of sigs) {
-          s.getPosition(scanVec.current);
-          const dist = scanVec.current.distanceTo(shipPosRef.current);
-          if (dist <= range) {
-            inRange.push({
-              id: s.id,
-              label: s.label,
-              sublabel: 'DRIVE SIGNATURE',
-              distance: formatDist(dist),
-              type: 'ship',
-              getPosition: s.getPosition,
-              getVelocity: s.getVelocity,
-            });
-          }
-        }
-        const sig = contactListSignature(inRange);
-        if (sig !== prevDriveSigRef.current) {
-          prevDriveSigRef.current = sig;
-          setDriveContacts(inRange);
-          setScannerContactCount('drive', inRange.length);
-        }
-      } else if (prevDriveSigRef.current !== '') {
-        prevDriveSigRef.current = '';
-        setDriveContacts([]);
-        setScannerContactCount('drive', 0);
-      }
-
-      // Proximity contacts (collidables in range)
-      if (proximityScanOnRef.current) {
-        const range = proximityScanRangeRef.current;
-        const inRange: NavScanContact[] = [];
-        for (const c of getCollidables()) {
-          if (c.id === SHIP_COLLISION_ID) continue;
-          c.getWorldPosition(scanVec.current);
-          const dist = scanVec.current.distanceTo(shipPosRef.current);
-          if (dist <= range) {
-            const getPosition = (target: THREE.Vector3) => c.getWorldPosition(target);
-            inRange.push({
-              id: c.id,
-              label: humanizeCollidableId(c.id),
-              sublabel: 'PROXIMITY',
-              distance: formatDist(dist),
-              type: 'default',
-              getPosition,
-              getVelocity: c.getWorldVelocity,
-            });
-          }
-        }
-        const sig = contactListSignature(inRange);
-        if (sig !== prevProximitySigRef.current) {
-          prevProximitySigRef.current = sig;
-          setProximityContacts(inRange);
-          setScannerContactCount('proximity', inRange.length);
-        }
-      } else if (prevProximitySigRef.current !== '') {
-        prevProximitySigRef.current = '';
-        setProximityContacts([]);
-        setScannerContactCount('proximity', 0);
-      }
-
-      // Radio broadcasts in range (scene-registered only)
-      if (radioOnRef.current) {
-        const range = radioRangeRef.current;
-        const inRange: NavScanContact[] = [];
-        for (const entry of getRadioBroadcasts()) {
-          entry.getPosition(radioPosVec.current);
-          const dist = radioPosVec.current.distanceTo(shipPosRef.current);
-          if (dist <= range) {
-            inRange.push({
-              id: entry.id,
-              label: entry.label,
-              sublabel: 'RADIO BEACON',
-              distance: formatDist(dist),
-              type: 'default',
-              getPosition: (target) => entry.getPosition(target),
-            });
-          }
-        }
-        const sig = contactListSignature(inRange);
-        if (sig !== prevRadioSigRef.current) {
-          prevRadioSigRef.current = sig;
-          setRadioContacts(inRange);
-          setScannerContactCount('radio', inRange.length);
-        }
-      } else if (prevRadioSigRef.current !== '') {
-        prevRadioSigRef.current = '';
-        setRadioContacts([]);
-        setScannerContactCount('radio', 0);
-      }
-
-      // Radiation sources in range
-      if (radiationOnRef.current) {
-        const range = radiationRangeRef.current;
-        const inRange: NavScanContact[] = [];
-        for (const zone of activeRadiationZonesRef.current) {
-          if (!resolveRadiationZoneWorldPosition(zone, scanVec.current)) continue;
-          const dist = horizontalDistanceToRadiationZone(shipPosRef.current, scanVec.current);
-          if (dist <= range) {
-            inRange.push({
-              id: zone.id,
-              label: zone.label,
-              sublabel: 'RADIATION',
-              distance: formatDist(dist),
-              type: 'default',
-              getPosition: (target) => {
-                if (resolveRadiationZoneWorldPosition(zone, target)) return target;
-                return target.set(0, 0, 0);
-              },
-            });
-          }
-        }
-        const sig = contactListSignature(inRange);
-        if (sig !== prevRadiationSigRef.current) {
-          prevRadiationSigRef.current = sig;
-          setRadiationContacts(inRange);
-          setScannerContactCount('radiation', inRange.length);
-        }
-      } else if (prevRadiationSigRef.current !== '') {
-        prevRadiationSigRef.current = '';
-        setRadiationContacts([]);
-        setScannerContactCount('radiation', 0);
-      }
-
-      if (undockBtnRef.current) {
-        const undockTutorialStep =
-          dockingTutorialActiveRef.current &&
-          TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id === 'docking-undock';
-        const pulse = undockTutorialStep && isDockedRef.current;
-        undockBtnRef.current.classList.toggle('nav-undock-btn--tutorial-pulse', pulse);
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [layout, focusElements]);
-
-  // Listen for nav target set by external systems (e.g. docking request approval)
-  useEffect(() => {
-    const onNavTargetSet = (e: Event) => {
-      const { id, label } = (e as CustomEvent<{ id: string; label: string }>).detail;
-      setTargetId(id);
-      setTargetLabel(label);
-    };
-    const onNavTargetCleared = () => {
-      setTargetId('');
-      setTargetLabel('');
-      setSelectedObjName(null);
-      selectedObjNameRef.current = null;
-    };
-    window.addEventListener('NavTargetSet', onNavTargetSet);
-    window.addEventListener('NavTargetCleared', onNavTargetCleared);
-    return () => {
-      window.removeEventListener('NavTargetSet', onNavTargetSet);
-      window.removeEventListener('NavTargetCleared', onNavTargetCleared);
-    };
-  }, []);
-
-  // Listen for clicked world objects (cargo pods, ships, stations, etc.)
-  useEffect(() => {
-    const onSelectedTargetChanged = (e: Event) => {
-      const { name } = (e as CustomEvent<{ name: string | null; type: string | null }>).detail;
-      selectedObjNameRef.current = name;
-      setSelectedObjName(name);
-    };
-    window.addEventListener('SelectedTargetChanged', onSelectedTargetChanged);
-    return () => window.removeEventListener('SelectedTargetChanged', onSelectedTargetChanged);
-  }, []);
-
-  // Tutorial highlight: pulse the nav target button when requested
-  useEffect(() => {
-    const onStart = () => setNavTargetHighlight(true);
-    const onStop = () => setNavTargetHighlight(false);
-    window.addEventListener('NavTargetHighlightStart', onStart);
-    window.addEventListener('NavTargetHighlightStop', onStop);
-    return () => {
-      window.removeEventListener('NavTargetHighlightStart', onStart);
-      window.removeEventListener('NavTargetHighlightStop', onStop);
-    };
-  }, []);
-
-  // Tutorial highlight: pulse a specific contact item in the dialog
-  useEffect(() => {
-    const onStart = (e: Event) => {
-      const { id } = (e as CustomEvent<{ id: string }>).detail;
-      setHighlightedContactId(id);
-    };
-    const onStop = () => setHighlightedContactId(undefined);
-    window.addEventListener('NavContactHighlightStart', onStart);
-    window.addEventListener('NavContactHighlightStop', onStop);
-    return () => {
-      window.removeEventListener('NavContactHighlightStart', onStart);
-      window.removeEventListener('NavContactHighlightStop', onStop);
-    };
-  }, []);
-
-  // Scanner HUD / external requests to open a filtered scan-contact picker
-  useEffect(() => {
-    const onOpenScanPicker = (e: Event) => {
-      const { scanId } = (e as CustomEvent<{ scanId: string }>).detail ?? {};
-      if (!scanId || !isNavScanPickerVariant(scanId)) return;
-      setDialogOpen(false);
-      setOpenScanPicker(scanId);
-    };
-    window.addEventListener(EVENT_OPEN_SCAN_PICKER, onOpenScanPicker);
-    return () => window.removeEventListener(EVENT_OPEN_SCAN_PICKER, onOpenScanPicker);
-  }, []);
+  // ── Derived state ─────────────────────────────────────────────────
 
   const customGeneralMatch = customGeneralTargets?.find((t) => t.id === targetId);
   const customPlanetaryMatch = customPlanetaryTargets?.find((t) => t.id === targetId);
@@ -624,6 +118,7 @@ export const NavHUD = ({
   const proximityMatch = proximityContacts.find((c) => c.id === targetId);
   const radioMatch = radioContacts.find((c) => c.id === targetId);
   const radiationMatch = radiationContacts.find((c) => c.id === targetId);
+
   const resolvedTargetLabel =
     customGeneralMatch?.label ??
     customPlanetaryMatch?.label ??
@@ -637,105 +132,12 @@ export const NavHUD = ({
   const displayLabel =
     selectedObjName ?? resolvedTargetLabel ?? (hasNavTarget() ? 'select a target.' : '');
 
-  const handleSelect = (id: string) => {
-    // Standard nav target
-    const customGeneralDef = customGeneralTargets?.find((t) => t.id === id);
-    if (customGeneralDef) {
-      setTargetId(id);
-      setTargetLabel(customGeneralDef.label);
-      setSelectedObjName(null);
-      clearSelectedTarget();
-      navTargetIdRef.current = id;
-      customGeneralDef.getPosition(navTargetPosRef.current);
-      return;
-    }
-    const customPlanetaryDef = customPlanetaryTargets?.find((t) => t.id === id);
-    if (customPlanetaryDef) {
-      setTargetId(id);
-      setTargetLabel(customPlanetaryDef.label);
-      setSelectedObjName(null);
-      clearSelectedTarget();
-      navTargetIdRef.current = id;
-      customPlanetaryDef.getPosition(navTargetPosRef.current);
-      return;
-    }
-
-    const def = NAV_TARGETS.find((t) => t.id === id);
-    if (def) {
-      setTargetId(id);
-      setTargetLabel('');
-      setSelectedObjName(null);
-      clearSelectedTarget();
-      navTargetIdRef.current = id;
-      if (def.orbit) {
-        const parentBody = gravityBodies.get(def.orbit.planetName);
-        if (parentBody) {
-          navTargetPosRef.current.copy(parentBody.position);
-        } else {
-          navTargetPosRef.current.set(...def.position);
-        }
-      } else {
-        const gravBody =
-          gravityBodies.get(id.charAt(0).toUpperCase() + id.slice(1)) || gravityBodies.get(id);
-        if (gravBody) {
-          navTargetPosRef.current.copy(gravBody.position);
-        } else {
-          navTargetPosRef.current.set(...def.position);
-        }
-      }
-      if (autopilotActive.current) {
-        autopilotPhase.current = 'align';
-      }
-      return;
-    }
-
-    // Scan contact (magnetic or drive)
-    const contact =
-      magneticContacts.find((c) => c.id === id) ??
-      driveContacts.find((c) => c.id === id) ??
-      proximityContacts.find((c) => c.id === id) ??
-      radioContacts.find((c) => c.id === id) ??
-      radiationContacts.find((c) => c.id === id);
-    if (contact) {
-      setTargetId(id);
-      setTargetLabel(contact.label);
-      navTargetIdRef.current = id;
-      contact.getPosition(navTargetPosRef.current);
-      const vel = contact.getVelocity ? contact.getVelocity(velVec.current) : undefined;
-      selectTarget(contact.label, vel, navTargetPosRef.current, id, contact.type);
-      flashTarget();
-      if (autopilotActive.current) {
-        autopilotPhase.current = 'align';
-      }
-      window.dispatchEvent(new CustomEvent('NavScanContactSelected', { detail: { id } }));
-    }
-  };
-
-  const handleAutopilot = () => {
-    if (!autopilotEnabled) return;
-    if (autopilotActive.current && autopilotMode.current === 'approach') {
-      disableAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-    } else {
-      enableAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: true } }));
-    }
-  };
-
-  const handleVelocityMatch = () => {
-    const hasVel = selectedTargetName !== null && selectedTargetVelocity.lengthSq() > 1e-8;
-    if (!hasVel) return;
-    if (autopilotActive.current && autopilotMode.current === 'velocityMatch') {
-      disableAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-    } else {
-      enableVelocityMatchAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: true } }));
-    }
-  };
+  const hasActiveNavTarget = targetId.trim().length > 0;
+  const autopilotEnabled = hasActiveNavTarget;
 
   const magneticItems = toNavTargetItems(magneticContacts);
   const driveItems = toNavTargetItems(driveContacts);
+
   const scanContactsByPicker: Record<NavScanPickerId, NavScanContact[]> = {
     magnet: magneticContacts,
     drive: driveContacts,
@@ -756,35 +158,6 @@ export const NavHUD = ({
     (scanId) => scanContactsByPicker[scanId].length > 0
   );
 
-  useEffect(() => {
-    if (!openScanPicker) return;
-    const counts: Record<NavScanPickerId, number> = {
-      magnet: magneticContacts.length,
-      drive: driveContacts.length,
-      proximity: proximityContacts.length,
-      radio: radioContacts.length,
-      radiation: radiationContacts.length,
-    };
-    if (counts[openScanPicker] === 0) {
-      setOpenScanPicker(null);
-    }
-  }, [
-    openScanPicker,
-    magneticContacts,
-    driveContacts,
-    proximityContacts,
-    radioContacts,
-    radiationContacts,
-  ]);
-
-  const requestUndock = () => {
-    if (!isDockingTutorialUndockAllowed()) return;
-    window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK));
-  };
-
-  const hasActiveNavTarget = targetId.trim().length > 0;
-  const autopilotEnabled = hasActiveNavTarget;
-
   const totalNavContactCount =
     navItems.length +
     generalItems.length +
@@ -794,19 +167,36 @@ export const NavHUD = ({
     radioContacts.length +
     radiationContacts.length;
 
-  const handleClearNavTarget = () => {
-    clearNavTarget();
-    clearSelectedTarget();
-    setTargetId('');
-    setTargetLabel('');
-    setSelectedObjName(null);
-    selectedObjNameRef.current = null;
-    setOpenScanPicker(null);
-    if (autopilotActive.current) {
-      disableAutopilot();
-      window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-    }
+  // ── Handlers ──────────────────────────────────────────────────────
+
+  const selectDispatch: SelectDispatch = { setTargetId, setTargetLabel, setSelectedObjName };
+  const clearDispatch: ClearNavTargetDispatch = {
+    ...selectDispatch,
+    selectedObjNameRef,
+    setOpenScanPicker,
   };
+
+  const handleSelect = (id: string) => {
+    const allScanContacts = [
+      ...magneticContacts,
+      ...driveContacts,
+      ...proximityContacts,
+      ...radioContacts,
+      ...radiationContacts,
+    ];
+    handleNavTargetSelect(
+      id,
+      selectDispatch,
+      allScanContacts,
+      velVec.current,
+      customGeneralTargets,
+      customPlanetaryTargets
+    );
+  };
+
+  const handleClearNavTarget = () => clearAllNavTargets(clearDispatch);
+  const handleAutopilot = () => toggleApproachAutopilot(autopilotEnabled);
+  const handleVelocityMatch = () => toggleVelocityMatch();
 
   const openNavTargetDialog = () => {
     setOpenScanPicker(null);
@@ -819,6 +209,8 @@ export const NavHUD = ({
     setDialogOpen(false);
     setOpenScanPicker(scanId);
   };
+
+  // ── Dialogs ───────────────────────────────────────────────────────
 
   const scanPickerDialog = openScanPicker ? (
     <NavTargetDialog
@@ -851,6 +243,8 @@ export const NavHUD = ({
     />
   ) : null;
 
+  // ── Render ────────────────────────────────────────────────────────
+
   if (layout === 'helmet') {
     return (
       <>
@@ -868,7 +262,7 @@ export const NavHUD = ({
                   {displayNameForDockedStation(dockedStationId)}
                 </span>
                 <span className="helmet-nav-tag">SPD</span>
-                <span ref={speedRef} className="helmet-nav-speed hud-value" />
+                <span ref={displayRefs.speed} className="helmet-nav-speed hud-value" />
                 <button
                   ref={undockBtnRef}
                   type="button"
@@ -893,13 +287,11 @@ export const NavHUD = ({
                           : `Select nav target (${totalNavContactCount} contacts)`
                       }
                       aria-label={
-                        hasActiveNavTarget
-                          ? `Nav target: ${displayLabel}`
-                          : 'Open contacts'
+                        hasActiveNavTarget ? `Nav target: ${displayLabel}` : 'Open contacts'
                       }
                     >
                       <span className="helmet-nav-btn--contacts-face">
-                        {hasActiveNavTarget ? displayLabel || '—' : 'CONTACTS'}
+                        {hasActiveNavTarget ? displayLabel || '\u2014' : 'CONTACTS'}
                       </span>
                     </button>
                   </div>
@@ -934,24 +326,24 @@ export const NavHUD = ({
                     disabled={!autopilotEnabled}
                     title={autopilotEnabled ? 'Autopilot' : 'Set a nav target first'}
                   >
-                    AP <span ref={autopilotBtnRef} className="helmet-ap-state" />
+                    AP <span ref={displayRefs.autopilotBtn} className="helmet-ap-state" />
                   </button>
                 </div>
                 <div className="helmet-nav-row helmet-nav-metrics">
                   <div className="helmet-nav-metric">
                     <span className="helmet-nav-tag">SPD</span>
-                    <span ref={speedRef} className="helmet-nav-speed hud-value" />
+                    <span ref={displayRefs.speed} className="helmet-nav-speed hud-value" />
                   </div>
                   <div className="helmet-nav-metric helmet-nav-metric--rel">
                     <span className="helmet-nav-tag">Δv</span>
                     <span
-                      ref={relativeVelRef}
+                      ref={displayRefs.relativeVel}
                       className="helmet-nav-dv hud-value nav-relative-velocity"
                     />
-                    <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                    <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
                   </div>
                 </div>
-                <span ref={orbitLineRef} className="helmet-nav-orbit" />
+                <span ref={displayRefs.orbitLine} className="helmet-nav-orbit" />
               </>
             )}
           </div>
@@ -1033,8 +425,11 @@ export const NavHUD = ({
                     </span>
                     <div className="nav-target-rel-line">
                       <span className="nav-target-rel-label">Rel Vel</span>
-                      <span ref={relativeVelRef} className="hud-value nav-relative-velocity" />
-                      <span ref={dockingHintRef} className="nav-target-dock-hint" />
+                      <span
+                        ref={displayRefs.relativeVel}
+                        className="hud-value nav-relative-velocity"
+                      />
+                      <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
                     </div>
                   </div>
                 </div>
@@ -1042,13 +437,12 @@ export const NavHUD = ({
               <div className="nav-target-group">
                 <div className="nav-target-label">Autopilot</div>
                 <button type="button" className="autopilot-btn" onClick={handleAutopilot}>
-                  <span ref={autopilotBtnRef}>AUTOPILOT</span>
+                  <span ref={displayRefs.autopilotBtn}>AUTOPILOT</span>
                 </button>
               </div>
               <div className="nav-target-group">
                 <div className="nav-target-label">Relative</div>
                 <button
-                  ref={velocityMatchBtnRef}
                   type="button"
                   className="autopilot-btn autopilot-btn--velocity-match"
                   onClick={handleVelocityMatch}
@@ -1063,30 +457,30 @@ export const NavHUD = ({
                   <div className="hud-label">
                     {orbitStatusRef.current.isOrbiting === true ? 'ORBIT' : 'SOI'}
                   </div>
-                  <span ref={orbitRef} className="hud-value nav-orbit" />
+                  <span ref={displayRefs.orbit} className="hud-value nav-orbit" />
                 </div>
                 <div className="hud-divider" />
                 <div className="hud-metric" style={{ minWidth: '50px' }}>
                   <div className="hud-label">Altitude</div>
-                  <span ref={altRef} className="hud-value nav-alt" />
-                  <span ref={apsesTargetRef} className="hud-value nav-apses-target" />
+                  <span ref={displayRefs.alt} className="hud-value nav-alt" />
+                  <span ref={displayRefs.apsesTarget} className="hud-value nav-apses-target" />
                 </div>
                 <div className="hud-divider" />
                 <div className="hud-metric">
                   <div className="hud-label">Apsis</div>
                   <div className="hud-metric-inline">
                     <div className="hud-label">Per</div>
-                    <span ref={periapsisRef} className="hud-value nav-periapsis" />
+                    <span ref={displayRefs.periapsis} className="hud-value nav-periapsis" />
                   </div>
                   <div className="hud-metric-inline">
                     <div className="hud-label">Apo</div>
-                    <span ref={apoapsisRef} className="hud-value nav-apoapsis" />
+                    <span ref={displayRefs.apoapsis} className="hud-value nav-apoapsis" />
                   </div>
                 </div>
                 <div className="hud-divider" />
                 <div className="hud-metric">
                   <div className="hud-label">Approach</div>
-                  <span ref={approachRef} className="hud-value nav-approach" />
+                  <span ref={displayRefs.approach} className="hud-value nav-approach" />
                 </div>
               </div>
             </>

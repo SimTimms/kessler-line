@@ -11,8 +11,7 @@ import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
 import DustCloud from '../DustCloud/DustCloud';
 import CollisionPhysicsTestRig from '../Debug/CollisionPhysicsTestRig';
 import CollisionDebug from '../Debug/CollisionDebug';
-//import Spaceship from '../Ship/Spaceship';
-import GarbageScow from '../Ship/GarbageScow';
+import Spaceship from '../Ship/Spaceship';
 import { SpaceshipConfig } from './SpaceshipConfig';
 
 function CameraCapture() {
@@ -76,11 +75,12 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
       />
       <axesHelper args={[120]} />
       <Suspense fallback={null}>
-        <GarbageScow
-          url={'/space_garbage_truck.glb'}
+        <Spaceship
+          url={SpaceshipConfig.url}
           initialPosition={SpaceshipConfig.initialPosition}
           initialRotation={SpaceshipConfig.initialRotation}
-          scale={4}
+          scale={SpaceshipConfig.scale}
+          modelRotation={SpaceshipConfig.modelRotation}
           initialVelocity={SpaceshipConfig.initialVelocity}
           collisionId={SpaceshipConfig.collisionId}
           shipParticleCloudProps={SpaceshipConfig.shipParticleCloudProps}

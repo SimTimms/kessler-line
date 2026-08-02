@@ -439,7 +439,8 @@ function ShipIndicator({ onHover }: { onHover: (info: HoverInfo | null) => void 
     );
   }, []);
 
-  useFrame(() => {
+  useFrame(({ invalidate }) => {
+    invalidate();
     const sx = minimapShipPosition.x * MINIMAP_SCALE;
     const sz = minimapShipPosition.z * MINIMAP_SCALE;
 

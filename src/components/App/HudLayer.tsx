@@ -48,10 +48,15 @@ const HudLayer = memo(function HudLayer({
 }: HudLayerProps) {
   useEffect(() => {
     let raf: number;
+    let prevX = 0, prevY = 0;
     const tick = () => {
       const { x, y } = hudShakeOffset;
-      document.body.style.transform =
-        x === 0 && y === 0 ? '' : `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+      if (x !== prevX || y !== prevY) {
+        prevX = x;
+        prevY = y;
+        document.body.style.transform =
+          x === 0 && y === 0 ? '' : `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -83,9 +88,9 @@ const HudLayer = memo(function HudLayer({
         setThrustLevel={setThrustLevel}
       />
 
-      <MagneticHUD />
-      <DriveSignatureHUD />
-      <ProximityHUD />
+      {magneticOn && <MagneticHUD />}
+      {driveSignatureOn && <DriveSignatureHUD />}
+      {proximity && <ProximityHUD />}
       <RadiationHUD />
       {showMinimap && <MiniMap />}
 

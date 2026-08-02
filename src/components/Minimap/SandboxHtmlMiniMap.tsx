@@ -26,7 +26,7 @@ import {
   SHIP_DIRECTION_TARGET_COLOR,
   SHIP_DIRECTION_VELOCITY_COLOR,
 } from '../../config/shipDirectionIndicatorConfig';
-import { sampleShipTrajectoryXZ } from '../../utils/sampleShipTrajectoryXZ';
+import { requestTrajectory, snapshotGravityBodies } from '../../workers/trajectoryWorkerClient';
 import { getDockCaptureProfile } from '../../utils/dockingCapture';
 import type { DockCaptureMode } from '../../config/dockCaptureConfig';
 import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
@@ -847,13 +847,29 @@ export default function SandboxHtmlMiniMap({
           trajectoryCacheRef.current.length === 0 ||
           trajectoryFrameCounterRef.current % MINIMAP_TRAJECTORY_UPDATE_FRAMES === 0
         ) {
-          trajectoryCacheRef.current = sampleShipTrajectoryXZ(
+          const bodies = snapshotGravityBodies();
+          requestTrajectory(
+            'minimap',
             ship.x,
             ship.z,
             shipVelocity.x,
             shipVelocity.z,
-            MINIMAP_TRAJECTORY_RESAMPLED_STEPS,
-            MINIMAP_TRAJECTORY_RESAMPLED_DT
+            bodies,
+            {
+              steps: MINIMAP_TRAJECTORY_RESAMPLED_STEPS,
+              dt: MINIMAP_TRAJECTORY_RESAMPLED_DT,
+              detectOrbitClosure: true,
+              trackApsides: false,
+              adaptiveDt: true,
+            },
+            (result) => {
+              const { positions, activeSteps } = result;
+              const pts: Array<{ x: number; z: number }> = new Array(activeSteps);
+              for (let i = 0; i < activeSteps; i++) {
+                pts[i] = { x: positions[i * 2], z: positions[i * 2 + 1] };
+              }
+              trajectoryCacheRef.current = pts;
+            }
           );
         }
       } else {

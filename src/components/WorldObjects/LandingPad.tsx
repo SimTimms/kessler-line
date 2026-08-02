@@ -19,6 +19,9 @@ import {
   LANDING_PAD_PLATFORM_MOVE_SPEED,
   LANDING_PAD_PLATFORM_OBJECT_NAME,
 } from '../../config/landingPadConfig';
+
+const LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE_SQ =
+  LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE * LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE;
 import {
   clearLandingPadElevator,
   setLandingPadElevatorReady,
@@ -221,9 +224,9 @@ export default function LandingPad({
     // Proximity gate for the docking bay — always evaluated.
     if (groupRef.current) {
       groupRef.current.getWorldPosition(_padWorldPos);
-      const dist = shipPosRef.current.distanceTo(_padWorldPos);
+      const distSq = shipPosRef.current.distanceToSquared(_padWorldPos);
       const shouldBeActive =
-        dist < LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE || navTargetIdRef.current === id;
+        distSq < LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE_SQ || navTargetIdRef.current === id;
       if (shouldBeActive !== dockingBayActiveRef.current) {
         dockingBayActiveRef.current = shouldBeActive;
         setDockingBayActive(shouldBeActive);

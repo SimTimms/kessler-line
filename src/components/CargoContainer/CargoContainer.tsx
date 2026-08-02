@@ -20,11 +20,9 @@ import { CARGO_CONTAINER_DOCK } from '../../config/docks/cargoContainerDockConfi
 import {
   CARGO_CONTAINER_PORT_DIMENSIONS,
   CARGO_CONTAINER_PORT_LOCAL_OFFSET,
-  CONTAINER_DOCKING_BAY_ACTIVATION_RANGE,
   CONTAINER_IMPULSE_SCALE,
   CONTAINER_VELOCITY_DAMPING,
 } from '../../config/containerConfig';
-import { navTargetIdRef } from '../../context/NavTarget';
 import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipPosRef } from '../../context/ShipPos';
@@ -254,6 +252,13 @@ export default function CargoContainer({
       isTowed: () => towedRef.current,
       isDropOffBusy: () => dropOffRef.current,
       isConsumed: () => consumedRef.current,
+      getSimPosition: () => posRef.current,
+      setDockingBayProximity: (active: boolean) => {
+        if (active !== dockingBayActiveRef.current) {
+          dockingBayActiveRef.current = active;
+          setDockingBayActive(active);
+        }
+      },
       beginDropOff: (padAnchor) => {
         if (towedRef.current || dropOffRef.current || consumedRef.current) return false;
         const group = groupRef.current;
@@ -297,6 +302,10 @@ export default function CargoContainer({
       return;
     }
 
+    // Track whether position/rotation actually changed this frame so we can skip
+    // the worldToLocal write for the 30+ stationary containers in the narrative scene.
+    const wasMoving = towedRef.current || velRef.current.lengthSq() > 1e-8;
+
     if (towedRef.current) {
       // Align container docking port with the ship nose port, then push it a little
       // further along the nose so ports keep a small gap while attached.
@@ -323,17 +332,15 @@ export default function CargoContainer({
       velRef.current.y = 0;
     }
 
-    applySimPositionToGroup(groupRef.current, posRef.current);
-    groupRef.current.quaternion.copy(quatRef.current);
-
-    // Mount/unmount the docking bay based on proximity or nav target.
-    const dist = shipPosRef.current.distanceTo(posRef.current);
-    const shouldBeActive =
-      dist < CONTAINER_DOCKING_BAY_ACTIVATION_RANGE || navTargetIdRef.current === id;
-    if (shouldBeActive !== dockingBayActiveRef.current) {
-      dockingBayActiveRef.current = shouldBeActive;
-      setDockingBayActive(shouldBeActive);
+    // Only write back to the scene graph when position/orientation changed.
+    // Stationary containers (up to 32 in the narrative scene) were calling
+    // worldToLocal + quaternion copy every frame for no reason.
+    if (wasMoving) {
+      applySimPositionToGroup(groupRef.current, posRef.current);
+      groupRef.current.quaternion.copy(quatRef.current);
     }
+    // Proximity check moved to CargoContainerProximityManager (one shared useFrame
+    // for all containers instead of N individual per-container subscriptions).
   });
 
   return (

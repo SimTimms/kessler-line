@@ -33,6 +33,8 @@ import {
 import { shipPosRef } from '../../context/ShipPos';
 
 const LOCAL_PAD_FORWARD_QUAT = new THREE.Quaternion();
+const SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE_SQ =
+  SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE * SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE;
 
 function moveTowardScalar(current: number, target: number, maxStep: number): number {
   const delta = target - current;
@@ -224,7 +226,7 @@ export default function SalvageDropOffPad({
 
     // Skip the scan when the ship is far away — containers damp to a stop
     // quickly and can't reach the pad from beyond this range.
-    if (shipPosRef.current.distanceTo(_padPos) > SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE) return;
+    if (shipPosRef.current.distanceToSquared(_padPos) > SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE_SQ) return;
 
     for (const handle of listCargoContainers()) {
       if (handle.isTowed() || handle.isDropOffBusy() || handle.isConsumed()) continue;

@@ -8,6 +8,7 @@ import { shipVelocity } from '../../context/ShipState';
 import { clearHoveredObject, hoveredObject, setHoveredObject } from '../../context/HoveredObject';
 import { getCollidables, type CollidableEntry } from '../../context/CollisionRegistry';
 import { selectTarget, selectedTargetKey } from '../../context/TargetSelection';
+import { registerScannerUpdate, unregisterScannerUpdate } from '../../context/ScannerFrameRunner';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
 const DOCKING_BAY_ID_PREFIX = 'docking-bay-';
@@ -155,10 +156,7 @@ export default function DriveSignatureHUD() {
     let hoveredDriveId: string | null = null;
     let hoveredBayId: string | null = null;
 
-    let rafId: number;
     const update = () => {
-      rafId = requestAnimationFrame(update);
-
       if (!driveSignatureOnRef.current || !sceneCamera.current) {
         if (hoveredDriveId && hoveredObject.id === hoveredDriveId) {
           clearHoveredObject();
@@ -444,9 +442,9 @@ export default function DriveSignatureHUD() {
       }
     };
 
-    rafId = requestAnimationFrame(update);
+    registerScannerUpdate(update);
     return () => {
-      cancelAnimationFrame(rafId);
+      unregisterScannerUpdate(update);
       for (const m of markerMap.values()) m.root.remove();
       for (const m of dockingBayMarkerMap.values()) m.root.remove();
     };

@@ -15,3 +15,14 @@ export const HOVER_TRAJ_GAP_SIZE = 2.5;
 export const TRAJ_UPDATE_INTERVAL = 3;
 /** HoverTrajectoryIndicator simulation cadence (frames). Resets on target change. */
 export const HOVER_TRAJ_UPDATE_INTERVAL = 3;
+
+// ── Orbit closure detection ──────────────────────────────────────────────
+/** Integration steps before orbit-closure check begins. */
+export const ORBIT_MIN_STEPS = 25;
+/** World-unit distance to declare orbit closed (trajectory returned to start). */
+export const ORBIT_CLOSE_DIST = 150;
+/**
+ * Trajectory must travel at least this far from start before closure is checked.
+ * Prevents approach arcs that curve near the start from being mistaken for orbits.
+ */
+export const ORBIT_AWAY_DIST = 500;

@@ -38,6 +38,8 @@ import LongDistanceTravelConfig from './components/LongDistanceTravelConfig/Long
 import CombatConfig from './components/CombatConfig/CombatConfig';
 import HudConfig from './components/HudConfig/HudConfig';
 import NarrativeConfig from './components/NarrativeConfig/NarrativeConfig';
+import ShipNavigationConfig from './components/ShipNavigationConfig/ShipNavigationConfig';
+import EmptyScene from './components/EmptyScene/EmptyScene';
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
 function resetShipState(forTutorial = false) {
@@ -97,6 +99,8 @@ function App() {
       return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} />;
     case GAME_MODES.modelConfig:
       return <ModelConfig />;
+    case GAME_MODES.shipNavigationConfig:
+      return <ShipNavigationConfig />;
     case GAME_MODES.shipConfig:
       return <LandingPadConfig />;
     case GAME_MODES.inventoryConfig:
@@ -113,6 +117,8 @@ function App() {
       return <HudConfig />;
     case GAME_MODES.narrativeConfig:
       return <NarrativeConfig />;
+    case GAME_MODES.emptyScene:
+      return <EmptyScene />;
     case GAME_MODES.sandbox:
       return <Sandbox />;
     case GAME_MODES.tutorial:

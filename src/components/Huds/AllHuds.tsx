@@ -64,7 +64,11 @@ export default function AllHuds({
         sceneRadioContactsOnly
         customPlanetaryTargets={SANDBOX_PLANETARY_NAV_TARGETS}
       />
-      <SharedScannerOverlayHuds />
+      <SharedScannerOverlayHuds
+        magneticOn={magneticOn}
+        driveSignatureOn={driveSignatureOn}
+        proximityOn={proximity}
+      />
     </div>
   );
 }

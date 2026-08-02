@@ -5,6 +5,7 @@ import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan'
 import { getMagneticTargets } from '../../context/MagneticRegistry';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipVelocity } from '../../context/ShipState';
+import { registerScannerUpdate, unregisterScannerUpdate } from '../../context/ScannerFrameRunner';
 
 const EDGE_PAD = 30; // px margin from screen edge for off-screen indicators
 const MAX_MARKERS = 200; // pre-allocated pool — supports up to this many simultaneous targets
@@ -117,10 +118,7 @@ export default function MagneticHUD() {
     const _toTgt = new THREE.Vector3();
     const _targetVel = new THREE.Vector3();
 
-    let rafId: number;
     const update = () => {
-      rafId = requestAnimationFrame(update);
-
       const camera = sceneCamera.current;
       if (!magneticOnRef.current || !camera) {
         for (const m of markers) m.root.style.display = 'none';
@@ -228,9 +226,9 @@ export default function MagneticHUD() {
       }
     };
 
-    rafId = requestAnimationFrame(update);
+    registerScannerUpdate(update);
     return () => {
-      cancelAnimationFrame(rafId);
+      unregisterScannerUpdate(update);
       for (const m of markers) m.root.remove();
     };
   }, []);

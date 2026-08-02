@@ -56,11 +56,21 @@ export default function SpaceParticles() {
     return { positions, texture: makeParticleTexture(), count: COUNT };
   }, []);
 
+  const frameSkipRef = useRef(0);
+
   useFrame(() => {
     if (!geoRef.current) return;
+
+    // Stars only need repositioning when the ship has moved far enough to push
+    // them out of the wrapping shell. At typical speeds this rarely happens on
+    // every frame, so updating every 3rd frame cuts CPU cost without visible pop.
+    frameSkipRef.current = (frameSkipRef.current + 1) % 3;
+    if (frameSkipRef.current !== 0) return;
+
     const ship = shipPosRef.current;
     const posAttr = geoRef.current.attributes.position as THREE.BufferAttribute;
     const arr = posAttr.array as Float32Array;
+    let dirty = false;
 
     for (let i = 0; i < count; i++) {
       const b = i * 3;
@@ -68,12 +78,12 @@ export default function SpaceParticles() {
       const sx = ship.x,
         sy = ship.y,
         sz = ship.z;
-      if (arr[b + 0] - sx > HALF) arr[b + 0] -= HALF * 2;
-      else if (arr[b + 0] - sx < -HALF) arr[b + 0] += HALF * 2;
-      if (arr[b + 1] - sy > HALF) arr[b + 1] -= HALF * 2;
-      else if (arr[b + 1] - sy < -HALF) arr[b + 1] += HALF * 2;
-      if (arr[b + 2] - sz > HALF) arr[b + 2] -= HALF * 2;
-      else if (arr[b + 2] - sz < -HALF) arr[b + 2] += HALF * 2;
+      if (arr[b + 0] - sx > HALF) { arr[b + 0] -= HALF * 2; dirty = true; }
+      else if (arr[b + 0] - sx < -HALF) { arr[b + 0] += HALF * 2; dirty = true; }
+      if (arr[b + 1] - sy > HALF) { arr[b + 1] -= HALF * 2; dirty = true; }
+      else if (arr[b + 1] - sy < -HALF) { arr[b + 1] += HALF * 2; dirty = true; }
+      if (arr[b + 2] - sz > HALF) { arr[b + 2] -= HALF * 2; dirty = true; }
+      else if (arr[b + 2] - sz < -HALF) { arr[b + 2] += HALF * 2; dirty = true; }
 
       const dx = arr[b + 0] - sx;
       const dy = arr[b + 1] - sy;
@@ -81,10 +91,12 @@ export default function SpaceParticles() {
       const distSq = dx * dx + dy * dy + dz * dz;
       if (distSq < STARFIELD_MIN_RADIUS * STARFIELD_MIN_RADIUS) {
         placeOnStarShell(arr, b, sx, sy, sz);
+        dirty = true;
       }
     }
 
-    posAttr.needsUpdate = true;
+    // Only upload to GPU when at least one particle was actually repositioned.
+    if (dirty) posAttr.needsUpdate = true;
   });
 
   return (

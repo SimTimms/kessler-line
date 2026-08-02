@@ -6,6 +6,7 @@ import { getCollidables } from '../../context/CollisionRegistry';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { SHIP_COLLISION_ID } from '../../context/ShipState';
 import { navTargetIdRef } from '../../context/NavTarget';
+import { registerScannerUpdate, unregisterScannerUpdate } from '../../context/ScannerFrameRunner';
 
 const EDGE_PAD = 30;
 const PROXIMITY_MARKER_MAX_COUNT = 10;
@@ -66,9 +67,7 @@ export default function ProximityHUD() {
     const container = containerRef.current;
     if (!container) return;
 
-    let rafId = 0;
     const tick = () => {
-      rafId = requestAnimationFrame(tick);
       const markers = markersRef.current;
       const _pos = _posRef.current;
       const _ndc = _ndcRef.current;
@@ -145,9 +144,9 @@ export default function ProximityHUD() {
       }
     };
 
-    rafId = requestAnimationFrame(tick);
+    registerScannerUpdate(tick);
     return () => {
-      cancelAnimationFrame(rafId);
+      unregisterScannerUpdate(tick);
       const markers = markersRef.current;
       for (const m of markers.values()) m.root.remove();
       markers.clear();

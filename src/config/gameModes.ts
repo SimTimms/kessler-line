@@ -1,6 +1,7 @@
 export const GAME_MODES = {
   menu: 'menu',
   modelConfig: 'modelConfig',
+  shipNavigationConfig: 'shipNavigationConfig',
   shipConfig: 'shipConfig',
   inventoryConfig: 'inventoryConfig',
   salvageConfig: 'salvageConfig',
@@ -16,11 +17,13 @@ export const GAME_MODES = {
   radioManagement: 'radioManagement',
   game: 'game',
   orbitalManagement: 'orbitalManagement',
+  emptyScene: 'emptyScene',
 } as const;
 
 export type GameMode = (typeof GAME_MODES)[keyof typeof GAME_MODES];
 export type TutorialMenuSelection =
   | typeof GAME_MODES.modelConfig
+  | typeof GAME_MODES.shipNavigationConfig
   | typeof GAME_MODES.shipConfig
   | typeof GAME_MODES.inventoryConfig
   | typeof GAME_MODES.salvageConfig
@@ -34,4 +37,5 @@ export type TutorialMenuSelection =
   | typeof GAME_MODES.resources
   | typeof GAME_MODES.airManagement
   | typeof GAME_MODES.radioManagement
-  | typeof GAME_MODES.orbitalManagement;
+  | typeof GAME_MODES.orbitalManagement
+  | typeof GAME_MODES.emptyScene;

@@ -38,6 +38,12 @@ export function ShipDepthOfField({ saturation }: ShipDepthOfFieldProps) {
     dofEffect.target = dofTarget.current;
   });
 
+  // saturation=0 is an identity transform — skip the EffectComposer entirely
+  // to avoid an unnecessary full-frame render pass with no visual benefit.
+  const resolvedSaturation = saturation ?? -1;
+  const needsComposer = bloomEnabled || resolvedSaturation !== 0;
+  if (!needsComposer) return null;
+
   return (
     <EffectComposer>
       <Bloom
@@ -48,7 +54,7 @@ export function ShipDepthOfField({ saturation }: ShipDepthOfFieldProps) {
         luminanceSmoothing={0.8}
         intensity={0.3}
       />
-      <HueSaturation saturation={saturation ?? -1} />
+      <HueSaturation saturation={resolvedSaturation} />
     </EffectComposer>
   );
 }

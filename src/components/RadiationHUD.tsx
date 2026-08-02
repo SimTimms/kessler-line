@@ -8,6 +8,7 @@ import {
   resolveRadiationZoneWorldPosition,
   horizontalDistanceToRadiationZone,
 } from '../utils/radiationZonePosition';
+import { registerScannerUpdate, unregisterScannerUpdate } from '../context/ScannerFrameRunner';
 
 const EDGE_PAD = 30;
 const RAD_COLOR = '#88ff44';
@@ -77,10 +78,7 @@ export default function RadiationHUD() {
       }
     };
 
-    let rafId: number;
     const update = () => {
-      rafId = requestAnimationFrame(update);
-
       const zones = activeRadiationZonesRef.current;
       const markers = markersRef.current;
 
@@ -163,9 +161,9 @@ export default function RadiationHUD() {
       }
     };
 
-    rafId = requestAnimationFrame(update);
+    registerScannerUpdate(update);
     return () => {
-      cancelAnimationFrame(rafId);
+      unregisterScannerUpdate(update);
       for (const m of markersRef.current) m.root.remove();
       markersRef.current = [];
     };

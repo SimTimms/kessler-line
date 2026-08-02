@@ -99,7 +99,6 @@ export default function NarrativeConfigScene() {
       />
       <SpaceParticles />
       <Suspense fallback={null}>
-        {/*
         <Spaceship
           url="/shuttle-low-british.glb"
           shipGroupRef={spaceshipGroupRef}
@@ -122,7 +121,6 @@ export default function NarrativeConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        */}
 
         <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
 
@@ -144,11 +142,11 @@ export default function NarrativeConfigScene() {
           ]}
           dockRadioDockingBay="A1"
         />
-        {/*
+
         <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
 
-       
-        <group position={primaryFieldOrigin}>
+        {/*
+        <group position={primaryFieldOrigin} name="narrative-primary-field-cargo-containers">
           {extraContainersLocalToPrimaryField.map((container) => (
             <CargoContainer
               key={`${NARRATIVE_PRIMARY_FIELD_ID_PREFIX}${container.id}`}
@@ -162,7 +160,9 @@ export default function NarrativeConfigScene() {
               debugJumpDockOnClick
             />
           ))}
+         
         </group>
+           */}
         <SalvageField
           origin={secondaryFieldOrigin}
           idPrefix={NARRATIVE_SECONDARY_FIELD_ID_PREFIX}
@@ -193,14 +193,13 @@ export default function NarrativeConfigScene() {
           center={marsZoneCenter}
           radius={marsZoneRadius}
         />
-        */}
       </Suspense>
     </>
   );
 
   return (
     <Canvas
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       style={{
         width: '100vw',
         height: '100vh',

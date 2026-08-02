@@ -126,8 +126,9 @@ export default function RenderInfoPanel() {
     return () => { document.body.removeChild(container); };
   }, []);
 
-  // Priority 100 → runs after all other useFrame callbacks so we capture
-  // the final scene state, then reset info before this frame's render passes.
+  // Use default priority so we do not take over the render loop.
+  // (Positive priorities in R3F can disable automatic rendering unless
+  // something explicitly calls gl.render each frame.)
   useFrame((_, delta) => {
     const spans = spansRef.current;
     if (!spans.length) return;
@@ -158,7 +159,7 @@ export default function RenderInfoPanel() {
 
     // Reset now so this frame's render passes start from zero
     gl.info.reset();
-  }, 100);
+  });
 
   return null;
 }

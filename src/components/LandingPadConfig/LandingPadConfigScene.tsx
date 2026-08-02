@@ -26,9 +26,6 @@ function CameraCapture() {
 }
 
 export default function LandingPadConfigScene() {
-  const landingPadConfigCameraPosition: [number, number, number] = [0, 26, 84];
-  const landingPadConfigCameraTarget: [number, number, number] = [0, 0, 38];
-
   useEffect(() => {
     const onRequestUndock = () => {
       window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -53,7 +50,7 @@ export default function LandingPadConfigScene() {
         touchAction: 'none',
       }}
       camera={{
-        position: [...landingPadConfigCameraPosition],
+        position: [...LandingPadConfig.cameraPosition],
         near: LandingPadConfig.scene.canvasNear,
         far: LandingPadConfig.scene.canvasFar,
       }}
@@ -108,9 +105,9 @@ export default function LandingPadConfigScene() {
       <OrbitControls
         makeDefault
         target={[
-          landingPadConfigCameraTarget[0],
-          landingPadConfigCameraTarget[1],
-          landingPadConfigCameraTarget[2],
+          LandingPadConfig.cameraTarget[0],
+          LandingPadConfig.cameraTarget[1],
+          LandingPadConfig.cameraTarget[2],
         ]}
         enablePan
         enableZoom

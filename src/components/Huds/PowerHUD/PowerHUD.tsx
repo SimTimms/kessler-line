@@ -323,17 +323,33 @@ export default function PowerHUD({
 
   useEffect(() => {
     let rafId: number;
+    let prevPower = -1, prevHull = -1, prevFuel = -1, prevO2 = -1;
+    let prevAmmo = -1, prevAmmoCap = -1, prevCrew = -1;
+    let prevVelocity = -1, prevCargoLen = -1;
+
     const update = () => {
-      setDisplayPower(Math.floor(power));
-      setDisplayHull(Math.floor(hullIntegrity));
-      setDisplayFuel(Math.floor(fuel));
-      setDisplayO2(Math.floor(o2));
-      setDisplayAmmo(ammo);
-      setDisplayAmmoCapacity(ammoCapacity);
-      setDisplayVelocity(getShipSpeedMps());
-      setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
-      setDisplayCrew(Math.floor(shipCrew));
       rafId = requestAnimationFrame(update);
+
+      const p = Math.floor(power);
+      const h = Math.floor(hullIntegrity);
+      const f = Math.floor(fuel);
+      const o = Math.floor(o2);
+      const a = ammo;
+      const ac = ammoCapacity;
+      const v = getShipSpeedMps();
+      const cr = Math.floor(shipCrew);
+      const cl = cargo.length;
+
+      if (p !== prevPower) { prevPower = p; setDisplayPower(p); }
+      if (h !== prevHull) { prevHull = h; setDisplayHull(h); }
+      if (f !== prevFuel) { prevFuel = f; setDisplayFuel(f); }
+      if (o !== prevO2) { prevO2 = o; setDisplayO2(o); }
+      if (a !== prevAmmo) { prevAmmo = a; setDisplayAmmo(a); }
+      if (ac !== prevAmmoCap) { prevAmmoCap = ac; setDisplayAmmoCapacity(ac); }
+      if (cr !== prevCrew) { prevCrew = cr; setDisplayCrew(cr); }
+      const vRounded = Math.round(v * 10);
+      if (vRounded !== prevVelocity) { prevVelocity = vRounded; setDisplayVelocity(v); }
+      if (cl !== prevCargoLen) { prevCargoLen = cl; setDisplayCargo(cl > 0 ? [...cargo] : []); }
     };
     rafId = requestAnimationFrame(update);
     return () => cancelAnimationFrame(rafId);

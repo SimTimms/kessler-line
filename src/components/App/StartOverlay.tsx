@@ -43,6 +43,11 @@ const TUTORIAL_MENU_ITEMS: Array<{
   placeholder?: boolean;
 }> = [
   { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
+  {
+    id: 'ship-navigation-config',
+    label: 'Ship Navigation Config',
+    selection: GAME_MODES.shipNavigationConfig,
+  },
   { id: 'ship-config', label: 'Landing Pad Config', selection: GAME_MODES.shipConfig },
   { id: 'inventory-config', label: 'Inventory Config', selection: GAME_MODES.inventoryConfig },
   { id: 'salvage-config', label: 'Salvage Config', selection: GAME_MODES.salvageConfig },
@@ -68,6 +73,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
     selection: GAME_MODES.narrativeConfig,
   },
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
+  { id: 'empty-scene', label: 'Empty Scene', selection: GAME_MODES.emptyScene },
   /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
   { id: 'air-management', label: 'Air Management', selection: GAME_MODES.airManagement },
@@ -77,6 +83,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
 
 const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.modelConfig,
+  GAME_MODES.shipNavigationConfig,
   GAME_MODES.shipConfig,
   GAME_MODES.inventoryConfig,
   GAME_MODES.salvageConfig,

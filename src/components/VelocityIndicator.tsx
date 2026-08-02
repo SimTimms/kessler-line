@@ -25,6 +25,7 @@ import {
   useShipDirectionScreenLabelRoot,
 } from './ShipDirectionScreenLabel';
 import { TRAJ_UPDATE_INTERVAL } from '../config/trajectoryConfig';
+import { requestTrajectory, snapshotGravityBodies } from '../workers/trajectoryWorkerClient';
 
 /** Local +Z offset past the arrow tip — label projects from this anchor. */
 const SPEED_LABEL_LOCAL_Z = 22;
@@ -34,17 +35,9 @@ const _shipWorld = new THREE.Vector3();
 
 const MIN_SPEED = SHIP_DIRECTION_MIN_SPEED;
 const TRAJ_STEPS = 400;
-const TRAJ_DT = 0.9; // seconds per step — stable symplectic Euler (covers ~360 s, enough for gas giant orbits ~300-350 s)
-const ORBIT_MIN_STEPS = 25; // steps before orbit-closure check starts
-const ORBIT_CLOSE_DIST = 150; // world units to declare orbit closed
-// Trajectory must travel at least this far from start before closure is checked.
-// Prevents approach arcs that curve near the start from being mistaken for orbits.
-const ORBIT_AWAY_DIST = 500;
-const VELOCITY_X_OFFSET = 0;
+const TRAJ_DT = 0.9; // seconds per step — stable symplectic Euler
 
 // Module-level scratch — no GC per frame
-const _simPos = new THREE.Vector3();
-const _simVel = new THREE.Vector3();
 const _orbitPos = new THREE.Vector3();
 const _orbitVel = new THREE.Vector3();
 const _orbitDir = new THREE.Vector3();
@@ -54,11 +47,10 @@ const _apsisScaleWorld = new THREE.Vector3();
 const APSIS_MARKER_SCREEN_PX = 20;
 
 // ── Trajectory simulation throttle ────────────────────────────────────────
-// The 400-step simulation (≥400 Math.sqrt calls) runs every N frames.
+// The 400-step simulation runs in a Web Worker every N frames.
 // Results are cached in module-level vars and reused between updates.
 let _trajTick = TRAJ_UPDATE_INTERVAL; // start at interval so the very first frame runs
 let _cachedPrimaryBody: GravityBody | null = null;
-let _cachedPrimaryBodyId: string | null = null;
 let _cachedPrimaryIsPlanet = false;
 let _cachedPeriStep = -1;
 let _cachedApoStep = -1;
@@ -318,234 +310,134 @@ export default function VelocityIndicator({
     const sx = ship.x;
     const sz = ship.z;
 
-    // ── Throttled: expensive trajectory simulation ─────────────────────────
-    // Runs every TRAJ_UPDATE_INTERVAL frames (~20 Hz at 60 fps).
-    // posArr, orbitPosArr, and all cached state persist between updates.
+    // ── Throttled: trajectory simulation (offloaded to Web Worker) ────────
+    // Fires every TRAJ_UPDATE_INTERVAL frames (~20 Hz at 60 fps).
+    // posArr and cached state persist between updates.
     _trajTick++;
     if (_trajTick >= TRAJ_UPDATE_INTERVAL) {
       _trajTick = 0;
 
-      // Primary body detection — squared distances avoid per-body sqrt
-      let primaryBody: GravityBody | null = null;
-      let primaryBodyId: string | null = null;
-      let primaryAccel = 0;
-      for (const [id, body] of gravityBodies) {
-        const dx = body.position.x - ship.x;
-        const dz = body.position.z - ship.z;
-        const dist2 = dx * dx + dz * dz;
-        const srSq = body.surfaceRadius * body.surfaceRadius;
-        const soiSq = body.soiRadius * body.soiRadius;
-        if (dist2 > srSq && dist2 < soiSq) {
-          const accel = body.mu / dist2;
-          if (accel > primaryAccel) {
-            primaryAccel = accel;
-            primaryBody = body;
-            primaryBodyId = id;
+      const bodies = snapshotGravityBodies();
+      const capturedSx = sx;
+      const capturedSz = sz;
+
+      requestTrajectory(
+        'ship',
+        ship.x,
+        ship.z,
+        shipVelocity.x,
+        shipVelocity.z,
+        bodies,
+        {
+          steps: TRAJ_STEPS,
+          dt: TRAJ_DT,
+          detectOrbitClosure: true,
+          trackApsides: true,
+          adaptiveDt: true,
+        },
+        (result) => {
+          const {
+            positions,
+            periStep,
+            apoStep,
+            periDist,
+            apoDist,
+            orbitClosedAt,
+            primaryBodyId: pid,
+          } = result;
+
+          // XZ→XYZ stride conversion (ship-relative offsets)
+          for (let i = 0; i < TRAJ_STEPS; i++) {
+            posArr[i * 3] = positions[i * 2] - capturedSx;
+            posArr[i * 3 + 1] = 0;
+            posArr[i * 3 + 2] = positions[i * 2 + 1] - capturedSz;
           }
-        }
-      }
 
-      // Simulation initial conditions (body-relative frame)
-      if (primaryBody) {
-        _simPos.set(
-          ship.x - primaryBody.position.x,
-          0,
-          ship.z - primaryBody.position.z
-        );
-        _simVel.set(
-          shipVelocity.x - primaryBody.velocity.x,
-          0,
-          shipVelocity.z - primaryBody.velocity.z
-        );
-      } else {
-        _simPos.set(ship.x, 0, ship.z);
-        _simVel.copy(shipVelocity);
-      }
-
-      // Adaptive timestep: scale dt so a full orbit fits within TRAJ_STEPS
-      let simDt = TRAJ_DT;
-      let orbitCloseDist = ORBIT_CLOSE_DIST;
-      if (primaryBody) {
-        const r0 = _simPos.length();
-        const v2 = _simVel.lengthSq();
-        const energy = 0.5 * v2 - primaryBody.mu / Math.max(r0, 1);
-        if (energy < 0) {
-          const a = -primaryBody.mu / (2 * energy);
-          const period = 2 * Math.PI * Math.sqrt((a * a * a) / primaryBody.mu);
-          const neededDt = period / (TRAJ_STEPS * 0.9);
-          if (neededDt > simDt) {
-            simDt = neededDt;
-            orbitCloseDist = Math.max(ORBIT_CLOSE_DIST, _simVel.length() * simDt * 2.0);
-          }
-        }
-      }
-
-      let orbitClosedAt = -1;
-      let maxDistFromStart = 0;
-      const startX = _simPos.x;
-      const startZ = _simPos.z;
-      let periStep = -1, apoStep = -1;
-      let periDist = Infinity, apoDist = -Infinity;
-
-      // 400-step symplectic Euler integration
-      for (let i = 0; i < TRAJ_STEPS; i++) {
-        const worldX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
-        const worldZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
-        posArr[i * 3] = worldX - sx + VELOCITY_X_OFFSET;
-        posArr[i * 3 + 1] = 0;
-        posArr[i * 3 + 2] = worldZ - sz;
-
-        // Track min/max distance from primary for apsis markers
-        if (primaryBody) {
-          const pdx = worldX - primaryBody.position.x;
-          const pdz = worldZ - primaryBody.position.z;
-          const pd = Math.sqrt(pdx * pdx + pdz * pdz);
-          if (pd < periDist) { periDist = pd; periStep = i; }
-          if (pd > apoDist) { apoDist = pd; apoStep = i; }
-        }
-
-        let ax = 0, az = 0;
-        let hitSurface = false;
-        if (primaryBody) {
-          const dx = -_simPos.x;
-          const dz = -_simPos.z;
-          const dist2 = dx * dx + dz * dz;
-          const dist = Math.sqrt(dist2);
-          if (dist < primaryBody.surfaceRadius) {
-            hitSurface = true;
-          } else {
-            const accel = primaryBody.mu / dist2;
-            ax += (dx / dist) * accel;
-            az += (dz / dist) * accel;
-          }
-        } else {
-          for (const [, body] of gravityBodies) {
-            const dx = body.position.x - _simPos.x;
-            const dz = body.position.z - _simPos.z;
-            const dist2 = dx * dx + dz * dz;
-            const dist = Math.sqrt(dist2);
-            if (dist < body.surfaceRadius) { hitSurface = true; break; }
-            if (dist < body.soiRadius) {
-              const accel = body.mu / dist2;
-              ax += (dx / dist) * accel;
-              az += (dz / dist) * accel;
+          // Orbit closure: repeat the orbit visually
+          if (orbitClosedAt >= 0) {
+            for (let i = orbitClosedAt + 1; i < TRAJ_STEPS; i++) {
+              const src = i - (orbitClosedAt + 1);
+              posArr[i * 3] = posArr[src * 3];
+              posArr[i * 3 + 1] = posArr[src * 3 + 1];
+              posArr[i * 3 + 2] = posArr[src * 3 + 2];
             }
           }
-        }
 
-        if (hitSurface) {
-          const hitWorldX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
-          const hitWorldZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
-          for (let j = i + 1; j < TRAJ_STEPS; j++) {
-            posArr[j * 3] = hitWorldX - sx + VELOCITY_X_OFFSET;
-            posArr[j * 3 + 1] = 0;
-            posArr[j * 3 + 2] = hitWorldZ - sz;
+          // Resolve live primary body for orbit visualization
+          const pBody = pid ? gravityBodies.get(pid) ?? null : null;
+          const isPlanet = pid !== null && pid !== 'Sun';
+
+          // Update caches for per-frame sections
+          _cachedPrimaryBody = pBody;
+          _cachedPrimaryIsPlanet = isPlanet;
+          _cachedPeriStep = periStep;
+          _cachedApoStep = apoStep;
+          _cachedPeriDist = periDist;
+          _cachedApoDist = apoDist;
+          _cachedOrbitClosedAt = orbitClosedAt;
+
+          // Publish apsides for autopilot and other systems
+          trajectoryApsisRef.current.periapsis =
+            pBody && periStep >= 0 && periDist < Infinity ? periDist : 0;
+          trajectoryApsisRef.current.apoapsis =
+            pBody && apoStep >= 0 && orbitClosedAt >= 0 ? apoDist : 0;
+          trajectoryApsisRef.current.surfaceRadius = pBody?.surfaceRadius ?? 0;
+
+          // Apsis canvas textures — redraw altitude labels
+          if (isPlanet && pBody && periStep >= 0) {
+            const alt = Math.round(Math.max(0, periDist - pBody.surfaceRadius));
+            drawApsisLabel(periMarker.ctx, periMarker.color, 'Pe', alt);
+            (periMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
           }
-          break;
-        }
-
-        _simVel.x += ax * simDt;
-        _simVel.z += az * simDt;
-        _simPos.x += _simVel.x * simDt;
-        _simPos.z += _simVel.z * simDt;
-
-        const cdx = _simPos.x - startX;
-        const cdz = _simPos.z - startZ;
-        const distFromStart = Math.sqrt(cdx * cdx + cdz * cdz);
-        if (distFromStart > maxDistFromStart) maxDistFromStart = distFromStart;
-
-        if (
-          i >= ORBIT_MIN_STEPS &&
-          maxDistFromStart > ORBIT_AWAY_DIST &&
-          distFromStart < orbitCloseDist
-        ) {
-          posArr[i * 3] = VELOCITY_X_OFFSET;
-          posArr[i * 3 + 1] = 0;
-          posArr[i * 3 + 2] = 0;
-          orbitClosedAt = i;
-          break;
-        }
-      }
-
-      if (orbitClosedAt >= 0) {
-        for (let i = orbitClosedAt + 1; i < TRAJ_STEPS; i++) {
-          const src = i - (orbitClosedAt + 1);
-          posArr[i * 3] = posArr[src * 3];
-          posArr[i * 3 + 1] = posArr[src * 3 + 1];
-          posArr[i * 3 + 2] = posArr[src * 3 + 2];
-        }
-      }
-
-      // Publish apsides for autopilot and other systems
-      trajectoryApsisRef.current.periapsis =
-        primaryBody && periStep >= 0 && periDist < Infinity ? periDist : 0;
-      trajectoryApsisRef.current.apoapsis =
-        primaryBody && apoStep >= 0 && orbitClosedAt >= 0 ? apoDist : 0;
-      trajectoryApsisRef.current.surfaceRadius = primaryBody?.surfaceRadius ?? 0;
-
-      // Apsis canvas textures — redraw altitude labels
-      const primaryIsPlanet = primaryBodyId !== null && primaryBodyId !== 'Sun';
-      if (primaryIsPlanet && primaryBody && periStep >= 0) {
-        const alt = Math.round(Math.max(0, periDist - primaryBody.surfaceRadius));
-        drawApsisLabel(periMarker.ctx, periMarker.color, 'Pe', alt);
-        (periMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
-      }
-      if (primaryIsPlanet && primaryBody && apoStep >= 0 && orbitClosedAt >= 0) {
-        const alt = Math.round(Math.max(0, apoDist - primaryBody.surfaceRadius));
-        drawApsisLabel(apoMarker.ctx, apoMarker.color, 'Ap', alt);
-        (apoMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
-      }
-
-      // Ideal orbit circle geometry (400 cos/sin) — recomputed on sim frames
-      if (primaryBody) {
-        const rdx = ship.x - primaryBody.position.x;
-        const rdz = ship.z - primaryBody.position.z;
-        const rLen = Math.sqrt(rdx * rdx + rdz * rdz) || 1;
-        const idealOrbitRadius = Math.min(
-          primaryBody.surfaceRadius + primaryBody.orbitAltitude,
-          primaryBody.soiRadius * 0.9
-        );
-        if (idealOrbitRadius > primaryBody.surfaceRadius) {
-          const baseAngle = Math.atan2(rdz / rLen, rdx / rLen);
-          const step = (Math.PI * 2) / (TRAJ_STEPS - 1);
-          for (let i = 0; i < TRAJ_STEPS; i++) {
-            const theta = baseAngle + i * step;
-            orbitPosArr[i * 3] = Math.cos(theta) * idealOrbitRadius;
-            orbitPosArr[i * 3 + 1] = 0;
-            orbitPosArr[i * 3 + 2] = Math.sin(theta) * idealOrbitRadius;
+          if (isPlanet && pBody && apoStep >= 0 && orbitClosedAt >= 0) {
+            const alt = Math.round(Math.max(0, apoDist - pBody.surfaceRadius));
+            drawApsisLabel(apoMarker.ctx, apoMarker.color, 'Ap', alt);
+            (apoMarker.sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
           }
-          const orbitPos = orbitLine.geometry.attributes.position;
-          orbitPos.needsUpdate = true;
-          orbitLine.computeLineDistances();
-        }
-      }
 
-      // Orbit sprite texture — redraw label text
-      if (orbitSpriteCtx) {
-        orbitSpriteCtx.clearRect(0, 0, 256, 64);
-        orbitSpriteCtx.fillStyle = '#30ff7a';
-        orbitSpriteCtx.font = 'bold 12px monospace';
-        orbitSpriteCtx.textAlign = 'center';
-        orbitSpriteCtx.textBaseline = 'middle';
-        const { periapsis, apoapsis, surfaceRadius } = orbitStatusRef.current;
-        if (periapsis > 0 && apoapsis > 0) {
-          const periAlt = Math.max(0, periapsis - surfaceRadius);
-          const apoAlt = Math.max(0, apoapsis - surfaceRadius);
-          orbitSpriteCtx.fillText(`PERI: ${Math.round(periAlt)}  APO: ${Math.round(apoAlt)}`, 128, 20);
-        }
-        orbitSpriteCtx.fillText('CIRCULAR ORBIT', 128, 34);
-        (orbitSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
-      }
+          // Ideal orbit circle geometry (cos/sin ring)
+          if (pBody) {
+            const curShip = shipPosRef.current;
+            const rdx = curShip.x - pBody.position.x;
+            const rdz = curShip.z - pBody.position.z;
+            const rLen = Math.sqrt(rdx * rdx + rdz * rdz) || 1;
+            const idealOrbitRadius = Math.min(
+              pBody.surfaceRadius + pBody.orbitAltitude,
+              pBody.soiRadius * 0.9
+            );
+            if (idealOrbitRadius > pBody.surfaceRadius) {
+              const baseAngle = Math.atan2(rdz / rLen, rdx / rLen);
+              const step = (Math.PI * 2) / (TRAJ_STEPS - 1);
+              for (let i = 0; i < TRAJ_STEPS; i++) {
+                const theta = baseAngle + i * step;
+                orbitPosArr[i * 3] = Math.cos(theta) * idealOrbitRadius;
+                orbitPosArr[i * 3 + 1] = 0;
+                orbitPosArr[i * 3 + 2] = Math.sin(theta) * idealOrbitRadius;
+              }
+              const orbitPos = orbitLine.geometry.attributes.position;
+              orbitPos.needsUpdate = true;
+              orbitLine.computeLineDistances();
+            }
+          }
 
-      // Update cache for non-sim frames
-      _cachedPrimaryBody = primaryBody;
-      _cachedPrimaryBodyId = primaryBodyId;
-      _cachedPrimaryIsPlanet = primaryIsPlanet;
-      _cachedPeriStep = periStep;
-      _cachedApoStep = apoStep;
-      _cachedPeriDist = periDist;
-      _cachedApoDist = apoDist;
-      _cachedOrbitClosedAt = orbitClosedAt;
+          // Orbit sprite texture — redraw label text
+          if (orbitSpriteCtx) {
+            orbitSpriteCtx.clearRect(0, 0, 256, 64);
+            orbitSpriteCtx.fillStyle = '#30ff7a';
+            orbitSpriteCtx.font = 'bold 12px monospace';
+            orbitSpriteCtx.textAlign = 'center';
+            orbitSpriteCtx.textBaseline = 'middle';
+            const { periapsis, apoapsis, surfaceRadius } = orbitStatusRef.current;
+            if (periapsis > 0 && apoapsis > 0) {
+              const periAlt = Math.max(0, periapsis - surfaceRadius);
+              const apoAlt = Math.max(0, apoapsis - surfaceRadius);
+              orbitSpriteCtx.fillText(`PERI: ${Math.round(periAlt)}  APO: ${Math.round(apoAlt)}`, 128, 20);
+            }
+            orbitSpriteCtx.fillText('CIRCULAR ORBIT', 128, 34);
+            (orbitSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
+          }
+        }
+      );
     }
 
     // ── Always: ring opacity pulse ─────────────────────────────────────────

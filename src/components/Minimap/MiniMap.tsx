@@ -27,7 +27,7 @@ function CameraController({
 }) {
   const { camera, size } = useThree();
 
-  useFrame(() => {
+  useFrame(({ invalidate }) => {
     const orth = camera as THREE.OrthographicCamera;
     const h = halfHRef.current ?? HALF_H_DEFAULT;
     const hHalf = (size.width / size.height) * h;
@@ -40,6 +40,7 @@ function CameraController({
     const pan = panOffsetRef.current ?? { x: 0, z: 0 };
     camera.position.x = pan.x;
     camera.position.z = pan.z;
+    invalidate();
   });
 
   return null;
@@ -126,6 +127,7 @@ export default function MiniMap() {
     >
       <Canvas
         orthographic
+        frameloop="demand"
         camera={{ position: [0, 10, 0], up: [0, 0, -1], near: -100, far: 10000 }}
         gl={{ antialias: false }}
       >

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { gravityBodies } from '../context/GravityRegistry';
 import { hoveredObject } from '../context/HoveredObject';
 import { navHudEnabledRef } from '../context/NavHud';
 import {
@@ -14,13 +13,11 @@ import {
   HOVER_TRAJ_GAP_SIZE,
   HOVER_TRAJ_UPDATE_INTERVAL,
 } from '../config/trajectoryConfig';
-
-const _simPos = new THREE.Vector3();
-const _simVel = new THREE.Vector3();
+import { requestTrajectory, snapshotGravityBodies } from '../workers/trajectoryWorkerClient';
 
 // ── Simulation throttle ────────────────────────────────────────────────────
-// The 250-step sim runs every N frames. The tick resets when the hover target
-// changes so the new target always gets an immediate trajectory update.
+// The 250-step sim runs via Web Worker every N frames. The tick resets when
+// the hover target changes so the new target always gets an immediate update.
 let _hoverTrajTick = HOVER_TRAJ_UPDATE_INTERVAL; // first frame always runs
 let _lastHoverId: string | null = null;
 
@@ -105,119 +102,66 @@ export default function HoverTrajectoryIndicator() {
     if (_hoverTrajTick < HOVER_TRAJ_UPDATE_INTERVAL) return;
     _hoverTrajTick = 0;
 
-    // Primary body detection — squared distances, no sqrt per body
-    let primaryBody: (typeof gravityBodies extends Map<string, infer T> ? T : never) | null = null;
-    let primaryAccel = 0;
-    for (const [, body] of gravityBodies) {
-      const dx = body.position.x - ox;
-      const dz = body.position.z - oz;
-      const dist2 = dx * dx + dz * dz;
-      const srSq = body.surfaceRadius * body.surfaceRadius;
-      const soiSq = body.soiRadius * body.soiRadius;
-      if (dist2 > srSq && dist2 < soiSq) {
-        const accel = body.mu / dist2;
-        if (accel > primaryAccel) {
-          primaryAccel = accel;
-          primaryBody = body;
+    const bodies = snapshotGravityBodies();
+    const capturedOx = ox;
+    const capturedOz = oz;
+    const capturedSpeed = speed;
+
+    requestTrajectory(
+      'hover',
+      ox,
+      oz,
+      hover.velocity.x,
+      hover.velocity.z,
+      bodies,
+      {
+        steps: HOVER_TRAJ_STEPS,
+        dt: HOVER_TRAJ_DT,
+        detectOrbitClosure: false,
+        trackApsides: false,
+        adaptiveDt: false,
+      },
+      (result) => {
+        const { positions, activeSteps } = result;
+
+        // XZ→XYZ stride conversion (target-relative offsets)
+        for (let i = 0; i < HOVER_TRAJ_STEPS; i++) {
+          posArr[i * 3] = positions[i * 2] - capturedOx;
+          posArr[i * 3 + 1] = 0;
+          posArr[i * 3 + 2] = positions[i * 2 + 1] - capturedOz;
         }
-      }
-    }
 
-    if (primaryBody) {
-      _simPos.set(ox - primaryBody.position.x, 0, oz - primaryBody.position.z);
-      _simVel.set(
-        hover.velocity.x - primaryBody.velocity.x,
-        0,
-        hover.velocity.z - primaryBody.velocity.z
-      );
-    } else {
-      _simPos.set(ox, 0, oz);
-      _simVel.copy(hover.velocity);
-    }
-
-    let activeSteps = HOVER_TRAJ_STEPS;
-
-    // 250-step symplectic Euler integration
-    for (let i = 0; i < HOVER_TRAJ_STEPS; i++) {
-      const worldX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
-      const worldZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
-      posArr[i * 3] = worldX - ox;
-      posArr[i * 3 + 1] = 0;
-      posArr[i * 3 + 2] = worldZ - oz;
-
-      let ax = 0;
-      let az = 0;
-      let hitSurface = false;
-
-      if (primaryBody) {
-        const dx = -_simPos.x;
-        const dz = -_simPos.z;
-        const dist2 = dx * dx + dz * dz;
-        const dist = Math.sqrt(dist2);
-        if (dist < primaryBody.surfaceRadius) {
-          hitSurface = true;
-        } else {
-          const accel = primaryBody.mu / dist2;
-          ax += (dx / dist) * accel;
-          az += (dz / dist) * accel;
-        }
-      } else {
-        for (const [, body] of gravityBodies) {
-          const dx = body.position.x - _simPos.x;
-          const dz = body.position.z - _simPos.z;
-          const dist2 = dx * dx + dz * dz;
-          const dist = Math.sqrt(dist2);
-          if (dist < body.surfaceRadius) {
-            hitSurface = true;
-            break;
-          }
-          if (dist < body.soiRadius) {
-            const accel = body.mu / dist2;
-            ax += (dx / dist) * accel;
-            az += (dz / dist) * accel;
+        // Fill remainder with last computed position on surface hit
+        if (activeSteps < HOVER_TRAJ_STEPS) {
+          const lastX = posArr[(activeSteps - 1) * 3];
+          const lastZ = posArr[(activeSteps - 1) * 3 + 2];
+          for (let j = activeSteps; j < HOVER_TRAJ_STEPS; j++) {
+            posArr[j * 3] = lastX;
+            posArr[j * 3 + 1] = 0;
+            posArr[j * 3 + 2] = lastZ;
           }
         }
+
+        const pos = line.geometry.attributes.position;
+        pos.needsUpdate = true;
+        line.computeLineDistances();
+
+        const mid = Math.floor((activeSteps - 1) / 2);
+        const lx = posArr[mid * 3] + capturedOx;
+        const lz = posArr[mid * 3 + 2] + capturedOz;
+        const labelScale = Math.min(Math.max(capturedSpeed * 0.2, 6), 28);
+        sprite.scale.set(labelScale * 3.8, labelScale, 1);
+        sprite.position.set(lx, 0, lz);
+
+        spriteCtx.clearRect(0, 0, 256, 64);
+        spriteCtx.fillStyle = '#00c8ff';
+        spriteCtx.font = 'bold 11px monospace';
+        spriteCtx.textAlign = 'center';
+        spriteCtx.textBaseline = 'middle';
+        spriteCtx.fillText(`${capturedSpeed.toFixed(1)} m/s`, 128, 34);
+        (sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
       }
-
-      if (hitSurface) {
-        activeSteps = i + 1;
-        break;
-      }
-
-      _simVel.x += ax * HOVER_TRAJ_DT;
-      _simVel.z += az * HOVER_TRAJ_DT;
-      _simPos.x += _simVel.x * HOVER_TRAJ_DT;
-      _simPos.z += _simVel.z * HOVER_TRAJ_DT;
-    }
-
-    if (activeSteps < HOVER_TRAJ_STEPS) {
-      const hitWorldX = primaryBody ? _simPos.x + primaryBody.position.x : _simPos.x;
-      const hitWorldZ = primaryBody ? _simPos.z + primaryBody.position.z : _simPos.z;
-      for (let j = activeSteps; j < HOVER_TRAJ_STEPS; j++) {
-        posArr[j * 3] = hitWorldX - ox;
-        posArr[j * 3 + 1] = 0;
-        posArr[j * 3 + 2] = hitWorldZ - oz;
-      }
-    }
-
-    const pos = line.geometry.attributes.position;
-    pos.needsUpdate = true;
-    line.computeLineDistances();
-
-    const mid = Math.floor((activeSteps - 1) / 2);
-    const lx = posArr[mid * 3] + ox;
-    const lz = posArr[mid * 3 + 2] + oz;
-    const labelScale = Math.min(Math.max(speed * 0.2, 6), 28);
-    sprite.scale.set(labelScale * 3.8, labelScale, 1);
-    sprite.position.set(lx, 0, lz);
-
-    spriteCtx.clearRect(0, 0, 256, 64);
-    spriteCtx.fillStyle = '#00c8ff';
-    spriteCtx.font = 'bold 11px monospace';
-    spriteCtx.textAlign = 'center';
-    spriteCtx.textBaseline = 'middle';
-    spriteCtx.fillText(`${speed.toFixed(1)} m/s`, 128, 34);
-    (sprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
+    );
   });
 
   return (

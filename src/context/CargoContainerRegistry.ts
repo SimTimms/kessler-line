@@ -18,6 +18,16 @@ export type CargoContainerHandle = {
   syncFromGroup: () => void;
   /** Hide crate and mark consumed after inventory transfer. */
   completeDropOff: () => void;
+  /**
+   * Direct read of simulation-space position. Used by CargoContainerProximityManager
+   * to avoid a getWorldPosition (worldToLocal traversal) per container per frame.
+   */
+  getSimPosition: () => THREE.Vector3;
+  /**
+   * Called by the centralized proximity manager to activate/deactivate the
+   * docking bay. Keeps state updates out of individual useFrame loops.
+   */
+  setDockingBayProximity: (active: boolean) => void;
 };
 
 const containers = new Map<string, CargoContainerHandle>();
@@ -36,4 +46,14 @@ export function getCargoContainer(id: string): CargoContainerHandle | undefined 
 
 export function listCargoContainers(): CargoContainerHandle[] {
   return [...containers.values()];
+}
+
+/**
+ * Iterate all registered containers without allocating a new array.
+ * Use this in hot paths (e.g. per-frame proximity checks).
+ */
+export function forEachCargoContainer(fn: (handle: CargoContainerHandle) => void): void {
+  for (const handle of containers.values()) {
+    fn(handle);
+  }
 }
