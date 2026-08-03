@@ -87,16 +87,8 @@ export default function NarrativeConfigScene() {
   const worldContent = (
     <>
       <ambientLight intensity={lighting.ambientIntensity} />
-      <directionalLight
-        position={lighting.keyLight.position}
-        intensity={lighting.keyLight.intensity}
-        color={lighting.keyLight.color}
-      />
-      <directionalLight
-        position={lighting.fillLight.position}
-        intensity={lighting.fillLight.intensity}
-        color={lighting.fillLight.color}
-      />
+      <directionalLight position={[0, 100, -1000]} intensity={3} color="red" />
+      <directionalLight position={[0, 1000, 1000]} intensity={3} color="white" />
       <SpaceParticles />
       <Suspense fallback={null}>
         <Spaceship
@@ -145,7 +137,6 @@ export default function NarrativeConfigScene() {
 
         <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
 
-        {/*
         <group position={primaryFieldOrigin} name="narrative-primary-field-cargo-containers">
           {extraContainersLocalToPrimaryField.map((container) => (
             <CargoContainer
@@ -160,9 +151,8 @@ export default function NarrativeConfigScene() {
               debugJumpDockOnClick
             />
           ))}
-         
         </group>
-           */}
+
         <SalvageField
           origin={secondaryFieldOrigin}
           idPrefix={NARRATIVE_SECONDARY_FIELD_ID_PREFIX}
