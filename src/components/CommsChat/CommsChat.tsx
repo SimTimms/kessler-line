@@ -35,6 +35,9 @@ interface CommsChatProps {
   onHail?: () => void;
   onAcceptHail?: () => void;
   onDeclineHail?: () => void;
+  canRequestDockPermission?: boolean;
+  isDockPermissionGranted?: boolean;
+  onRequestDockPermission?: () => boolean;
   isSavedContact?: boolean;
   onAddToContacts?: () => void;
   staticContact?: StaticContact;
@@ -53,6 +56,9 @@ export default function CommsChat({
   onHail,
   onAcceptHail,
   onDeclineHail,
+  canRequestDockPermission = false,
+  isDockPermissionGranted = false,
+  onRequestDockPermission,
   isSavedContact = false,
   onAddToContacts,
   staticContact,
@@ -145,6 +151,7 @@ export default function CommsChat({
   const isEnded = !!thread && thread.currentTurnId === null && !thread.awaitingNpc;
   const canRequestRendezvous = !staticContact && effectiveHailStatus === 'accepted';
   const isRendezvousActive = hasShipRendezvous(shipId);
+  const canRequestDock = !staticContact && effectiveHailStatus === 'accepted' && canRequestDockPermission;
 
   const handleOption = (optionId: string) => {
     if (!thread) return;
@@ -202,6 +209,26 @@ export default function CommsChat({
     acceptShipRendezvous(shipId);
   };
 
+  const handleRequestDockPermission = () => {
+    if (staticContact || !canRequestDock || isDockPermissionGranted) return;
+    const now = Date.now();
+    addChatMessage(shipId, {
+      id: `player-${shipId}-request-dock-permission-${now}`,
+      role: 'player',
+      text: 'Request dock permission. Holding approach over your landing pad.',
+      timestamp: now,
+    });
+    const accepted = onRequestDockPermission?.() ?? false;
+    addChatMessage(shipId, {
+      id: `npc-${shipId}-dock-permission-response-${now}`,
+      role: 'npc',
+      text: accepted
+        ? 'Dock request approved. You are cleared to dock on this approach.'
+        : 'Dock request denied. Hold position and try again later.',
+      timestamp: now + 1,
+    });
+  };
+
   const isBroadcastContact = getRadioBroadcasts().some(
     (e) => e.id === shipId && resolveRadioDialogueTreeId(e)
   );
@@ -233,6 +260,9 @@ export default function CommsChat({
       canRequestRendezvous={canRequestRendezvous}
       isRendezvousActive={isRendezvousActive}
       onRequestRendezvous={handleRequestRendezvous}
+      canRequestDockPermission={canRequestDock}
+      isDockPermissionGranted={isDockPermissionGranted}
+      onRequestDockPermission={handleRequestDockPermission}
       onClose={onClose}
       onBack={onBack}
     />

@@ -24,26 +24,25 @@ import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { setVesselModules } from '../../context/VesselStateStore';
 import { DEBUG_THRUSTER_HITBOXES } from '../../config/debugConfig';
 import {
-  MAIN_ENGINE_LOCAL_POS_A,
-  MAIN_ENGINE_LOCAL_POS_B,
-  RCS_THRUSTER_LOCAL,
   SHIP_BOX_HALF_EXTENTS,
-  THRUSTER_LIGHT_COLOR,
-  THRUSTER_LIGHT_DISTANCE,
-  THRUSTER_LIGHT_DECAY,
 } from '../../config/shipConfig';
+import {
+  THRUSTER_LIGHT_COLOR,
+  THRUSTER_LIGHT_DECAY,
+  THRUSTER_LIGHT_DISTANCE,
+} from '../../config/thrusterConfig';
 import PlanetSurfaceImpactDust from '../Environment/PlanetSurfaceImpactDust';
 import ShipManeuverLean from './ShipManeuverLean';
 
 /** Order must match `thrusterLight.ts` slot indices and `useShipPhysics` actives. */
 const THRUSTER_LIGHT_SLOTS: { key: string; position: [number, number, number] }[] = [
-  { key: 'reverseA', position: MAIN_ENGINE_LOCAL_POS_A },
-  { key: 'reverseB', position: MAIN_ENGINE_LOCAL_POS_B },
-  { key: 'rcsForward', position: RCS_THRUSTER_LOCAL.forwardLight },
-  { key: 'rcsLeft', position: RCS_THRUSTER_LOCAL.leftLight },
-  { key: 'rcsRight', position: RCS_THRUSTER_LOCAL.rightLight },
-  { key: 'rcsStrafeL', position: RCS_THRUSTER_LOCAL.strafeLeftLight },
-  { key: 'rcsStrafeR', position: RCS_THRUSTER_LOCAL.strafeRightLight },
+  { key: 'reverseA', position: [0, 1, 18.5] },
+  { key: 'reverseB', position: [0, 1, 18.5] },
+  { key: 'rcsForward', position: [0, 1, -19] },
+  { key: 'rcsLeft', position: [3, 1, -18] },
+  { key: 'rcsRight', position: [-3, 1, -18] },
+  { key: 'rcsStrafeL', position: [5, 1, -6] },
+  { key: 'rcsStrafeR', position: [-5, 1, -6] },
 ];
 
 // Re-export everything consumers currently import from this file

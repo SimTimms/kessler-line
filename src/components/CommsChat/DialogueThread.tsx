@@ -108,6 +108,9 @@ interface DialogueThreadProps {
   canRequestRendezvous?: boolean;
   isRendezvousActive?: boolean;
   onRequestRendezvous?: () => void;
+  canRequestDockPermission?: boolean;
+  isDockPermissionGranted?: boolean;
+  onRequestDockPermission?: () => void;
   tradePanel?: {
     visible: boolean;
     mode?: 'resources' | 'cargo';
@@ -159,6 +162,9 @@ export default function DialogueThread({
   canRequestRendezvous = false,
   isRendezvousActive = false,
   onRequestRendezvous,
+  canRequestDockPermission = false,
+  isDockPermissionGranted = false,
+  onRequestDockPermission,
   tradePanel,
   onClose,
   onBack,
@@ -561,6 +567,9 @@ export default function DialogueThread({
         canRequestRendezvous={canRequestRendezvous}
         isRendezvousActive={isRendezvousActive}
         onRequestRendezvous={onRequestRendezvous}
+        canRequestDockPermission={canRequestDockPermission}
+        isDockPermissionGranted={isDockPermissionGranted}
+        onRequestDockPermission={onRequestDockPermission}
       />
     </div>
   );

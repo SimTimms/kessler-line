@@ -53,6 +53,18 @@ import {
 } from '../../context/DockablePartnerStore';
 import DockInteriorDialogue from '../Station/StationDialogue';
 import { getThread } from '../../context/ChatStore';
+import {
+  EVENT_OPEN_COMMS_CONTACT,
+  type OpenCommsContactDetail,
+} from '../../context/CommsUiEvents';
+import {
+  EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED,
+  EVENT_DOCK_PERMISSION_CHANGED,
+  getDockPermissionCandidate,
+  grantDockPermission,
+  hasDockPermission,
+  type DockPermissionCandidate,
+} from '../../context/DockPermissionState';
 
 export interface DriveContact {
   id: string;
@@ -165,7 +177,7 @@ function sendHailContact(id: string, name: string) {
   });
 
   const delayMs = 4000 + Math.random() * 8000;
-  const accepted = Math.random() < 0.7;
+  const accepted = Math.random() < getHailAcceptanceChance(id);
   const pool = accepted ? ACCEPT_BODIES : REJECT_BODIES;
   const body = pool[Math.floor(Math.random() * pool.length)](name);
 
@@ -183,6 +195,19 @@ function sendHailContact(id: string, name: string) {
   setTimeout(() => {
     setHailStatus(id, accepted ? 'accepted' : 'rejected');
   }, delayMs);
+}
+
+function clampChance(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(1, value as number));
+}
+
+function getHailAcceptanceChance(contactId: string): number {
+  const dock = getDock(contactId);
+  if (dock) {
+    return clampChance(dock.hailAcceptanceChance, 0.7);
+  }
+  return 0.7;
 }
 
 export const commsStatus = {
@@ -278,6 +303,9 @@ export default function ContactsHUD({
   );
   const [hailOffers, setHailOffers] = useState<Map<string, HailOffer>>(new Map());
   const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
+  const [dockPermissionCandidate, setDockPermissionCandidateState] =
+    useState<DockPermissionCandidate | null>(() => getDockPermissionCandidate());
+  const [, bumpDockPermissionVersion] = useState(0);
 
   const prevBcastSigRef = useRef('');
   const fuelStationHailFiredRef = useRef(false);
@@ -342,6 +370,35 @@ export default function ContactsHUD({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    const onOpenContactComms = (e: Event) => {
+      const detail = (e as CustomEvent<OpenCommsContactDetail>).detail;
+      const contactId = detail?.contactId;
+      if (!contactId) return;
+      rememberContact(contactId);
+      setOpen(false);
+      setChatShipId(contactId);
+    };
+    window.addEventListener(EVENT_OPEN_COMMS_CONTACT, onOpenContactComms);
+    return () => window.removeEventListener(EVENT_OPEN_COMMS_CONTACT, onOpenContactComms);
+  }, []);
+
+  useEffect(() => {
+    const onCandidateChanged = (e: Event) => {
+      const detail = (e as CustomEvent<{ candidate: DockPermissionCandidate | null }>).detail;
+      setDockPermissionCandidateState(detail?.candidate ?? null);
+    };
+    const onPermissionChanged = () => {
+      bumpDockPermissionVersion((v) => v + 1);
+    };
+    window.addEventListener(EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED, onCandidateChanged);
+    window.addEventListener(EVENT_DOCK_PERMISSION_CHANGED, onPermissionChanged);
+    return () => {
+      window.removeEventListener(EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED, onCandidateChanged);
+      window.removeEventListener(EVENT_DOCK_PERMISSION_CHANGED, onPermissionChanged);
+    };
   }, []);
 
   // Track docked partner for interior comms contacts
@@ -680,6 +737,13 @@ export default function ContactsHUD({
       broadcastContacts.find((b) => b.entry.id === chatShipId)?.inRadioRange ??
       false)
     : false;
+  const chatDockPermissionGranted = chatShipId ? hasDockPermission(chatShipId) : false;
+
+  function shouldEnableDockPermissionRequest(shipId: string): boolean {
+    if (!shipId) return false;
+    if (!dockPermissionCandidate) return false;
+    return dockPermissionCandidate.stationId === shipId;
+  }
 
   function getChatOfferContent(): { header: string; body: string } | undefined {
     if (!chatShipId) return undefined;
@@ -791,6 +855,17 @@ export default function ContactsHUD({
               onHail={() => sendHailContact(chatShipId, chatShipName)}
               onAcceptHail={() => handleAcceptHailOffer(chatShipId)}
               onDeclineHail={() => handleDeclineHailOffer(chatShipId)}
+              canRequestDockPermission={shouldEnableDockPermissionRequest(chatShipId)}
+              isDockPermissionGranted={chatDockPermissionGranted}
+              onRequestDockPermission={() => {
+                const chance = clampChance(getDock(chatShipId)?.dockRequestAcceptanceChance, 0.7);
+                const accepted = Math.random() <= chance;
+                setHailStatus(chatShipId, 'accepted');
+                if (accepted) {
+                  grantDockPermission(chatShipId);
+                }
+                return accepted;
+              }}
               isSavedContact={savedContactIds.has(chatShipId)}
               onAddToContacts={() => saveContact(chatShipId)}
               onClose={() => setChatShipId(null)}

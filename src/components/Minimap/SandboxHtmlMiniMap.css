@@ -579,6 +579,33 @@
   animation: sandbox-map-docking-pulse 1.2s ease-in-out infinite;
 }
 
+.sandbox-map-docking-action {
+  position: absolute;
+  right: 10px;
+  bottom: 24px;
+  z-index: 5;
+  height: 22px;
+  padding: 0 8px;
+  background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
+  color: rgba(130, 230, 255, 0.95);
+  border: 1px solid #5a616a;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.sandbox-map-docking-action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--mech-cyan) 70%, white);
+  color: color-mix(in srgb, var(--mech-cyan) 90%, white);
+}
+
+.sandbox-map-docking-action:disabled {
+  opacity: 0.8;
+  cursor: default;
+}
+
 @keyframes sandbox-map-docking-pulse {
   0%,
   100% {

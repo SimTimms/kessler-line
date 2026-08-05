@@ -4,7 +4,7 @@ import { thrustMultiplier } from '../../context/ShipState';
 import {
   THRUSTER_LIGHT_INTENSITY_MAIN,
   THRUSTER_LIGHT_INTENSITY_RCS,
-} from '../../config/shipConfig';
+} from '../../config/thrusterConfig';
 
 /** Slot order must match `Spaceship` point lights: main ×2, then RCS ×5. */
 export const THRUSTER_POINT_LIGHT_COUNT = 7;

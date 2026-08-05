@@ -24,16 +24,6 @@ export default function Asteroid({
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const groupRef = useRef<THREE.Group>(null);
 
-  useEffect(() => {
-    modelScene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material.color.setRGB(0.0, 0, 0);
-        child.material.roughness = 0.9;
-        child.material.metalness = 0.8;
-      }
-    });
-  }, [modelScene]);
-
   return (
     <group ref={groupRef} position={position} rotation={rotation} scale={scale}>
       <primitive object={modelScene} />

@@ -7,10 +7,12 @@ import {
   THRUSTER_LIGHT_DISTANCE,
   THRUSTER_LIGHT_INTENSITY_MAIN,
   THRUSTER_LIGHT_INTENSITY_RCS,
+  THRUSTER_MAIN_PARTICLE_SIZE,
   THRUSTER_MAIN_EMIT_RATE,
   THRUSTER_PARTICLE_LIFETIME,
   THRUSTER_PARTICLE_POOL,
   THRUSTER_PARTICLE_SPEED,
+  THRUSTER_RCS_PARTICLE_SIZE,
   THRUSTER_RCS_EMIT_RATE,
 } from '../../config/thrusterConfig';
 import { getThruster } from '../../context/ThrusterRegistry';
@@ -87,8 +89,9 @@ export default function ThrusterExhaust({
   useFrame((_, delta) => {
     const firing = getThruster(thrusterId)?.firing ?? false;
     const emitRate = kind === 'main' ? THRUSTER_MAIN_EMIT_RATE : THRUSTER_RCS_EMIT_RATE;
-    const pointSize = kind === 'main' ? 1.4 : 0.18;
-    const lightIntensity = kind === 'main' ? THRUSTER_LIGHT_INTENSITY_MAIN : THRUSTER_LIGHT_INTENSITY_RCS;
+    const pointSize = kind === 'main' ? THRUSTER_MAIN_PARTICLE_SIZE : THRUSTER_RCS_PARTICLE_SIZE;
+    const lightIntensity =
+      kind === 'main' ? THRUSTER_LIGHT_INTENSITY_MAIN : THRUSTER_LIGHT_INTENSITY_RCS;
 
     if (lightRef.current) {
       lightRef.current.intensity = firing ? lightIntensity : 0;
@@ -173,7 +176,7 @@ export default function ThrusterExhaust({
             transparent
             depthWrite={false}
             sizeAttenuation
-            size={kind === 'main' ? 1.4 : 0.18}
+            size={kind === 'main' ? THRUSTER_MAIN_PARTICLE_SIZE : THRUSTER_RCS_PARTICLE_SIZE}
           />
         </points>
       ) : null}

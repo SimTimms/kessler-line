@@ -1,38 +1,34 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Perf } from 'r3f-perf';
 import Spaceship from '../Ship/Spaceship';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import DustCloud from '../DustCloud/DustCloud';
+import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
-import { sceneCamera } from '../../context/CameraRef';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
-import { registerDriveSignature, unregisterDriveSignature } from '../../context/DriveSignatureRegistry';
-import { CANVAS_FOV, CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
+import {
+  registerDriveSignature,
+  unregisterDriveSignature,
+} from '../../context/DriveSignatureRegistry';
+import {
+  CANVAS_FOV,
+  CANVAS_NEAR,
+  CANVAS_FAR,
+  TONE_MAPPING_EXPOSURE,
+} from '../../config/visualConfig';
 
 const NAV_SCENE_FOG = '#000000';
 const NAV_PLANET_ID = 'nav-config-planet';
 const NAV_PLANET_RADIUS = 900;
-const NAV_PLANET_POSITION: [number, number, number] = [4800, 0, -7600];
+const NAV_PLANET_POSITION: [number, number, number] = [4800, -2000, -7600];
 const NAV_PLANET_MU = 18_000_000;
 const NAV_PLANET_SOI = 9000;
 const NAV_PLANET_ORBIT_ALT = 1600;
-
-function CameraCapture() {
-  const { camera } = useThree();
-  useEffect(() => {
-    sceneCamera.current = camera;
-    return () => {
-      sceneCamera.current = null;
-    };
-  }, [camera]);
-  return null;
-}
 
 function GravityTestPlanet() {
   const groupRef = useRef<THREE.Group>(null);
@@ -95,7 +91,10 @@ function NavTargetProbe({
   color: string;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const probePos = useMemo(() => new THREE.Vector3(position[0], position[1], position[2]), [position]);
+  const probePos = useMemo(
+    () => new THREE.Vector3(position[0], position[1], position[2]),
+    [position]
+  );
 
   useEffect(() => {
     registerCollidable({
@@ -141,6 +140,8 @@ interface ShipNavigationConfigSceneProps {
 export default function ShipNavigationConfigScene({
   gravityEnabled = true,
 }: ShipNavigationConfigSceneProps) {
+  const spaceshipGroupRef = useRef<THREE.Group | null>(null);
+
   useEffect(() => {
     shipPosRef.current.set(0, 0, 0);
     minimapShipPosition.set(0, 0, 0);
@@ -163,9 +164,16 @@ export default function ShipNavigationConfigScene({
       }}
       shadows
     >
-      <CameraCapture />
       <Perf position="top-left" />
       <fogExp2 attach="fog" args={[NAV_SCENE_FOG, 0.0000007]} />
+      <TutorialFollowCamera
+        followTarget={shipPosRef}
+        followOffset={[0, 100, 120]}
+        zoomMax={820}
+        attachTo={spaceshipGroupRef}
+        flattenBanking
+        lockPolarAngle
+      />
       <ambientLight intensity={0.85} />
       <directionalLight position={[220, 120, 160]} intensity={8} color="#dde7ff" />
       <gridHelper args={[12000, 80, '#2b6a8a', '#17394d']} />
@@ -174,6 +182,7 @@ export default function ShipNavigationConfigScene({
       <Suspense fallback={null}>
         <Spaceship
           url="/shuttle-low-british.glb"
+          shipGroupRef={spaceshipGroupRef}
           initialPosition={[0, 0, 0]}
           initialRotation={[0, 0, 0]}
           scale={1}
@@ -214,7 +223,6 @@ export default function ShipNavigationConfigScene({
       </Suspense>
 
       <SharedInteractionSceneTools />
-      <OrbitControls makeDefault target={[0, 0, 0]} enablePan enableZoom enableRotate />
       <DustCloud radius={5000} particleSize={450} radialSpread={9} yInitial={-900} />
     </Canvas>
   );

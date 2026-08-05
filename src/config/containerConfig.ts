@@ -42,10 +42,10 @@ export const CONTAINER_DOCK_OFFSET_Y = 0;
 export const CONTAINER_DOCK_OFFSET_Z = 7;
 
 /**
- * Velocity damping per second (0–1). 1 = no damping (drift forever),
- * 0 = instant stop. Applied each frame via Math.pow(damping, delta).
+ * Velocity damping per second (0–1). Keep at 1 so free containers conserve
+ * momentum in vacuum after release (no artificial drag).
  */
-export const CONTAINER_VELOCITY_DAMPING = 0.85;
+export const CONTAINER_VELOCITY_DAMPING = 1;
 
 /**
  * Distance (world units) within which a CargoContainer's DockingBay is

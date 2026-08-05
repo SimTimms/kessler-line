@@ -166,6 +166,10 @@ export interface DockJob {
 export interface DockConfig {
   /** Display name for this dock / station. */
   label: string;
+  /** Chance an inbound hail is accepted on first response (0..1). */
+  hailAcceptanceChance?: number;
+  /** Chance a dock permission request is granted after comms are established (0..1). */
+  dockRequestAcceptanceChance?: number;
   /**
    * Public URL for the dock transfer HUD background (e.g. `/station.jpg`).
    * Falls back to `/station.jpg` when omitted.

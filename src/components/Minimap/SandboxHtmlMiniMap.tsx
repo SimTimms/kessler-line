@@ -32,6 +32,11 @@ import type { DockCaptureMode } from '../../config/dockCaptureConfig';
 import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
 import { gravityBodies, type GravityBody } from '../../context/GravityRegistry';
 import { minimapOverlayActiveRef } from '../../context/MinimapUi';
+import { EVENT_OPEN_COMMS_CONTACT } from '../../context/CommsUiEvents';
+import {
+  EVENT_DOCK_PERMISSION_CHANGED,
+  hasDockPermission,
+} from '../../context/DockPermissionState';
 import './SandboxHtmlMiniMap.css';
 
 interface SandboxHtmlMiniMapProps {
@@ -315,6 +320,9 @@ function DockingAssistPanel({
   dockingAssistProjection,
   dockingReadouts,
   dockingCaptureActive,
+  dockPermissionRequired,
+  dockPermissionGranted,
+  onRequestDockPermission,
 }: {
   dockingAssist: DockingAssistData;
   dockingAssistProjection: {
@@ -325,6 +333,9 @@ function DockingAssistPanel({
   } | null;
   dockingReadouts: DockingReadouts | null;
   dockingCaptureActive: boolean;
+  dockPermissionRequired: boolean;
+  dockPermissionGranted: boolean;
+  onRequestDockPermission: () => void;
 }) {
   const isHover = dockingAssist.captureMode === 'hover';
 
@@ -428,6 +439,17 @@ function DockingAssistPanel({
           )}
         </>
       )}
+      {isHover && dockPermissionRequired && !dockingCaptureActive && (
+        <button
+          type="button"
+          className="sandbox-map-docking-action"
+          onClick={onRequestDockPermission}
+          disabled={dockPermissionGranted}
+          title={dockPermissionGranted ? 'Dock permission already granted' : 'Request dock permission'}
+        >
+          {dockPermissionGranted ? 'DOCK PERMISSION GRANTED' : 'REQUEST DOCK PERMISSION'}
+        </button>
+      )}
       {dockingCaptureActive && <div className="sandbox-map-docking-wait">DOCKING, PLEASE WAIT</div>}
     </>
   );
@@ -507,7 +529,8 @@ function OrbitAssistPanel({
               {
                 left: `${orbitAssistProjection.shipSx}px`,
                 top: `${orbitAssistProjection.shipSy}px`,
-                transform: shipIconCssTransform(orbitAssist.shipHeadingDeg),
+                // ORB mode: avoid mirrored icon math so heading does not re-invert as it updates.
+                transform: `translate(-50%, -50%) rotate(${-orbitAssist.shipHeadingDeg}deg)`,
               } as CSSProperties
             }
             title="Your Ship"
@@ -644,6 +667,7 @@ export default function SandboxHtmlMiniMap({
   const [dockingAssist, setDockingAssist] = useState<DockingAssistData | null>(null);
   const [orbitAssist, setOrbitAssist] = useState<OrbitAssistData | null>(null);
   const [dockingCaptureActive, setDockingCaptureActive] = useState(false);
+  const [, bumpDockPermissionVersion] = useState(0);
   const nearestDockDistance = useRef(Number.POSITIVE_INFINITY);
   /** Fires pad scan once when docking assist first engages (or switches pads). */
   const lastPadScanDockIdRef = useRef<string | null>(null);
@@ -690,6 +714,12 @@ export default function SandboxHtmlMiniMap({
       window.removeEventListener(EVENT_DOCKING_CAPTURE_ENDED, onCaptureEnded);
       window.removeEventListener('ShipUndocked', onShipUndocked);
     };
+  }, []);
+
+  useEffect(() => {
+    const onDockPermissionChanged = () => bumpDockPermissionVersion((v) => v + 1);
+    window.addEventListener(EVENT_DOCK_PERMISSION_CHANGED, onDockPermissionChanged);
+    return () => window.removeEventListener(EVENT_DOCK_PERMISSION_CHANGED, onDockPermissionChanged);
   }, []);
 
   // Dock / orbit assist takes over the corner chart — exit fullscreen so we don't leave it dimmed/empty.
@@ -1559,6 +1589,18 @@ export default function SandboxHtmlMiniMap({
   }
 
   const assistActive = Boolean(dockingAssist || orbitAssist);
+  const dockPermissionRequired = Boolean(dockingAssist?.stationId);
+  const dockPermissionGranted = hasDockPermission(dockingAssist?.stationId ?? null);
+
+  const handleRequestDockPermissionFromAssist = () => {
+    const stationId = dockingAssist?.stationId;
+    if (!stationId) return;
+    window.dispatchEvent(
+      new CustomEvent(EVENT_OPEN_COMMS_CONTACT, {
+        detail: { contactId: stationId },
+      })
+    );
+  };
 
   const chartPanel = !assistActive ? (
     <StarChartPanel
@@ -1693,6 +1735,9 @@ export default function SandboxHtmlMiniMap({
                 dockingAssistProjection={dockingAssistProjection}
                 dockingReadouts={dockingReadouts}
                 dockingCaptureActive={dockingCaptureActive}
+                dockPermissionRequired={dockPermissionRequired}
+                dockPermissionGranted={dockPermissionGranted}
+                onRequestDockPermission={handleRequestDockPermissionFromAssist}
               />
             ) : orbitAssist ? (
               <OrbitAssistPanel

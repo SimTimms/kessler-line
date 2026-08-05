@@ -42,8 +42,19 @@ import { disablesShipPhysicsWhenDocked } from '../../config/dockCaptureConfig';
 import { damageVesselHull, type VesselRuntimeState } from '../../context/VesselStateStore';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS, THRUST_BOOST_MULTIPLIER } from '../../config/shipConfig';
+import {
+  clearAllDockPermissions,
+  revokeDockPermission,
+  setDockPermissionCandidate,
+} from '../../context/DockPermissionState';
 
 const _undockReleaseDir = new THREE.Vector3();
+
+function stationIdFromDockEntryId(dockEntryId: string | null): string | null {
+  if (!dockEntryId) return null;
+  const match = /^docking-bay-(.+)$/.exec(dockEntryId);
+  return match ? match[1] ?? null : null;
+}
 
 export interface InputListenersResult {
   thrustForward: React.MutableRefObject<boolean>;
@@ -119,6 +130,10 @@ export function useInputListeners({
 
     const performShipUndock = (): boolean => {
       if (!dockedTo.current) return false;
+      if (vesselId === PLAYER_VESSEL_ID) {
+        clearAllDockPermissions();
+        setDockPermissionCandidate(null);
+      }
       if (undockHandlersRef?.current.tryBeginHoverUndock(dockedTo.current)) {
         return true;
       }
@@ -130,9 +145,11 @@ export function useInputListeners({
       }
 
       let undockDetail: ShipUndockedDetail = { dockEntryId: previousDockId };
+      let undockedStationId: string | null = null;
       if (groupRef.current) {
         detachShipFromDock(groupRef.current, scene);
         const dockEntry = getCollidables().find((c) => c.id === previousDockId);
+        undockedStationId = dockEntry?.stationId ?? null;
         const profile = dockEntry ? getDockCaptureProfile(dockEntry) : null;
         // Always push away from the dock object in world space (not a fixed ship axis).
         const releaseDir = computeUndockReleaseDirection(
@@ -143,18 +160,24 @@ export function useInputListeners({
         groupRef.current.position.addScaledVector(releaseDir, 1);
         const releaseSpeed = profile?.undockReleaseSpeed ?? 8;
         const releaseImpulse = releaseDir.clone().multiplyScalar(releaseSpeed);
-        const towable = profile != null && !disablesShipPhysicsWhenDocked(profile);
+        // Towable cargo docks unmount their capture bay while attached, so the
+        // collidable can be missing at undock time. In that case, prefer the
+        // momentum-preserving path instead of resetting to a fixed release speed.
+        const towable = profile == null || !disablesShipPhysicsWhenDocked(profile);
 
         if (towable) {
-          // Equal-and-opposite: ship gets V+I, partner gets V-I.
+          // Tow release inherits the ship's current trajectory so detached cargo
+          // keeps the same orbital path at the release instant.
           undockDetail = {
             dockEntryId: previousDockId,
             partnerReleaseVelocity: {
-              x: velocity.current.x - releaseImpulse.x,
+              x: velocity.current.x,
               y: 0,
-              z: velocity.current.z - releaseImpulse.z,
+              z: velocity.current.z,
             },
           };
+          // Give only the ship a small separation impulse to prevent immediate
+          // re-contact while preserving the container's inherited trajectory.
           velocity.current.add(releaseImpulse);
         } else {
           velocity.current.copy(releaseImpulse);
@@ -166,6 +189,10 @@ export function useInputListeners({
         groupRef.current.getWorldPosition(physicsPosition.current);
       }
 
+      if (vesselId === PLAYER_VESSEL_ID) {
+        const stationId = undockedStationId ?? stationIdFromDockEntryId(previousDockId);
+        if (stationId) revokeDockPermission(stationId);
+      }
       window.dispatchEvent(new CustomEvent('ShipUndocked', { detail: undockDetail }));
       releaseParticleTrigger.current = true;
       return true;

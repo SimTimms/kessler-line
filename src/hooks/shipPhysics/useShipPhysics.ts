@@ -24,6 +24,13 @@ import { shipVelocity } from '../../context/ShipState';
 import { playDockAlignSound } from '../../sound/SoundManager';
 import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';
 import { isLandingPadElevatorReady } from '../../context/LandingPadElevator';
+import {
+  clearAllDockPermissions,
+  hasDockPermission,
+  revokeDockPermission,
+  setDockPermissionCandidate,
+} from '../../context/DockPermissionState';
+import { getDock } from '../../context/DockablePartnerStore';
 
 const LANDING_ALIGN_SPEED = 2.8; // units/s
 const LANDING_DESCEND_SPEED = 2.8; // units/s
@@ -33,6 +40,14 @@ const LANDING_ROTATE_SPEED = 1.1; // rad/s (25% of prior 4.4)
 const DEBUG_JUMP_HOVER_LOCAL_Y = 14;
 const LOCAL_DOCK_FORWARD_QUAT = new THREE.Quaternion();
 const _hoverUndockReleaseDir = new THREE.Vector3();
+const _candidateShipPos = new THREE.Vector3();
+const _candidateDockPos = new THREE.Vector3();
+const MIN_DOCK_PERMISSION_PROMPT_RADIUS = 80;
+
+function stationIdFromDockEntryId(dockEntryId: string): string | null {
+  const match = /^docking-bay-(.+)$/.exec(dockEntryId);
+  return match ? match[1] ?? null : null;
+}
 
 function moveTowardScalar(current: number, target: number, maxStep: number): number {
   const delta = target - current;
@@ -225,6 +240,10 @@ export function useShipPhysics({
       dockEntryId: dockId,
       targetY,
     };
+    if (vesselId === PLAYER_VESSEL_ID) {
+      clearAllDockPermissions();
+      setDockPermissionCandidate(null);
+    }
     dockReentryBlock.current = dockId;
     if (publishToPlayerRefs) {
       window.dispatchEvent(
@@ -402,6 +421,7 @@ export function useShipPhysics({
       if (!dockingPhysicsEnabled) return;
 
       if (hoverUndockingTransition.current) {
+        setDockPermissionCandidate(null);
         const transition = hoverUndockingTransition.current;
         const entry = getCollidables().find((c) => c.id === transition.dockEntryId);
         const dockObject = entry?.getObject3D?.() ?? null;
@@ -430,6 +450,8 @@ export function useShipPhysics({
             hoverUndockingTransition.current = null;
             dockedTo.current = null;
             if (publishToPlayerRefs) {
+              const stationId = entry.stationId ?? stationIdFromDockEntryId(transition.dockEntryId);
+              if (stationId) revokeDockPermission(stationId);
               window.dispatchEvent(
                 new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED, {
                   detail: { stationId: entry.stationId ?? null },
@@ -460,6 +482,7 @@ export function useShipPhysics({
       }
 
       if (hoverDockingTransition.current) {
+        setDockPermissionCandidate(null);
         const transition = hoverDockingTransition.current;
         const entry = getCollidables().find((c) => c.id === transition.dockEntryId);
         const dockObject = entry?.getObject3D?.() ?? null;
@@ -523,6 +546,7 @@ export function useShipPhysics({
       }
 
       if (dockedTo.current) {
+        setDockPermissionCandidate(null);
         const entry = getCollidables().find((c) => c.id === dockedTo.current);
         if (entry && !disablesShipPhysicsWhenDocked(getDockCaptureProfile(entry))) {
           // Towable dock: keep ship on the scene root; partner follows the ship port.
@@ -543,7 +567,27 @@ export function useShipPhysics({
         return;
       }
 
-      if (neptuneNoFlyZoneActive.current) return;
+      if (neptuneNoFlyZoneActive.current) {
+        setDockPermissionCandidate(null);
+        return;
+      }
+
+      const nearestHoverCandidate = findNearestHoverDockCandidate(
+        group,
+        selfCollisionId ?? vesselId,
+        dockReentryBlock.current
+      );
+      if (nearestHoverCandidate && nearestHoverCandidate.stationId) {
+        const dockLabel =
+          getDock(nearestHoverCandidate.stationId)?.label ?? nearestHoverCandidate.stationId;
+        setDockPermissionCandidate({
+          stationId: nearestHoverCandidate.stationId,
+          dockEntryId: nearestHoverCandidate.id,
+          label: dockLabel,
+        });
+      } else {
+        setDockPermissionCandidate(null);
+      }
 
       if (dockReentryBlock.current) {
         const blockedEntry = getCollidables().find((c) => c.id === dockReentryBlock.current);
@@ -566,6 +610,10 @@ export function useShipPhysics({
         dockingPortDisabledUntil,
         onBeforeDock: ({ bayEntry, captureMode }) => {
           if (captureMode !== 'hover') return false;
+          const stationId = bayEntry.stationId ?? null;
+          if (!hasDockPermission(stationId)) {
+            return 'block';
+          }
           const dockObject = bayEntry.getObject3D?.() ?? null;
           if (!dockObject) return false;
           if (!hoverDockingTransition.current) {
@@ -614,4 +662,41 @@ export function useShipPhysics({
     releaseParticleTrigger,
     thrusterLightRefs,
   };
+}
+
+function findNearestHoverDockCandidate(
+  group: THREE.Group,
+  selfCollisionId: string,
+  dockReentryBlockId: string | null
+): { id: string; stationId: string | null } | null {
+  group.getWorldPosition(_candidateShipPos);
+  let bestEntry: { id: string; stationId: string | null } | null = null;
+  let bestDist = Number.POSITIVE_INFINITY;
+
+  for (const entry of getCollidables()) {
+    if (entry.id === selfCollisionId) continue;
+    if (entry.shape.type !== 'box') continue;
+    if (!entry.id.startsWith('docking-bay')) continue;
+    if (dockReentryBlockId === entry.id) continue;
+    const dockingProfile = getDockCaptureProfile(entry);
+    if (dockingProfile.mode !== 'hover') continue;
+    const dockObject = entry.getObject3D?.() ?? null;
+    if (!dockObject) continue;
+    if (group.parent === dockObject || dockObject.parent === group) {
+      continue;
+    }
+    entry.getWorldPosition(_candidateDockPos);
+    const planarDistance = Math.hypot(
+      _candidateShipPos.x - _candidateDockPos.x,
+      _candidateShipPos.z - _candidateDockPos.z
+    );
+    const promptRadius = Math.max(dockingProfile.captureRadius, MIN_DOCK_PERMISSION_PROMPT_RADIUS);
+    if (planarDistance >= promptRadius) continue;
+    if (planarDistance < bestDist) {
+      bestDist = planarDistance;
+      bestEntry = { id: entry.id, stationId: entry.stationId ?? null };
+    }
+  }
+
+  return bestEntry;
 }

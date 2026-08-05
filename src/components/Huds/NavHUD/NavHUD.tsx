@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { NAV_TARGET_DEFS, displayNameForDockedStation } from '../../../config/worldConfig';
 import { navTargetIdRef, hasNavTarget } from '../../../context/NavTarget';
@@ -31,6 +31,14 @@ import {
 import { NavTargetDialog } from './NavTargetDialog';
 import './NavHUD.css';
 import '../HelmetHUD/HelmetHUD.css';
+import {
+  EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED,
+  EVENT_DOCK_PERMISSION_CHANGED,
+  getDockPermissionCandidate,
+  hasDockPermission,
+  type DockPermissionCandidate,
+} from '../../../context/DockPermissionState';
+import { EVENT_OPEN_COMMS_CONTACT } from '../../../context/CommsUiEvents';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
 
@@ -52,7 +60,7 @@ interface NavHUDProps {
 
 export const NavHUD = ({
   layout = 'classic',
-  disableElements,
+  disableElements: _disableElements,
   focusElements,
   onNavTargetClick,
   customGeneralTargets,
@@ -63,9 +71,28 @@ export const NavHUD = ({
   const [targetLabel, setTargetLabel] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [openScanPicker, setOpenScanPicker] = useState<NavScanPickerId | null>(null);
+  const [dockPermissionCandidate, setDockPermissionCandidate] =
+    useState<DockPermissionCandidate | null>(() => getDockPermissionCandidate());
+  const [, bumpDockPermissionVersion] = useState(0);
 
   const undockBtnRef = useRef<HTMLButtonElement>(null);
   const velVec = useRef(new THREE.Vector3());
+
+  useEffect(() => {
+    const onCandidateChanged = (e: Event) => {
+      const detail = (e as CustomEvent<{ candidate: DockPermissionCandidate | null }>).detail;
+      setDockPermissionCandidate(detail?.candidate ?? null);
+    };
+    const onPermissionChanged = () => {
+      bumpDockPermissionVersion((v) => v + 1);
+    };
+    window.addEventListener(EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED, onCandidateChanged);
+    window.addEventListener(EVENT_DOCK_PERMISSION_CHANGED, onPermissionChanged);
+    return () => {
+      window.removeEventListener(EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED, onCandidateChanged);
+      window.removeEventListener(EVENT_DOCK_PERMISSION_CHANGED, onPermissionChanged);
+    };
+  }, []);
 
   // ── State owned by hooks ──────────────────────────────────────────
   const { isDocked, dockedStationId, isDockedRef } = useDockingState();
@@ -166,6 +193,8 @@ export const NavHUD = ({
     proximityContacts.length +
     radioContacts.length +
     radiationContacts.length;
+  const hasDockPermissionRequestTarget =
+    dockPermissionCandidate != null && !hasDockPermission(dockPermissionCandidate.stationId);
 
   // ── Handlers ──────────────────────────────────────────────────────
 
@@ -197,6 +226,14 @@ export const NavHUD = ({
   const handleClearNavTarget = () => clearAllNavTargets(clearDispatch);
   const handleAutopilot = () => toggleApproachAutopilot(autopilotEnabled);
   const handleVelocityMatch = () => toggleVelocityMatch();
+  const openDockPermissionComms = () => {
+    if (!dockPermissionCandidate) return;
+    window.dispatchEvent(
+      new CustomEvent(EVENT_OPEN_COMMS_CONTACT, {
+        detail: { contactId: dockPermissionCandidate.stationId },
+      })
+    );
+  };
 
   const openNavTargetDialog = () => {
     setOpenScanPicker(null);
@@ -340,7 +377,18 @@ export const NavHUD = ({
                       ref={displayRefs.relativeVel}
                       className="helmet-nav-dv hud-value nav-relative-velocity"
                     />
-                    <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
+                    {hasDockPermissionRequestTarget ? (
+                      <button
+                        type="button"
+                        className="helmet-nav-btn nav-dock-permission-btn"
+                        onClick={openDockPermissionComms}
+                        title={`Request dock permission from ${dockPermissionCandidate?.label ?? 'dock'}`}
+                      >
+                        REQUEST DOCK PERMISSION
+                      </button>
+                    ) : (
+                      <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
+                    )}
                   </div>
                 </div>
                 <span ref={displayRefs.orbitLine} className="helmet-nav-orbit" />
@@ -429,7 +477,18 @@ export const NavHUD = ({
                         ref={displayRefs.relativeVel}
                         className="hud-value nav-relative-velocity"
                       />
-                      <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
+                      {hasDockPermissionRequestTarget ? (
+                        <button
+                          type="button"
+                          className="nav-target-btn nav-dock-permission-btn"
+                          onClick={openDockPermissionComms}
+                          title={`Request dock permission from ${dockPermissionCandidate?.label ?? 'dock'}`}
+                        >
+                          Request dock permission
+                        </button>
+                      ) : (
+                        <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
+                      )}
                     </div>
                   </div>
                 </div>

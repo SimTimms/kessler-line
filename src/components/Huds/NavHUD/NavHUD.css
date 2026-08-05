@@ -87,6 +87,17 @@
   text-transform: none;
 }
 
+.nav-dock-permission-btn {
+  width: auto;
+  min-width: 120px;
+  padding: 4px 8px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  border-color: rgba(0, 200, 255, 0.55);
+  color: rgba(140, 230, 255, 0.98);
+  background: rgba(0, 200, 255, 0.1);
+}
+
 .nav-target-label {
   color: rgba(160, 220, 255, 0.8);
   font-size: 8px;

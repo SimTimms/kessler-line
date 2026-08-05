@@ -9,12 +9,6 @@ export interface DecorativeAsteroidDef {
   scale?: number;
 }
 
-const ASTEROID_MATERIAL = new THREE.MeshStandardMaterial({
-  color: new THREE.Color(0, 0, 0),
-  roughness: 0.9,
-  metalness: 0.8,
-});
-
 // Module-level dummy avoids allocating a new Object3D every frame.
 const _dummy = new THREE.Object3D();
 
@@ -31,6 +25,17 @@ export default function DecorativeAsteroidField({
 }) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   const meshRef = useRef<THREE.InstancedMesh>(null!);
+
+  const material = useMemo(() => {
+    const firstMesh = gltf.scene.getObjectByProperty('type', 'Mesh');
+    if (firstMesh instanceof THREE.Mesh) {
+      const meshMaterial = Array.isArray(firstMesh.material) ? firstMesh.material[0] : firstMesh.material;
+      // Clone so this component owns and can safely mutate/dispose its material.
+      return meshMaterial.clone();
+    }
+
+    return new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0.8 });
+  }, [gltf.scene]);
 
   const geometry = useMemo(() => {
     const geos: THREE.BufferGeometry[] = [];
@@ -62,7 +67,7 @@ export default function DecorativeAsteroidField({
     mesh.instanceMatrix.needsUpdate = true;
   }, [asteroids]);
 
-  return <instancedMesh ref={meshRef} args={[geometry, ASTEROID_MATERIAL, asteroids.length]} />;
+  return <instancedMesh ref={meshRef} args={[geometry, material, asteroids.length]} />;
 }
 
 useGLTF.preload('/asteroid-low.glb');

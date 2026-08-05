@@ -222,6 +222,8 @@ const HANK_JOHNSON: DockContact = {
 
 export const DONINGTON_STATION_DOCK_CONFIG: DockConfig = {
   label: 'Donington Station',
+  hailAcceptanceChance: 1,
+  dockRequestAcceptanceChance: 1,
   backgroundImage: '/station.jpg',
   fuel: { amount: 40, capacity: 100 },
   o2: { amount: 55, capacity: 100 },

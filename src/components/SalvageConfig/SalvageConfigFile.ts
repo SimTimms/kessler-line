@@ -140,7 +140,7 @@ function buildSalvageAsteroidField(): Array<{
   scale: number;
 }> {
   const count = 20;
-  const spacing = 500;
+  const spacing = 1000;
   const cols = 6;
   const rows = 5;
 

@@ -131,10 +131,12 @@ export default function SalvageField({
           </group>
         ) : null}
 
-        <DecorativeAsteroidField
-          key={`${idPrefix}decorative-asteroid-field`}
-          asteroids={asteroids}
-        />
+        <group position={[0, -300, 0]}>
+          <DecorativeAsteroidField
+            key={`${idPrefix}decorative-asteroid-field`}
+            asteroids={asteroids}
+          />
+        </group>
 
         {showDroneFleet ? (
           <GarbageScowDroneFleet
@@ -148,18 +150,16 @@ export default function SalvageField({
         ) : null}
       </Suspense>
 
-      {showDustCloud ? (
-        <Suspense fallback={null}>
-          <DustCloud
-            radius={dustCloud.radius}
-            particleSize={1500}
-            radialSpread={dustCloud.radialSpread}
-            yInitial={-700}
-            opacity={0.005}
-            colors={showDroneAtmosphere ? [...DRONE_ATMOSPHERE_COLORS] : [...dustCloud.colors]}
-          />
-        </Suspense>
-      ) : null}
+      <Suspense fallback={null}>
+        <DustCloud
+          radius={dustCloud.radius}
+          particleSize={1500}
+          radialSpread={dustCloud.radialSpread}
+          yInitial={-700}
+          opacity={0.005}
+          colors={showDroneAtmosphere ? [...DRONE_ATMOSPHERE_COLORS] : [...dustCloud.colors]}
+        />
+      </Suspense>
     </group>
   );
 }

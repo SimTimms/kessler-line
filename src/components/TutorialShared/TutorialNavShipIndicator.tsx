@@ -81,13 +81,13 @@ export default function TutorialNavShipIndicator({ shipGroupRef }: Props) {
     const positions = new Float32Array([
       0,
       NAV_INDICATOR_LOCAL_Y,
-      14,
+      -14,
       -9,
       NAV_INDICATOR_LOCAL_Y,
-      -5,
+      5,
       9,
       NAV_INDICATOR_LOCAL_Y,
-      -5,
+      5,
     ]);
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setIndex([0, 1, 2]);

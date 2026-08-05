@@ -14,6 +14,9 @@ interface DialogFooterProps {
   canRequestRendezvous?: boolean;
   isRendezvousActive?: boolean;
   onRequestRendezvous?: () => void;
+  canRequestDockPermission?: boolean;
+  isDockPermissionGranted?: boolean;
+  onRequestDockPermission?: () => void;
 }
 export default function DialogFooter({
   contact,
@@ -28,6 +31,9 @@ export default function DialogFooter({
   canRequestRendezvous = false,
   isRendezvousActive = false,
   onRequestRendezvous,
+  canRequestDockPermission = false,
+  isDockPermissionGranted = false,
+  onRequestDockPermission,
 }: DialogFooterProps) {
   const pendingReplyMsg = contact ? msgs.find((m) => !m.repliedWith && m.replies?.length) : null;
   const footerOptions = contact
@@ -51,7 +57,18 @@ export default function DialogFooter({
           ))}
         </div>
       )}
-      {!contact && !isPreHail && canRequestRendezvous && (
+      {!contact && !isPreHail && canRequestDockPermission ? (
+        <div className="comms-chat-options">
+          <button
+            className="comms-chat-opt"
+            onClick={() => onRequestDockPermission?.()}
+            disabled={isDockPermissionGranted}
+          >
+            {isDockPermissionGranted ? 'DOCK PERMISSION GRANTED' : 'REQUEST DOCK PERMISSION'}
+          </button>
+        </div>
+      ) : null}
+      {!contact && !isPreHail && !canRequestDockPermission && canRequestRendezvous && (
         <div className="comms-chat-options">
           <button
             className="comms-chat-opt"

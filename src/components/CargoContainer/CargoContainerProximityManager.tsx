@@ -23,6 +23,12 @@ export default function CargoContainerProximityManager() {
 
     forEachCargoContainer((handle) => {
       if (handle.isConsumed()) return;
+      // If this crate is currently docked/towed by the player, hide its helper
+      // so guidance can return to other pads/stations/minimap targets.
+      if (handle.isTowed()) {
+        handle.setDockingBayProximity(false);
+        return;
+      }
       const pos = handle.getSimPosition();
       const dx = ship.x - pos.x;
       const dz = ship.z - pos.z;

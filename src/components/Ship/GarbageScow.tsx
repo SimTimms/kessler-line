@@ -27,10 +27,12 @@ import {
   MAIN_ENGINE_LOCAL_POS_B,
   RCS_THRUSTER_LOCAL,
   SHIP_BOX_HALF_EXTENTS,
-  THRUSTER_LIGHT_COLOR,
-  THRUSTER_LIGHT_DISTANCE,
-  THRUSTER_LIGHT_DECAY,
 } from '../../config/shipConfig';
+import {
+  THRUSTER_LIGHT_COLOR,
+  THRUSTER_LIGHT_DECAY,
+  THRUSTER_LIGHT_DISTANCE,
+} from '../../config/thrusterConfig';
 import PlanetSurfaceImpactDust from '../Environment/PlanetSurfaceImpactDust';
 
 /** Order must match `thrusterLight.ts` slot indices and `useShipPhysics` actives. */

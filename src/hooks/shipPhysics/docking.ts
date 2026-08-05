@@ -267,7 +267,7 @@ interface DockingPortParams {
     dockingProfile: ReturnType<typeof getDockCaptureProfile>;
     captureMode: 'nose' | 'hover';
     relSpeed: number;
-  }) => boolean;
+  }) => boolean | 'block';
 }
 
 export function checkDockingPort({
@@ -334,14 +334,16 @@ export function checkDockingPort({
   }
 
   const captureMode: 'nose' | 'hover' = capturedProfileMode ?? (dockingProfile.mode === 'hover' ? 'hover' : 'nose');
-  if (
-    onBeforeDock?.({
-      bayEntry,
-      dockingProfile,
-      captureMode,
-      relSpeed,
-    })
-  ) {
+  const beforeDockResult = onBeforeDock?.({
+    bayEntry,
+    dockingProfile,
+    captureMode,
+    relSpeed,
+  });
+  if (beforeDockResult === 'block') {
+    return;
+  }
+  if (beforeDockResult) {
     velocity.set(0, 0, 0);
     return;
   }

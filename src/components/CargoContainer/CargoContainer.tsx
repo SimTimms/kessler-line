@@ -87,6 +87,8 @@ export interface CargoContainerProps {
   showCaptureMesh?: boolean;
   /** Inventory/authoring debug: click teleports the ship and starts docking. */
   debugJumpDockOnClick?: boolean;
+  /** Initial world-space drift velocity (XZ plane) applied on spawn. */
+  initialVelocity?: [number, number, number];
 }
 
 export default function CargoContainer({
@@ -103,6 +105,7 @@ export default function CargoContainer({
   portDimensions = CARGO_CONTAINER_PORT_DIMENSIONS,
   showCaptureMesh = true,
   debugJumpDockOnClick = false,
+  initialVelocity = [0, 0, 0],
 }: CargoContainerProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
   // Clone so each instance is independent (shared GLTF cache is not mutated).
@@ -188,11 +191,15 @@ export default function CargoContainer({
       posRef.current.y = 0;
     }
     quatRef.current.setFromEuler(new THREE.Euler(0, rotation[1], 0));
-    velRef.current.set(0, 0, 0);
+    if (savedPos) {
+      velRef.current.set(0, 0, 0);
+    } else {
+      velRef.current.set(initialVelocity[0], 0, initialVelocity[2]);
+    }
     if (group) {
       group.quaternion.copy(quatRef.current);
     }
-  }, [id, position, rotation]);
+  }, [id, initialVelocity, position, rotation]);
 
   const registerStructureCollider = useCallback(
     (physicalCollision: boolean) => {

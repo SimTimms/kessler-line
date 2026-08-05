@@ -150,6 +150,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
     shipParticleCount,
     lighting,
     extraContainersLocalToPrimaryField,
+    satelliteMissionContainerLocalToPrimaryField,
   } = NARRATIVE_CONFIG;
 
   // Load saved state before first render if requested.
@@ -272,11 +273,22 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
               position={container.position}
               rotation={container.rotation}
               scale={container.scale}
-              dock={container.id === NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID ? satelliteContainerDock : CARGO_CONTAINER_DOCK}
+              dock={CARGO_CONTAINER_DOCK}
               showCaptureMesh
               debugJumpDockOnClick
             />
           ))}
+          <CargoContainer
+            id={satelliteContainerId}
+            label={satelliteMissionContainerLocalToPrimaryField.label}
+            position={satelliteMissionContainerLocalToPrimaryField.position}
+            rotation={satelliteMissionContainerLocalToPrimaryField.rotation}
+            initialVelocity={satelliteMissionContainerLocalToPrimaryField.initialVelocity}
+            scale={satelliteMissionContainerLocalToPrimaryField.scale}
+            dock={satelliteContainerDock}
+            showCaptureMesh
+            debugJumpDockOnClick
+          />
         </group>
 
         <SalvageField

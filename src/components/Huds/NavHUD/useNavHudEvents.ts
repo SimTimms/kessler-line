@@ -4,6 +4,7 @@ import {
   type NavScanPickerId,
 } from '../../../config/navScanPickerConfig';
 import { EVENT_OPEN_SCAN_PICKER } from '../../../context/NavHud';
+import { clearAllDockPermissions, setDockPermissionCandidate } from '../../../context/DockPermissionState';
 
 // ── Docking state ─────────────────────────────────────────────────────
 
@@ -30,6 +31,8 @@ export function useDockingState(): DockingState {
       isDockedRef.current = false;
       setIsDocked(false);
       setDockedStationId(null);
+      clearAllDockPermissions();
+      setDockPermissionCandidate(null);
     };
     window.addEventListener('ShipDocked', onDocked);
     window.addEventListener('ShipUndocked', onUndocked);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { isRefueling, isTransferringO2 } from '../components/Ship/Spaceship';
+import { clearAllDockPermissions, setDockPermissionCandidate } from '../context/DockPermissionState';
 
 export function useDockingState() {
   const [docked, setDocked] = useState(false);
@@ -20,6 +21,8 @@ export function useDockingState() {
       setTransferringO2(false);
       isRefueling.current = false;
       isTransferringO2.current = false;
+      clearAllDockPermissions();
+      setDockPermissionCandidate(null);
     };
     window.addEventListener('ShipDocked', onDocked);
     window.addEventListener('ShipUndocked', onUndocked);

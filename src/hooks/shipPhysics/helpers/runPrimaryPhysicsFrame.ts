@@ -146,10 +146,12 @@ export function runPrimaryPhysicsFrame({
   }
 
   // Station/landing docks freeze ship physics; towable docks (cargo) keep flying.
+  // If the dock collider is temporarily unmounted (e.g. cargo helper hidden while towed),
+  // do NOT freeze as a fallback — that would incorrectly lock flight controls.
   if (dockingPhysicsEnabled && dockedTo.current) {
     const dockEntry = getCollidables().find((c) => c.id === dockedTo.current);
     const freezeShip =
-      !dockEntry || disablesShipPhysicsWhenDocked(getDockCaptureProfile(dockEntry));
+      dockEntry != null && disablesShipPhysicsWhenDocked(getDockCaptureProfile(dockEntry));
     if (freezeShip) {
       didApplyInitialVelocity.current = true;
       velocity.current.set(0, 0, 0);

@@ -18,24 +18,34 @@ import {
   effectiveThrustStrL,
   effectiveThrustStrR,
   canUsePropulsion,
-  shipVelocity,
 } from '../../context/ShipState';
 import {
   RCS_THRUSTER_LOCAL,
   HOVER_THRUSTER_LOCAL,
   // HOVER_CUTOFF_SPEED, // used when underside hover particles are re-enabled
 } from '../../config/shipConfig';
-
-const EMIT_RATE = 900; // particles per second per emitter
-const BASE_LIFETIME = 0.04; // seconds — short, intense burn (jittered ±30%)
-const BASE_SPEED = 100; // world units/second (jittered ±30%)
-const TAPER_STRENGTH = 12; // how aggressively particles converge toward axis as they age
-const RCS_VISUAL_MULTIPLIER = 1; // keep RCS visuals at 1x regardless of thrust multiplier
-const MAX_THRUSTER_VISUAL_MULTIPLIER = 3;
+import {
+  THRUSTER_HOVER_EMIT_RATE,
+  THRUSTER_HOVER_PARTICLE_LIFETIME,
+  THRUSTER_HOVER_PARTICLE_POOL,
+  THRUSTER_HOVER_PARTICLE_SIZE,
+  THRUSTER_HOVER_PARTICLE_SPEED,
+  THRUSTER_MAIN_PARTICLE_SIZE,
+  THRUSTER_MAIN_EMIT_RATE,
+  THRUSTER_MAIN_PARTICLE_POOL,
+  THRUSTER_PARTICLE_LIFETIME,
+  THRUSTER_PARTICLE_SPEED,
+  THRUSTER_PARTICLE_TAPER_STRENGTH,
+  THRUSTER_RCS_PARTICLE_SIZE,
+  THRUSTER_RCS_EMIT_RATE,
+  THRUSTER_RCS_PARTICLE_POOL,
+  THRUSTER_RCS_VISUAL_MULTIPLIER,
+  THRUSTER_VISUAL_MAX_MULTIPLIER,
+} from '../../config/thrusterConfig';
 
 // ── Main engine emitters (two front nozzles — reverse thrust) ────────────
 // Spaced apart on the X axis; tune offsets to match model nozzle positions.
-const MAIN_MAX = 1200;
+const MAIN_MAX = THRUSTER_MAIN_PARTICLE_POOL;
 const MAIN_EMITTERS = {
   reverseA: {
     localPos: MAIN_ENGINE_LOCAL_POS.reverseA,
@@ -49,10 +59,7 @@ const MAIN_EMITTERS = {
 type MainKey = keyof typeof MAIN_EMITTERS;
 
 // ── Hover emitters (underside — always on) ───────────────────────────────
-const HOVER_MAX = 500;
-const HOVER_EMIT_RATE = 500; // particles per second per nozzle
-const HOVER_LIFETIME = 0.06; // seconds (slightly longer trail than RCS)
-const HOVER_SPEED = 70; // world units/s (slower than RCS — downward drift)
+const HOVER_MAX = THRUSTER_HOVER_PARTICLE_POOL;
 const HOVER_LOCAL_DIR = new THREE.Vector3(0, -1, 0); // straight down in local space
 const HOVER_EMITTERS: { localPos: THREE.Vector3; localDir: THREE.Vector3 }[] =
   HOVER_THRUSTER_LOCAL.map(([x, y, z]) => ({
@@ -61,7 +68,7 @@ const HOVER_EMITTERS: { localPos: THREE.Vector3; localDir: THREE.Vector3 }[] =
   }));
 
 // ── RCS emitters (maneuvering thrusters) ─────────────────────────────────
-const RCS_MAX = 200;
+const RCS_MAX = THRUSTER_RCS_PARTICLE_POOL;
 const RCS_EMITTERS = {
   forward: {
     localPos: new THREE.Vector3(...RCS_THRUSTER_LOCAL.forward),
@@ -150,7 +157,6 @@ export default function ThrusterParticles({
   thrustRight,
   thrustStrafeLeft,
   thrustStrafeRight,
-  shipVelocityRef,
   thrustersHighlighted = [],
   driveFromProps = false,
   thrustMultiplierRef,
@@ -232,8 +238,9 @@ export default function ThrusterParticles({
       jdy = jy / jLen,
       jdz = jz / jLen;
 
-    const speed = BASE_SPEED * multiplier * (0.7 + Math.random() * 0.6);
-    const lifetime = BASE_LIFETIME * Math.sqrt(multiplier) * (0.7 + Math.random() * 0.6);
+    const speed = THRUSTER_PARTICLE_SPEED * multiplier * (0.7 + Math.random() * 0.6);
+    const lifetime =
+      THRUSTER_PARTICLE_LIFETIME * Math.sqrt(multiplier) * (0.7 + Math.random() * 0.6);
     const idx = slotRef.current;
     slotRef.current = (idx + 1) % maxCount;
 
@@ -295,7 +302,7 @@ export default function ThrusterParticles({
       const radX = relX - p.dx * axDot;
       const radY = relY - p.dy * axDot;
       const radZ = relZ - p.dz * axDot;
-      const pull = TAPER_STRENGTH * taper * delta;
+      const pull = THRUSTER_PARTICLE_TAPER_STRENGTH * taper * delta;
       p.px -= radX * pull;
       p.py -= radY * pull;
       p.pz -= radZ * pull;
@@ -333,9 +340,9 @@ export default function ThrusterParticles({
     const dial = driveFromProps
       ? (thrustMultiplierRef?.current ?? 1)
       : thrustMultiplier.current;
-    const m = Math.min(dial, MAX_THRUSTER_VISUAL_MULTIPLIER);
-    const mainEmitRate = EMIT_RATE * Math.sqrt(m);
-    const rcsEmitRate = EMIT_RATE * Math.sqrt(RCS_VISUAL_MULTIPLIER);
+    const m = Math.min(dial, THRUSTER_VISUAL_MAX_MULTIPLIER);
+    const mainEmitRate = THRUSTER_MAIN_EMIT_RATE * Math.sqrt(m);
+    const rcsEmitRate = THRUSTER_RCS_EMIT_RATE * Math.sqrt(THRUSTER_RCS_VISUAL_MULTIPLIER);
     const propulsionAvailable = driveFromProps || canUsePropulsion();
 
     // Main engines — player: effective forward; NPC: thrustForward prop (W).
@@ -415,7 +422,14 @@ export default function ThrusterParticles({
         const count = Math.floor(rcsAccum.current[key]);
         rcsAccum.current[key] -= count;
         for (let i = 0; i < count; i++)
-          spawnInto(RCS_EMITTERS, key, rcsPool.current, RCS_MAX, rcsSlot, RCS_VISUAL_MULTIPLIER);
+          spawnInto(
+            RCS_EMITTERS,
+            key,
+            rcsPool.current,
+            RCS_MAX,
+            rcsSlot,
+            THRUSTER_RCS_VISUAL_MULTIPLIER
+          );
       } else {
         rcsAccum.current[key] = 0;
       }
@@ -434,7 +448,7 @@ export default function ThrusterParticles({
         hoverAccum.current[hi] = 0;
         continue;
       }
-      hoverAccum.current[hi] = (hoverAccum.current[hi] ?? 0) + HOVER_EMIT_RATE * delta;
+      hoverAccum.current[hi] = (hoverAccum.current[hi] ?? 0) + THRUSTER_HOVER_EMIT_RATE * delta;
       const count = Math.floor(hoverAccum.current[hi]);
       hoverAccum.current[hi] -= count;
       const { localPos } = HOVER_EMITTERS[hi];
@@ -443,8 +457,8 @@ export default function ThrusterParticles({
         const jx = (Math.random() - 0.5) * 0.12;
         const jz = (Math.random() - 0.5) * 0.12;
         const jLen = Math.sqrt(jx * jx + 1 + jz * jz);
-        const speed = HOVER_SPEED * (0.7 + Math.random() * 0.6);
-        const lifetime = HOVER_LIFETIME * (0.7 + Math.random() * 0.6);
+        const speed = THRUSTER_HOVER_PARTICLE_SPEED * (0.7 + Math.random() * 0.6);
+        const lifetime = THRUSTER_HOVER_PARTICLE_LIFETIME * (0.7 + Math.random() * 0.6);
         const idx = hoverSlot.current;
         hoverSlot.current = (idx + 1) % HOVER_MAX;
         const p = hoverPool.current[idx];
@@ -467,9 +481,9 @@ export default function ThrusterParticles({
     }
 
     // Scale point size with sqrt(multiplier) so particles visually swell at high thrust
-    if (mainMatRef.current) mainMatRef.current.size = 1.4 * Math.sqrt(m);
-    if (rcsMatRef.current) rcsMatRef.current.size = 0.18;
-    if (hoverMatRef.current) hoverMatRef.current.size = 0.15;
+    if (mainMatRef.current) mainMatRef.current.size = THRUSTER_MAIN_PARTICLE_SIZE * Math.sqrt(m);
+    if (rcsMatRef.current) rcsMatRef.current.size = THRUSTER_RCS_PARTICLE_SIZE;
+    if (hoverMatRef.current) hoverMatRef.current.size = THRUSTER_HOVER_PARTICLE_SIZE;
 
     tickPool(mainPool.current, MAIN_MAX, mainPos, mainCol, delta, mainGeoRef);
     tickPool(rcsPool.current, RCS_MAX, rcsPos, rcsCol, delta, rcsGeoRef);
@@ -542,7 +556,7 @@ export default function ThrusterParticles({
           <bufferAttribute attach="attributes-position" args={[mainPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[mainCol, 3]} />
         </bufferGeometry>
-        <pointsMaterial ref={mainMatRef} size={1.4} {...sharedMatProps} />
+        <pointsMaterial ref={mainMatRef} size={THRUSTER_MAIN_PARTICLE_SIZE} {...sharedMatProps} />
       </points>
       {/* RCS maneuvering thrusters — smaller */}
       <points frustumCulled={false}>
@@ -550,7 +564,7 @@ export default function ThrusterParticles({
           <bufferAttribute attach="attributes-position" args={[rcsPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[rcsCol, 3]} />
         </bufferGeometry>
-        <pointsMaterial ref={rcsMatRef} size={0.18} {...sharedMatProps} />
+        <pointsMaterial ref={rcsMatRef} size={THRUSTER_RCS_PARTICLE_SIZE} {...sharedMatProps} />
       </points>
       {/* Hover thrusters — underside, always on (spawn disabled above) */}
       {highlightThruster(thrustersHighlighted[0])}
@@ -559,7 +573,7 @@ export default function ThrusterParticles({
           <bufferAttribute attach="attributes-position" args={[hoverPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[hoverCol, 3]} />
         </bufferGeometry>
-        <pointsMaterial ref={hoverMatRef} size={0.15} {...sharedMatProps} />
+        <pointsMaterial ref={hoverMatRef} size={THRUSTER_HOVER_PARTICLE_SIZE} {...sharedMatProps} />
       </points>
     </group>
   );

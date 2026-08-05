@@ -11,7 +11,7 @@ export const NARRATIVE_SECONDARY_FIELD_ID_PREFIX = 'narrative-b-';
 export const NARRATIVE_PRIMARY_ZONE_ID = 'narrative-primary-normal';
 export const NARRATIVE_SECONDARY_ZONE_ID = 'narrative-secondary-normal';
 export const NARRATIVE_MARS_ZONE_ID = 'narrative-mars-normal';
-export const NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID = 'cargo-17';
+export const NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID = 'satellite-payload';
 export const NARRATIVE_SATELLITE_CONTAINER_LABEL = 'Orbital Survey Satellite';
 
 /** Primary salvage hub sits just outside Mars SOI. */
@@ -21,8 +21,6 @@ const SECONDARY_FIELD_ARC_RADIANS = Math.PI * 0.62;
 const SECONDARY_FIELD_EXTRA_RADIUS = 220_000;
 /** Slow zone around each asteroid hub. */
 export const NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS = 2_800;
-/** Mars slow zone starts this far above surface (world units). */
-const MARS_NORMAL_TRAVEL_ALTITUDE_FROM_SURFACE = 50_000;
 
 const EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD: Array<{
   id: string;
@@ -52,8 +50,7 @@ const EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD: Array<{
       const id = `cargo-${index.toString().padStart(2, '0')}`;
       containers.push({
         id,
-        label:
-          id === NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID ? NARRATIVE_SATELLITE_CONTAINER_LABEL : '',
+        label: '',
         position: [
           basePosition[0] + column * columnGap,
           basePosition[1],
@@ -67,6 +64,16 @@ const EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD: Array<{
 
   return containers;
 })();
+
+const SATELLITE_MISSION_CONTAINER_LOCAL_TO_PRIMARY_FIELD = {
+  id: NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID,
+  label: NARRATIVE_SATELLITE_CONTAINER_LABEL,
+  // Spawned beside the Donington berth, moving away as if released from the bay.
+  position: [338, 0, 34] as Vec3,
+  rotation: [0, -2.35, 0] as Vec3,
+  initialVelocity: [8, 0, 5] as Vec3,
+  scale: 1,
+};
 
 function getMarsSoiRadius(): number {
   return getPlanetWorldRadius('Mars') * PLANET_SOI_MULTIPLIER;
@@ -135,8 +142,7 @@ export function getNarrativeMarsZoneCenter(target = new THREE.Vector3()): THREE.
 }
 
 export function getNarrativeMarsNormalTravelRadius(): number {
-  const marsWorldRadius = getPlanetWorldRadius('Mars');
-  //const marsSoiRadius = getMarsSoiRadius();
+  // TODO: replace with a dynamic Mars altitude-derived radius.
   return 100;
 }
 
@@ -164,4 +170,5 @@ export const NARRATIVE_CONFIG = {
     },
   },
   extraContainersLocalToPrimaryField: EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD,
+  satelliteMissionContainerLocalToPrimaryField: SATELLITE_MISSION_CONTAINER_LOCAL_TO_PRIMARY_FIELD,
 };
