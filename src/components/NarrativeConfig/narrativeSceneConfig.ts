@@ -68,10 +68,10 @@ const EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD: Array<{
 const SATELLITE_MISSION_CONTAINER_LOCAL_TO_PRIMARY_FIELD = {
   id: NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID,
   label: NARRATIVE_SATELLITE_CONTAINER_LABEL,
-  // Spawned beside the Donington berth, moving away as if released from the bay.
+  // Spawned beside the Donington berth at rest.
   position: [338, 0, 34] as Vec3,
   rotation: [0, -2.35, 0] as Vec3,
-  initialVelocity: [8, 0, 5] as Vec3,
+  initialVelocity: [0, 0, 0] as Vec3,
   scale: 1,
 };
 

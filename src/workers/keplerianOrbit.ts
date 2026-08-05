@@ -85,12 +85,16 @@ export function keplerianTrajectory(
 
   const isElliptical = energy < 0 && e < 1;
 
+  // Direction of travel: h > 0 → counter-clockwise (ν increasing),
+  // h < 0 → clockwise (ν decreasing).
+  const nuSign = h >= 0 ? 1 : -1;
+
   if (isElliptical) {
-    nuEnd = nu0 + TWO_PI;
+    nuEnd = nu0 + nuSign * TWO_PI;
   } else {
     // Hyperbolic / parabolic: asymptote limit
     const nuMax = e >= 1 ? Math.acos(Math.max(-1 / e, -1)) : Math.PI;
-    nuEnd = nuMax - 0.01; // margin to avoid infinite r
+    nuEnd = nuSign * (nuMax - 0.01); // margin to avoid infinite r
   }
 
   if (periDist < primary.surfaceRadius && e > 1e-8) {
@@ -107,25 +111,25 @@ export function keplerianTrajectory(
       let nuImpactForward: number;
       if (isElliptical) {
         // For elliptical, check both +nuImpact and -nuImpact (mod 2π)
-        // Normalize to [nu0, nu0 + 2π)
-        const candidates = [nuImpact, -nuImpact, nuImpact + TWO_PI, -nuImpact + TWO_PI];
+        // Find the first impact angle ahead of nu0 in the direction of travel.
+        const candidates = [nuImpact, -nuImpact, nuImpact + TWO_PI, -nuImpact + TWO_PI,
+                            nuImpact - TWO_PI, -nuImpact - TWO_PI];
         nuImpactForward = nuEnd; // fallback
         for (const c of candidates) {
-          const delta = c - nu0;
-          const wrapped = ((delta % TWO_PI) + TWO_PI) % TWO_PI;
-          if (wrapped > 0.001 && nu0 + wrapped < nuImpactForward) {
-            nuImpactForward = nu0 + wrapped;
+          const delta = (c - nu0) * nuSign; // positive when candidate is ahead
+          if (delta > 0.001 && Math.abs(c - nu0) < Math.abs(nuImpactForward - nu0)) {
+            nuImpactForward = c;
           }
         }
       } else {
         // Hyperbolic: impact at the first crossing ahead
-        nuImpactForward = nuImpact; // periapsis is at ν = 0
-        if (nuImpactForward <= nu0 + 0.001) {
+        nuImpactForward = nuSign * nuImpact; // match direction of travel
+        if ((nuImpactForward - nu0) * nuSign <= 0.001) {
           nuImpactForward = nuEnd; // no impact ahead
         }
       }
 
-      if (nuImpactForward < nuEnd) {
+      if ((nuImpactForward - nu0) * nuSign < (nuEnd - nu0) * nuSign) {
         nuEnd = nuImpactForward;
         hitSurface = true;
       }

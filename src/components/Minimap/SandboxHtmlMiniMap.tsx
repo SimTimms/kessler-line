@@ -473,6 +473,9 @@ function OrbitAssistPanel({
     targetSy: number | null;
     reqTipSx: number;
     reqTipSy: number;
+    progradeTipSx: number;
+    progradeTipSy: number;
+    shipFacingDeg: number;
     shipRingPx: number;
   } | null;
   orbitAssistReadouts: OrbitAssistReadouts | null;
@@ -482,6 +485,19 @@ function OrbitAssistPanel({
       {orbitAssistProjection && (
         <>
           <svg className="sandbox-map-orbit-assist-vectors" aria-hidden>
+            <defs>
+              <marker
+                id="sandbox-map-orbit-assist-planet-arrow"
+                markerWidth="8"
+                markerHeight="8"
+                refX="6"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M0,0 L0,6 L6,3 z" className="sandbox-map-orbit-assist-planet-arrowhead" />
+              </marker>
+            </defs>
             <circle
               className="sandbox-map-orbit-assist-surface"
               cx={orbitAssistProjection.bodySx}
@@ -510,12 +526,35 @@ function OrbitAssistPanel({
               />
             )}
             <line
+              className="sandbox-map-orbit-assist-planetdir"
+              x1={orbitAssistProjection.shipSx}
+              y1={orbitAssistProjection.shipSy}
+              x2={orbitAssistProjection.bodySx}
+              y2={orbitAssistProjection.bodySy}
+              markerEnd="url(#sandbox-map-orbit-assist-planet-arrow)"
+            />
+            <line
               className="sandbox-map-orbit-assist-req"
               x1={orbitAssistProjection.shipSx}
               y1={orbitAssistProjection.shipSy}
               x2={orbitAssistProjection.reqTipSx}
               y2={orbitAssistProjection.reqTipSy}
             />
+            <line
+              className="sandbox-map-orbit-assist-prograde"
+              x1={orbitAssistProjection.shipSx}
+              y1={orbitAssistProjection.shipSy}
+              x2={orbitAssistProjection.progradeTipSx}
+              y2={orbitAssistProjection.progradeTipSy}
+            />
+            <g
+              transform={`translate(${orbitAssistProjection.shipSx}, ${orbitAssistProjection.shipSy}) rotate(${orbitAssistProjection.shipFacingDeg})`}
+            >
+              <polygon
+                className="sandbox-map-orbit-assist-ship-arrow"
+                points="0,-11 7,8 -7,8"
+              />
+            </g>
             <circle
               className="sandbox-map-orbit-assist-ship-ring"
               cx={orbitAssistProjection.shipSx}
@@ -523,18 +562,6 @@ function OrbitAssistPanel({
               r={orbitAssistProjection.shipRingPx}
             />
           </svg>
-          <div
-            className="sandbox-map-marker sandbox-map-marker--ship"
-            style={
-              {
-                left: `${orbitAssistProjection.shipSx}px`,
-                top: `${orbitAssistProjection.shipSy}px`,
-                // ORB mode: avoid mirrored icon math so heading does not re-invert as it updates.
-                transform: `translate(-50%, -50%) rotate(${-orbitAssist.shipHeadingDeg}deg)`,
-              } as CSSProperties
-            }
-            title="Your Ship"
-          />
           {orbitAssistReadouts && (
             <div
               className="sandbox-map-orbit-assist-req-label"
@@ -578,6 +605,7 @@ const ZOOM_MIN_HALF_SPAN = 1_000;
 const _tmpA = new THREE.Vector3();
 const _tmpB = new THREE.Vector3();
 const _shipForward = new THREE.Vector3();
+const _orbitShipForward = new THREE.Vector3();
 const _dockForward = new THREE.Vector3();
 const _dockWorldPos = new THREE.Vector3();
 const _dockVel = new THREE.Vector3();
@@ -1196,9 +1224,8 @@ export default function SandboxHtmlMiniMap({
             status.bodyId === primaryId && status.apoapsis > 0
               ? Math.max(0, status.apoapsis - surfaceR)
               : Math.max(0, r - surfaceR);
-          const predictedPath = isShipMovingForTrajectory
-            ? trajectoryCacheRef.current
-            : [{ x: ship.x, z: ship.z }];
+          // Always anchor ORB path at current ship position.
+          const predictedPath = [{ x: ship.x, z: ship.z }, ...trajectoryCacheRef.current];
           _shipForward.set(0, 0, 1).applyQuaternion(shipQuaternion);
           setOrbitAssist({
             bodyId: primaryId,
@@ -1312,23 +1339,56 @@ export default function SandboxHtmlMiniMap({
     const scale = rect.height / (2 * halfSpan);
     const bodySx = rect.width / 2;
     const bodySy = rect.height / 2;
-    const shipSx = (orbitAssist.shipX - orbitAssist.bodyX) * scale + bodySx;
-    const shipSy = (orbitAssist.shipZ - orbitAssist.bodyZ) * scale + bodySy;
-    const predictedPoints = orbitAssist.predictedPath
-      .map((p) => {
-        const sx = (p.x - orbitAssist.bodyX) * scale + bodySx;
-        const sy = (p.z - orbitAssist.bodyZ) * scale + bodySy;
-        return `${sx},${sy}`;
-      })
-      .join(' ');
+    const toPanel = (worldX: number, worldZ: number) => ({
+      sx: (worldX - orbitAssist.bodyX) * scale + bodySx,
+      sy: (worldZ - orbitAssist.bodyZ) * scale + bodySy,
+    });
+    const shipPanel = toPanel(orbitAssist.shipX, orbitAssist.shipZ);
+    const shipSx = shipPanel.sx;
+    const shipSy = shipPanel.sy;
+    const projectedPath = orbitAssist.predictedPath.map((p) => toPanel(p.x, p.z));
+    const predictedPoints = projectedPath.map((p) => `${p.sx},${p.sy}`).join(' ');
     const shipRingPx = clamp(Math.min(rect.width, rect.height) * 0.09, 10, 18);
     const reqTipSx = shipSx + orbitAssist.requiredDirX * shipRingPx;
     const reqTipSy = shipSy + orbitAssist.requiredDirZ * shipRingPx;
+    let progradeTipSx = shipSx;
+    let progradeTipSy = shipSy + shipRingPx;
+    let shipFacingDeg = orbitAssist.shipHeadingDeg;
+    // Ship nose is local -Z; project it into ORB screen-space so icon basis matches real ship attitude.
+    _orbitShipForward.set(0, 0, -1).applyQuaternion(shipQuaternion);
+    const shipFwdDx = _orbitShipForward.x;
+    const shipFwdDy = _orbitShipForward.z;
+    if (Math.hypot(shipFwdDx, shipFwdDy) > 1e-4) {
+      shipFacingDeg = (Math.atan2(shipFwdDy, shipFwdDx) * 180) / Math.PI + 90;
+    }
+    // Drive ORB ship-facing from live velocity first; worker trajectory points can be stale by a frame.
+    const velDx = shipVelocity.x * scale;
+    const velDy = shipVelocity.z * scale;
+    const velLen = Math.hypot(velDx, velDy);
+    if (velLen > 1e-4) {
+      const ux = velDx / velLen;
+      const uy = velDy / velLen;
+      progradeTipSx = shipSx + ux * shipRingPx;
+      progradeTipSy = shipSy + uy * shipRingPx;
+    } else if (projectedPath.length >= 2) {
+      const a = projectedPath[0];
+      const b = projectedPath[1];
+      const dx = b.sx - a.sx;
+      const dy = b.sy - a.sy;
+      const segLen = Math.hypot(dx, dy);
+      if (segLen > 0.01) {
+        const ux = dx / segLen;
+        const uy = dy / segLen;
+        progradeTipSx = shipSx + ux * shipRingPx;
+        progradeTipSy = shipSy + uy * shipRingPx;
+      }
+    }
     let targetSx: number | null = null;
     let targetSy: number | null = null;
     if (orbitAssist.targetX != null && orbitAssist.targetZ != null) {
-      targetSx = (orbitAssist.targetX - orbitAssist.bodyX) * scale + bodySx;
-      targetSy = (orbitAssist.targetZ - orbitAssist.bodyZ) * scale + bodySy;
+      const targetPanel = toPanel(orbitAssist.targetX, orbitAssist.targetZ);
+      targetSx = targetPanel.sx;
+      targetSy = targetPanel.sy;
     }
     return {
       bodySx,
@@ -1342,6 +1402,9 @@ export default function SandboxHtmlMiniMap({
       targetSy,
       reqTipSx,
       reqTipSy,
+      progradeTipSx,
+      progradeTipSy,
+      shipFacingDeg,
       shipRingPx,
     };
   }, [orbitAssist]);
