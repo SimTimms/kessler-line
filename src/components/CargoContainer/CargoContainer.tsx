@@ -7,6 +7,7 @@ import { registerCollidable, unregisterCollidable } from '../../context/Collisio
 import {
   registerCargoContainer,
   unregisterCargoContainer,
+  consumeSavedContainerPosition,
 } from '../../context/CargoContainerRegistry';
 import DockingBay from '../WorldObjects/DockingBay';
 import { boxColliderFromObject } from '../../utils/colliderFromObject';
@@ -167,9 +168,18 @@ export default function CargoContainer({
   }, []);
 
   // Props are parent-local (e.g. SalvageField origin). Resolve to sim-world once mounted.
+  // If a saved sim-space position exists (from a loaded save), use it instead.
   useLayoutEffect(() => {
     const group = groupRef.current;
-    if (!group) {
+    const savedPos = consumeSavedContainerPosition(id);
+
+    if (savedPos) {
+      // Restore from save — savedPos is already sim-space.
+      posRef.current.set(savedPos[0], savedPos[1], savedPos[2]);
+      if (group) {
+        applySimPositionToGroup(group, posRef.current);
+      }
+    } else if (!group) {
       posRef.current.set(position[0], 0, position[2]);
     } else {
       group.position.set(position[0], 0, position[2]);
@@ -182,7 +192,7 @@ export default function CargoContainer({
     if (group) {
       group.quaternion.copy(quatRef.current);
     }
-  }, [position, rotation]);
+  }, [id, position, rotation]);
 
   const registerStructureCollider = useCallback(
     (physicalCollision: boolean) => {

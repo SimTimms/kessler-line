@@ -11,6 +11,9 @@ import PlayerBullets from '../Combat/PlayerBullets';
 import PlayerCannonHitDamage from '../Combat/PlayerCannonHitDamage';
 import BreakupVfx from '../Combat/BreakupVfx';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
+import { useSaveSystem } from '../../hooks/useSaveSystem';
+import { loadSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../context/SaveStore';
+import { apply, savedQuaternionToEuler } from '../../context/SaveManager';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import SolarSystem from '../Planets/SolarSystem';
 import SunGravity from '../Environment/SunGravity';
@@ -43,7 +46,19 @@ import {
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
-export default function NarrativeConfigScene() {
+function SaveSystemBridge() {
+  useSaveSystem({
+    autosaveSlot: NARRATIVE_AUTOSAVE_SLOT,
+    manualSlot: NARRATIVE_MANUAL_SLOT,
+  });
+  return null;
+}
+
+interface NarrativeConfigSceneProps {
+  loadSave?: boolean;
+}
+
+export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneProps) {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
   const {
     fogColor,
@@ -59,7 +74,26 @@ export default function NarrativeConfigScene() {
     extraContainersLocalToPrimaryField,
   } = NARRATIVE_CONFIG;
 
+  // Load saved state before first render if requested.
+  // apply() is idempotent so the StrictMode double-invocation of useMemo is harmless.
+  const savedSpawn = useMemo(() => {
+    if (!loadSave) return null;
+    const data = loadSlot(NARRATIVE_MANUAL_SLOT) ?? loadSlot(NARRATIVE_AUTOSAVE_SLOT);
+    if (data) {
+      apply(data);
+      console.info('[narrative] restored save from', data.timestamp);
+      return {
+        position: data.position as [number, number, number],
+        rotation: savedQuaternionToEuler(data.quaternion),
+        velocity: data.velocity as [number, number, number],
+      };
+    }
+    return null;
+  }, [loadSave]);
+
   const shipSpawn = useMemo(() => getNarrativeShipSpawn(), []);
+  const effectiveSpawn = savedSpawn ?? shipSpawn;
+
   const primaryFieldOrigin = useMemo((): [number, number, number] => {
     const o = getNarrativePrimaryFieldOrigin();
     return [o.x, o.y, o.z];
@@ -75,6 +109,8 @@ export default function NarrativeConfigScene() {
   const marsZoneRadius = useMemo(() => getNarrativeMarsNormalTravelRadius(), []);
 
   useLayoutEffect(() => {
+    // Skip spawn override when a save was loaded — apply() already set shipPosRef
+    if (savedSpawn) return;
     shipPosRef.current.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
     minimapShipPosition.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
     const group = spaceshipGroupRef.current;
@@ -82,22 +118,22 @@ export default function NarrativeConfigScene() {
       group.position.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
       group.rotation.set(shipSpawn.rotation[0], shipSpawn.rotation[1], shipSpawn.rotation[2]);
     }
-  }, [shipSpawn]);
+  }, [shipSpawn, savedSpawn]);
 
   const worldContent = (
     <>
       <ambientLight intensity={lighting.ambientIntensity} />
-      <directionalLight position={[0, 100, -1000]} intensity={3} color="red" />
-      <directionalLight position={[0, 1000, 1000]} intensity={3} color="white" />
+      <directionalLight position={[0, 100, -1000]} intensity={3} color="#ff8819" />
+      <directionalLight position={[0, 1000, 1000]} intensity={1} color="white" />
       <SpaceParticles />
       <Suspense fallback={null}>
         <Spaceship
           url="/shuttle-low-british.glb"
           shipGroupRef={spaceshipGroupRef}
-          initialPosition={shipSpawn.position}
-          initialRotation={shipSpawn.rotation}
+          initialPosition={effectiveSpawn.position}
+          initialRotation={effectiveSpawn.rotation}
           scale={1}
-          initialVelocity={[0, 0, 0]}
+          initialVelocity={savedSpawn?.velocity ?? [0, 0, 0]}
           modulesInstalled={GARBAGE_SCOW_MODULES}
           shipParticleCloudProps={{
             count: shipParticleCount,
@@ -221,6 +257,7 @@ export default function NarrativeConfigScene() {
       />
       {SANDBOX_USE_FLOATING_ORIGIN ? <FloatingOrigin>{worldContent}</FloatingOrigin> : worldContent}
       <SunGravity />
+      <SaveSystemBridge />
       <SharedInteractionSceneTools />
       <ShipDepthOfField saturation={0} />
     </Canvas>

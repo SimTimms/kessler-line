@@ -39,6 +39,8 @@ let padScanAudio: HTMLAudioElement | null = null;
 let dockAlignAudio: HTMLAudioElement | null = null;
 let dockConnectAudio: HTMLAudioElement | null = null;
 let lowO2BreathingAudio: HTMLAudioElement | null = null;
+let hullCriticalAlarmAudio: HTMLAudioElement | null = null;
+let hullBreachHissAudio: HTMLAudioElement | null = null;
 
 /** Title / config-scene space atmosphere bed. */
 export const SPACE_ATMOSPHERE_AMBIENT_SRC =
@@ -56,6 +58,10 @@ export const UI_BUTTON_CLICK_SFX_SRC = '/audio/dragon-studio-button-press-382713
 
 /** Labored breathing loop when oxygen is at a dangerous level. */
 export const LOW_O2_BREATHING_SFX_SRC = '/freesound_community-sickly-breathing-83152.mp3';
+/** Looping critical warning tone used when hull integrity is critically low. */
+export const HULL_CRITICAL_ALARM_SFX_SRC = '/emir3427-alarm-478339.mp3';
+/** Continuous air-leak hiss while hull integrity is in breach range. */
+export const HULL_BREACH_HISS_SFX_SRC = '/freesound_community-air_hiss_tubes_loop-96446.mp3';
 
 const DEFAULT_AMBIENT_BED_VOLUME = 0.05;
 const DEFAULT_PAD_SCAN_VOLUME = 0.35;
@@ -327,6 +333,72 @@ export function setLowO2BreathingSound(
 
 export function isLowO2BreathingSoundPlaying(): boolean {
   return !!lowO2BreathingAudio && !lowO2BreathingAudio.paused;
+}
+
+/**
+ * Loop critical warning alarm while hull integrity is in the critical range.
+ * Safe to call every frame / on threshold edges.
+ */
+export function setHullCriticalAlarmSound(enabled: boolean, volume = 0.4): void {
+  resumeAudioContext();
+  try {
+    if (!enabled) {
+      if (!hullCriticalAlarmAudio) return;
+      hullCriticalAlarmAudio.pause();
+      hullCriticalAlarmAudio.currentTime = 0;
+      return;
+    }
+    if (!hullCriticalAlarmAudio) {
+      hullCriticalAlarmAudio = new Audio(HULL_CRITICAL_ALARM_SFX_SRC);
+      hullCriticalAlarmAudio.loop = true;
+      hullCriticalAlarmAudio.preload = 'auto';
+    }
+    hullCriticalAlarmAudio.volume = Math.max(0, Math.min(1, volume));
+    if (hullCriticalAlarmAudio.paused) {
+      void hullCriticalAlarmAudio.play().catch(() => {
+        /* autoplay may still fail if not in a gesture */
+      });
+    }
+  } catch {
+    /* non-critical */
+  }
+}
+
+export function isHullCriticalAlarmSoundPlaying(): boolean {
+  return !!hullCriticalAlarmAudio && !hullCriticalAlarmAudio.paused;
+}
+
+/**
+ * Play/stop hull-breach air-leak hiss.
+ * Intended for threshold-edge calls (enter/exit breach state), not per-frame.
+ */
+export function setHullBreachHissSound(enabled: boolean, volume = 0.28): void {
+  resumeAudioContext();
+  try {
+    if (!enabled) {
+      if (!hullBreachHissAudio) return;
+      hullBreachHissAudio.pause();
+      hullBreachHissAudio.currentTime = 0;
+      return;
+    }
+    if (!hullBreachHissAudio) {
+      hullBreachHissAudio = new Audio(HULL_BREACH_HISS_SFX_SRC);
+      hullBreachHissAudio.loop = false;
+      hullBreachHissAudio.preload = 'auto';
+    }
+    hullBreachHissAudio.volume = Math.max(0, Math.min(1, volume));
+    if (hullBreachHissAudio.paused) {
+      void hullBreachHissAudio.play().catch(() => {
+        /* autoplay may still fail if not in a gesture */
+      });
+    }
+  } catch {
+    /* non-critical */
+  }
+}
+
+export function isHullBreachHissSoundPlaying(): boolean {
+  return !!hullBreachHissAudio && !hullBreachHissAudio.paused;
 }
 
 /**

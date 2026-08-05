@@ -1,11 +1,12 @@
 import { memo, useCallback, useRef, useState } from 'react';
-import { clearAllSaves } from '../../context/SaveStore';
+import { clearAllSaves, hasSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../context/SaveStore';
 import { GAME_MODES, type TutorialMenuSelection } from '../../config/gameModes';
 import { startSpaceAtmosphereAmbient } from '../../sound/SoundManager';
 
 interface StartOverlayProps {
   onStart: () => void;
   onTutorialSelect: (selection: TutorialMenuSelection) => void;
+  onNarrativeLoad: () => void;
 }
 
 // Deterministic pseudo-random (sin-hash) so the field is stable across renders.
@@ -94,10 +95,11 @@ const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.narrativeConfig,
 ]);
 
-const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: StartOverlayProps) {
+const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect, onNarrativeLoad }: StartOverlayProps) {
   const [dismissing, setDismissing] = useState(false);
   const [showTutorialMenu, setShowTutorialMenu] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasNarrativeSave = hasSlot(NARRATIVE_MANUAL_SLOT) || hasSlot(NARRATIVE_AUTOSAVE_SLOT);
 
   const dismiss = useCallback((action: () => void) => {
     if (timerRef.current) return; // already dismissing
@@ -152,25 +154,49 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect }: S
             </button>
           */}
 
-            {TUTORIAL_MENU_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`start-button${item.placeholder ? ' start-button--placeholder' : ''}`}
-                disabled={item.placeholder}
-                onClick={() => {
-                  const selection = item.selection;
-                  if (!selection) return;
-                  // Start ambient inside the click gesture so autoplay is allowed.
-                  if (AMBIENT_ON_SELECT.has(selection)) {
-                    startSpaceAtmosphereAmbient();
-                  }
-                  dismiss(() => onTutorialSelect(selection));
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
+            {TUTORIAL_MENU_ITEMS.map((item) => {
+              const handleClick = () => {
+                const selection = item.selection;
+                if (!selection) return;
+                if (AMBIENT_ON_SELECT.has(selection)) {
+                  startSpaceAtmosphereAmbient();
+                }
+                dismiss(() => onTutorialSelect(selection));
+              };
+
+              if (item.id === 'narrative-config') {
+                return (
+                  <div key={item.id} className="start-button-row">
+                    <button type="button" className="start-button" onClick={handleClick}>
+                      {item.label}
+                    </button>
+                    <button
+                      type="button"
+                      className={`start-button start-button--load${hasNarrativeSave ? '' : ' start-button--load-disabled'}`}
+                      disabled={!hasNarrativeSave}
+                      onClick={() => {
+                        startSpaceAtmosphereAmbient();
+                        dismiss(() => onNarrativeLoad());
+                      }}
+                    >
+                      Load
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`start-button${item.placeholder ? ' start-button--placeholder' : ''}`}
+                  disabled={item.placeholder}
+                  onClick={handleClick}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

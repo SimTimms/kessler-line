@@ -1,4 +1,4 @@
-import type { SettlementRuntime } from '../config/settlementConfig';
+import type { SettlementRuntime, SettlementStatus } from '../config/settlementConfig';
 import { SETTLEMENT_BY_ID, SETTLEMENT_BY_OBJECT_ID } from '../config/settlementConfig';
 import {
   createSettlementRuntime,
@@ -162,4 +162,40 @@ export function resetAllSettlements(): void {
   for (const settlementId of [...runtimes.keys()]) {
     resetSettlement(settlementId);
   }
+}
+
+export interface SettlementSaveData {
+  food: number;
+  water: number;
+  air: number;
+  population: number;
+  violence: number;
+  status: SettlementStatus;
+  starvationElapsedSec: number;
+  tickAccumulatorSec: number;
+}
+
+export function getAllSettlementRuntimes(): ReadonlyMap<string, SettlementRuntime> {
+  return runtimes;
+}
+
+export function restoreSettlement(settlementId: string, saved: SettlementSaveData): void {
+  const def = SETTLEMENT_BY_ID[settlementId];
+  if (!def) return;
+
+  const runtime = createSettlementRuntime(def);
+
+  runtime.food = saved.food;
+  runtime.water = saved.water;
+  runtime.air = saved.air;
+  runtime.population = saved.population;
+  runtime.violence = saved.violence;
+  runtime.status = saved.status;
+  runtime.starvationElapsedSec = saved.starvationElapsedSec;
+  runtime.tickAccumulatorSec = saved.tickAccumulatorSec;
+
+  runtimes.set(settlementId, runtime);
+  objectIdToSettlementId.set(def.objectId, settlementId);
+  bindSettlementToRadio(runtime);
+  ensureTickLoop();
 }

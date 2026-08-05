@@ -57,3 +57,27 @@ export function forEachCargoContainer(fn: (handle: CargoContainerHandle) => void
     fn(handle);
   }
 }
+
+// ── Saved positions (populated by SaveManager.apply, consumed by CargoContainer on mount) ──
+
+const _savedPositions = new Map<string, [number, number, number]>();
+
+/** Store a saved sim-space position for a container (called during save restore). */
+export function setSavedContainerPosition(id: string, pos: [number, number, number]): void {
+  _savedPositions.set(id, pos);
+}
+
+/** Consume a saved position (returns it and removes from the map so it's used only once). */
+export function consumeSavedContainerPosition(id: string): [number, number, number] | null {
+  const pos = _savedPositions.get(id);
+  if (pos) {
+    _savedPositions.delete(id);
+    return pos;
+  }
+  return null;
+}
+
+/** Clear all saved container positions. */
+export function clearSavedContainerPositions(): void {
+  _savedPositions.clear();
+}

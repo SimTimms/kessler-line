@@ -27,6 +27,15 @@ export const O2_REFILL_RATE = 10;
 /** O2 at or below this level is treated as dangerous (matches Power HUD red). */
 export const O2_DANGER_THRESHOLD = 20;
 
+/** Hull level where continuous breach leaks begin (percentage, inclusive). */
+export const HULL_BREACH_START_THRESHOLD = 75;
+/** O2 drain multiplier while hull integrity is in breach range. */
+export const HULL_BREACH_O2_DRAIN_MULTIPLIER = 3;
+/** Hull level where critical alarm audio begins looping (percentage, inclusive). */
+export const HULL_CRITICAL_THRESHOLD = 40;
+/** Gain for the critical hull alarm loop. */
+export const HULL_CRITICAL_ALARM_VOLUME = 0.4;
+
 /**
  * Global scaler for powered ship systems (scanner/radio/spotlight and any
  * future per-second system drains that feed ship power consumption).

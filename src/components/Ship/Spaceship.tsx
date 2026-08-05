@@ -12,6 +12,7 @@ import ShipParticleCloud, { type ShipParticleCloudProps } from './ShipParticleCl
 import RailgunDamagePainter from './RailgunDamagePainter';
 import RailgunOxygenVents from './RailgunOxygenVents';
 import HullStressEffect from './HullStressEffect';
+import HullBreachEffects from './HullBreachEffects';
 import LowO2BreathingEffect from './LowO2BreathingEffect';
 import ShipBreakApart from './ShipBreakApart';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
@@ -254,6 +255,7 @@ export default function Spaceship({
       <RailgunDamagePainter shipGroupRef={groupRef} />
       <RailgunOxygenVents shipGroupRef={groupRef} />
       <HullStressEffect shipGroupRef={groupRef} />
+      <HullBreachEffects shipGroupRef={groupRef} />
       <LowO2BreathingEffect />
       {enableShipExplosion && <ShipExplosion shipGroupRef={groupRef} />}
       {enableShipExplosion && <ShipBreakApart shipGroupRef={groupRef} />}

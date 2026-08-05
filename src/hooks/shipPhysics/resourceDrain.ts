@@ -1,5 +1,10 @@
 import { resourceRateRefs } from '../../context/ResourceRates';
-import { o2DrainRateForCrew, FUEL_BURN_RATE } from '../../config/damageConfig';
+import {
+  o2DrainRateForCrew,
+  FUEL_BURN_RATE,
+  HULL_BREACH_START_THRESHOLD,
+  HULL_BREACH_O2_DRAIN_MULTIPLIER,
+} from '../../config/damageConfig';
 import { getTotalScannerPowerDrain } from '../../config/scanRanges';
 import {
   setVesselFuel,
@@ -85,7 +90,11 @@ export function applyResourceDrain({
     }
   }
 
-  const o2Drain = o2DrainRateForCrew(vesselState.shipCrew);
+  const breachO2Multiplier =
+    vesselState.hullIntegrity <= HULL_BREACH_START_THRESHOLD
+      ? HULL_BREACH_O2_DRAIN_MULTIPLIER
+      : 1;
+  const o2Drain = o2DrainRateForCrew(vesselState.shipCrew) * breachO2Multiplier;
 
   if (trackHudRates) {
     resourceRateRefs.power.current = powerRate;

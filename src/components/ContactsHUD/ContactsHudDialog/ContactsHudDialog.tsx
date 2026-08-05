@@ -64,6 +64,8 @@ export function ContactsHudDialog({
           ? ' chd-item-content--rejected'
           : item.statusLine === commsStatus.radioActive
             ? ' chd-item-content--radio-active'
+            : item.statusLine === commsStatus.none
+              ? ' chd-item-content--out-of-range'
             : item.statusLine === commsStatus.accepted
               ? ' chd-item-content--accepted'
               : item.statusLine === commsStatus.pending

@@ -20,6 +20,7 @@ import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
 import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
 import { DeathOverlay } from '../Ship/DeathOverlay';
+import AutosaveIndicator from '../Huds/AutosaveIndicator';
 
 const NARRATIVE_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.DRIVE]: 2,
@@ -47,7 +48,11 @@ function applyNarrativeScannerDefaults(): void {
   radioRangeRef.current = getScannerRange('radio', NARRATIVE_SCANNER_INITIAL_POWERS.radio);
 }
 
-export default function NarrativeConfig() {
+interface NarrativeConfigProps {
+  loadSave?: boolean;
+}
+
+export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
   const [spotlightOn, setSpotlightOn] = useState(false);
   const [magneticOn, setMagneticOn] = useState(true);
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
@@ -62,10 +67,19 @@ export default function NarrativeConfig() {
     tutorialNavViewModeRef.current = false;
     resetCameraMode('free');
     setNavHudEnabled(true);
-    resetScannerRefs();
-    applyNarrativeScannerDefaults();
-    clearAllIncomingHails();
-  }, []);
+    if (loadSave) {
+      // apply() already restored scanner refs — sync React state from them
+      setSpotlightOn(spotlightOnRef.current);
+      setMagneticOn(magneticOnRef.current);
+      setDriveSignatureOn(driveSignatureOnRef.current);
+      setProximity(proximityScanOnRef.current);
+      setRadioOn(radioOnRef.current);
+    } else {
+      resetScannerRefs();
+      applyNarrativeScannerDefaults();
+      clearAllIncomingHails();
+    }
+  }, [loadSave]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -84,7 +98,7 @@ export default function NarrativeConfig() {
 
   return (
     <AppContainer>
-      <NarrativeConfigScene />
+      <NarrativeConfigScene loadSave={loadSave} />
       <AllHuds
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
@@ -101,6 +115,7 @@ export default function NarrativeConfig() {
       />
       {showMinimap && <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />}
       <DeathOverlay />
+      <AutosaveIndicator />
     </AppContainer>
   );
 }

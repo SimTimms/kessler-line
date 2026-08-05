@@ -149,8 +149,13 @@
 }
 
 .chd-item-content--radio-active {
-  opacity: 0.2;
+  opacity: 1;
   font-weight: bold;
+  color: rgba(0, 200, 255, 0.95);
+}
+
+.chd-item-content--out-of-range {
+  opacity: 0.45;
 }
 
 .chd-item-content--accepted {

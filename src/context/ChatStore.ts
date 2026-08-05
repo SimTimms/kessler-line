@@ -70,3 +70,16 @@ export function setChatTurn(
   thread.awaitingNpc = awaitingNpc;
   emit(shipId);
 }
+
+/** Snapshot all threads for save serialisation. */
+export function getAllThreads(): Map<string, ChatThread> {
+  return _threads;
+}
+
+/** Replace all threads from a saved snapshot. */
+export function restoreThreads(saved: Record<string, ChatThread>): void {
+  _threads.clear();
+  for (const [id, thread] of Object.entries(saved)) {
+    _threads.set(id, { ...thread, messages: thread.messages.map((m) => ({ ...m })) });
+  }
+}

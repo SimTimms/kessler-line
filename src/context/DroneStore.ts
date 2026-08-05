@@ -358,3 +358,30 @@ export function resetDroneState(): void {
 export function setDronePanelOpen(open: boolean): void {
   setInternal({ panelOpen: open });
 }
+
+export interface DroneSaveData {
+  mode: DroneFlightMode;
+  hull: number;
+  targetId: string | null;
+  targetLabel: string | null;
+  mining: boolean;
+  miningProgress: number;
+  statusLine: string;
+}
+
+export function restoreDroneState(saved: DroneSaveData): void {
+  stopMiningLoop();
+  ensureMiningDroneDockRegistered();
+  internal = {
+    mode: saved.mode,
+    hull: saved.hull,
+    targetId: saved.targetId,
+    targetLabel: saved.targetLabel,
+    // Never restore active mining — the RAF loop can't resume with stale timestamps
+    mining: false,
+    miningProgress: 0,
+    panelOpen: true,
+    statusLine: saved.statusLine,
+  };
+  notify();
+}

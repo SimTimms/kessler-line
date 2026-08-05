@@ -13,7 +13,7 @@ import {
 import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
 import { KM_PER_UNIT, RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
 import { STATIC_CONTACTS } from '../../narrative/contacts';
-import { type HailStatus, setHailStatus, markHailDeclined } from '../../context/HailState';
+import { type HailStatus, setHailStatus, markHailDeclined, getAllHailStates } from '../../context/HailState';
 import {
   setIncomingHail,
   dismissIncomingHail,
@@ -266,7 +266,9 @@ export default function ContactsHUD({
   const [dockedPartnerId, setDockedPartnerId] = useState<string | null>(null);
   const [inRangeDrives, setInRangeDrives] = useState<DriveContact[]>([]);
   const [broadcastContacts, setBroadcastContacts] = useState<BroadcastContact[]>([]);
-  const [hailStates, setHailStates] = useState<Map<string, HailStatus>>(new Map());
+  const [hailStates, setHailStates] = useState<Map<string, HailStatus>>(
+    () => new Map(Object.entries(getAllHailStates().states))
+  );
   const [incomingHails, setIncomingHails] = useState<Set<string>>(
     () => new Set(getIncomingHails())
   );
@@ -442,6 +444,7 @@ export default function ContactsHUD({
   }
 
   function shouldShowHailPrompt(shipId: string): boolean {
+    if (getThread(shipId)) return false;
     const status = hailStates.get(shipId) ?? 'none';
     if (status === 'accepted') return false;
     if (incomingHails.has(shipId)) return true;

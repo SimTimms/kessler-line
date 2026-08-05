@@ -1,34 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { setCargo, clearCargo } from '../context/Inventory';
+import {
+  activeMissionRef,
+  completedMissionsRef,
+  setActiveMission as setActiveMissionRef,
+  addCompletedMission,
+} from '../context/MissionState';
 
-export type MissionId = 'kronos4' | 'mars' | 'neptune';
+export type { MissionId } from '../context/MissionState';
+import type { MissionId } from '../context/MissionState';
 
 export function useMissionState() {
-  const [activeMission, setActiveMission] = useState<MissionId | null>(null);
-  const [completedMissions, setCompletedMissions] = useState<string[]>([]);
+  const [, rerender] = useState(0);
 
-  const onMissionSelect = (mission: MissionId) => {
+  useEffect(() => {
+    const handler = () => rerender((n) => n + 1);
+    window.addEventListener('MissionStateChanged', handler);
+    return () => window.removeEventListener('MissionStateChanged', handler);
+  }, []);
+
+  const onMissionSelect = useCallback((mission: MissionId) => {
     if (mission === 'mars') {
       setCargo([{ name: 'Food', quantity: 20 }]);
-      setActiveMission('mars');
+      setActiveMissionRef('mars');
     } else if (mission === 'neptune') {
       setCargo([{ name: 'Data Cores', quantity: 15 }]);
-      setActiveMission('neptune');
+      setActiveMissionRef('neptune');
     } else if (mission === 'kronos4') {
       setCargo([{ name: 'Sealed Unit (ref. MX-7734)', quantity: 1 }]);
-      setActiveMission('kronos4');
+      setActiveMissionRef('kronos4');
     }
-  };
+  }, []);
 
-  const onMissionComplete = () => {
+  const onMissionComplete = useCallback(() => {
     clearCargo();
-    setActiveMission(null);
-    setCompletedMissions((prev) => [...prev, 'kronos4']);
-  };
+    addCompletedMission('kronos4');
+    setActiveMissionRef(null);
+  }, []);
 
   return {
-    activeMission,
-    completedMissions,
+    activeMission: activeMissionRef.current,
+    completedMissions: completedMissionsRef.current,
     onMissionSelect,
     onMissionComplete,
   };

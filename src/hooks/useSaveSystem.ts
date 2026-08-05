@@ -15,7 +15,14 @@ import { KEY_MANUAL_SAVE, KEY_MANUAL_LOAD } from '../config/keybindings';
 const AUTOSAVE_INTERVAL_S = 60;
 const MANUAL_SLOT = 'manual';
 
-export function useSaveSystem() {
+export interface SaveSystemOptions {
+  autosaveSlot?: string;
+  manualSlot?: string;
+}
+
+export function useSaveSystem(opts?: SaveSystemOptions) {
+  const autoSlot = opts?.autosaveSlot ?? AUTOSAVE_SLOT;
+  const manSlot = opts?.manualSlot ?? MANUAL_SLOT;
   const timeSinceLastSave = useRef(0);
 
   // Auto-save on interval
@@ -23,7 +30,8 @@ export function useSaveSystem() {
     timeSinceLastSave.current += delta;
     if (timeSinceLastSave.current >= AUTOSAVE_INTERVAL_S) {
       timeSinceLastSave.current = 0;
-      saveSlot(AUTOSAVE_SLOT, 'Autosave', capture());
+      saveSlot(autoSlot, 'Autosave', capture());
+      window.dispatchEvent(new CustomEvent('autosave'));
       console.debug('[save] autosaved');
     }
   });
@@ -33,12 +41,13 @@ export function useSaveSystem() {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === KEY_MANUAL_SAVE) {
         e.preventDefault();
-        saveSlot(MANUAL_SLOT, 'Manual Save', capture());
+        saveSlot(manSlot, 'Manual Save', capture());
+        window.dispatchEvent(new CustomEvent('autosave'));
         console.info('[save] manual save written');
       }
       if (e.key === KEY_MANUAL_LOAD) {
         e.preventDefault();
-        const data = loadSlot(MANUAL_SLOT) ?? loadSlot(AUTOSAVE_SLOT);
+        const data = loadSlot(manSlot) ?? loadSlot(autoSlot);
         if (data) {
           apply(data);
           console.info('[save] loaded slot', data.timestamp);
@@ -49,5 +58,5 @@ export function useSaveSystem() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [autoSlot, manSlot]);
 }

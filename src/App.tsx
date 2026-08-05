@@ -62,6 +62,7 @@ function App() {
   const [mode, setMode] = useState<GameMode>(GAME_MODES.menu);
   const [tutorialMode, setTutorialMode] = useState<TutorialMenuSelection>(GAME_MODES.tutorial);
   const [showShipTitle, setShowShipTitle] = useState(false);
+  const [narrativeLoadSave, setNarrativeLoadSave] = useState(false);
 
   const handleStart = useCallback(() => {
     resumeAudioContext();
@@ -76,11 +77,22 @@ function App() {
     clearSelectedTarget();
     disableAutopilot();
     tutorialStepRef.current = 0;
+    setNarrativeLoadSave(false);
     if (selection === GAME_MODES.orbitalManagement) {
       applyTutorialOrbitalSpawn();
     }
     setTutorialMode(selection);
     setMode(selection);
+  }, []);
+
+  const handleNarrativeLoad = useCallback(() => {
+    resumeAudioContext();
+    resetShipState(true);
+    clearNavTarget();
+    clearSelectedTarget();
+    disableAutopilot();
+    setNarrativeLoadSave(true);
+    setMode(GAME_MODES.narrativeConfig);
   }, []);
 
   const handleTutorialComplete = useCallback(() => {
@@ -96,7 +108,7 @@ function App() {
 
   switch (mode) {
     case GAME_MODES.menu:
-      return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} />;
+      return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} onNarrativeLoad={handleNarrativeLoad} />;
     case GAME_MODES.modelConfig:
       return <ModelConfig />;
     case GAME_MODES.shipNavigationConfig:
@@ -116,7 +128,7 @@ function App() {
     case GAME_MODES.hudConfig:
       return <HudConfig />;
     case GAME_MODES.narrativeConfig:
-      return <NarrativeConfig />;
+      return <NarrativeConfig loadSave={narrativeLoadSave} />;
     case GAME_MODES.emptyScene:
       return <EmptyScene />;
     case GAME_MODES.sandbox:

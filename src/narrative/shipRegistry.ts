@@ -342,3 +342,19 @@ export function getShipRecord(shipId: string): ShipRecord | undefined {
 export function serializeRegistry(): string {
   return JSON.stringify(Object.fromEntries(_registry), null, 2);
 }
+
+/** Snapshot all records for save serialisation. */
+export function getAllShipRecords(): Record<string, ShipRecord> {
+  return Object.fromEntries(_registry);
+}
+
+/** Replace all records from a saved snapshot. */
+export function restoreShipRecords(saved: Record<string, ShipRecord>): void {
+  _registry.clear();
+  for (const [id, record] of Object.entries(saved)) {
+    _registry.set(id, {
+      ...record,
+      contacts: record.contacts.map((c) => ({ ...c })),
+    });
+  }
+}

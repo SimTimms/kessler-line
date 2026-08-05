@@ -36,3 +36,23 @@ export function clearHailState(shipId: string): void {
   _states.delete(shipId);
   _declinedAt.delete(shipId);
 }
+
+/** Snapshot all hail state for save serialisation. */
+export function getAllHailStates(): { states: Record<string, HailStatus>; declinedAt: Record<string, number> } {
+  return {
+    states: Object.fromEntries(_states),
+    declinedAt: Object.fromEntries(_declinedAt),
+  };
+}
+
+/** Replace all hail state from a saved snapshot. */
+export function restoreHailStates(saved: { states: Record<string, HailStatus>; declinedAt: Record<string, number> }): void {
+  _states.clear();
+  _declinedAt.clear();
+  for (const [id, status] of Object.entries(saved.states)) {
+    _states.set(id, status);
+  }
+  for (const [id, ts] of Object.entries(saved.declinedAt)) {
+    _declinedAt.set(id, ts);
+  }
+}
