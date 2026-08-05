@@ -23,6 +23,7 @@ import DustCloud from '../DustCloud/DustCloud';
 import SalvageField from '../SalvageConfig/SalvageField';
 import { HUD_CONFIG, HUD_ID_PREFIX, getHudShipSpawn } from './hudSceneConfig';
 import CameraAttachedCockpit from './CameraAttachedCockpit';
+import { CANVAS_FOV } from '../../config/visualConfig';
 // Secondary PIP chase view — disabled for now:
 // import ShipNoseCamera from './ShipNoseCamera';
 // import ChaseViewScissorPass from './ChaseViewScissorPass';
@@ -154,6 +155,7 @@ export default function HudConfigScene() {
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...tutorialFollowOffset],
         near: canvasNear,
         far: canvasFar,

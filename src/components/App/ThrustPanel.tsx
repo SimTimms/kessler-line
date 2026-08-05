@@ -8,6 +8,7 @@ import {
 } from '../../context/ShipState';
 import { THRUST_BOOST_MULTIPLIER } from '../../config/shipConfig';
 import { getActiveThrustMultiplierCap } from '../../context/FastTravelZones';
+import { NORMAL_TRAVEL_THRUST_MULTIPLIER } from '../../config/fastTravelConfig';
 import {
   KEY_THRUST_INCREASE,
   KEY_THRUST_INCREASE_NP,
@@ -26,6 +27,10 @@ const THRUST_STEP = 0.5;
 const THRUST_MIN = 0.5;
 
 function getThrustDialMax(): number {
+  return MAX_THRUST_MULTIPLIER;
+}
+
+function getThrustSelectableMax(): number {
   const zoneCap = getActiveThrustMultiplierCap();
   if (zoneCap == null) return MAX_THRUST_MULTIPLIER;
   return Math.min(zoneCap, MAX_THRUST_MULTIPLIER);
@@ -33,10 +38,10 @@ function getThrustDialMax(): number {
 
 /** Keep HUD dial + restore value in sync; physics stays at boost while ArrowUp is held. */
 function syncPhysicsMultiplier(dial: number) {
-  const cappedDial = Math.min(dial, getThrustDialMax());
+  const cappedDial = Math.min(dial, getThrustSelectableMax());
   thrustBoostStoredMultiplier.current = cappedDial;
   const boosted = thrustBoostHeld.current ? THRUST_BOOST_MULTIPLIER : cappedDial;
-  thrustMultiplier.current = Math.min(boosted, getThrustDialMax());
+  thrustMultiplier.current = Math.min(boosted, getThrustSelectableMax());
 }
 
 const ThrustPanel = memo(function ThrustPanel({
@@ -45,17 +50,18 @@ const ThrustPanel = memo(function ThrustPanel({
   embedded = false,
 }: ThrustPanelProps) {
   const [internalLevel, setInternalLevel] = useState(() => thrustMultiplier.current);
-  const [dialMax, setDialMax] = useState(getThrustDialMax);
+  const dialMax = getThrustDialMax();
+  const selectableMax = getThrustSelectableMax();
+  const thrustCapUnlocked = selectableMax > NORMAL_TRAVEL_THRUST_MULTIPLIER;
   const thrustLevel = thrustLevelProp ?? internalLevel;
   const setThrustLevel = setThrustLevelProp ?? setInternalLevel;
   const isDanger = thrustLevel >= 2;
 
-  // Keep dial max / level in sync with fast/normal travel zone caps.
+  // Keep level in sync with zone selection cap while dial visual max stays fixed.
   useEffect(() => {
     let raf = 0;
     const tick = () => {
-      const nextMax = getThrustDialMax();
-      setDialMax((prev) => (prev === nextMax ? prev : nextMax));
+      const nextMax = getThrustSelectableMax();
       setThrustLevel((prev) => {
         if (prev <= nextMax) return prev;
         syncPhysicsMultiplier(nextMax);
@@ -71,7 +77,7 @@ const ThrustPanel = memo(function ThrustPanel({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === KEY_THRUST_INCREASE || e.code === KEY_THRUST_INCREASE_NP) {
         setThrustLevel((prev) => {
-          const next = Math.min(getThrustDialMax(), parseFloat((prev + THRUST_STEP).toFixed(1)));
+          const next = Math.min(getThrustSelectableMax(), parseFloat((prev + THRUST_STEP).toFixed(1)));
           syncPhysicsMultiplier(next);
           return next;
         });
@@ -107,11 +113,11 @@ const ThrustPanel = memo(function ThrustPanel({
         userSelect: 'none' as const,
       };
 
-  const sliderClassName = `thrust-slider${isDanger ? ' danger' : ''}${embedded ? ' thrust-slider--vertical' : ''}`;
+  const sliderClassName = `thrust-slider${isDanger ? ' danger' : ''}${thrustCapUnlocked ? ' unlocked' : ''}${embedded ? ' thrust-slider--vertical' : ''}`;
   const displayLevel = Math.min(thrustLevel, dialMax);
 
   const onSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const v = Math.min(dialMax, parseFloat(e.target.value));
+    const v = Math.min(getThrustSelectableMax(), parseFloat(e.target.value));
     setThrustLevel(v);
     syncPhysicsMultiplier(v);
   };
@@ -123,7 +129,9 @@ const ThrustPanel = memo(function ThrustPanel({
           {displayLevel.toFixed(1)}×{isDanger ? ' ⚠' : ''}
         </div>
         <div className="thrust-slider-column">
-          <span className="thrust-tick thrust-tick--max">{dialMax}×</span>
+          <span className="thrust-tick thrust-tick--max">
+            {dialMax}× {thrustCapUnlocked ? 'FAST CAP UNLOCKED' : 'SLOW CAP 3×'}
+          </span>
           <div className="thrust-slider-wrap">
             <input
               type="range"
@@ -173,7 +181,7 @@ const ThrustPanel = memo(function ThrustPanel({
         }}
       >
         <span>{THRUST_MIN}×</span>
-        <span>{dialMax}×</span>
+        <span>{dialMax}× {thrustCapUnlocked ? 'FAST CAP UNLOCKED' : 'SLOW CAP 3×'}</span>
       </div>
     </div>
   );

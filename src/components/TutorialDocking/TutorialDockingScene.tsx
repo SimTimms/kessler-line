@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
 import { shipPosRef } from '../../context/ShipPos';
 import { scrapperIntroActive } from '../../context/CinematicState';
-import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
+import { CANVAS_FOV, CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator';
 import { SpaceStation } from '../SpaceStation';
@@ -119,7 +119,7 @@ export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props
   return (
     <Canvas
       style={{ width: '100vw', height: '100vh', background: '#000000', touchAction: 'none' }}
-      camera={{ near: CANVAS_NEAR, far: CANVAS_FAR }}
+      camera={{ fov: CANVAS_FOV, near: CANVAS_NEAR, far: CANVAS_FAR }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,

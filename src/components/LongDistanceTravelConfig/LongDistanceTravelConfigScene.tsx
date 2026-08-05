@@ -18,6 +18,7 @@ import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
 import SalvageField from '../SalvageConfig/SalvageField';
 import NormalTravelZoneRing from '../FastTravel/NormalTravelZoneRing';
+import { CANVAS_FOV } from '../../config/visualConfig';
 import {
   getLtdNeptuneNormalTravelZoneRadius,
   getLtdNeptuneZoneCenter,
@@ -137,6 +138,7 @@ export default function LongDistanceTravelConfigScene() {
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...tutorialFollowOffset],
         near: canvasNear,
         far: canvasFar,

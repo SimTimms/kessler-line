@@ -24,6 +24,8 @@ export const NAV_SHIP_THRUSTER_SCREEN_PX = 6;
 export const FOG_COLOR = 0x000000;
 /** Exponential fog density. Lower = thinner fog. */
 export const FOG_DENSITY = 0.00004;
+/** R3F Canvas camera field of view (degrees). */
+export const CANVAS_FOV = 50;
 /** R3F Canvas camera near clip plane. */
 export const CANVAS_NEAR = 0.01;
 /** R3F Canvas camera far clip plane. */

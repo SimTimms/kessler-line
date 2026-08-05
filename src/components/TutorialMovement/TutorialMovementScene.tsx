@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
 import TutorialStepWatcher from '../TutorialShared/TutorialStepWatcher';
 import { shipPosRef } from '../../context/ShipPos';
-import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
+import { CANVAS_FOV, CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator';
 import DefaultLighting from '../DefaultLighting';
@@ -36,7 +36,7 @@ export default memo(function TutorialMovementScene({ onStepAdvance }: LunarTutor
     <>
       <Canvas
         style={{ width: '100vw', height: '100vh', background: fogColor, touchAction: 'none' }}
-        camera={{ near: CANVAS_NEAR, far: CANVAS_FAR }}
+        camera={{ fov: CANVAS_FOV, near: CANVAS_NEAR, far: CANVAS_FAR }}
         gl={{
           logarithmicDepthBuffer: true,
           toneMapping: THREE.ACESFilmicToneMapping,

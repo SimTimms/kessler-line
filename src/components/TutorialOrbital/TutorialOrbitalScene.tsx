@@ -6,7 +6,7 @@ import TutorialStepWatcher from '../TutorialShared/TutorialStepWatcher';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator';
 import { shipPosRef } from '../../context/ShipPos';
-import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
+import { CANVAS_FOV, CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import DefaultLighting from '../DefaultLighting';
 import {
   SHIP_PARTICLE_COUNT,
@@ -55,6 +55,7 @@ export default function TutorialOrbitalScene({ onStepAdvance }: TutorialOrbitalS
       <Canvas
         style={{ width: '100vw', height: '100vh', background: fogColor, touchAction: 'none' }}
         camera={{
+          fov: CANVAS_FOV,
           position: [spawnCameraPosition.x, spawnCameraPosition.y, spawnCameraPosition.z],
           near: CANVAS_NEAR,
           far: CANVAS_FAR,

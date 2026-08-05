@@ -47,7 +47,7 @@ import { RadioBeacons } from './RadioBeacons';
 import CinematicController from '../components/Cinematic/CinematicController';
 import { SPACE_STATION_DEF, ASTEROID_DOCK_DEF } from '../config/worldConfig';
 import { START_ZONE_CENTER } from '../config/spawnConfig';
-import { CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../config/visualConfig';
+import { CANVAS_FOV, CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../config/visualConfig';
 import {
   SHIP_PARTICLE_COUNT,
   SHIP_PARTICLE_SPEED_MIN,
@@ -150,7 +150,7 @@ export default function Scene() {
   return (
     <Canvas
       style={{ width: '100vw', height: '100vh', background: '#000000', touchAction: 'none' }}
-      camera={{ near: CANVAS_NEAR, far: CANVAS_FAR }}
+      camera={{ fov: CANVAS_FOV, near: CANVAS_NEAR, far: CANVAS_FAR }}
       shadows="soft"
       gl={{
         logarithmicDepthBuffer: true,

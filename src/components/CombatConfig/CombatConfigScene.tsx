@@ -22,6 +22,7 @@ import DustCloud from '../DustCloud/DustCloud';
 import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
 import NpcFighter from '../NPCs/NpcFighter';
 import { COMBAT_CONFIG, COMBAT_ID_PREFIX, getCombatShipSpawn } from './combatSceneConfig';
+import { CANVAS_FOV } from '../../config/visualConfig';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
@@ -148,6 +149,7 @@ export default function CombatConfigScene() {
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...tutorialFollowOffset],
         near: canvasNear,
         far: canvasFar,

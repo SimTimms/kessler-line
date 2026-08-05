@@ -111,6 +111,61 @@ const BILL_CHURCHILL: DockContact = {
   },
 };
 
+const ELIAS_VOSS: DockContact = {
+  id: 'elias-voss',
+  name: 'Elias Voss',
+  role: 'official',
+  age: 44,
+  company: 'Mars Transit Authority',
+  portrait: '/profiles/scab-captain.png',
+  bio: 'Comms officer assigned to Donington traffic control and orbital deployment clearances.',
+  platform: 'REACH',
+  dialogue: {
+    id: 'elias-voss-satellite-deployment',
+    openingTurnId: 'intro',
+    turns: {
+      intro: {
+        id: 'intro',
+        npcText:
+          'Comms Officer Elias Voss, Mars Transit Authority. We need an orbital survey satellite deployed today. One cargo container outside Bay A1 is tagged "Orbital Survey Satellite."',
+        playerOptions: [
+          {
+            id: 'accept',
+            label: 'Accept deployment task',
+            text: 'Understood. I will tow the satellite container and deploy it into Mars orbit.',
+            nextTurnId: 'brief',
+          },
+          {
+            id: 'decline',
+            label: 'Not now',
+            text: 'Negative. I am not ready to run that deployment yet.',
+            nextTurnId: null,
+          },
+        ],
+      },
+      brief: {
+        id: 'brief',
+        npcText:
+          'Procedure is simple: dock with the marked container, tow it to a stable Mars orbit, then undock to release. Keep periapsis and apoapsis above the atmosphere and avoid high radial drift before separation.',
+        playerOptions: [
+          {
+            id: 'ack',
+            label: 'Acknowledge',
+            text: 'Copy all. I will report once the satellite is deployed.',
+            nextTurnId: null,
+          },
+          {
+            id: 'repeat',
+            label: 'Repeat procedure',
+            text: 'Repeat the deployment checklist.',
+            nextTurnId: 'brief',
+          },
+        ],
+      },
+    },
+  },
+};
+
 const HANK_JOHNSON: DockContact = {
   id: 'hank-johnson',
   name: 'Hank Johnson',
@@ -180,7 +235,7 @@ export const DONINGTON_STATION_DOCK_CONFIG: DockConfig = {
       { itemId: 'reaction-mass', quantity: 4, capacity: 30, supply: 0.25, demand: 0.5 },
     ],
   },
-  contacts: [BILL_CHURCHILL],
+  contacts: [BILL_CHURCHILL, ELIAS_VOSS],
   jobBoard: [],
 };
 

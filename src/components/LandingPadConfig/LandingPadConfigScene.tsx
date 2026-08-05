@@ -13,6 +13,7 @@ import DustCloud from '../DustCloud/DustCloud';
 import LandingPad from '../WorldObjects/LandingPad';
 import { LandingPadConfig } from './LandingPadConfigFile';
 import Spaceship from '../Ship/Spaceship';
+import { CANVAS_FOV } from '../../config/visualConfig';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -50,6 +51,7 @@ export default function LandingPadConfigScene() {
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...LandingPadConfig.cameraPosition],
         near: LandingPadConfig.scene.canvasNear,
         far: LandingPadConfig.scene.canvasFar,

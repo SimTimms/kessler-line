@@ -658,6 +658,18 @@ body {
   box-shadow: 0 0 7px rgba(255, 40, 140, 0.85);
 }
 
+.thrust-slider.unlocked {
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.35);
+}
+
+.thrust-slider.unlocked::-webkit-slider-thumb {
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.7);
+}
+
+.thrust-slider.unlocked::-moz-range-thumb {
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.7);
+}
+
 /* ── Proximity slider ────────────────────────────────────────────────────── */
 
 .prox-slider {

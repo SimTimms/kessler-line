@@ -13,6 +13,7 @@ import CollisionPhysicsTestRig from '../Debug/CollisionPhysicsTestRig';
 import CollisionDebug from '../Debug/CollisionDebug';
 import Spaceship from '../Ship/Spaceship';
 import { SpaceshipConfig } from './SpaceshipConfig';
+import { CANVAS_FOV } from '../../config/visualConfig';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -54,6 +55,7 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...SpaceshipConfig.cameraPosition],
         near: SpaceshipConfig.scene.canvasNear,
         far: SpaceshipConfig.scene.canvasFar,

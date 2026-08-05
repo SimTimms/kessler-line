@@ -1,5 +1,5 @@
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import Spaceship from '../Ship/Spaceship';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
@@ -11,6 +11,7 @@ import PlayerBullets from '../Combat/PlayerBullets';
 import PlayerCannonHitDamage from '../Combat/PlayerCannonHitDamage';
 import BreakupVfx from '../Combat/BreakupVfx';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
+import CollisionDebug from '../Debug/CollisionDebug';
 import { useSaveSystem } from '../../hooks/useSaveSystem';
 import { loadSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../context/SaveStore';
 import { apply, savedQuaternionToEuler } from '../../context/SaveManager';
@@ -25,6 +26,11 @@ import SalvageField from '../SalvageConfig/SalvageField';
 import NormalTravelZoneRing from '../FastTravel/NormalTravelZoneRing';
 import CargoContainer from '../CargoContainer/CargoContainer';
 import { CARGO_CONTAINER_DOCK } from '../../config/docks/cargoContainerDockConfig';
+import type { DockConfig } from '../../config/dockConfig';
+import { getCargoContainer } from '../../context/CargoContainerRegistry';
+import { orbitStatusRef } from '../../context/ShipState';
+import { addMessage } from '../../context/MessageStore';
+import { pushAlert } from '../../context/AlertsStore';
 import {
   getNarrativeMarsNormalTravelRadius,
   getNarrativeMarsZoneCenter,
@@ -36,6 +42,8 @@ import {
   NARRATIVE_MARS_ZONE_ID,
   NARRATIVE_PRIMARY_FIELD_ID_PREFIX,
   NARRATIVE_PRIMARY_ZONE_ID,
+  NARRATIVE_SATELLITE_CONTAINER_LABEL,
+  NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID,
   NARRATIVE_SECONDARY_FIELD_ID_PREFIX,
   NARRATIVE_SECONDARY_ZONE_ID,
 } from './narrativeSceneConfig';
@@ -43,14 +51,84 @@ import {
   BAKERFIELD_FALLS_DOCK_CONFIG,
   DONINGTON_STATION_DOCK_CONFIG,
 } from '../../config/docks/narrativeDockConfig';
+import { CANVAS_FOV } from '../../config/visualConfig';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
+const SATELLITE_ORBIT_MIN_ALTITUDE = 20_000;
+const SATELLITE_ORBIT_MAX_ALTITUDE = 220_000;
+const SATELLITE_ORBIT_MAX_APSIDES_SPREAD = 120_000;
+const SATELLITE_ORBIT_MAX_RADIAL_SPEED = 120;
 
 function SaveSystemBridge() {
   useSaveSystem({
     autosaveSlot: NARRATIVE_AUTOSAVE_SLOT,
     manualSlot: NARRATIVE_MANUAL_SLOT,
   });
+  return null;
+}
+
+function isStableMarsOrbitForDeployment(): boolean {
+  const status = orbitStatusRef.current;
+  if (status.bodyId !== 'Mars' || status.isOrbiting !== true) return false;
+  const minRadius = status.surfaceRadius + SATELLITE_ORBIT_MIN_ALTITUDE;
+  const maxRadius = status.surfaceRadius + SATELLITE_ORBIT_MAX_ALTITUDE;
+  if (status.periapsis < minRadius || status.periapsis > maxRadius) return false;
+  if (status.apoapsis < minRadius || status.apoapsis > maxRadius) return false;
+  if (Math.abs(status.apoapsis - status.periapsis) > SATELLITE_ORBIT_MAX_APSIDES_SPREAD) return false;
+  if (Math.abs(status.radialVelocity) > SATELLITE_ORBIT_MAX_RADIAL_SPEED) return false;
+  return true;
+}
+
+function NarrativeSatelliteMissionController({ satelliteContainerId }: { satelliteContainerId: string }) {
+  const missionArmedRef = useRef(false);
+  const releaseHintShownRef = useRef(false);
+  const completedRef = useRef(false);
+  const wasTowedRef = useRef(false);
+
+  useFrame(() => {
+    if (completedRef.current) return;
+
+    const satellite = getCargoContainer(satelliteContainerId);
+    if (!satellite || satellite.isConsumed()) return;
+
+    const isTowed = satellite.isTowed();
+    if (isTowed && !missionArmedRef.current) {
+      missionArmedRef.current = true;
+      pushAlert('Mission Updated: tow the satellite to stable Mars orbit, then release it.', 'yellow');
+      addMessage({
+        id: 'narrative-satellite-mission-brief',
+        from: 'Comms Officer Elias Voss',
+        subject: 'Deployment Briefing',
+        body: 'Satellite package acquired. Move to stable Mars orbit and undock the Orbital Survey Satellite container to deploy.',
+        platform: 'REACH',
+      });
+    }
+
+    if (isTowed && missionArmedRef.current && !releaseHintShownRef.current && isStableMarsOrbitForDeployment()) {
+      releaseHintShownRef.current = true;
+      pushAlert('Stable Mars orbit confirmed. Undock now to deploy satellite.', 'blue');
+    }
+
+    if (wasTowedRef.current && !isTowed && missionArmedRef.current) {
+      if (isStableMarsOrbitForDeployment()) {
+        completedRef.current = true;
+        pushAlert('Mission Complete: Mars satellite deployed.', 'blue');
+        addMessage({
+          id: 'narrative-satellite-mission-complete',
+          from: 'Comms Officer Elias Voss',
+          subject: 'Deployment Confirmed',
+          body: 'Telemetry lock acquired. Satellite deployment is stable and complete. Excellent work, pilot.',
+          platform: 'REACH',
+        });
+      } else {
+        releaseHintShownRef.current = false;
+        pushAlert('Deployment failed: release the container only in stable Mars orbit.', 'red');
+      }
+    }
+
+    wasTowedRef.current = isTowed;
+  });
+
   return null;
 }
 
@@ -93,6 +171,18 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
   const shipSpawn = useMemo(() => getNarrativeShipSpawn(), []);
   const effectiveSpawn = savedSpawn ?? shipSpawn;
+  const satelliteContainerId = `${NARRATIVE_PRIMARY_FIELD_ID_PREFIX}${NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID}`;
+  const satelliteContainerDock = useMemo<DockConfig>(
+    () => ({
+      ...CARGO_CONTAINER_DOCK,
+      label: NARRATIVE_SATELLITE_CONTAINER_LABEL,
+      inventory: {
+        label: 'Satellite Payload',
+        slots: [{ itemId: 'orbital-survey-satellite', quantity: 1, capacity: 1, supply: 0.05, demand: 0.95 }],
+      },
+    }),
+    []
+  );
 
   const primaryFieldOrigin = useMemo((): [number, number, number] => {
     const o = getNarrativePrimaryFieldOrigin();
@@ -182,7 +272,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
               position={container.position}
               rotation={container.rotation}
               scale={container.scale}
-              dock={CARGO_CONTAINER_DOCK}
+              dock={container.id === NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID ? satelliteContainerDock : CARGO_CONTAINER_DOCK}
               showCaptureMesh
               debugJumpDockOnClick
             />
@@ -219,6 +309,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           center={marsZoneCenter}
           radius={marsZoneRadius}
         />
+        <NarrativeSatelliteMissionController satelliteContainerId={satelliteContainerId} />
       </Suspense>
     </>
   );
@@ -233,6 +324,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...tutorialFollowOffset],
         near: canvasNear,
         far: canvasFar,
@@ -259,6 +351,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
       <SunGravity />
       <SaveSystemBridge />
       <SharedInteractionSceneTools />
+      <CollisionDebug />
       <ShipDepthOfField saturation={0} />
     </Canvas>
   );

@@ -5,6 +5,7 @@ import { shipPosRef } from '../../context/ShipPos';
 import DefaultLighting from '../DefaultLighting';
 import { useRef } from 'react';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
+import { CANVAS_FOV, CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 
 const CAMERA_OFFSET: [number, number, number] = [0, 14, -40];
 
@@ -20,14 +21,15 @@ export default function EmptySceneCanvas() {
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...CAMERA_OFFSET],
-        near: 0.01,
-        far: 100_000_000,
+        near: CANVAS_NEAR,
+        far: CANVAS_FAR,
       }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 0.9,
+        toneMappingExposure: TONE_MAPPING_EXPOSURE,
       }}
     >
       <DefaultLighting />

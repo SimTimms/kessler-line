@@ -12,6 +12,7 @@ import SalvageField from '../SalvageConfig/SalvageField';
 import Spaceship from '../Ship/Spaceship';
 import MiningDrone from '../Drone/MiningDrone';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
+import { CANVAS_FOV } from '../../config/visualConfig';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -51,6 +52,7 @@ export default function DroneConfigScene() {
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...DroneConfigData.cameraPosition],
         near: scene.canvasNear,
         far: scene.canvasFar,

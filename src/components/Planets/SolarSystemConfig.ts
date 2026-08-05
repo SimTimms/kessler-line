@@ -15,7 +15,7 @@ import type { PlanetType } from './SolarSystemType';
 const ORBIT_SPEED = 510;
 const r = (realKm: number) => Math.pow(realKm / 696_340, 0.2) * SUN_RADIUS_BASE;
 
-const MARS_LOCAL_RADIUS = r(3_390);
+const MARS_LOCAL_RADIUS = r(13_390);
 
 const orbit = (au: number) => 5500 * Math.pow(au / 30.07, 0.4);
 const ov = (years: number) => (2 * Math.PI) / (years * 21_600);
@@ -95,9 +95,9 @@ export const PLANETS: PlanetType[] = [
     name: 'Mars',
     radius: MARS_LOCAL_RADIUS, // ≈  71
     orbitRadius: orbit(1.524 * SUN_RADIUS_BASE), // ≈ 1672
-    orbitY: -40,
+    orbitY: -46,
     orbitalSpeed: ov(1.881 * ORBIT_SPEED),
-    spinSpeed: sv(1.03),
+    spinSpeed: sv(1.03) * 0.1,
     axialTilt: 25.2 * (Math.PI / 180),
     initialAngle: 4.2,
     color: '#c1440e',

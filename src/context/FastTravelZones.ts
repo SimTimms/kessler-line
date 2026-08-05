@@ -91,9 +91,9 @@ function clampZoneCap(value: number): number {
  */
 function thrustCapForBand(band: TravelBand): number {
   if (zones.size === 0) return 0;
-  if (band === 'fast') return clampZoneCap(FAST_TRAVEL_THRUST_MULTIPLIER);
-  // Inner and mid share the normal-travel thrust ceiling.
-  return clampZoneCap(NORMAL_TRAVEL_THRUST_MULTIPLIER);
+  if (band === 'inner') return clampZoneCap(NORMAL_TRAVEL_THRUST_MULTIPLIER);
+  // Mid (outer half) and fast both allow the fast-travel ceiling.
+  return clampZoneCap(FAST_TRAVEL_THRUST_MULTIPLIER);
 }
 
 /**

@@ -19,10 +19,10 @@
 export const NORMAL_TRAVEL_THRUST_MULTIPLIER = 3;
 
 /** Max thrust multiplier while fully outside normal-travel pockets. */
-export const FAST_TRAVEL_THRUST_MULTIPLIER = 50;
+export const FAST_TRAVEL_THRUST_MULTIPLIER = 7500;
 
 /** Hard ceiling for zone thrust caps (future tuning / ramp). */
-export const FAST_TRAVEL_MAX_THRUST_MULTIPLIER = 50;
+export const FAST_TRAVEL_MAX_THRUST_MULTIPLIER = 7500;
 
 /**
  * Inner-core entry brake target (m/s) when crossing into the half-radius ring.
@@ -43,16 +43,16 @@ export const NORMAL_TRAVEL_INNER_ENTRY_MAX_SPEED = 50;
 export const NORMAL_TRAVEL_ENTRY_BRAKE_ACCEL = 25_000;
 
 /** Above this speed (m/s): red Alerts HUD warning. */
-export const FAST_TRAVEL_CREW_RISK_SPEED = 1000;
+export const FAST_TRAVEL_CREW_RISK_SPEED = 5_000;
 
 /**
  * At or above this speed (m/s): block thrust that would further increase
  * speed along the current travel direction (forward or reverse engines).
  */
-export const FAST_TRAVEL_ENGINE_CUTOFF_SPEED = 12_000;
+export const FAST_TRAVEL_ENGINE_CUTOFF_SPEED = 60_000;
 
 /** At or above this speed (m/s): ship is destroyed. */
-export const FAST_TRAVEL_DEATH_SPEED = 15_000;
+export const FAST_TRAVEL_DEATH_SPEED = 75_000;
 
 /** Default grey dashed ring styling for normal-travel boundary visuals. */
 export const NORMAL_TRAVEL_RING_COLOR = 0x888888;

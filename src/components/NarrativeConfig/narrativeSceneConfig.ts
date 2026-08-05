@@ -11,6 +11,8 @@ export const NARRATIVE_SECONDARY_FIELD_ID_PREFIX = 'narrative-b-';
 export const NARRATIVE_PRIMARY_ZONE_ID = 'narrative-primary-normal';
 export const NARRATIVE_SECONDARY_ZONE_ID = 'narrative-secondary-normal';
 export const NARRATIVE_MARS_ZONE_ID = 'narrative-mars-normal';
+export const NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID = 'cargo-17';
+export const NARRATIVE_SATELLITE_CONTAINER_LABEL = 'Orbital Survey Satellite';
 
 /** Primary salvage hub sits just outside Mars SOI. */
 const PRIMARY_FIELD_MARGIN_OUTSIDE_MARS_SOI = 12_000;
@@ -47,9 +49,11 @@ const EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD: Array<{
   for (let row = 0; row < rowCount; row += 1) {
     for (let column = 0; column < containersPerRow; column += 1) {
       const index = row * containersPerRow + column + 1;
+      const id = `cargo-${index.toString().padStart(2, '0')}`;
       containers.push({
-        id: `cargo-${index.toString().padStart(2, '0')}`,
-        label: '',
+        id,
+        label:
+          id === NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID ? NARRATIVE_SATELLITE_CONTAINER_LABEL : '',
         position: [
           basePosition[0] + column * columnGap,
           basePosition[1],
@@ -132,11 +136,8 @@ export function getNarrativeMarsZoneCenter(target = new THREE.Vector3()): THREE.
 
 export function getNarrativeMarsNormalTravelRadius(): number {
   const marsWorldRadius = getPlanetWorldRadius('Mars');
-  const marsSoiRadius = getMarsSoiRadius();
-  return Math.max(
-    marsWorldRadius,
-    Math.min(marsSoiRadius, marsWorldRadius + MARS_NORMAL_TRAVEL_ALTITUDE_FROM_SURFACE)
-  );
+  //const marsSoiRadius = getMarsSoiRadius();
+  return 100;
 }
 
 export const NARRATIVE_CONFIG = {

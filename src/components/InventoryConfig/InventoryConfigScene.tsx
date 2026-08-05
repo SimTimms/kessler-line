@@ -12,6 +12,7 @@ import DustCloud from '../DustCloud/DustCloud';
 import LandingPad from '../WorldObjects/LandingPad';
 import { InventoryConfig } from './InventoryConfigFile';
 import Spaceship from '../Ship/Spaceship';
+import { CANVAS_FOV } from '../../config/visualConfig';
 
 function CameraCapture() {
   const { camera } = useThree();
@@ -49,6 +50,7 @@ export default function InventoryConfigScene() {
         touchAction: 'none',
       }}
       camera={{
+        fov: CANVAS_FOV,
         position: [...InventoryConfig.cameraPosition],
         near: InventoryConfig.scene.canvasNear,
         far: InventoryConfig.scene.canvasFar,

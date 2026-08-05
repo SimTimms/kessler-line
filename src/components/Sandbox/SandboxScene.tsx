@@ -22,6 +22,7 @@ import {
   SANDBOX_BATTLESHIP_ORBIT,
 } from './sandboxConfig';
 import { Asteroid } from '../TutorialResources/Asteroid';
+import { CANVAS_FOV } from '../../config/visualConfig';
 import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
 import { Station } from '../Station/Station';
 import DustCloud from '../DustCloud/DustCloud';
@@ -147,6 +148,7 @@ export default function SandboxScene() {
           touchAction: 'none',
         }}
         camera={{
+          fov: CANVAS_FOV,
           position: [...tutorialFollowOffset],
           near: canvasNear,
           far: canvasFar,

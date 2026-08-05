@@ -13,6 +13,7 @@ import { gravityBodies } from '../../context/GravityRegistry';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { registerMagnetic, unregisterMagnetic } from '../../context/MagneticRegistry';
 import { registerDriveSignature, unregisterDriveSignature } from '../../context/DriveSignatureRegistry';
+import { CANVAS_FOV, CANVAS_NEAR, CANVAS_FAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 
 const NAV_SCENE_FOG = '#000000';
 const NAV_PLANET_ID = 'nav-config-planet';
@@ -154,11 +155,11 @@ export default function ShipNavigationConfigScene({
         background: NAV_SCENE_FOG,
         touchAction: 'none',
       }}
-      camera={{ position: [0, 120, 280], near: 0.01, far: 100_000_000 }}
+      camera={{ fov: CANVAS_FOV, position: [0, 120, 280], near: CANVAS_NEAR, far: CANVAS_FAR }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 0.9,
+        toneMappingExposure: TONE_MAPPING_EXPOSURE,
       }}
       shadows
     >

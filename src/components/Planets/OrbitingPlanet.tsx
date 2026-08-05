@@ -505,6 +505,7 @@ function PlanetGlowSprite({ glowTextureUrl, radius, tint, opacity }: PlanetGlowS
 
 interface PlanetSurfaceMaterialProps {
   textureUrl: string;
+  normalMapUrl?: string;
   color: string;
   emissive: string;
   emissiveMap: THREE.Texture | null;
@@ -512,10 +513,14 @@ interface PlanetSurfaceMaterialProps {
   roughness: number;
   bumpMap: THREE.Texture | null;
   bumpScale: number;
+  displacementMap: THREE.Texture | null;
+  displacementScale: number;
+  displacementBias: number;
 }
 
 function PlanetSurfaceMaterial({
   textureUrl,
+  normalMapUrl,
   color,
   emissive,
   emissiveMap,
@@ -523,9 +528,14 @@ function PlanetSurfaceMaterial({
   roughness,
   bumpMap,
   bumpScale,
+  displacementMap,
+  displacementScale,
+  displacementBias,
 }: PlanetSurfaceMaterialProps) {
-  const map = useTexture(textureUrl);
+  const [map, normalMap] = useTexture([textureUrl, normalMapUrl ?? textureUrl]);
   map.colorSpace = THREE.SRGBColorSpace;
+  // If bumpMap is present, let it drive relief; normalMap would otherwise override it.
+  const materialNormalMap = bumpMap ? null : normalMapUrl ? normalMap : null;
   return (
     <meshStandardMaterial
       color={color}
@@ -534,6 +544,7 @@ function PlanetSurfaceMaterial({
       emissiveIntensity={emissiveIntensity}
       roughness={roughness}
       map={map}
+      normalMap={materialNormalMap}
       bumpMap={bumpMap}
       bumpScale={bumpScale}
       fog={false}
@@ -551,6 +562,7 @@ interface OrbitingPlanetProps {
   /** White/grayscale radial PNG in public/ — replaces the procedural glow when set. */
   glowTextureUrl?: string;
   textureUrl?: string;
+  normalMapUrl?: string;
   emissive?: string;
   orbitalSpeed: number; // rad/s
   spinSpeed: number; // rad/s (negative = retrograde)
@@ -575,6 +587,7 @@ export default function OrbitingPlanet({
   glowColor,
   glowTextureUrl,
   textureUrl,
+  normalMapUrl,
   emissive = '#000000',
   orbitalSpeed,
   spinSpeed,
@@ -597,7 +610,8 @@ export default function OrbitingPlanet({
   const prevWorldPosRef = useRef(new THREE.Vector3());
   const hasPrevWorldPosRef = useRef(false);
 
-  useRegisterPlanetCollider(planetCenterRef, planetName, gravitySurfaceRadius);
+  const colliderSurfaceRadius = planetName === 'Mars' ? undefined : gravitySurfaceRadius;
+  useRegisterPlanetCollider(planetCenterRef, planetName, colliderSurfaceRadius);
 
   const soiRing = useMemo(() => {
     if (gravitySoiRadius === undefined || gravitySurfaceRadius === undefined) return null;
@@ -635,6 +649,7 @@ export default function OrbitingPlanet({
     if (planetName === 'Neptune') return buildNeptuneBumpMap();
     return buildMarsBumpMap();
   }, [useBumpMap, planetName]);
+  const marsNormalTexture = useTexture('/mars-normal.jpg');
 
   const isNeptune = planetName === 'Neptune';
   const materialColor = isNeptune ? '#84c8ff' : color;
@@ -643,6 +658,11 @@ export default function OrbitingPlanet({
   const materialEmissiveIntensity = showColonies ? 0.45 : isNeptune ? 1.15 : 1.0;
   const materialRoughness = isNeptune ? 0.62 : 0.8;
   const materialBumpScale = useBumpMap ? (isNeptune ? -0.35 : -0.6) : 0;
+  const resolvedBumpMap = planetName === 'Mars' ? marsNormalTexture : bumpTexture;
+  const resolvedBumpScale = planetName === 'Mars' ? 4.0 : materialBumpScale;
+  const resolvedDisplacementMap = useBumpMap ? resolvedBumpMap : null;
+  const resolvedDisplacementScale = useBumpMap ? 0.0 : 0;
+  const resolvedDisplacementBias = useBumpMap ? 100.0 : 0;
   const glowOpacity = glowTextureUrl ? 0.04 : isNeptune ? 0.028 : 0.005;
   const glowTint = glowColor ?? color;
   const neptuneRimMaterial = useMemo(() => {
@@ -783,21 +803,28 @@ export default function OrbitingPlanet({
                           emissiveMap={coloniesTexture}
                           emissiveIntensity={materialEmissiveIntensity}
                           roughness={materialRoughness}
-                          bumpMap={bumpTexture}
-                          bumpScale={materialBumpScale}
+                          bumpMap={resolvedBumpMap}
+                          bumpScale={resolvedBumpScale}
+                          displacementMap={resolvedDisplacementMap}
+                          displacementScale={resolvedDisplacementScale}
+                          displacementBias={resolvedDisplacementBias}
                           fog={false}
                         />
                       }
                     >
                       <PlanetSurfaceMaterial
                         textureUrl={textureUrl}
+                        normalMapUrl={normalMapUrl}
                         color={materialColor}
                         emissive={materialEmissive}
                         emissiveMap={coloniesTexture}
                         emissiveIntensity={materialEmissiveIntensity}
                         roughness={materialRoughness}
-                        bumpMap={bumpTexture}
-                        bumpScale={materialBumpScale}
+                        bumpMap={resolvedBumpMap}
+                        bumpScale={resolvedBumpScale}
+                        displacementMap={resolvedDisplacementMap}
+                        displacementScale={resolvedDisplacementScale}
+                        displacementBias={resolvedDisplacementBias}
                       />
                     </Suspense>
                   ) : (
@@ -807,8 +834,11 @@ export default function OrbitingPlanet({
                       emissiveMap={coloniesTexture}
                       emissiveIntensity={materialEmissiveIntensity}
                       roughness={materialRoughness}
-                      bumpMap={bumpTexture}
-                      bumpScale={materialBumpScale}
+                      bumpMap={resolvedBumpMap}
+                      bumpScale={resolvedBumpScale}
+                      displacementMap={resolvedDisplacementMap}
+                      displacementScale={resolvedDisplacementScale}
+                      displacementBias={resolvedDisplacementBias}
                       fog={false}
                     />
                   )}

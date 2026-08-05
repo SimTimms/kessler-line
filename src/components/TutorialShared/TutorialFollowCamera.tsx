@@ -12,10 +12,10 @@ import {
 import { KEY_TOGGLE_CAMERA_DECOUPLE } from '../../config/keybindings';
 import { sceneCamera } from '../../context/CameraRef';
 import { cameraModeRef, toggleCameraMode } from '../../context/CameraMode';
-import {
-  clampCameraForInboundPlanetHold,
-  shouldHoldCameraForPlanetImpact,
-} from '../../utils/tutorialPlanetCameraHold';
+// import {
+//   clampCameraForInboundPlanetHold,
+//   shouldHoldCameraForPlanetImpact,
+// } from '../../utils/tutorialPlanetCameraHold';
 
 /**
  * Persists across React remounts so nav view is not lost when the general-movement
@@ -258,13 +258,13 @@ export default function TutorialFollowCamera({
       _desiredCameraPos.copy(_target).add(_worldOffset);
     }
 
-    if (
-      planetImpactCameraHoldMaxAltitude !== undefined &&
-      !tutorialNavViewModeRef.current &&
-      shouldHoldCameraForPlanetImpact(planetImpactCameraHoldMaxAltitude)
-    ) {
-      clampCameraForInboundPlanetHold(_desiredCameraPos, planetImpactCameraHoldMaxAltitude);
-    }
+    // if (
+    //   planetImpactCameraHoldMaxAltitude !== undefined &&
+    //   !tutorialNavViewModeRef.current &&
+    //   shouldHoldCameraForPlanetImpact(planetImpactCameraHoldMaxAltitude)
+    // ) {
+    //   clampCameraForInboundPlanetHold(_desiredCameraPos, planetImpactCameraHoldMaxAltitude);
+    // }
 
     const rollViewWithShip =
       followShipOrientation &&
