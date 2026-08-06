@@ -101,7 +101,6 @@ export default function InventoryConfigScene() {
               scale={InventoryConfig.landingPadScale}
               dock={pad.dock}
               landingPadThreshold={InventoryConfig.landingPadThreshold}
-              debugJumpDockOnClick
             />
           </group>
         ))}

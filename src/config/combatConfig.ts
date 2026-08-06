@@ -2,13 +2,13 @@
 /** Light colour of the cursor-tracking spotlight. */
 export const LASER_SPOTLIGHT_COLOR = '#ffffff';
 /** Luminous intensity of the spotlight. */
-export const LASER_SPOTLIGHT_INTENSITY = 8;
+export const LASER_SPOTLIGHT_INTENSITY = 30;
 /** Half-angle of the spotlight cone (radians). */
-export const LASER_SPOTLIGHT_ANGLE = 0.58;
+export const LASER_SPOTLIGHT_ANGLE = 0.2;
 /** Soft-edge fraction (0 = hard edge, 1 = fully soft). */
 export const LASER_SPOTLIGHT_PENUMBRA = 0.85;
 /** Physically-based distance falloff exponent (lower = slower falloff). */
-export const LASER_SPOTLIGHT_DECAY = 0.2;
+export const LASER_SPOTLIGHT_DECAY = 0.4;
 /**
  * Maximum range of the spotlight in world units.
  * 0 = unlimited (Three.js removes the hard cutoff; falloff is governed by decay only).

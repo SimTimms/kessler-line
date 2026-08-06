@@ -22,8 +22,6 @@ interface DockingBayProps {
   dockingProfile?: DockCaptureProfile;
   /** Render the translucent capture box mesh (debug/authoring aid). */
   showCaptureMesh?: boolean;
-  /** Debug helper: clicking the bay simulates docking for UI testing. */
-  debugDockOnClick?: boolean;
 }
 
 export default function DockingBay({
@@ -36,7 +34,6 @@ export default function DockingBay({
   dock,
   dockingProfile,
   showCaptureMesh = true,
-  debugDockOnClick = false,
 }: DockingBayProps) {
   const COLLISION_ID = stationId ? `docking-bay-${stationId}` : `docking-bay-${Math.random()}`;
 
@@ -88,11 +85,6 @@ export default function DockingBay({
         onClick={(e) => {
           e.stopPropagation();
           selectTarget(COLLISION_ID);
-          if (debugDockOnClick) {
-            window.dispatchEvent(
-              new CustomEvent('ShipDocked', { detail: { stationId: stationId ?? null } })
-            );
-          }
         }}
         scale={scale}
         position={position}

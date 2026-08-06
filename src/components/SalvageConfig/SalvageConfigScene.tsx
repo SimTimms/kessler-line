@@ -103,7 +103,7 @@ export default function SalvageConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <SalvageField origin={[0, 0, 0]} debugJumpDockOnClick />
+        <SalvageField origin={[0, 0, 0]} />
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls

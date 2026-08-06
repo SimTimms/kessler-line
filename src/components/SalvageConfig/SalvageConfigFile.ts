@@ -90,6 +90,8 @@ export const SalvageConfigData = {
    * each with a distinct yaw.
    */
   asteroids: buildSalvageAsteroidField(),
+  /** Normal map strength for the decorative rocks. 1 = as authored, 0 = flat. */
+  asteroidNormalScale: 0.05,
   /** Mineable rocks authored with the field (local to SalvageField origin). */
   mineableAsteroids: [
     {

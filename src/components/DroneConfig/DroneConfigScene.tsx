@@ -107,7 +107,6 @@ export default function DroneConfigScene() {
         <SalvageField
           origin={[0, 0, 0]}
           idPrefix="drone-"
-          debugJumpDockOnClick
           showDroneAtmosphere
         />
       </Suspense>

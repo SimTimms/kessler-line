@@ -25,7 +25,6 @@ import {
   CONTAINER_VELOCITY_DAMPING,
 } from '../../config/containerConfig';
 import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
-import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipPosRef } from '../../context/ShipPos';
 import { shipQuaternion, shipVelocity } from '../../context/ShipState';
 import {
@@ -85,8 +84,6 @@ export interface CargoContainerProps {
   /** Full-size docking-port capture box dimensions. */
   portDimensions?: [number, number, number];
   showCaptureMesh?: boolean;
-  /** Inventory/authoring debug: click teleports the ship and starts docking. */
-  debugJumpDockOnClick?: boolean;
   /** Initial world-space drift velocity (XZ plane) applied on spawn. */
   initialVelocity?: [number, number, number];
 }
@@ -104,7 +101,6 @@ export default function CargoContainer({
   portLocalOffset = CARGO_CONTAINER_PORT_LOCAL_OFFSET,
   portDimensions = CARGO_CONTAINER_PORT_DIMENSIONS,
   showCaptureMesh = true,
-  debugJumpDockOnClick = false,
   initialVelocity = [0, 0, 0],
 }: CargoContainerProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
@@ -367,11 +363,6 @@ export default function CargoContainer({
         e.stopPropagation();
         if (consumedRef.current) return;
         selectTarget(displayLabel);
-        if (debugJumpDockOnClick) {
-          window.dispatchEvent(
-            new CustomEvent(EVENT_DEBUG_JUMP_DOCK, { detail: { stationId: id } })
-          );
-        }
       }}
     >
       <group position={[meshOffset.x, meshOffset.y, meshOffset.z]}>

@@ -9,6 +9,9 @@ let hissSource: AudioBufferSourceNode | null = null;
 let hissGainNode: GainNode | null = null;
 let engineSource: AudioBufferSourceNode | null = null;
 let engineGainNode: GainNode | null = null;
+let engineRumbleAudioEl: HTMLAudioElement | null = null;
+let engineRumbleMediaSource: MediaElementAudioSourceNode | null = null;
+let engineRumbleGainNode: GainNode | null = null;
 let scrapperEngineSource: AudioBufferSourceNode | null = null;
 let scrapperEngineGainNode: GainNode | null = null;
 let hullStressSource: AudioBufferSourceNode | null = null;
@@ -524,7 +527,7 @@ export function setAsteroidHiss(enabled: boolean, volume = 0.08): void {
   }
 }
 
-/** Continuous low-pass engine hiss while thrust is engaged. */
+/** Continuous low-pass engine hiss for RCS / reverse thrust. */
 export function setEngineHiss(enabled: boolean, volume = 0.06, cutoff = 420): void {
   try {
     const ac = getCtx();
@@ -569,6 +572,54 @@ export function setEngineHiss(enabled: boolean, volume = 0.06, cutoff = 420): vo
     source.start();
     engineSource = source;
     engineGainNode = gain;
+  } catch {
+    /* non-critical */
+  }
+}
+
+/** Continuous engine rumble (mp3) for forward thrust only. */
+export function setEngineRumble(enabled: boolean, volume = 0.06, pitch = 1.0): void {
+  try {
+    const ac = getCtx();
+    if (ac.state === 'suspended') ac.resume();
+
+    if (!enabled) {
+      if (engineRumbleGainNode) {
+        const now = ac.currentTime;
+        engineRumbleGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+      }
+      if (engineRumbleAudioEl) {
+        engineRumbleAudioEl.pause();
+      }
+      return;
+    }
+
+    if (!engineRumbleAudioEl) {
+      const audio = new Audio('/jerryblessed-space-rocket-launch-rumble-544846.mp3');
+      audio.loop = true;
+      audio.preservesPitch = false;
+      engineRumbleAudioEl = audio;
+
+      const source = ac.createMediaElementSource(audio);
+      engineRumbleMediaSource = source;
+
+      const gain = ac.createGain();
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+
+      source.connect(gain);
+      gain.connect(ac.destination);
+
+      engineRumbleGainNode = gain;
+    }
+
+    if (engineRumbleGainNode) {
+      engineRumbleGainNode.gain.cancelScheduledValues(ac.currentTime);
+      engineRumbleGainNode.gain.setValueAtTime(volume, ac.currentTime);
+    }
+    engineRumbleAudioEl.playbackRate = pitch;
+    if (engineRumbleAudioEl.paused) {
+      engineRumbleAudioEl.play();
+    }
   } catch {
     /* non-critical */
   }

@@ -352,7 +352,7 @@ export function runPrimaryPhysicsFrame({
   const activeMainEngines = getActiveMainEngines(vesselState);
   const mainThrust = fwd || (rev && activeMainEngines > 0);
   const rcsThrust = strL || strR || yawLeft || yawRight;
-  const anyThrusting = updateEngineAudio({ mainThrust, rcsThrust });
+  const anyThrusting = updateEngineAudio({ mainThrust, rcsThrust, fwdThrust: fwd });
   if (vesselState.shipDestroyed.current) {
     zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
   }

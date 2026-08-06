@@ -111,7 +111,7 @@ export default function LongDistanceTravelConfigScene() {
         <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
         <SolarSystem scale={solarSystemScale} />
         {/* Static salvage pocket — does not orbit with Neptune. */}
-        <SalvageField origin={fieldOrigin} idPrefix={LTD_SALVAGE_ID_PREFIX} debugJumpDockOnClick />
+        <SalvageField origin={fieldOrigin} idPrefix={LTD_SALVAGE_ID_PREFIX} />
         {/* Inside outer ring = staged normal travel; outside = full fast travel. */}
         <NormalTravelZoneRing
           id={LTD_NORMAL_TRAVEL_ZONE_ID}

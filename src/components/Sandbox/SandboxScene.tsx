@@ -131,7 +131,6 @@ export default function SandboxScene() {
             ],
             scale: 3,
             dock: ASTEROID_DOCK_CONFIG,
-            debugDockOnClick: true,
           }}
         ></UBoat>
       </BodyOrbit>

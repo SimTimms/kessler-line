@@ -21,6 +21,7 @@ import {
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { setFuel, setO2 } from '../../context/ShipState';
 import { playDockConnectSound } from '../../sound/SoundManager';
+import { hasDockPermission } from '../../context/DockPermissionState';
 
 const _portWorldPos = new THREE.Vector3();
 const _dockVel = new THREE.Vector3();
@@ -303,6 +304,8 @@ export function checkDockingPort({
       return isCaptured;
     }
     if (dockingProfile.mode === 'hover') {
+      // Landing pads require explicit dock permission before capture is allowed.
+      if (!hasDockPermission(c.stationId)) return false;
       // Hover/landing docking uses ship-center planar distance to lock X/Z to pad center.
       group.getWorldPosition(_shipWorldPos);
       c.getWorldPosition(_dockWorldPos);

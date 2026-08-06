@@ -59,4 +59,4 @@ export const DEBUG_COLLISION_TEST_SPAWN_DISTANCE = 220;
 
 // ── Performance overlay ───────────────────────────────────────────────────
 /** Show the realtime performance monitor in the top-right corner. */
-export const DEBUG_SHOW_PERF_MONITOR = true;
+export const DEBUG_SHOW_PERF_MONITOR = false;

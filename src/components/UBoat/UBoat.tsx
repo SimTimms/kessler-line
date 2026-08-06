@@ -71,7 +71,6 @@ interface UBoatProps {
     position?: [number, number, number];
     rotation?: [number, number, number];
     dock?: DockConfig;
-    debugDockOnClick?: boolean;
   };
   /** Optional physics options for flyable mode. */
 }
@@ -166,7 +165,6 @@ export default function UBoat({
                 position={dockingBayPosition}
                 rotation={dockingBay.rotation}
                 dock={dockingBay.dock}
-                debugDockOnClick={dockingBay.debugDockOnClick}
               />
             ) : null}
           </group>

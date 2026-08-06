@@ -114,7 +114,6 @@ export default function HudConfigScene() {
         <SalvageField
           origin={salvageFieldOrigin}
           idPrefix={HUD_ID_PREFIX}
-          debugJumpDockOnClick
           showDecorativeAsteroids={false}
           showFreeMineables={false}
           showDroneFleet={false}

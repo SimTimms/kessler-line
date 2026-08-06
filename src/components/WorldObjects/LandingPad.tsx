@@ -28,7 +28,6 @@ import {
 } from '../../context/LandingPadElevator';
 import { shipPosRef } from '../../context/ShipPos';
 import { navTargetIdRef } from '../../context/NavTarget';
-import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 
 const DEFAULT_LANDING_PAD_ID = 'landing-pad';
 const EVENT_DOCKING_CAPTURE_STARTED = 'DockingCaptureStarted';
@@ -54,11 +53,6 @@ interface LandingPadProps {
   /** World-space bounding radius for collision detection. Tune to match visual size. */
   landingPadGroupRef?: { current: THREE.Group | null };
   /**
-   * Inventory/authoring debug: clicking the pad teleports the ship above it and
-   * starts the normal hover docking procedure.
-   */
-  debugJumpDockOnClick?: boolean;
-  /**
    * World-Y meet offset at scale=1 when raising the LandPad platform to the ship.
    * Multiplied by `scale` at runtime. Defaults to {@link LANDING_PAD_PLATFORM_MEET_OFFSET_Y}.
    */
@@ -78,7 +72,6 @@ export default function LandingPad({
   dock,
   landingPadThreshold = LANDING_PAD_DOCK_CAPTURE_PROFILE.captureRadius,
   landingPadGroupRef,
-  debugJumpDockOnClick = false,
   landPadMeetOffsetY = LANDING_PAD_PLATFORM_MEET_OFFSET_Y,
   radioBroadcastEnabled = false,
   radioDialogue,
@@ -267,11 +260,6 @@ export default function LandingPad({
         onClick={(e) => {
           e.stopPropagation();
           selectTarget(label);
-          if (debugJumpDockOnClick) {
-            window.dispatchEvent(
-              new CustomEvent(EVENT_DEBUG_JUMP_DOCK, { detail: { stationId: id } })
-            );
-          }
         }}
       >
         <PowerSource scale={1} />

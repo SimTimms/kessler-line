@@ -17,8 +17,6 @@ export interface SalvageFieldProps {
    * {@link SalvageConfigData} are applied relative to this.
    */
   origin?: SalvageFieldOrigin;
-  /** Inventory/authoring debug: click pad/crate to jump-dock. */
-  debugJumpDockOnClick?: boolean;
   /** Optional id prefix so multiple fields can coexist (e.g. `'ltd-'`). */
   idPrefix?: string;
   /** Decorative grid asteroids. Default true. */
@@ -57,7 +55,6 @@ export interface SalvageFieldProps {
  */
 export default function SalvageField({
   origin = [0, 0, 0],
-  debugJumpDockOnClick = false,
   idPrefix = '',
   showFreeMineables = true,
   showDockMineable = true,
@@ -102,7 +99,6 @@ export default function SalvageField({
               scale={SalvageConfigData.landingPadScale}
               dock={dockConfigOverride ?? dock.dock}
               landingPadThreshold={SalvageConfigData.landingPadThreshold}
-              debugJumpDockOnClick={debugJumpDockOnClick}
               radioBroadcastEnabled={dockRadioBroadcastEnabled}
               radioDialogue={dockRadioDialogue}
               radioDockingBay={dockRadioDockingBay}
@@ -135,6 +131,7 @@ export default function SalvageField({
           <DecorativeAsteroidField
             key={`${idPrefix}decorative-asteroid-field`}
             asteroids={asteroids}
+            normalScale={SalvageConfigData.asteroidNormalScale}
           />
         </group>
 
@@ -153,10 +150,10 @@ export default function SalvageField({
       <Suspense fallback={null}>
         <DustCloud
           radius={dustCloud.radius}
-          particleSize={1500}
+          particleSize={10500}
           radialSpread={dustCloud.radialSpread}
           yInitial={-700}
-          opacity={0.005}
+          opacity={0.05}
           colors={showDroneAtmosphere ? [...DRONE_ATMOSPHERE_COLORS] : [...dustCloud.colors]}
         />
       </Suspense>
