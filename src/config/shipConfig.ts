@@ -38,7 +38,7 @@ export const SHIP_COLLISION_SAMPLES: ReadonlyArray<{
 /** Collision restitution: 0 = dead stop, 1 = fully elastic. */
 export const RESTITUTION = 0.4;
 /** Global cap on thrust multiplier (player slider and autopilot). */
-export const MAX_THRUST_MULTIPLIER = 1000; // TODO: revert to 3
+export const MAX_THRUST_MULTIPLIER = 50; // TODO: revert to 3
 /**
  * While {@link KEY_THRUST_BOOST} is held, main engines burn at this multiplier
  * regardless of the thrust dial (dial is restored on release).

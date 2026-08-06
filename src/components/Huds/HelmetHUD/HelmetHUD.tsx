@@ -88,14 +88,16 @@ const HelmetHUD = memo(function HelmetHUD({
           {...scannerProps}
         />
         <PowerHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
+      </div>
+      <div className="helmet-right-stack">
         <NavHUD
           layout="helmet"
           disableElements={disableElements}
           focusElements={focusElements}
           customPlanetaryTargets={customPlanetaryTargets}
         />
+        <CameraHUD />
       </div>
-      <CameraHUD />
       <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
       <CommsHUD
         radioOn={radioOn}

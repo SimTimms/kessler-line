@@ -10,11 +10,8 @@
   --mech-hud-gap: 8px;
   /* Bezel padding + title row above the square CRT */
   --mech-chart-chrome: 46px;
-  position: fixed;
-  right: 12px;
-  bottom: calc(14px + var(--mech-chart-width) + var(--mech-chart-chrome) + var(--mech-hud-gap));
-  z-index: 96;
-  width: var(--mech-chart-width);
+  position: relative;
+  width: 100%;
   box-sizing: border-box;
   pointer-events: auto;
   font-family: 'Share Tech Mono', 'Courier New', monospace;

@@ -102,9 +102,9 @@ export const SpaceshipConfig = {
   },
 
   dustCloud: {
-    radius: 5000,
-    particleSize: 600,
-    radialSpread: 9,
-    yInitial: -1000,
+    radius: 500,
+    particleSize: 10000,
+    radialSpread: 2,
+    yInitial: -100,
   },
 };

@@ -37,7 +37,7 @@ export const LoadingScreen = memo(function LoadingScreen() {
   return (
     <div className={`loading-screen${done ? ' loading-screen--done' : ''}`}>
       <div className="loading-content">
-        <div className="loading-title">KESSLER</div>
+        <div className="loading-title">supervivencia terca</div>
         <div className="loading-status" aria-live="polite">
           {STAGE_LABELS[stage] ?? 'LOADING'}
         </div>
@@ -45,8 +45,7 @@ export const LoadingScreen = memo(function LoadingScreen() {
           <div className="loading-bar-fill" style={{ width: `${progress}%` }} />
         </div>
         <div className="loading-stage-counter">
-          {stage} / {TOTAL_STAGES} · {progress}%
-          {assetCounter ? ` · ${assetCounter}` : ''}
+          {stage} / {TOTAL_STAGES} · {progress}%{assetCounter ? ` · ${assetCounter}` : ''}
         </div>
       </div>
     </div>

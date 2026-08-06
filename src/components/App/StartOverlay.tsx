@@ -1,5 +1,10 @@
 import { memo, useCallback, useRef, useState } from 'react';
-import { clearAllSaves, hasSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../context/SaveStore';
+import {
+  clearAllSaves,
+  hasSlot,
+  NARRATIVE_AUTOSAVE_SLOT,
+  NARRATIVE_MANUAL_SLOT,
+} from '../../context/SaveStore';
 import { GAME_MODES, type TutorialMenuSelection } from '../../config/gameModes';
 import { startSpaceAtmosphereAmbient } from '../../sound/SoundManager';
 
@@ -43,6 +48,12 @@ const TUTORIAL_MENU_ITEMS: Array<{
   selection?: TutorialMenuSelection;
   placeholder?: boolean;
 }> = [
+  {
+    id: 'narrative-config',
+    label: 'Start Narrative Sandbox',
+    selection: GAME_MODES.narrativeConfig,
+  },
+  /*
   { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
   {
     id: 'ship-navigation-config',
@@ -68,13 +79,10 @@ const TUTORIAL_MENU_ITEMS: Array<{
     label: 'HUD Config',
     selection: GAME_MODES.hudConfig,
   },
-  {
-    id: 'narrative-config',
-    label: 'Narrative Config',
-    selection: GAME_MODES.narrativeConfig,
-  },
+
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   { id: 'empty-scene', label: 'Empty Scene', selection: GAME_MODES.emptyScene },
+   */
   /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
   { id: 'air-management', label: 'Air Management', selection: GAME_MODES.airManagement },
@@ -95,7 +103,11 @@ const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.narrativeConfig,
 ]);
 
-const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect, onNarrativeLoad }: StartOverlayProps) {
+const StartOverlay = memo(function StartOverlay({
+  onStart,
+  onTutorialSelect,
+  onNarrativeLoad,
+}: StartOverlayProps) {
   const [dismissing, setDismissing] = useState(false);
   const [showTutorialMenu, setShowTutorialMenu] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -110,13 +122,18 @@ const StartOverlay = memo(function StartOverlay({ onStart, onTutorialSelect, onN
   return (
     <div className={`start-overlay${dismissing ? ' dismissing' : ''}`}>
       <div className="start-panel">
-        <div className="start-title">
-          {'Kessler'.split('').map((letter, i) => (
-            <span key={i} className="kessler-letter">
-              {letter}
-            </span>
-          ))}
+        <div className="start-title-group">
+          <img src="/supervivencia.png" alt="" className="start-hero-ship" aria-hidden="true" />
+          <div className="start-title">
+            {'supervivencia'.split('').map((letter, i) => (
+              <span key={i} className="kessler-letter">
+                {letter}
+              </span>
+            ))}
+          </div>
+          <div className="start-subtitle">terca</div>
         </div>
+
         <div className={`start-menu-slider${showTutorialMenu ? ' is-tutorial-menu' : ''}`}>
           <div className="start-menu-page start-menu-page--root">
             {/*

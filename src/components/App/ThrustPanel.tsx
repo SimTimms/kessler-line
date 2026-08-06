@@ -77,7 +77,10 @@ const ThrustPanel = memo(function ThrustPanel({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === KEY_THRUST_INCREASE || e.code === KEY_THRUST_INCREASE_NP) {
         setThrustLevel((prev) => {
-          const next = Math.min(getThrustSelectableMax(), parseFloat((prev + THRUST_STEP).toFixed(1)));
+          const next = Math.min(
+            getThrustSelectableMax(),
+            parseFloat((prev + THRUST_STEP).toFixed(1))
+          );
           syncPhysicsMultiplier(next);
           return next;
         });
@@ -125,13 +128,8 @@ const ThrustPanel = memo(function ThrustPanel({
   if (embedded) {
     return (
       <div className="thrust-panel thrust-panel--embedded" aria-label="Thrust multiplier">
-        <div className={`thrust-label-text${isDanger ? ' thrust-label-text--danger' : ''}`}>
-          {displayLevel.toFixed(1)}×{isDanger ? ' ⚠' : ''}
-        </div>
         <div className="thrust-slider-column">
-          <span className="thrust-tick thrust-tick--max">
-            {dialMax}× {thrustCapUnlocked ? 'FAST CAP UNLOCKED' : 'SLOW CAP 3×'}
-          </span>
+          <span className="thrust-tick thrust-tick--max">{dialMax}×</span>
           <div className="thrust-slider-wrap">
             <input
               type="range"
@@ -144,6 +142,9 @@ const ThrustPanel = memo(function ThrustPanel({
             />
           </div>
           <span className="thrust-tick thrust-tick--min">{THRUST_MIN}×</span>
+        </div>
+        <div className={`thrust-label-text${isDanger ? ' thrust-label-text--danger' : ''}`}>
+          {displayLevel.toFixed(1)}
         </div>
       </div>
     );
@@ -181,7 +182,9 @@ const ThrustPanel = memo(function ThrustPanel({
         }}
       >
         <span>{THRUST_MIN}×</span>
-        <span>{dialMax}× {thrustCapUnlocked ? 'FAST CAP UNLOCKED' : 'SLOW CAP 3×'}</span>
+        <span>
+          {dialMax}× {thrustCapUnlocked ? 'FAST CAP UNLOCKED' : 'SLOW CAP 3×'}
+        </span>
       </div>
     </div>
   );

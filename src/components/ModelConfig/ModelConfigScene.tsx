@@ -71,11 +71,15 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
       <Perf position="top-left" />
       <fogExp2 attach="fog" args={[SpaceshipConfig.scene.fogColor, 0.000001]} />
       <ambientLight intensity={0.7} />
-      <directionalLight position={[280, 20, 240]} intensity={14.4} color="#ffaaff" />
+      <directionalLight position={[140, 100, 240]} intensity={14.4} color="#ff6600" />
+      <directionalLight position={[-140, 10, 240]} intensity={4.4} color="#ffffff" />
+
+      {/*
       <gridHelper
         args={[SpaceshipConfig.gridSize, SpaceshipConfig.gridDivisions, '#006666', '#003333']}
       />
       <axesHelper args={[120]} />
+      */}
       <Suspense fallback={null}>
         <Spaceship
           url={SpaceshipConfig.url}
@@ -103,9 +107,15 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
       />
       <DustCloud
         radius={SpaceshipConfig.dustCloud.radius}
-        particleSize={SpaceshipConfig.dustCloud.particleSize}
-        radialSpread={SpaceshipConfig.dustCloud.radialSpread}
+        particleSize={10000}
+        radialSpread={0}
         yInitial={SpaceshipConfig.dustCloud.yInitial}
+        colors={[
+          new THREE.Color('#ff0000'),
+          new THREE.Color('#ff0000'),
+          new THREE.Color('#ff0000'),
+        ]}
+        opacity={0.2}
       />
       <CollisionPhysicsTestRig
         enabled

@@ -24,7 +24,6 @@
 .helmet-hud--powerless .helmet-scanner-deck,
 .helmet-hud--powerless .mech-comms,
 .helmet-hud--powerless .mech-alerts,
-.helmet-hud--powerless .mech-thrust,
 .helmet-hud--powerless .cargo-hold-flyout-stack {
   opacity: 0.28;
   pointer-events: none;
@@ -474,6 +473,27 @@
 }
 
 .helmet-sensor-stack > * {
+  pointer-events: auto;
+}
+
+/* ── Right-side stack (nav + camera, above star chart) ─────────────────── */
+
+.helmet-right-stack {
+  --mech-chart-width: min(192px, 38vw);
+  --mech-hud-gap: 8px;
+  --mech-chart-chrome: 46px;
+  position: fixed;
+  right: 12px;
+  bottom: calc(14px + var(--mech-chart-width) + var(--mech-chart-chrome) + var(--mech-hud-gap));
+  z-index: 96;
+  width: var(--mech-chart-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mech-hud-gap);
+  pointer-events: none;
+}
+
+.helmet-right-stack > * {
   pointer-events: auto;
 }
 
