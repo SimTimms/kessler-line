@@ -6,160 +6,6 @@ import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { useRegisterPlanetCollider } from '../../hooks/useRegisterPlanetCollider';
 
-// Colony light locations: [longitude (-180..180), latitude (-90..90), cluster radius px, brightness 0..1]
-type ColonyPoint = [number, number, number, number];
-const MARS_COLONIES: ColonyPoint[] = [
-  // Tharsis / Olympus Mons
-  [-134, 18, 0.3, 1.0],
-  [-130, 22, 0.87, 0.9],
-  [-125, 8, 0.53, 0.85],
-  [-120, 15, 0.74, 0.8],
-  [-115, 25, 0.41, 0.75],
-  [-128, 30, 0.96, 0.9],
-  [-118, 20, 0.62, 0.85],
-  [-110, 12, 0.28, 0.7],
-  [-122, 32, 0.79, 0.8],
-  [-136, 5, 0.45, 0.75],
-  [-142, 18, 0.33, 0.7],
-  [-108, 28, 0.68, 0.65],
-  // Valles Marineris corridor
-  [-46, 14, 0.84, 0.8],
-  [-55, 12, 0.57, 0.75],
-  [-65, 8, 0.39, 0.7],
-  [-80, 5, 0.71, 0.65],
-  [-30, 10, 0.92, 0.72],
-  [-40, -5, 0.48, 0.68],
-  [-60, -10, 0.25, 0.65],
-  [-75, -8, 0.63, 0.6],
-  [-50, 0, 0.82, 0.73],
-  [-35, -3, 0.36, 0.7],
-  [-25, 5, 0.55, 0.68],
-  [-85, -3, 0.77, 0.6],
-  [-70, 2, 0.43, 0.65],
-  [-56, -15, 0.91, 0.62],
-  [-42, 8, 0.67, 0.72],
-  // Arabia Terra / Isidis Planitia
-  [87, 13, 0.58, 0.9],
-  [70, 5, 0.83, 0.75],
-  [95, 20, 0.47, 0.8],
-  [100, 10, 0.72, 0.78],
-  [80, 25, 0.31, 0.72],
-  [110, 15, 0.95, 0.85],
-  [65, 12, 0.64, 0.7],
-  [90, 28, 0.29, 0.75],
-  [75, 8, 0.78, 0.68],
-  [105, 22, 0.52, 0.8],
-  [115, 5, 0.86, 0.72],
-  [82, 18, 0.41, 0.76],
-  // Hellas Basin
-  [70, -42, 0.73, 0.85],
-  [75, -38, 0.56, 0.78],
-  [65, -48, 0.89, 0.72],
-  [80, -45, 0.34, 0.8],
-  [72, -35, 0.67, 0.75],
-  [68, -52, 0.48, 0.68],
-  [78, -40, 0.81, 0.82],
-  [85, -44, 0.26, 0.7],
-  [63, -38, 0.94, 0.65],
-  [73, -50, 0.61, 0.72],
-  // Utopia Planitia
-  [160, 40, 0.44, 0.78],
-  [145, 45, 0.77, 0.72],
-  [155, 35, 0.59, 0.75],
-  [165, 50, 0.88, 0.8],
-  [130, 38, 0.32, 0.68],
-  [150, 55, 0.71, 0.74],
-  [138, 42, 0.53, 0.7],
-  [170, 48, 0.86, 0.78],
-  [142, 30, 0.27, 0.65],
-  [162, 35, 0.64, 0.72],
-  // Vastitas Borealis / northern plains
-  [-20, 56, 0.49, 0.72],
-  [-164, 25, 0.76, 0.7],
-  [-150, 62, 0.38, 0.65],
-  [20, 65, 0.92, 0.68],
-  [80, 58, 0.55, 0.72],
-  [-100, 70, 0.83, 0.6],
-  [140, 55, 0.24, 0.65],
-  [-60, 68, 0.67, 0.62],
-  [40, 72, 0.91, 0.58],
-  [-120, 58, 0.43, 0.63],
-  // Argyre Basin
-  [110, -28, 0.69, 0.65],
-  [118, -45, 0.35, 0.7],
-  [122, -38, 0.82, 0.68],
-  [115, -52, 0.57, 0.65],
-  [125, -42, 0.74, 0.72],
-  [130, -48, 0.28, 0.68],
-  [107, -35, 0.96, 0.62],
-  // Amazonis / Elysium Planitia
-  [-155, 30, 0.61, 0.7],
-  [-148, 35, 0.45, 0.68],
-  [-170, 20, 0.88, 0.65],
-  [148, 3, 0.33, 0.7],
-  [155, 10, 0.72, 0.72],
-  [145, -5, 0.54, 0.68],
-  [152, 18, 0.79, 0.65],
-  [160, 8, 0.42, 0.7],
-  // Scattered mid-lats
-  [30, 20, 0.65, 0.6],
-  [10, -10, 0.87, 0.58],
-  [-10, 30, 0.31, 0.62],
-  [50, -15, 0.76, 0.6],
-  [0, -20, 0.58, 0.58],
-  [35, 40, 0.93, 0.65],
-];
-
-// Deterministic per-colony dot offsets so useMemo produces the same texture every render
-const DOT_OFFSETS: [number, number][] = [
-  [-0.8, -0.6],
-  [0.4, -0.9],
-  [0.9, 0.3],
-  [-0.3, 0.8],
-  [0.6, 0.7],
-  [-0.7, 0.2],
-  [0.1, -0.5],
-  [-0.5, -0.4],
-  [0.8, -0.3],
-  [-0.2, 0.9],
-];
-
-function buildColonyTexture(): THREE.CanvasTexture {
-  const W = 2048,
-    H = 1024;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, W, H);
-
-  for (const [lon, lat, r, brightness] of MARS_COLONIES) {
-    const x = ((lon + 180) / 360) * W;
-    const y = ((90 - lat) / 180) * H;
-
-    // Soft glow halo
-    const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 5);
-    glow.addColorStop(0, `rgba(255, 200, 100, ${brightness * 0.9})`);
-    glow.addColorStop(0.4, `rgba(255, 160,  60, ${brightness * 0.4})`);
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(x - r * 5, y - r * 5, r * 10, r * 10);
-
-    // Bright point-lights within each settlement
-    ctx.fillStyle = `rgba(255, 240, 180, ${brightness})`;
-    for (const [ox, oy] of DOT_OFFSETS) {
-      ctx.beginPath();
-      ctx.arc(x + ox * r, y + oy * r, 1.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
-}
-
 // ── Procedural bump map (craters + terrain) ──────────────────────────────
 function buildMarsBumpMap(): THREE.CanvasTexture {
   const W = 2048,
@@ -639,23 +485,20 @@ export default function OrbitingPlanet({
     return line;
   }, [gravitySoiRadius, gravitySurfaceRadius, radius]);
 
-  const coloniesTexture = useMemo(
-    () => (showColonies ? buildColonyTexture() : null),
-    [showColonies]
-  );
-
   const bumpTexture = useMemo(() => {
     if (!useBumpMap) return null;
     if (planetName === 'Neptune') return buildNeptuneBumpMap();
     return buildMarsBumpMap();
   }, [useBumpMap, planetName]);
   const marsNormalTexture = useTexture('/mars-normal.jpg');
+  const marsEmissiveTexture = useTexture('/mars-emissive.jpg');
+  marsEmissiveTexture.colorSpace = THREE.SRGBColorSpace;
+  const coloniesTexture = showColonies ? marsEmissiveTexture : null;
 
   const isNeptune = planetName === 'Neptune';
   const materialColor = isNeptune ? '#84c8ff' : color;
-  const materialEmissive = showColonies ? '#ffb050' : isNeptune ? '#123d8a' : emissive;
-  // Lower colony emissive so Mars surface lighting remains responsive to scene lights.
-  const materialEmissiveIntensity = showColonies ? 0.45 : isNeptune ? 1.15 : 1.0;
+  const materialEmissive = showColonies ? '#ffffff' : isNeptune ? '#123d8a' : emissive;
+  const materialEmissiveIntensity = showColonies ? 1.5 : isNeptune ? 1.15 : 1.0;
   const materialRoughness = isNeptune ? 0.62 : 0.8;
   const materialBumpScale = useBumpMap ? (isNeptune ? -0.35 : -0.6) : 0;
   const resolvedBumpMap = planetName === 'Mars' ? marsNormalTexture : bumpTexture;
@@ -799,7 +642,7 @@ export default function OrbitingPlanet({
                       fallback={
                         <meshStandardMaterial
                           color={materialColor}
-                          emissive={materialEmissive}
+                          emissive={10000000}
                           emissiveMap={coloniesTexture}
                           emissiveIntensity={materialEmissiveIntensity}
                           roughness={materialRoughness}
