@@ -53,6 +53,11 @@ const TUTORIAL_MENU_ITEMS: Array<{
     label: 'Start Narrative Sandbox',
     selection: GAME_MODES.narrativeConfig,
   },
+  {
+    id: 'planetary-config',
+    label: 'Planetary Config',
+    selection: GAME_MODES.planetaryConfig,
+  },
   /*
   { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
   {
@@ -101,6 +106,7 @@ const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.combatConfig,
   GAME_MODES.hudConfig,
   GAME_MODES.narrativeConfig,
+  GAME_MODES.planetaryConfig,
 ]);
 
 const StartOverlay = memo(function StartOverlay({

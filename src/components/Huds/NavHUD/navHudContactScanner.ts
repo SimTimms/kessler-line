@@ -21,10 +21,41 @@ import {
 } from '../../../utils/radiationZonePosition';
 import { humanizeCollidableId, type NavScanContact } from './navScanPickerContacts';
 import { formatDist, contactListSignature } from './navHudFormatters';
+import { pushEventLog, type EventLogType } from '../../../context/EventLogStore';
 import type { NavTargetItem } from './NavTargetDialog';
 import type { TutorialTargetDef } from './NavHUD';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
+
+// ── Event log: track previously-seen contact IDs per scanner ──────────
+
+const seenContactIds: Record<string, Set<string>> = {
+  magnet: new Set(),
+  drive: new Set(),
+  proximity: new Set(),
+  radio: new Set(),
+  radiation: new Set(),
+};
+
+/**
+ * Log new contacts that weren't in the previous scan pass.
+ * Updates the seen-set for the scanner type.
+ */
+function logNewContacts(
+  scannerType: EventLogType,
+  contacts: NavScanContact[],
+): void {
+  const seen = seenContactIds[scannerType];
+  if (!seen) return;
+  const currentIds = new Set<string>();
+  for (const c of contacts) {
+    currentIds.add(c.id);
+    if (!seen.has(c.id)) {
+      pushEventLog(scannerType, `${c.label} — ${c.distance}`);
+    }
+  }
+  seenContactIds[scannerType] = currentIds;
+}
 
 // ── Scratch vectors (reused to avoid allocations) ─────────────────────
 
@@ -177,11 +208,13 @@ function scanMagnetic(
     const sig = contactListSignature(inRange);
     if (sig !== prevSigs.magnetic.current) {
       prevSigs.magnetic.current = sig;
+      logNewContacts('magnet', inRange);
       dispatch.setMagneticContacts(inRange);
       setScannerContactCount('magnet', inRange.length);
     }
   } else if (prevSigs.magnetic.current !== '') {
     prevSigs.magnetic.current = '';
+    seenContactIds.magnet.clear();
     dispatch.setMagneticContacts([]);
     setScannerContactCount('magnet', 0);
   }
@@ -216,11 +249,13 @@ function scanDrive(
     const sig = contactListSignature(inRange);
     if (sig !== prevSigs.drive.current) {
       prevSigs.drive.current = sig;
+      logNewContacts('drive', inRange);
       dispatch.setDriveContacts(inRange);
       setScannerContactCount('drive', inRange.length);
     }
   } else if (prevSigs.drive.current !== '') {
     prevSigs.drive.current = '';
+    seenContactIds.drive.clear();
     dispatch.setDriveContacts([]);
     setScannerContactCount('drive', 0);
   }
@@ -256,11 +291,13 @@ function scanProximity(
     const sig = contactListSignature(inRange);
     if (sig !== prevSigs.proximity.current) {
       prevSigs.proximity.current = sig;
+      logNewContacts('proximity', inRange);
       dispatch.setProximityContacts(inRange);
       setScannerContactCount('proximity', inRange.length);
     }
   } else if (prevSigs.proximity.current !== '') {
     prevSigs.proximity.current = '';
+    seenContactIds.proximity.clear();
     dispatch.setProximityContacts([]);
     setScannerContactCount('proximity', 0);
   }
@@ -293,11 +330,13 @@ function scanRadio(
     const sig = contactListSignature(inRange);
     if (sig !== prevSigs.radio.current) {
       prevSigs.radio.current = sig;
+      logNewContacts('radio', inRange);
       dispatch.setRadioContacts(inRange);
       setScannerContactCount('radio', inRange.length);
     }
   } else if (prevSigs.radio.current !== '') {
     prevSigs.radio.current = '';
+    seenContactIds.radio.clear();
     dispatch.setRadioContacts([]);
     setScannerContactCount('radio', 0);
   }
@@ -333,11 +372,13 @@ function scanRadiation(
     const sig = contactListSignature(inRange);
     if (sig !== prevSigs.radiation.current) {
       prevSigs.radiation.current = sig;
+      logNewContacts('radiation', inRange);
       dispatch.setRadiationContacts(inRange);
       setScannerContactCount('radiation', inRange.length);
     }
   } else if (prevSigs.radiation.current !== '') {
     prevSigs.radiation.current = '';
+    seenContactIds.radiation.clear();
     dispatch.setRadiationContacts([]);
     setScannerContactCount('radiation', 0);
   }

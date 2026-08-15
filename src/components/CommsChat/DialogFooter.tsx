@@ -1,5 +1,6 @@
 import type { InboxMessage } from '../../context/MessageStore';
 import type { StaticContact } from '../../narrative/contacts';
+import './DialogFooter.css';
 
 interface DialogFooterProps {
   contact: StaticContact | null;
@@ -8,6 +9,7 @@ interface DialogFooterProps {
   showOptions: boolean;
   isPreHail: boolean;
   isEnded: boolean;
+  canTransmit?: boolean;
   onClose: () => void;
   onBack?: () => void;
   handleFooterOption: (optionId: string) => void;
@@ -25,6 +27,7 @@ export default function DialogFooter({
   showOptions,
   isPreHail,
   isEnded,
+  canTransmit = true,
   onClose,
   onBack,
   handleFooterOption,
@@ -44,6 +47,9 @@ export default function DialogFooter({
 
   return (
     <div className="comms-chat-footer">
+      {!contact && !canTransmit && (
+        <div className="comms-chat-status-line">○ TRANSMIT RANGE EXCEEDED</div>
+      )}
       {footerOptions.length > 0 && (
         <div className="comms-chat-options">
           {footerOptions.map((opt) => (
@@ -51,6 +57,7 @@ export default function DialogFooter({
               key={opt.id}
               className="comms-chat-opt"
               onClick={() => handleFooterOption(opt.id)}
+              disabled={!contact && !canTransmit}
             >
               {opt.label}
             </button>
@@ -68,7 +75,7 @@ export default function DialogFooter({
           </button>
         </div>
       ) : null}
-      {!contact && !isPreHail && !canRequestDockPermission && canRequestRendezvous && (
+      {/*!contact && !isPreHail && !canRequestDockPermission && canRequestRendezvous && (
         <div className="comms-chat-options">
           <button
             className="comms-chat-opt"
@@ -78,18 +85,20 @@ export default function DialogFooter({
             {isRendezvousActive ? 'RENDEZVOUS CONFIRMED' : 'REQUEST RENDEZVOUS'}
           </button>
         </div>
-      )}
+      )*/}
       {!contact && !isPreHail && isEnded && (
         <div className="comms-chat-ended">— TRANSMISSION CLOSED —</div>
       )}
-      {onBack && (
-        <button className="comms-chat-close" onClick={onBack}>
-          BACK
+      <div className="comms-chat-footer-buttons">
+        {onBack && (
+          <button className="comms-chat-close" onClick={onBack}>
+            BACK
+          </button>
+        )}
+        <button className="comms-chat-close" onClick={onClose}>
+          CLOSE COMMS
         </button>
-      )}
-      <button className="comms-chat-close" onClick={onClose}>
-        CLOSE COMMS
-      </button>
+      </div>
     </div>
   );
 }

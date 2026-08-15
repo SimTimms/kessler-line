@@ -77,11 +77,14 @@ type DisplayRow = {
   content: ReactNode;
   timestamp: number;
   timeLabel?: ReactNode;
+  audioSrc?: string;
 };
 
 interface DialogueThreadProps {
   shipId: string;
   shipName: string;
+  /** Render inside parent container instead of as a fixed overlay. */
+  inline?: boolean;
   // Inbox mode (static contact)
   contact?: StaticContact;
   /** Dock interior NPC — portrait + dossier header instead of a ship profile. */
@@ -93,6 +96,7 @@ interface DialogueThreadProps {
   showHailPrompt?: boolean;
   effectiveHailStatus: HailStatus;
   isRadioActive: boolean;
+  canReceive?: boolean;
   hailOfferContent?: { header: string; body: string };
   onHail?: () => void;
   onAcceptHail?: () => void;
@@ -128,7 +132,11 @@ interface DialogueThreadProps {
     canSubmit: boolean;
     submitLabel?: string;
     onOfferChange?: (kind: TradeResourceKind, value: number) => void;
-    onCargoOfferChange?: (side: 'playerGives' | 'contactGives', itemId: string, value: number) => void;
+    onCargoOfferChange?: (
+      side: 'playerGives' | 'contactGives',
+      itemId: string,
+      value: number
+    ) => void;
     onSubmit: () => void;
     onReset: () => void;
     onAcceptPendingDeal?: () => void;
@@ -141,6 +149,7 @@ interface DialogueThreadProps {
 export default function DialogueThread({
   shipId,
   shipName,
+  inline = false,
   contact,
   character,
   hideShipProfile = false,
@@ -148,6 +157,7 @@ export default function DialogueThread({
   showHailPrompt = false,
   effectiveHailStatus,
   isRadioActive,
+  canReceive = true,
   hailOfferContent,
   onHail,
   onAcceptHail,
@@ -277,6 +287,7 @@ export default function DialogueThread({
         senderName: msg.role === 'npc' ? thread!.captainName : undefined,
         content: msg.text,
         timestamp: msg.timestamp,
+        audioSrc: msg.audioSrc,
       }));
 
   // ── Footer options ─────────────────────────────────────────────────────────
@@ -298,15 +309,39 @@ export default function DialogueThread({
   const record = contact || character ? null : getOrCreateShipRecord(shipId, shipName);
   const tradeMode = tradePanel?.mode ?? 'resources';
   const tradeRows: Array<{ key: TradeResourceKind; label: string; max: number; value: number }> = [
-    { key: 'fuel', label: 'Fuel', max: tradePanel?.maxOffer?.fuel ?? 0, value: tradePanel?.offer?.fuel ?? 0 },
-    { key: 'o2', label: 'O2', max: tradePanel?.maxOffer?.o2 ?? 0, value: tradePanel?.offer?.o2 ?? 0 },
-    { key: 'power', label: 'Power', max: tradePanel?.maxOffer?.power ?? 0, value: tradePanel?.offer?.power ?? 0 },
-    { key: 'crew', label: 'Crew', max: tradePanel?.maxOffer?.crew ?? 0, value: tradePanel?.offer?.crew ?? 0 },
+    {
+      key: 'fuel',
+      label: 'Fuel',
+      max: tradePanel?.maxOffer?.fuel ?? 0,
+      value: tradePanel?.offer?.fuel ?? 0,
+    },
+    {
+      key: 'o2',
+      label: 'O2',
+      max: tradePanel?.maxOffer?.o2 ?? 0,
+      value: tradePanel?.offer?.o2 ?? 0,
+    },
+    {
+      key: 'power',
+      label: 'Power',
+      max: tradePanel?.maxOffer?.power ?? 0,
+      value: tradePanel?.offer?.power ?? 0,
+    },
+    {
+      key: 'crew',
+      label: 'Crew',
+      max: tradePanel?.maxOffer?.crew ?? 0,
+      value: tradePanel?.offer?.crew ?? 0,
+    },
   ];
-  const hasPendingDeal = tradeMode === 'cargo' ? !!tradePanel?.pendingCargoDeal : !!tradePanel?.pendingDeal;
+  const hasPendingDeal =
+    tradeMode === 'cargo' ? !!tradePanel?.pendingCargoDeal : !!tradePanel?.pendingDeal;
 
   return (
-    <div className="comms-chat" data-platform={commsPlatform}>
+    <div
+      className={`comms-chat${inline ? ' comms-chat--inline' : ''}`}
+      data-platform={commsPlatform}
+    >
       {/* ── Header ── */}
       {character ? (
         <div className="comms-chat-header comms-chat-header--character">
@@ -409,6 +444,7 @@ export default function DialogueThread({
           isPreHail={isPreHail}
           showHailPrompt={showHailPrompt}
           isRadioActive={isRadioActive}
+          canReceive={canReceive}
           effectiveHailStatus={effectiveHailStatus}
           hailOfferContent={hailOfferContent}
           onHail={onHail}
@@ -426,7 +462,9 @@ export default function DialogueThread({
           <div className="comms-trade-panel-title">
             {tradeMode === 'cargo' ? 'BARTER NEGOTIATION' : 'NEGOTIATION OFFER'}
           </div>
-          {tradePanel.statusLine && <div className="comms-trade-status">{tradePanel.statusLine}</div>}
+          {tradePanel.statusLine && (
+            <div className="comms-trade-status">{tradePanel.statusLine}</div>
+          )}
           {tradeMode === 'cargo' ? (
             <div className="comms-trade-cargo-grid">
               <div className="comms-trade-cargo-col">
@@ -524,8 +562,10 @@ export default function DialogueThread({
             <div className="comms-trade-pending">
               <span className="comms-trade-pending-title">PROPOSED DEAL</span>
               <span className="comms-trade-pending-values">
-                F {Math.round(tradePanel.pendingDeal.fuel)} · O {Math.round(tradePanel.pendingDeal.o2)} · P{' '}
-                {Math.round(tradePanel.pendingDeal.power)} · C {Math.round(tradePanel.pendingDeal.crew)}
+                F {Math.round(tradePanel.pendingDeal.fuel)} · O{' '}
+                {Math.round(tradePanel.pendingDeal.o2)} · P{' '}
+                {Math.round(tradePanel.pendingDeal.power)} · C{' '}
+                {Math.round(tradePanel.pendingDeal.crew)}
               </span>
             </div>
           )}
@@ -542,18 +582,27 @@ export default function DialogueThread({
               {tradePanel.submitLabel ?? 'SEND OFFER'}
             </button>
             {hasPendingDeal && tradePanel.onAcceptPendingDeal && (
-              <button type="button" className="comms-chat-opt" onClick={tradePanel.onAcceptPendingDeal}>
+              <button
+                type="button"
+                className="comms-chat-opt"
+                onClick={tradePanel.onAcceptPendingDeal}
+              >
                 AGREE
               </button>
             )}
             {hasPendingDeal && tradePanel.onRejectPendingDeal && (
-              <button type="button" className="comms-chat-opt" onClick={tradePanel.onRejectPendingDeal}>
+              <button
+                type="button"
+                className="comms-chat-opt"
+                onClick={tradePanel.onRejectPendingDeal}
+              >
                 DECLINE
               </button>
             )}
           </div>
         </div>
       )}
+
       <DialogFooter
         contact={contact ?? null}
         msgs={msgs}
@@ -561,6 +610,7 @@ export default function DialogueThread({
         showOptions={viewMode === 'messages' && showOptions && !tradePanel?.visible}
         isPreHail={isPreHail}
         isEnded={isEnded}
+        canTransmit={isRadioActive}
         onClose={onClose}
         onBack={onBack}
         handleFooterOption={handleFooterOption}

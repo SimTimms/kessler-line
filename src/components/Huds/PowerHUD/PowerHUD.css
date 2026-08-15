@@ -3,7 +3,7 @@
   top: 70px;
   left: 10px;
   font-family: 'Space Grotesk', 'Orbitron', 'Segoe UI', sans-serif;
-  font-size: 12px;
+  font-size: var(--hud-fs-xl);
   pointer-events: none;
   user-select: none;
   display: flex;
@@ -34,7 +34,7 @@
   flex-direction: column;
 }
 .power-hud-label {
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   letter-spacing: 0.2em;
   color: rgba(0, 200, 255, 0.4);
   margin-top: 2px;
@@ -78,7 +78,7 @@
 }
 
 .power-hud-rate {
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
@@ -96,11 +96,11 @@
 .power-hud-divider {
   color: rgba(0, 200, 255, 0.4);
   margin-top: 8px;
-  font-size: 14px;
+  font-size: var(--hud-fs-3xl);
 }
 
 .power-hud-section {
   color: #a0e8ff;
-  font-size: 14px;
+  font-size: var(--hud-fs-3xl);
   letter-spacing: 0.05em;
 }

@@ -94,7 +94,7 @@ export default function SalvageDropOffPad({
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const groupRef = useRef<THREE.Group>(null!);
   const anchorRef = useRef<THREE.Group>(null!);
-  const structureCollisionId = `${id}-structure`;
+  const structureCollisionId = `${id}`;
   const transitionRef = useRef<DropOffTransition | null>(null);
   const inventoryOwnerId = dock.inventoryOwnerId ?? id;
 
@@ -226,7 +226,8 @@ export default function SalvageDropOffPad({
 
     // Skip the scan when the ship is far away — containers damp to a stop
     // quickly and can't reach the pad from beyond this range.
-    if (shipPosRef.current.distanceToSquared(_padPos) > SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE_SQ) return;
+    if (shipPosRef.current.distanceToSquared(_padPos) > SALVAGE_DROPOFF_SCAN_ACTIVATION_RANGE_SQ)
+      return;
 
     for (const handle of listCargoContainers()) {
       if (handle.isTowed() || handle.isDropOffBusy() || handle.isConsumed()) continue;

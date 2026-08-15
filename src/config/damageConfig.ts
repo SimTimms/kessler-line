@@ -49,3 +49,15 @@ export function scaleSystemPowerDrainPerSecond(baseDrainPerSecond: number): numb
 
 /** Propellant drain per active thrust axis per second at thrust multiplier 1. */
 export const FUEL_BURN_RATE = 0.001;
+
+// ── Fracture / Damage-Control ────────────────────────────────────────────────
+/** Cumulative hull damage required to spawn one fracture. */
+export const FRACTURE_DAMAGE_THRESHOLD = 15;
+/** Hull HP restored when a fracture is sealed with a patch. */
+export const FRACTURE_REPAIR_HP = 15;
+/** Maximum simultaneous fractures tracked. */
+export const FRACTURE_MAX = 7;
+/** Inventory item id consumed to seal a fracture. */
+export const HULL_REPAIR_PATCH_ITEM_ID = 'hull-repair-patch';
+/** Real-time seconds for a crew member to seal one fracture. */
+export const PATCH_DURATION_SECONDS = 30;

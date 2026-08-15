@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import * as THREE from 'three';
 import type { RadioBroadcastDef } from '../config/worldConfig';
 import { shipPosRef } from '../context/ShipPos';
-import { isWithinRadioRange } from '../context/RadioState';
+import { isWithinPassiveRadioRange } from '../context/RadioState';
 import {
   dismissIncomingHail,
   hasIncomingHail,
@@ -55,11 +55,11 @@ export function useRegisterRadioBroadcast(
       groupRef.current.getWorldPosition(worldPos);
       const dist = shipPosRef.current.distanceTo(worldPos);
       const inHailRange = dist <= def.hailRange!;
-      const inRadioRange = isWithinRadioRange(dist);
+      const inPassiveRange = isWithinPassiveRadioRange(dist);
       const broadcastEntry = getRadioBroadcasts().find((e) => e.id === def.id);
       const hailAllowed = broadcastEntry ? isRadioHailEnabled(broadcastEntry) : true;
 
-      if (inHailRange && inRadioRange && hailAllowed) {
+      if (inHailRange && inPassiveRange && hailAllowed) {
         if (canOfferHailAgain(def.id) && !hasIncomingHail(def.id)) {
           setIncomingHail(def.id);
         }

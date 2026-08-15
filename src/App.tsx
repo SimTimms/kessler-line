@@ -40,6 +40,7 @@ import HudConfig from './components/HudConfig/HudConfig';
 import NarrativeConfig from './components/NarrativeConfig/NarrativeConfig';
 import ShipNavigationConfig from './components/ShipNavigationConfig/ShipNavigationConfig';
 import EmptyScene from './components/EmptyScene/EmptyScene';
+import PlanetaryConfig from './components/PlanetaryConfig/PlanetaryConfig';
 // Full reset of module-level ship state so the tutorial always starts clean,
 // regardless of what happened in the main game (destroyed ship, engine damage, etc.)
 function resetShipState(forTutorial = false) {
@@ -131,6 +132,8 @@ function App() {
       return <NarrativeConfig loadSave={narrativeLoadSave} />;
     case GAME_MODES.emptyScene:
       return <EmptyScene />;
+    case GAME_MODES.planetaryConfig:
+      return <PlanetaryConfig />;
     case GAME_MODES.sandbox:
       return <Sandbox />;
     case GAME_MODES.tutorial:

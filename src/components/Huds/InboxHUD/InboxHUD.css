@@ -20,7 +20,7 @@
   border-radius: 0px;
   color: var(--btn-text);
   font-family: var(--hud-font);
-  font-size: 14px;
+  font-size: var(--hud-fs-3xl);
   cursor: pointer;
   z-index: 40;
   transition: border-color 0.2s, color 0.2s;
@@ -72,12 +72,12 @@
 /* ── Button internals ─────────────────────────────────────────────────────────── */
 
 .inbox-hud-platform-icon {
-  font-size: 14px;
+  font-size: var(--hud-fs-3xl);
   line-height: 1;
 }
 
 .inbox-hud-platform-name {
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.16em;
   font-family: var(--hud-font-mono);
   opacity: 0.85;
@@ -86,7 +86,7 @@
 .inbox-hud-badge {
   background: var(--btn-badge-bg);
   color: #000;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   font-weight: bold;
   font-family: var(--hud-font);
   border-radius: 8px;
@@ -143,21 +143,21 @@
 }
 
 .hail-request-label {
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.18em;
   color: rgba(0, 200, 255, 0.5);
   margin-bottom: 3px;
 }
 
 .hail-request-ship {
-  font-size: 13px;
+  font-size: var(--hud-fs-2xl);
   letter-spacing: 0.08em;
   color: #00cfff;
   margin-bottom: 3px;
 }
 
 .hail-request-type {
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.12em;
   margin-bottom: 10px;
 }
@@ -174,7 +174,7 @@
   flex: 1;
   padding: 5px 8px;
   font-family: var(--hud-font-mono, monospace);
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   letter-spacing: 0.1em;
   background: transparent;
   border-radius: 0;

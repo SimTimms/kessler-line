@@ -1,7 +1,7 @@
 import { KM_PER_UNIT } from '../../../config/commsConfig';
 import { getDriveSignatures } from '../../../context/DriveSignatureRegistry';
 import { driveSignatureOnRef, driveSignatureRangeRef } from '../../../context/DriveSignatureScan';
-import { radioOnRef } from '../../../context/RadioState';
+import { radioOnRef, isWithinPassiveRadioRange } from '../../../context/RadioState';
 import { radioRangeRef } from '../../../context/RadioState';
 import type { DriveContact } from '../ContactsHUD';
 import * as THREE from 'three';
@@ -34,18 +34,20 @@ export function setDriveSignaturesToRadio({
               ? `${(km / 1_000).toFixed(1)} Mm`
               : `${km.toFixed(0)} km`;
         const radioActive = radioOnRef.current && dist <= radioRangeRef.current;
+        const inPassiveRange = isWithinPassiveRadioRange(dist);
         inRange.push({
           id: sig.id,
           name: sig.label,
           distanceLabel: distLabel,
           distanceRaw: dist,
           radioActive,
+          inPassiveRange,
         });
       }
     }
 
     const sig = inRange
-      .map((c) => `${c.id}:${c.radioActive ? 1 : 0}`)
+      .map((c) => `${c.id}:${c.radioActive ? 1 : 0}:${c.inPassiveRange ? 1 : 0}`)
       .sort()
       .join('|');
     if (sig !== prevSig) {

@@ -55,7 +55,7 @@
 }
 
 .mech-scanner-title {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0.28em;
   color: var(--mech-label);
   text-shadow: none;
@@ -64,7 +64,7 @@
 
 .mech-scanner-sub {
   margin-left: auto;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.22em;
   color: var(--mech-label);
   line-height: 1;
@@ -115,7 +115,7 @@
 
 .mech-scanner .helmet-scanner-abbr {
   font-family: inherit;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.22em;
   color: var(--mech-label);
   text-shadow: none;
@@ -190,7 +190,7 @@ button.helmet-scanner-drain-screen {
   position: relative;
   z-index: 1;
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   color: rgba(0, 200, 255, 0.28);
@@ -315,7 +315,7 @@ button.helmet-scanner-drain-screen {
     inset 0 -2px 3px rgba(0, 0, 0, 0.55),
     0 1px 2px rgba(0, 0, 0, 0.4);
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0;
   line-height: 1;
   color: inherit;
@@ -449,7 +449,7 @@ button.helmet-scanner-drain-screen {
 }
 
 .mech-scanner .helmet-pad-scan-label {
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.18em;
   text-align: right;
   color: inherit;
@@ -480,7 +480,7 @@ button.helmet-scanner-drain-screen {
   position: fixed;
   left: 16px;
   bottom: 50px;
-  font-size: 13px;
+  font-size: var(--hud-fs-2xl);
   transform: translateY(0);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: none;
@@ -495,7 +495,7 @@ button.helmet-scanner-drain-screen {
 
 .mech-scanner .classic-scanner-cell .power-hud-label {
   font-family: var(--mech-font);
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.22em;
   color: var(--mech-label);
   margin-top: 2px;
@@ -563,7 +563,7 @@ button.helmet-scanner-drain-screen {
   border-radius: 2px;
   padding: 5px 11px;
   font-family: 'Share Tech Mono', 'Courier New', monospace;
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   letter-spacing: 0.14em;
   color: rgba(0, 200, 255, 0.45);
   cursor: pointer;

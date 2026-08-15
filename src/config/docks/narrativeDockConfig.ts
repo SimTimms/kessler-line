@@ -60,11 +60,11 @@ const HANK_PARCEL_DELIVERY_TRADE: DockTradeTurnConfig = {
 const BILL_CHURCHILL: DockContact = {
   id: 'bill-churchill',
   name: 'Bill Churchill',
-  role: 'dockmaster',
+  role: 'entente-cordiale-liaison',
   age: 58,
-  company: 'Donington Salvage Operations',
-  portrait: '/profiles/scab-captain.png',
-  bio: 'Dockmaster at Donington Station. Keeps the berth moving and dispatches short-haul contracts.',
+  company: 'Entente Cordiale Government',
+  portrait: '/profiles/bill-churchill.jpg',
+  bio: 'Entente Cordiale liaison to Donington Station. Born in Maidstone in British Territory, Earth. ',
   platform: 'REACH',
   inventory: {
     label: 'Bill Churchill',
@@ -76,8 +76,9 @@ const BILL_CHURCHILL: DockContact = {
     turns: {
       intro: {
         id: 'intro',
-        npcText:
-          'You are docked at Donington Station. I need one parcel flown to Bakerfield Falls around Mars. Hank Johnson will receive it. Can you take it?',
+        npcText: `Splendid vessel you have there, your ship is it? I wonder if I might impose upon your good nature. I have a package of some delicacy that must be conveyed to Bakerfield Falls Station. Would you mind terribly delivering it for me?
+It's all rather hush-hush if you gather my meaning. Depart at once and with the utmost discretion, and you'll find a… shall we say… pleasant consideration awaiting you at the other end.`,
+        audio: 'bill-churchill.mp3',
         playerOptions: [
           {
             id: 'accept-run',
@@ -88,7 +89,19 @@ const BILL_CHURCHILL: DockContact = {
           {
             id: 'decline-run',
             label: 'Decline',
-            text: 'Negative. Not taking that run right now.',
+            text: `I don't think so, but thank you kindly for the offer.`,
+            nextTurnId: 'declineRun',
+          },
+        ],
+      },
+      declineRun: {
+        id: 'decline-run',
+        npcText: `Ah such a shame, It's not often I am wrong, but I appear to have misjudged your calibre. I will not trouble you further.  `,
+        playerOptions: [
+          {
+            id: 'back',
+            label: 'Back',
+            text: 'Bye',
             nextTurnId: null,
           },
         ],
@@ -114,10 +127,10 @@ const BILL_CHURCHILL: DockContact = {
 const ELIAS_VOSS: DockContact = {
   id: 'elias-voss',
   name: 'Elias Voss',
-  role: 'official',
+  role: 'comms-officer',
   age: 44,
-  company: 'Mars Transit Authority',
-  portrait: '/profiles/scab-captain.png',
+  company: 'Donington Station Communications Chief',
+  portrait: '/profiles/elias-voss.jpg',
   bio: 'Comms officer assigned to Donington traffic control and orbital deployment clearances.',
   platform: 'REACH',
   dialogue: {
@@ -126,8 +139,8 @@ const ELIAS_VOSS: DockContact = {
     turns: {
       intro: {
         id: 'intro',
-        npcText:
-          'Comms Officer Elias Voss, Mars Transit Authority. We need an orbital survey satellite deployed today. One cargo container outside Bay A1 is tagged "Orbital Survey Satellite."',
+        npcText: `Communications Chief Elias Voss. We have an urgent matter requiring immediate attention. We would not ordinarily impose such a task on a civilian contractor. We have lost communication with our dear Mother Earth. We'd be incredibly grateful if you'd be so kind as to undertake the task of positioning an orbital communications satellite in the hopes that we can re-establish communication. A single cargo crate containing a communication satellite to be positioned in orbit around Mars.`,
+        audio: 'elias-voss.mp3',
         playerOptions: [
           {
             id: 'accept',
@@ -138,7 +151,19 @@ const ELIAS_VOSS: DockContact = {
           {
             id: 'decline',
             label: 'Not now',
-            text: 'Negative. I am not ready to run that deployment yet.',
+            text: `Sorry, I'm not for hire.`,
+            nextTurnId: 'satellite-decline',
+          },
+        ],
+      },
+      satelliteDecline: {
+        id: 'satellite-decline',
+        npcText: `That's disappointing. I do hope that in the near future you don't require any assistance from Donington Station. Good day.`,
+        playerOptions: [
+          {
+            id: 'back',
+            label: 'Back',
+            text: 'Bye',
             nextTurnId: null,
           },
         ],
@@ -146,19 +171,13 @@ const ELIAS_VOSS: DockContact = {
       brief: {
         id: 'brief',
         npcText:
-          'Procedure is simple: dock with the marked container, tow it to a stable Mars orbit, then undock to release. Keep periapsis and apoapsis above the atmosphere and avoid high radial drift before separation.',
+          'Spectacular! The procedure is simple: dock with the marked container, tow it to a stable Mars orbit, then undock to release. Keep periapsis and apoapsis above the atmosphere and avoid high radial drift before separation.',
         playerOptions: [
           {
             id: 'ack',
             label: 'Acknowledge',
             text: 'Copy all. I will report once the satellite is deployed.',
             nextTurnId: null,
-          },
-          {
-            id: 'repeat',
-            label: 'Repeat procedure',
-            text: 'Repeat the deployment checklist.',
-            nextTurnId: 'brief',
           },
         ],
       },

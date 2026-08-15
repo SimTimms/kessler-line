@@ -10,6 +10,8 @@ export const mobileThrustStrafeRight = { current: false };
 export const mobileThrustRadialOut = { current: false };
 export const mobileThrustRadialIn = { current: false };
 
+export const mobileStabilizerActive = { current: false };
+
 // ── Player cinematic input overrides ──────────────────────────────────────────
 export const cinematicThrustForward = { current: false };
 export const cinematicThrustReverse = { current: false };

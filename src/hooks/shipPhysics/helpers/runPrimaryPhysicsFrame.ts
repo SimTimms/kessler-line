@@ -14,7 +14,7 @@ import {
   SCRAPPER_PLAYER_OFFSET_Z,
 } from '../../../config/scrapperConfig';
 import { DEBUG_DISABLE_GRAVITY, DEBUG_FREEZE_COLLISIONS } from '../../../config/debugConfig';
-import { cinematicThrustForward, cinematicThrustReverse } from '../../../context/PlayerShipState';
+import { cinematicThrustForward, cinematicThrustReverse, mobileStabilizerActive } from '../../../context/PlayerShipState';
 import { canVesselUsePropulsion, type VesselRuntimeState } from '../../../context/VesselStateStore';
 import { updateAutopilotThrustOutputs } from '../simpleAutopilot';
 import { getCombinedInputs, getManualInput } from '../inputs';
@@ -243,7 +243,7 @@ export function runPrimaryPhysicsFrame({
 
   // Stabiliser (Space held): synthetically activates both keys of every cancel pair so the
   // cancel-assist blocks below fire opposing thrusters on all three axes simultaneously.
-  if (stabilizerActive.current) {
+  if (stabilizerActive.current || mobileStabilizerActive.current) {
     fwd = true;
     rev = true;
     yawLeft = true;

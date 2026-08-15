@@ -1,35 +1,45 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
-import { isWithinRadioRange } from '../../context/RadioState';
+import { isWithinRadioRange, isWithinPassiveRadioRange } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
 import {
   messageStore,
-  addMessage,
   queueMessage,
-  markRead,
   getUnreadCount,
 } from '../../context/MessageStore';
 import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
 import { KM_PER_UNIT, RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
 import { STATIC_CONTACTS } from '../../narrative/contacts';
-import { type HailStatus, setHailStatus, markHailDeclined, getAllHailStates } from '../../context/HailState';
+import {
+  type HailStatus,
+  setHailStatus,
+  getAllHailStates,
+} from '../../context/HailState';
 import {
   setIncomingHail,
-  dismissIncomingHail,
   getIncomingHails,
   type IncomingHailEventDetail,
 } from '../../context/IncomingHailState';
 import {
   getRadioBroadcasts,
-  isRadioHailEnabled,
-  resolveRadioDialogueTreeId,
   type RadioBroadcastEntry,
 } from '../../context/RadioBroadcastRegistry';
 import { setDriveSignaturesToRadio } from './helpers/setDriveSignaturesToRadio';
-import { assignDialogueTree, SATURN_STARTER_DIALOGUE_TREE_ID } from '../../narrative/npcDialogues';
-import { getSettlementByObjectId } from '../../context/SettlementTracker';
-import { getSettlementHailPreview } from '../../narrative/settlementRadio';
+import {
+  type HailOffer,
+  type BroadcastContactSlim,
+  SHIP_DESIGNATIONS,
+  commsStatus,
+  clampChance,
+  driveStatusLine,
+  driveStatusPulse,
+  sendHailContact,
+  shouldShowHailPrompt,
+  getChatOfferContent,
+  acceptHailOffer,
+  declineHailOffer,
+} from '../../context/HailManager';
 import { ContactsHudDialog } from './ContactsHudDialog/ContactsHudDialog';
 import type { SelectionItem } from './ContactsHudDialog/ContactsHudDialog';
 import CommsChat from '../CommsChat/CommsChat';
@@ -53,10 +63,7 @@ import {
 } from '../../context/DockablePartnerStore';
 import DockInteriorDialogue from '../Station/StationDialogue';
 import { getThread } from '../../context/ChatStore';
-import {
-  EVENT_OPEN_COMMS_CONTACT,
-  type OpenCommsContactDetail,
-} from '../../context/CommsUiEvents';
+import { EVENT_OPEN_COMMS_CONTACT, type OpenCommsContactDetail } from '../../context/CommsUiEvents';
 import {
   EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED,
   EVENT_DOCK_PERMISSION_CHANGED,
@@ -72,6 +79,7 @@ export interface DriveContact {
   distanceLabel: string;
   distanceRaw: number;
   radioActive: boolean;
+  inPassiveRange: boolean;
 }
 
 interface BroadcastContact {
@@ -79,158 +87,11 @@ interface BroadcastContact {
   distanceLabel: string;
   distanceRaw: number;
   inRadioRange: boolean;
+  inPassiveRange: boolean;
 }
-
-interface HailOffer {
-  shipId: string;
-  type: 'trade' | 'mission';
-  header?: string;
-  body?: string;
-  dialogueTreeId?: string;
-}
-
-const SHIP_DESIGNATIONS: Record<string, string> = {
-  '0': 'HEKTOR-7',
-  'fleet-mars-1': 'RN-11 RED DUSK',
-  'fleet-earth-1': 'RN-08 HALCYON',
-  'fleet-jupiter-1': 'RN-22 AURORA KNIFE',
-  'fleet-saturn-1': 'RN-14 NIGHTGLASS',
-  'fleet-neptune-1': 'RN-31 GREYWATER',
-  'fleet-roamer-1': 'RN-03 FARLINE',
-};
-
-const STARTER_FLEET_CONTACT_IDS = new Set([
-  'fleet-mars-1',
-  'fleet-earth-1',
-  'fleet-jupiter-1',
-  'fleet-saturn-1',
-  'fleet-neptune-1',
-  'fleet-roamer-1',
-]);
 
 // Session-persistent communication history (survives component remounts).
 const HISTORICAL_CONTACT_IDS = new Set<string>();
-
-const HAIL_CONTENT: Record<
-  'trade' | 'mission',
-  Record<string, { header: string; body: string }>
-> = {
-  trade: {
-    '0': {
-      header: 'SURPLUS CARGO — FUEL CELLS',
-      body: "We're carrying more fuel cells than we need and they're eating into our margins. Half price if you take them now. We don't need the credits as much as we need the cargo space.",
-    },
-  },
-  mission: {
-    '0': {
-      header: 'ESCORT CONTRACT',
-      body: "Our drive is cycling wrong — diagnostics point to a thermal regulator but we can't fix it out here. Three days to the station at reduced thrust. We just need another ship in proximity while we limp in. Standard rate on arrival.",
-    },
-    'fleet-mars-1': {
-      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
-      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
-    },
-    'fleet-earth-1': {
-      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
-      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
-    },
-    'fleet-jupiter-1': {
-      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
-      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
-    },
-    'fleet-saturn-1': {
-      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
-      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
-    },
-    'fleet-neptune-1': {
-      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
-      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
-    },
-    'fleet-roamer-1': {
-      header: 'UNSCHEDULED CONTACT — FLEET CHECK',
-      body: "Hey, this is fleet recon. Not much out here. We've had no contact for days now. We were expecting a rendezvous and got complete radio silence. Have you had any contact?",
-    },
-  },
-};
-
-const ACCEPT_BODIES = [
-  (name: string) => `Channel open. Go ahead.\n\n— ${name}`,
-  (name: string) => `Copy. Standing by.\n\n— ${name}`,
-  (name: string) => `Received. You're clear to transmit.\n\n— ${name}`,
-];
-
-const REJECT_BODIES = [
-  (name: string) => `Not receiving traffic. Stand off.\n\n— ${name}`,
-  (name: string) => `No.\n\n— ${name}`,
-  (name: string) => `Channel closed.\n\n— ${name}`,
-];
-
-function sendHailContact(id: string, name: string) {
-  setHailStatus(id, 'pending');
-
-  addMessage({
-    id: `hail-out-${id}`,
-    from: 'COMMS SYSTEM',
-    subject: `HAIL TRANSMITTED — ${name}`,
-    body: `Outgoing hail sent on open channel.\nAwaiting response from ${name}.`,
-    platform: 'OPENLINE',
-  });
-
-  const delayMs = 4000 + Math.random() * 8000;
-  const accepted = Math.random() < getHailAcceptanceChance(id);
-  const pool = accepted ? ACCEPT_BODIES : REJECT_BODIES;
-  const body = pool[Math.floor(Math.random() * pool.length)](name);
-
-  queueMessage(
-    {
-      id: `hail-resp-${id}`,
-      from: name,
-      subject: accepted ? 'HAIL RESPONSE — CHANNEL OPEN' : 'HAIL RESPONSE — DECLINED',
-      body,
-      platform: 'OPENLINE',
-    },
-    delayMs
-  );
-
-  setTimeout(() => {
-    setHailStatus(id, accepted ? 'accepted' : 'rejected');
-  }, delayMs);
-}
-
-function clampChance(value: number | undefined, fallback: number): number {
-  if (!Number.isFinite(value)) return fallback;
-  return Math.max(0, Math.min(1, value as number));
-}
-
-function getHailAcceptanceChance(contactId: string): number {
-  const dock = getDock(contactId);
-  if (dock) {
-    return clampChance(dock.hailAcceptanceChance, 0.7);
-  }
-  return 0.7;
-}
-
-export const commsStatus = {
-  pending: '◈ HAIL PENDING',
-  accepted: '● COMMS ESTABLISHED',
-  rejected: '✕ HAIL DECLINED',
-  none: '○ OUT OF RADIO RANGE',
-  radioActive: '● RADIO ACTIVE',
-  incoming: '⊛ INCOMING HAIL',
-};
-
-function driveStatusLine(hs: HailStatus, radioActive: boolean): string {
-  if (hs === 'pending') return commsStatus.pending;
-  if (hs === 'accepted') return commsStatus.accepted;
-  if (hs === 'rejected') return commsStatus.rejected;
-  return radioActive ? commsStatus.radioActive : commsStatus.none;
-}
-
-function driveStatusPulse(hs: HailStatus, radioActive: boolean): boolean {
-  if (hs === 'pending') return true;
-  if (hs === 'none') return radioActive;
-  return false;
-}
 
 interface ContactsHUDProps {
   /** When true, only in-scene radio registrations and drive contacts (no static inbox contacts). */
@@ -332,7 +193,7 @@ export default function ContactsHUD({
             entry.id === 'fuel-station' &&
             !fuelStationHailFiredRef.current &&
             dist <= 10000 &&
-            isWithinRadioRange(dist)
+            isWithinPassiveRadioRange(dist)
           ) {
             fuelStationHailFiredRef.current = true;
             setIncomingHail('fuel-station');
@@ -356,10 +217,11 @@ export default function ContactsHUD({
                 ? `${(km / 1_000).toFixed(1)} Mm`
                 : `${km.toFixed(0)} km`;
           const inRadioRange = isWithinRadioRange(dist);
-          newBcasts.push({ entry, distanceLabel: distLabel, distanceRaw: dist, inRadioRange });
+          const inPassiveRange = isWithinPassiveRadioRange(dist);
+          newBcasts.push({ entry, distanceLabel: distLabel, distanceRaw: dist, inRadioRange, inPassiveRange });
         }
 
-        const bcastSig = newBcasts.map((b) => `${b.entry.id}:${b.inRadioRange ? 1 : 0}`).join('|');
+        const bcastSig = newBcasts.map((b) => `${b.entry.id}:${b.inRadioRange ? 1 : 0}:${b.inPassiveRange ? 1 : 0}`).join('|');
         if (bcastSig !== prevBcastSigRef.current) {
           prevBcastSigRef.current = bcastSig;
           setBroadcastContacts(newBcasts);
@@ -493,96 +355,29 @@ export default function ContactsHUD({
     setHistoryContactIds((prev) => new Set(prev).add(id));
   }
 
-  function isBroadcastHailEligible(shipId: string): boolean {
-    const b = broadcastContacts.find((x) => x.entry.id === shipId);
-    if (!b?.entry.hailRange || !resolveRadioDialogueTreeId(b.entry)) return false;
-    if (!isRadioHailEnabled(b.entry)) return false;
-    return b.inRadioRange && b.distanceRaw <= b.entry.hailRange;
+  function toBroadcastSlim(contacts: BroadcastContact[]): BroadcastContactSlim[] {
+    return contacts.map((b) => ({
+      id: b.entry.id,
+      distanceRaw: b.distanceRaw,
+      inRadioRange: b.inRadioRange,
+      hailRange: b.entry.hailRange,
+    }));
   }
 
-  function shouldShowHailPrompt(shipId: string): boolean {
-    if (getThread(shipId)) return false;
-    const status = hailStates.get(shipId) ?? 'none';
-    if (status === 'accepted') return false;
-    if (incomingHails.has(shipId)) return true;
-    return isBroadcastHailEligible(shipId);
-  }
-
-  function handleAcceptHailOffer(shipId: string) {
+  function handleAcceptHail(shipId: string) {
     rememberContact(shipId);
-    const offer = hailOffers.get(shipId);
-    if (offer) {
-      if (offer.dialogueTreeId) {
-        assignDialogueTree(shipId, offer.dialogueTreeId);
-        setHailStatus(shipId, 'accepted');
-        setHailOffers((prev) => {
-          const next = new Map(prev);
-          next.delete(shipId);
-          return next;
-        });
-        dismissIncomingHail(shipId);
-        return;
-      }
-
-      // NPCHailRequest case: create inbox message and open it
-      const designation = SHIP_DESIGNATIONS[shipId] ?? `VESSEL-${shipId.toUpperCase()}`;
-      const typeContent = HAIL_CONTENT[offer.type];
-      const content = {
-        header: offer.header ?? (typeContent[shipId] ?? typeContent['0']).header,
-        body: offer.body ?? (typeContent[shipId] ?? typeContent['0']).body,
-      };
-      const msgId = `npc-hail-${shipId}-${Date.now()}`;
-      addMessage({
-        id: msgId,
-        from: designation,
-        subject: content.header,
-        body: content.body,
-        platform: 'OPENLINE',
-        replies: [
-          {
-            id: 'accept',
-            label: offer.type === 'trade' ? 'ACCEPT TRADE' : 'ACCEPT CONTRACT',
-            playerText:
-              offer.type === 'trade'
-                ? 'Deal. Transferring credits now.'
-                : 'Copy that. Matching your heading, maintaining proximity.',
-          },
-          {
-            id: 'decline',
-            label: 'DECLINE',
-            playerText: 'Not interested. Good luck out there.',
-          },
-        ],
-      });
-      markRead(msgId);
-      setHailOffers((prev) => {
-        const next = new Map(prev);
-        next.delete(shipId);
-        return next;
-      });
-      dismissIncomingHail(shipId);
+    const result = acceptHailOffer(shipId, hailOffers.get(shipId));
+    if (result.clearOffer) {
+      setHailOffers((prev) => { const next = new Map(prev); next.delete(shipId); return next; });
+    }
+    if (result.closeChatPanel) {
       setChatShipId(null);
-    } else {
-      if (STARTER_FLEET_CONTACT_IDS.has(shipId)) {
-        assignDialogueTree(shipId, SATURN_STARTER_DIALOGUE_TREE_ID);
-        setHailStatus(shipId, 'accepted');
-        dismissIncomingHail(shipId);
-        return;
-      }
-      const entry = getRadioBroadcasts().find((e) => e.id === shipId);
-      const treeId = entry ? resolveRadioDialogueTreeId(entry) : undefined;
-      if (treeId) {
-        assignDialogueTree(shipId, treeId);
-      }
-      setHailStatus(shipId, 'accepted');
-      dismissIncomingHail(shipId);
     }
   }
 
-  function handleDeclineHailOffer(shipId: string) {
+  function handleDeclineHail(shipId: string) {
     rememberContact(shipId);
-    markHailDeclined(shipId);
-    dismissIncomingHail(shipId);
+    declineHailOffer(shipId);
     setChatShipId(null);
   }
 
@@ -594,7 +389,7 @@ export default function ContactsHUD({
       id: d.id,
       label: d.name,
       sublabel: `DRIVE SIG · ${d.distanceLabel}`,
-      statusLine: isIncoming ? commsStatus.incoming : driveStatusLine(hs, d.radioActive),
+      statusLine: isIncoming ? commsStatus.incoming : driveStatusLine(hs, d.radioActive, d.inPassiveRange),
       statusPulse: isIncoming ? true : driveStatusPulse(hs, d.radioActive),
     };
   }
@@ -609,7 +404,9 @@ export default function ContactsHUD({
         ? commsStatus.incoming
         : b.inRadioRange
           ? commsStatus.radioActive
-          : commsStatus.none,
+          : b.inPassiveRange
+            ? commsStatus.receiving
+            : commsStatus.none,
       statusPulse: isIncoming,
     };
   }
@@ -725,6 +522,7 @@ export default function ContactsHUD({
   const chatShipName = chatShipId
     ? (resolveDockInteriorChat(chatShipId)?.contact.name ??
       inRangeDrives.find((d) => d.id === chatShipId)?.name ??
+      getThread(chatShipId)?.shipName ??
       (hailOffers.has(chatShipId)
         ? (SHIP_DESIGNATIONS[chatShipId] ?? `VESSEL-${chatShipId.toUpperCase()}`)
         : undefined) ??
@@ -732,10 +530,16 @@ export default function ContactsHUD({
       chatShipId)
     : '';
 
-  const chatRadioActive = chatShipId
+  const chatCanReceive = chatShipId
+    ? (inRangeDrives.find((d) => d.id === chatShipId)?.inPassiveRange ??
+      broadcastContacts.find((b) => b.entry.id === chatShipId)?.inPassiveRange ??
+      incomingHails.has(chatShipId))
+    : false;
+
+  const chatCanTransmit = chatShipId
     ? (inRangeDrives.find((d) => d.id === chatShipId)?.radioActive ??
       broadcastContacts.find((b) => b.entry.id === chatShipId)?.inRadioRange ??
-      false)
+      incomingHails.has(chatShipId))
     : false;
   const chatDockPermissionGranted = chatShipId ? hasDockPermission(chatShipId) : false;
 
@@ -745,27 +549,7 @@ export default function ContactsHUD({
     return dockPermissionCandidate.stationId === shipId;
   }
 
-  function getChatOfferContent(): { header: string; body: string } | undefined {
-    if (!chatShipId) return undefined;
-    const offer = hailOffers.get(chatShipId);
-    if (offer) {
-      const typeContent = HAIL_CONTENT[offer.type];
-      const fallback = typeContent[chatShipId] ?? typeContent['0'];
-      return {
-        header: offer.header ?? fallback.header,
-        body: offer.body ?? fallback.body,
-      };
-    }
-    const settlement = getSettlementByObjectId(chatShipId);
-    if (settlement) {
-      return getSettlementHailPreview(settlement);
-    }
-    if (STARTER_FLEET_CONTACT_IDS.has(chatShipId)) {
-      const fallback = HAIL_CONTENT.mission[chatShipId] ?? HAIL_CONTENT.mission['fleet-roamer-1'];
-      return fallback;
-    }
-    return undefined;
-  }
+  const chatOfferContent = chatShipId ? getChatOfferContent(chatShipId, hailOffers) : undefined;
 
   const rosterCount = inRangeDrives.length + dockInteriorItems.length;
   const contactsActive = rosterCount > 0;
@@ -849,12 +633,13 @@ export default function ContactsHUD({
               shipName={chatShipName}
               platform={RADIO_COMMS_PLATFORM}
               hailStatus={hailStates.get(chatShipId) ?? 'none'}
-              radioActive={chatRadioActive}
-              showHailPrompt={shouldShowHailPrompt(chatShipId)}
-              hailOfferContent={getChatOfferContent()}
+              radioActive={chatCanTransmit}
+              canReceive={chatCanReceive}
+              showHailPrompt={shouldShowHailPrompt(chatShipId, incomingHails, toBroadcastSlim(broadcastContacts), hailStates, getThread)}
+              hailOfferContent={chatOfferContent}
               onHail={() => sendHailContact(chatShipId, chatShipName)}
-              onAcceptHail={() => handleAcceptHailOffer(chatShipId)}
-              onDeclineHail={() => handleDeclineHailOffer(chatShipId)}
+              onAcceptHail={() => handleAcceptHail(chatShipId)}
+              onDeclineHail={() => handleDeclineHail(chatShipId)}
               canRequestDockPermission={shouldEnableDockPermissionRequest(chatShipId)}
               isDockPermissionGranted={chatDockPermissionGranted}
               onRequestDockPermission={() => {

@@ -6,6 +6,8 @@ export interface ChatMessage {
   role: 'player' | 'npc';
   text: string;
   timestamp: number;
+  /** Resolved src of a recorded voice clip, played on demand from the panel. */
+  audioSrc?: string;
 }
 
 export interface ChatThread {

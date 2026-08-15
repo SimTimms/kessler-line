@@ -127,6 +127,10 @@ export function useNavTargetSync(
       setTargetId(id);
       setTargetLabel(label);
     };
+    const onNavTargetChanged = (e: Event) => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      setTargetId(id);
+    };
     const onNavTargetCleared = () => {
       setTargetId('');
       setTargetLabel('');
@@ -134,9 +138,11 @@ export function useNavTargetSync(
       selectedObjNameRef.current = null;
     };
     window.addEventListener('NavTargetSet', onNavTargetSet);
+    window.addEventListener('NavTargetChanged', onNavTargetChanged);
     window.addEventListener('NavTargetCleared', onNavTargetCleared);
     return () => {
       window.removeEventListener('NavTargetSet', onNavTargetSet);
+      window.removeEventListener('NavTargetChanged', onNavTargetChanged);
       window.removeEventListener('NavTargetCleared', onNavTargetCleared);
     };
   }, []);

@@ -27,6 +27,9 @@ interface NavTargetDialogProps {
   navSectionLabel?: string;
   magneticItems: NavTargetItem[];
   driveItems: NavTargetItem[];
+  proximityItems?: NavTargetItem[];
+  radioItems?: NavTargetItem[];
+  radiationItems?: NavTargetItem[];
   showDriveItems?: boolean;
   selectedId?: string;
   highlightId?: string;
@@ -49,6 +52,9 @@ export function NavTargetDialog({
   navSectionLabel = 'NAV TARGETS',
   magneticItems,
   driveItems,
+  proximityItems = [],
+  radioItems = [],
+  radiationItems = [],
   showDriveItems = true,
   selectedId,
   highlightId,
@@ -57,13 +63,15 @@ export function NavTargetDialog({
 }: NavTargetDialogProps) {
   const scanPickerId = resolveScanPickerId(variant);
   const scanOnly = scanPickerId !== null;
-  const pickerItems =
-    scanItems ??
-    (scanPickerId === 'magnet'
-      ? magneticItems
-      : scanPickerId === 'drive'
-        ? driveItems
-        : []);
+
+  const pickerItemsByScanner: Record<string, NavTargetItem[]> = {
+    magnet: magneticItems,
+    drive: driveItems,
+    proximity: proximityItems,
+    radio: radioItems,
+    radiation: radiationItems,
+  };
+  const pickerItems = scanItems ?? (scanPickerId ? pickerItemsByScanner[scanPickerId] ?? [] : []);
 
   const soundFired = useRef(false);
   useEffect(() => {
@@ -147,6 +155,24 @@ export function NavTargetDialog({
                 <section>
                   <div className="ntd-section-header">DRIVE CONTACTS</div>
                   {driveItems.map(renderItem)}
+                </section>
+              )}
+              {proximityItems.length > 0 && (
+                <section>
+                  <div className="ntd-section-header">PROXIMITY CONTACTS</div>
+                  {proximityItems.map(renderItem)}
+                </section>
+              )}
+              {radioItems.length > 0 && (
+                <section>
+                  <div className="ntd-section-header">RADIO CONTACTS</div>
+                  {radioItems.map(renderItem)}
+                </section>
+              )}
+              {radiationItems.length > 0 && (
+                <section>
+                  <div className="ntd-section-header">RADIATION SOURCES</div>
+                  {radiationItems.map(renderItem)}
                 </section>
               )}
             </>

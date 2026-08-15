@@ -2,11 +2,9 @@ import * as THREE from 'three';
 import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/visualConfig';
 import { getPlanetPosition, getPlanetWorldRadius } from '../../config/planetPosition';
 import { PLANET_SOI_MULTIPLIER, SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
+import { inventoryItems, type InventoryItem } from '../../inventory/inventory-types';
 
 type Vec3 = [number, number, number];
-
-export const NARRATIVE_PRIMARY_FIELD_ID_PREFIX = 'narrative-a-';
-export const NARRATIVE_SECONDARY_FIELD_ID_PREFIX = 'narrative-b-';
 
 export const NARRATIVE_PRIMARY_ZONE_ID = 'narrative-primary-normal';
 export const NARRATIVE_SECONDARY_ZONE_ID = 'narrative-secondary-normal';
@@ -113,27 +111,26 @@ export function getNarrativeSecondaryFieldOrigin(target = new THREE.Vector3()): 
     );
 }
 
+/** Station ID used for the Donington dock partner registration. */
+export const NARRATIVE_DONINGTON_STATION_ID = `salvage-berth`;
+
+/** Collision ID of the Donington Station docking bay (hover dock). */
+export const NARRATIVE_DONINGTON_DOCK_ID = `docking-bay-${NARRATIVE_DONINGTON_STATION_ID}`;
+
+/**
+ * Spawn position at the Donington Station dock bay so the ship starts docked.
+ * Dock local offset `[300, -20, 0]` relative to the primary field origin.
+ */
 export function getNarrativeShipSpawn(): {
   position: Vec3;
   rotation: Vec3;
 } {
   const primary = getNarrativePrimaryFieldOrigin();
-  const secondary = getNarrativeSecondaryFieldOrigin();
-  const towardSecondary = secondary.clone().sub(primary).setY(0);
-  if (towardSecondary.lengthSq() < 1e-6) {
-    towardSecondary.set(1, 0, 0);
-  } else {
-    towardSecondary.normalize();
-  }
-  const spawn = primary
-    .clone()
-    .addScaledVector(towardSecondary, -320)
-    .add(new THREE.Vector3(0, 1.2, 220));
-  const towardPrimary = primary.clone().sub(spawn).setY(0).normalize();
-  const yaw = Math.atan2(towardPrimary.x, towardPrimary.z);
+  // Dock bay is at [300, -20, 0] relative to the primary field origin.
+  const spawn = primary.clone().add(new THREE.Vector3(300, -20, 0));
   return {
     position: [spawn.x, spawn.y, spawn.z],
-    rotation: [0, yaw, 0],
+    rotation: [0, Math.PI, 0],
   };
 }
 
@@ -145,6 +142,15 @@ export function getNarrativeMarsNormalTravelRadius(): number {
   // TODO: replace with a dynamic Mars altitude-derived radius.
   return 100;
 }
+
+export interface InventoryItemWithQuantity extends InventoryItem {
+  quantity: number;
+}
+
+/** Starter hold for the narrative scene (skipped when loading a save). */
+export const NARRATIVE_STARTER_CARGO: InventoryItemWithQuantity[] = [
+  { ...inventoryItems.hullRepairPatch, quantity: 8 },
+];
 
 export const NARRATIVE_CONFIG = {
   fogColor: '#02040a',

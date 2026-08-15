@@ -111,6 +111,25 @@
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
+/* ── Inline mode — fills parent container instead of fixed overlay ────────── */
+
+.comms-chat--inline {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  z-index: auto;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
 .comms-chat-header {
   padding: 14px 20px 12px;
   border-bottom: 1px solid var(--cc-border-soft);
@@ -355,6 +374,35 @@
   padding: 0 6px;
 }
 
+.comms-chat-row-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comms-chat-audio-btn {
+  padding: 2px 7px;
+  border: 1px solid var(--cc-btn-border);
+  background: var(--cc-btn-bg);
+  color: var(--cc-btn-text);
+  font-family: monospace;
+  font-size: 8px;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  cursor: pointer;
+  border-radius: 2px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.comms-chat-audio-btn:hover {
+  background: var(--cc-btn-bg-hover);
+  border-color: var(--cc-btn-border-hover);
+  color: var(--cc-btn-text-hover);
+}
+
 /* ── Ellipsis animation for pending ──────────────────────────────────────── */
 
 .comms-chat-ellipsis {
@@ -498,6 +546,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .comms-chat-opt {

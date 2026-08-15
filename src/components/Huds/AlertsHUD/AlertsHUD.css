@@ -65,7 +65,7 @@
 }
 
 .mech-alerts-title {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0.28em;
   color: var(--mech-label);
   line-height: 1;
@@ -73,7 +73,7 @@
 
 .mech-alerts-sub {
   margin-left: auto;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.22em;
   color: var(--mech-label);
   line-height: 1;
@@ -96,7 +96,7 @@
 .mech-alerts-line {
   position: relative;
   z-index: 1;
-  font-size: 12px;
+  font-size: var(--hud-fs-xl);
   letter-spacing: 0.14em;
   line-height: 1.2;
   text-align: center;

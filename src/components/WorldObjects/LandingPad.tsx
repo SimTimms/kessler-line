@@ -100,7 +100,7 @@ export default function LandingPad({
   const dockedRef = useRef(false);
   const dockingBayActiveRef = useRef(false);
   const [dockingBayActive, setDockingBayActive] = useState(false);
-  const structureCollisionId = `${id}-structure`;
+  const structureCollisionId = `${id}`;
   const dockingProfile = useMemo(
     () => ({
       ...LANDING_PAD_DOCK_CAPTURE_PROFILE,

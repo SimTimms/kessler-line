@@ -22,6 +22,7 @@ import {
   mobileThrustRadialIn,
   cinematicThrustForward,
   cinematicThrustReverse,
+  mobileStabilizerActive,
 } from './PlayerShipState';
 
 // ── Physics constants (values live in src/config/shipConfig.ts) ────────────────
@@ -200,4 +201,5 @@ export {
   mobileThrustRadialIn,
   cinematicThrustForward,
   cinematicThrustReverse,
+  mobileStabilizerActive,
 };

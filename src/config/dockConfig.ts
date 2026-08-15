@@ -9,9 +9,12 @@ export type DockableResourceSlot = {
 
 export type DockCharacterRole =
   | 'dockmaster'
+  | 'entente-cordiale-liaison'
+  | 'communications-chief'
   | 'gangster'
   | 'merchant'
   | 'official'
+  | 'comms-officer'
   | 'drifter'
   | 'trader'
   | 'police';
@@ -20,9 +23,12 @@ export type DockTradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
 
 export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   dockmaster: 'Dockmaster',
+  'entente-cordiale-liaison': 'Entente Cordiale Liaison',
+  'communications-chief': 'Communications Chief',
   gangster: 'Syndicate',
   merchant: 'Merchant',
   official: 'Port Official',
+  'comms-officer': 'Comms Officer',
   drifter: 'Drifter',
   trader: 'Trader',
   police: 'Security',
@@ -121,6 +127,12 @@ export interface DockDialogueTurn {
   npcText: string;
   playerOptions: DockPlayerOption[];
   trade?: DockTradeTurnConfig;
+  /**
+   * Recorded voice clip for this NPC line. Bare filenames resolve against
+   * `public/npc/`. Never autoplays — the comms panel shows a play button, and
+   * TTS is suppressed for turns that carry a clip.
+   */
+  audio?: string;
 }
 
 /** Branching dialogue tree — defined inline on each dock contact. */

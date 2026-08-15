@@ -10,6 +10,7 @@ import {
   mobileThrustStrafeRight,
   mobileThrustRadialOut,
   mobileThrustRadialIn,
+  mobileStabilizerActive,
 } from '../../context/ShipState';
 import {
   autopilotThrustForward,
@@ -48,7 +49,8 @@ export function getManualInput(refs: ThrustInputRefs): boolean {
     mobileThrustLeft.current ||
     mobileThrustRight.current ||
     mobileThrustStrafeLeft.current ||
-    mobileThrustStrafeRight.current
+    mobileThrustStrafeRight.current ||
+    mobileStabilizerActive.current
   );
 }
 

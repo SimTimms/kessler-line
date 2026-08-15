@@ -27,6 +27,7 @@ interface CommsChatProps {
   onClose: () => void;
   hailStatus?: HailStatus;
   radioActive?: boolean;
+  canReceive?: boolean;
   /** Messaging client skin for the comms panel (REACH = cyan, OPENLINE = orange). */
   platform?: MessagePlatform;
   /** Show accept/decline hail prompt (incoming or re-offer while still broadcasting). */
@@ -50,6 +51,7 @@ export default function CommsChat({
   onClose,
   hailStatus,
   radioActive,
+  canReceive,
   showHailPrompt = false,
   hailOfferContent,
   platform = RADIO_COMMS_PLATFORM,
@@ -70,6 +72,7 @@ export default function CommsChat({
 
   const effectiveHailStatus: HailStatus = hailStatus ?? 'accepted';
   const isRadioActive = radioActive ?? true;
+  const effectiveCanReceive = canReceive ?? true;
 
   // Sync from store whenever ChatUpdated fires for this ship
   useEffect(() => {
@@ -246,6 +249,7 @@ export default function CommsChat({
       effectiveHailStatus={effectiveHailStatus}
       showHailPrompt={showHailPrompt}
       isRadioActive={isRadioActive}
+      canReceive={effectiveCanReceive}
       hailOfferContent={hailOfferContent}
       onHail={onHail}
       onAcceptHail={onAcceptHail}

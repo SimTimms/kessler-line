@@ -1,0 +1,12 @@
+.helmet-hud {
+  --hud-fs-2xs: 9px;    /* was 7px  — micro tags, patch buttons */
+  --hud-fs-xs: 10px;    /* was 8px  — labels, counts, sub-titles */
+  --hud-fs-sm: 11px;    /* was 9px  — section titles, abbrevs */
+  --hud-fs-md: 12px;    /* was 10px — body text, values */
+  --hud-fs-lg: 13px;    /* was 11px — panel titles, metrics */
+  --hud-fs-xl: 14px;    /* was 12px — primary buttons, log lines */
+  --hud-fs-2xl: 15px;   /* was 13px — dialog items, key labels */
+  --hud-fs-3xl: 16px;   /* was 14px — inbox, power sections */
+  --hud-fs-hero: 18px;  /* was 16px — panel hero titles */
+  --hud-fs-display: 24px; /* was 22px — large numeric displays */
+}

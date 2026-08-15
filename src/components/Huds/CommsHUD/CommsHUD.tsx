@@ -258,6 +258,30 @@ export default function CommsHUD({
               <div className="mech-comms-pad">
                 <PadScanWaveform active={padScanActive} />
               </div>
+
+              {hasIncoming && (
+                <button
+                  type="button"
+                  className="mech-comms-hail"
+                  onClick={open}
+                  title="Accept incoming hail"
+                  aria-label="Incoming hail — click to open"
+                >
+                  <div className="mech-comms-hail-icon" aria-hidden>
+                    <RadioTower size={15} strokeWidth={1.75} />
+                  </div>
+                  <div className="mech-comms-hail-wave" aria-hidden>
+                    {Array.from({ length: PAD_SCAN_WAVE_BARS }, (_, i) => (
+                      <span
+                        key={i}
+                        className="mech-comms-hail-bar"
+                        style={{ animationDelay: `${i * 0.07}s` }}
+                      />
+                    ))}
+                  </div>
+                  <span className="mech-comms-hail-label">INCOMING HAIL</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

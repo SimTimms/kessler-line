@@ -3,7 +3,7 @@ import { playDialogOpen, playDialogSelect } from '../../../sound/SoundManager';
 import type { MessagePlatform } from '../../../context/MessageStore';
 import { PLATFORM_UI } from '../../../context/ActivePlatform';
 import './ContactsHudDialog.css';
-import { commsStatus } from '../ContactsHUD';
+import { commsStatus } from '../../../context/HailManager';
 
 export interface SelectionItem {
   id: string;

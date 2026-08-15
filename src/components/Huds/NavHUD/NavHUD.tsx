@@ -164,6 +164,9 @@ export const NavHUD = ({
 
   const magneticItems = toNavTargetItems(magneticContacts);
   const driveItems = toNavTargetItems(driveContacts);
+  const proximityItems = toNavTargetItems(proximityContacts);
+  const radioItems = toNavTargetItems(radioContacts);
+  const radiationItems = toNavTargetItems(radiationContacts);
 
   const scanContactsByPicker: Record<NavScanPickerId, NavScanContact[]> = {
     magnet: magneticContacts,
@@ -272,6 +275,9 @@ export const NavHUD = ({
       navSectionLabel="PLANETARY CONTACTS"
       magneticItems={magneticItems}
       driveItems={driveItems}
+      proximityItems={proximityItems}
+      radioItems={radioItems}
+      radiationItems={radiationItems}
       showDriveItems={true}
       selectedId={targetId}
       highlightId={highlightedContactId}
@@ -328,7 +334,7 @@ export const NavHUD = ({
                       }
                     >
                       <span className="helmet-nav-btn--contacts-face">
-                        {hasActiveNavTarget ? displayLabel || '\u2014' : 'CONTACTS'}
+                        {hasActiveNavTarget ? displayLabel || '\u2014' : 'TARGET'}
                       </span>
                     </button>
                   </div>

@@ -8,11 +8,15 @@ import AlertsHUD from '../AlertsHUD/AlertsHUD';
 import DockTransferHUD from '../DockTransferHUD/DockTransferHUD';
 import ShipControlsHUD from '../ShipControlsHUD/ShipControlsHUD';
 import CameraHUD from '../CameraHUD/CameraHUD';
+import FlightControlsHUD from '../FlightControlsHUD/FlightControlsHUD';
+import EventLogHUD from '../EventLogHUD/EventLogHUD';
+import DamageControlHUD from '../DamageControlHUD/DamageControlHUD';
 import { power as shipPower } from '../../../context/ShipState';
 import {
   EVENT_SHIP_POWER_DEPLETED,
   EVENT_SHIP_POWER_RESTORED,
 } from '../../../context/shipPowerSystems';
+import '../Hud.css';
 import './HelmetHUD.css';
 import '../ShipControlsHUD/ShipControlsHUD.css';
 
@@ -79,7 +83,18 @@ const HelmetHUD = memo(function HelmetHUD({
       className={`helmet-hud${powerOnline ? '' : ' helmet-hud--powerless'}`}
       data-power-online={powerOnline ? 'true' : 'false'}
     >
-      <div className="helmet-sensor-stack">
+      <div className="helmet-left-column">
+        <CommsHUD
+          radioOn={radioOn}
+          setRadioOn={setRadioOn}
+          radioOnRef={radioOnRef}
+          disableElements={disableElements}
+          focusElements={focusElements}
+          initialRadioPower={scannerInitialPowers?.radio}
+          sceneRadioContactsOnly={sceneRadioContactsOnly}
+        />
+        <EventLogHUD />
+        <DamageControlHUD />
         <ScannerHUD
           layout="helmet"
           focusElements={focusElements}
@@ -99,16 +114,8 @@ const HelmetHUD = memo(function HelmetHUD({
         <CameraHUD />
       </div>
       <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
-      <CommsHUD
-        radioOn={radioOn}
-        setRadioOn={setRadioOn}
-        radioOnRef={radioOnRef}
-        disableElements={disableElements}
-        focusElements={focusElements}
-        initialRadioPower={scannerInitialPowers?.radio}
-        sceneRadioContactsOnly={sceneRadioContactsOnly}
-      />
       <AlertsHUD />
+      <FlightControlsHUD />
       <DockTransferHUD />
     </div>
   );

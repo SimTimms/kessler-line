@@ -72,7 +72,7 @@
 }
 
 .mech-camera-key {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.08em;
   color: rgba(0, 200, 255, 0.55);
   line-height: 1;
@@ -94,7 +94,7 @@
   background: #05080c;
   color: rgba(0, 200, 255, 0.55);
   font: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.14em;
   cursor: pointer;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);

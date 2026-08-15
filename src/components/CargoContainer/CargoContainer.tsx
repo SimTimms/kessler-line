@@ -27,10 +27,7 @@ import {
 import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
 import { shipPosRef } from '../../context/ShipPos';
 import { shipQuaternion, shipVelocity } from '../../context/ShipState';
-import {
-  renderToSimulationSpace,
-  simulationToRenderSpace,
-} from '../../context/FloatingOrigin';
+import { renderToSimulationSpace, simulationToRenderSpace } from '../../context/FloatingOrigin';
 import type { ShipUndockedDetail } from '../../hooks/shipPhysics/docking';
 
 const DEFAULT_URL = '/container.glb';
@@ -107,7 +104,7 @@ export default function CargoContainer({
   // Clone so each instance is independent (shared GLTF cache is not mutated).
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const groupRef = useRef<THREE.Group>(null!);
-  const structureCollisionId = `${id}-structure`;
+  const structureCollisionId = `${id}`;
   const displayLabel = label ?? dock.label ?? 'Cargo Container';
 
   // Crates always slide on the XZ plane (Y locked to 0) unless on a drop-off pad.

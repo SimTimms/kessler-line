@@ -14,35 +14,43 @@ export interface NavScanPickerTheme {
   pickerTitle: string;
 }
 
+const SCANNER = {
+  magnet: 'magnet',
+  drive: 'drive',
+  proximity: 'proximity',
+  radio: 'radio',
+  radiation: 'radiation',
+} as const satisfies Record<string, NavScanPickerId>;
+
 const PICKER_META: Record<
   NavScanPickerId,
-  Omit<NavScanPickerTheme, 'id' | 'color'> & { sectionLabel?: string }
+  Omit<NavScanPickerTheme, 'id' | 'color' | 'abbrev'> & { sectionLabel?: string }
 > = {
-  magnet: {
+  [SCANNER.magnet]: {
     title: 'SELECT MAGNETIC CONTACT',
     emptyMessage: 'NO MAGNETIC CONTACTS IN RANGE',
     headerBrand: '⊕ MERIDIAN / MAGSCAN',
     pickerTitle: 'Magnetic contacts',
   },
-  drive: {
+  [SCANNER.drive]: {
     title: 'SELECT DRIVE CONTACT',
     emptyMessage: 'NO DRIVE SIGNATURES IN RANGE',
     headerBrand: '⊕ MERIDIAN / DRVSCAN',
     pickerTitle: 'Drive signatures',
   },
-  proximity: {
+  [SCANNER.proximity]: {
     title: 'SELECT PROXIMITY CONTACT',
     emptyMessage: 'NO PROXIMITY CONTACTS IN RANGE',
     headerBrand: '⊕ MERIDIAN / PRXSCAN',
     pickerTitle: 'Proximity contacts',
   },
-  radio: {
+  [SCANNER.radio]: {
     title: 'SELECT RADIO BEACON',
     emptyMessage: 'NO RADIO BEACONS IN RANGE',
     headerBrand: '⊕ MERIDIAN / RADSCAN',
     pickerTitle: 'Radio beacons',
   },
-  radiation: {
+  [SCANNER.radiation]: {
     title: 'SELECT RADIATION SOURCE',
     emptyMessage: 'NO RADIATION SOURCES IN RANGE',
     headerBrand: '⊕ MERIDIAN / RDNSCAN',
@@ -52,11 +60,11 @@ const PICKER_META: Record<
 
 /** Display order along the helmet nav target row (after TGT, before AP). */
 export const NAV_SCAN_PICKER_ORDER: readonly NavScanPickerId[] = [
-  'magnet',
-  'drive',
-  'proximity',
-  'radio',
-  'radiation',
+  SCANNER.magnet,
+  SCANNER.drive,
+  SCANNER.proximity,
+  SCANNER.radio,
+  SCANNER.radiation,
 ];
 
 export function getNavScanPickerTheme(id: NavScanPickerId): NavScanPickerTheme {
@@ -69,8 +77,6 @@ export function getNavScanPickerTheme(id: NavScanPickerId): NavScanPickerTheme {
   };
 }
 
-export function isNavScanPickerVariant(
-  variant: string,
-): variant is NavScanPickerId {
+export function isNavScanPickerVariant(variant: string): variant is NavScanPickerId {
   return variant in PICKER_META;
 }

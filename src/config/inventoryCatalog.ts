@@ -75,6 +75,13 @@ export const INVENTORY_ITEMS = {
     baseValue: 5,
     defaultCapacity: 1,
   },
+  hullRepairPatch: {
+    id: 'hull-repair-patch',
+    label: 'Hull Repair Patch',
+    category: 'parts',
+    baseValue: 30,
+    defaultCapacity: 10,
+  },
 } as const satisfies Record<string, InventoryItemDef>;
 
 export type InventoryItemId = (typeof INVENTORY_ITEMS)[keyof typeof INVENTORY_ITEMS]['id'];
@@ -111,6 +118,7 @@ export const INVENTORY_ITEM_UI: Record<string, InventoryItemUi> = {
   organics: { color: '#8fd45a', tag: 'ORG' },
   'spare-parts': { color: '#9aa4b2', tag: 'PART' },
   'churchill-parcel': { color: '#c9a9ff', tag: 'TASK' },
+  'hull-repair-patch': { color: '#ff6a4d', tag: 'RPR' },
 };
 
 export function getInventoryItemUi(itemIdOrLabel: string): InventoryItemUi {

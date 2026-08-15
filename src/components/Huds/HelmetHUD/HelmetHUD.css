@@ -93,10 +93,11 @@
   border: none;
 }
 
-/* ── Vitals / resources (top of left stack) ──────────────────────────────── */
+/* ── Vitals / resources (left column child) ─────────────────────────────── */
 
 .helmet-vitals {
   position: relative;
+  flex-shrink: 0;
   width: 100%;
   max-width: none;
   box-sizing: border-box;
@@ -160,7 +161,7 @@
 }
 
 .mech-vitals-title {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0.28em;
   color: var(--mech-label);
   line-height: 1;
@@ -168,7 +169,7 @@
 
 .mech-vitals-sub {
   margin-left: auto;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.22em;
   color: var(--mech-label);
   line-height: 1;
@@ -241,7 +242,7 @@
 
 .helmet-vital-tag {
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.18em;
   color: var(--mech-label);
   line-height: 1;
@@ -323,7 +324,7 @@
   position: relative;
   z-index: 1;
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.08em;
   color: var(--mech-cyan);
   line-height: 1;
@@ -386,7 +387,7 @@
   position: relative;
   z-index: 1;
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.04em;
   color: rgba(255, 176, 32, 0.9);
   line-height: 1;
@@ -456,23 +457,23 @@
   box-shadow: 0 0 4px rgba(0, 200, 255, 0.45);
 }
 
-/* ── Nav + scanner stack (bottom-left) ───────────────────────────────────── */
+/* ── Left-side column (comms → log → damage → sensors) ─────────────────── */
 
-.helmet-sensor-stack {
-  /* Matches prior scan-panel width (stack used to share space with thrust). */
-  --helmet-sensor-stack-width: min(242px, 48vw);
+.helmet-left-column {
   position: fixed;
   left: 12px;
+  top: 12px;
   bottom: 14px;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 6px;
-  pointer-events: none;
   z-index: 96;
+  width: min(260px, 48vw);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-.helmet-sensor-stack > * {
+.helmet-left-column > * {
   pointer-events: auto;
 }
 
@@ -563,7 +564,7 @@
 }
 
 .mech-nav-title {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0.28em;
   color: var(--mech-label);
   line-height: 1;
@@ -571,7 +572,7 @@
 
 .mech-nav-sub {
   margin-left: auto;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.22em;
   color: var(--mech-label);
   line-height: 1;
@@ -620,14 +621,14 @@
 }
 
 .helmet-nav-tag {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.18em;
   color: var(--mech-label);
   flex-shrink: 0;
 }
 
 .helmet-nav-name {
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   color: rgba(190, 230, 255, 0.95);
   text-transform: none;
   letter-spacing: 0.04em;
@@ -641,7 +642,7 @@
 }
 
 .helmet-nav-speed {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   color: var(--mech-cyan);
   font-variant-numeric: tabular-nums;
   text-transform: none;
@@ -665,7 +666,7 @@
 }
 
 .helmet-nav-dv {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   color: var(--mech-cyan);
   font-variant-numeric: tabular-nums;
   text-transform: none;
@@ -689,7 +690,7 @@
 }
 
 .helmet-nav-orbit {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   color: var(--mech-label);
   letter-spacing: 0.1em;
   margin-top: 6px;
@@ -701,7 +702,7 @@
   border: 1px solid #5a616a;
   color: rgba(190, 230, 255, 0.85);
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   padding: 5px 8px;
   cursor: pointer;
   letter-spacing: 0.12em;
@@ -769,7 +770,7 @@
     inset 0 -2px 3px rgba(0, 0, 0, 0.55),
     0 1px 2px rgba(0, 0, 0, 0.4);
   font-family: inherit;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.16em;
   line-height: 1;
   color: inherit;
@@ -798,7 +799,7 @@
   justify-content: flex-start;
   text-transform: none;
   letter-spacing: 0.04em;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   color: var(--mech-cyan);
   border-color: color-mix(in srgb, var(--mech-cyan) 45%, #5a616a);
   box-shadow:
@@ -818,7 +819,7 @@
   text-align: left;
   text-transform: none;
   letter-spacing: 0.04em;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -846,7 +847,7 @@
 }
 
 .helmet-nav-scan-label {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   font-weight: 500;
   letter-spacing: 0.18em;
   line-height: 1;
@@ -865,7 +866,7 @@
   background: var(--mech-crt-bg);
   border: 1px solid #0a0c10;
   color: var(--scan-accent);
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   min-width: 26px;
   padding: 5px 7px;
   font-variant-numeric: tabular-nums;
@@ -904,7 +905,7 @@
   color: var(--mech-cyan);
   border-color: #5a616a;
   background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   line-height: 1;
   letter-spacing: 0;
   text-transform: none;
@@ -923,7 +924,7 @@
 }
 
 .helmet-ap-state {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   opacity: 0.85;
   margin-left: 2px;
 }
@@ -975,6 +976,7 @@
 /* Mech shell owns chrome; neutralize legacy glass deck when paired with mech-scanner. */
 .mech-scanner.helmet-scanner-deck {
   position: relative;
+  flex-shrink: 0;
   width: 100%;
   max-width: none;
   box-sizing: border-box;
@@ -1000,7 +1002,7 @@
 
 .helmet-scanner-deck-head {
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.2em;
   color: var(--helmet-muted);
   margin-bottom: 8px;
@@ -1103,7 +1105,7 @@
 
 .helmet-scanner-lv {
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -1112,7 +1114,7 @@
 
 .helmet-scanner-abbr {
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.18em;
   text-align: right;
 }
@@ -1178,7 +1180,7 @@
 }
 
 .helmet-pad-scan-label {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.16em;
   text-align: right;
   color: inherit;

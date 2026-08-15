@@ -18,6 +18,7 @@ export const GAME_MODES = {
   game: 'game',
   orbitalManagement: 'orbitalManagement',
   emptyScene: 'emptyScene',
+  planetaryConfig: 'planetaryConfig',
 } as const;
 
 export type GameMode = (typeof GAME_MODES)[keyof typeof GAME_MODES];
@@ -38,4 +39,5 @@ export type TutorialMenuSelection =
   | typeof GAME_MODES.airManagement
   | typeof GAME_MODES.radioManagement
   | typeof GAME_MODES.orbitalManagement
-  | typeof GAME_MODES.emptyScene;
+  | typeof GAME_MODES.emptyScene
+  | typeof GAME_MODES.planetaryConfig;

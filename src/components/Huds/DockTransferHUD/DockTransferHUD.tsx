@@ -33,10 +33,6 @@ import {
   getDockTransferUi,
   minimizeDockTransferPanel,
 } from '../../../context/DockTransferUi';
-import {
-  ContactsHudDialog,
-  type SelectionItem,
-} from '../../ContactsHUD/ContactsHudDialog/ContactsHudDialog';
 import DockInteriorDialogue from '../../Station/StationDialogue';
 import '../HelmetHUD/HelmetHUD.css';
 import './DockTransferHUD.css';
@@ -181,9 +177,15 @@ function TransferRow({ partnerId, kind }: TransferRowProps) {
   );
 }
 
+interface DirectoryContactItem {
+  threadId: string;
+  name: string;
+  role: string;
+  portrait?: string;
+}
+
 const DockTransferHUD = memo(function DockTransferHUD() {
   const [ui, setUi] = useState(getDockTransferUi);
-  const [contactsOpen, setContactsOpen] = useState(false);
   const [dockThreadId, setDockThreadId] = useState<string | null>(null);
   const [, bump] = useState(0);
 
@@ -192,7 +194,6 @@ const DockTransferHUD = memo(function DockTransferHUD() {
       const next = getDockTransferUi();
       setUi(next);
       if (!next.partnerId || !next.panelOpen) {
-        setContactsOpen(false);
         setDockThreadId(null);
       }
     };
@@ -254,124 +255,139 @@ const DockTransferHUD = memo(function DockTransferHUD() {
   if (!partnerId || !panelOpen) return null;
 
   const kinds = listPartnerResources(partnerId);
-  const dockInteriorItems: SelectionItem[] = [
-    ...getDockContacts(partnerId).map((contact) => ({
-      id: dockContactThreadId(partnerId, contact.id),
-      label: contact.name,
-      sublabel: DOCK_ROLE_LABELS[contact.role],
-      avatarSrc: contact.portrait,
-      avatarAlt: contact.name,
-    })),
-    ...getDockJobs(partnerId)
-      .filter((job) => job.dialogue)
-      .map((job) => ({
-        id: dockJobThreadId(partnerId, job.id),
-        label: job.title,
-        sublabel: 'JOB BOARD',
-      })),
-  ];
-  if (kinds.length === 0 && dockInteriorItems.length === 0) return null;
+  const contacts: DirectoryContactItem[] = getDockContacts(partnerId).map((c) => ({
+    threadId: dockContactThreadId(partnerId, c.id),
+    name: c.name,
+    role: DOCK_ROLE_LABELS[c.role],
+    portrait: c.portrait,
+  }));
+  const jobs: DirectoryContactItem[] = getDockJobs(partnerId)
+    .filter((j) => j.dialogue)
+    .map((j) => ({
+      threadId: dockJobThreadId(partnerId, j.id),
+      name: j.title,
+      role: 'JOB BOARD',
+    }));
+  const directoryItems = [...contacts, ...jobs];
+
+  if (kinds.length === 0 && directoryItems.length === 0) return null;
 
   const label = getDockablePartnerLabel(partnerId);
   const backgroundImage = getDock(partnerId)?.backgroundImage ?? DEFAULT_DOCK_BACKGROUND_IMAGE;
-  const backgroundUrl = `url(${backgroundImage})`;
   const towable = ui.towable;
+
+  const activeDockChat = dockThreadId ? resolveDockInteriorChat(dockThreadId) : null;
 
   return (
     <div className="dock-transfer-hud__background">
-      <div className="dock-transfer-hud helmet-hud">
-        <div
-          className="dock-transfer-hud__header"
-          style={{
-            background: `${backgroundUrl} no-repeat center center`,
-            backgroundSize: 'cover',
-            padding: '30px 10px 30px 10px',
-          }}
-        >
-          <span className="dock-transfer-hud__title">{label}</span>
-        </div>
-        <span className="dock-transfer-hud__subtitle">Transfer</span>
+      <div className="dock-station-panel helmet-hud">
+        {/* ── Left column: station info + transfers + actions ── */}
+        <div className="dock-station-panel__left">
+          <div
+            className="dock-station-panel__hero"
+            style={{ backgroundImage: `url(${backgroundImage})` }}
+          >
+            <span className="dock-station-panel__hero-title">{label}</span>
+          </div>
 
-        {kinds.length > 0 ? (
-          <>
-            <div className="dock-transfer-hud__cols">
-              <span>Ship</span>
-              <span />
-              <span>Dock</span>
-            </div>
-            {kinds.map((kind) => (
-              <TransferRow key={kind} partnerId={partnerId} kind={kind} />
-            ))}
-          </>
-        ) : null}
-        {dockInteriorItems.length > 0 ? (
-          <>
-            <div className="dock-transfer-hud__divider" />
-            <div className="dock-transfer-hud__contacts-row">
-              <span className="dock-transfer-hud__label">Contacts</span>
+          <div className="dock-station-panel__transfers">
+            {kinds.length > 0 ? (
+              <>
+                <div className="dock-station-panel__section-label">Transfer</div>
+                <div className="dock-transfer-hud__cols">
+                  <span>Ship</span>
+                  <span />
+                  <span>Dock</span>
+                </div>
+                {kinds.map((kind) => (
+                  <TransferRow key={kind} partnerId={partnerId} kind={kind} />
+                ))}
+              </>
+            ) : null}
+          </div>
+
+          <div className="dock-station-panel__left-footer">
+            {towable ? (
               <button
                 type="button"
                 className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
-                onClick={() => setContactsOpen(true)}
-                title={`Open ${label} contacts`}
+                onClick={() => {
+                  setDockThreadId(null);
+                  minimizeDockTransferPanel();
+                }}
+                title="Minimize transfer panel"
               >
-                OPEN
+                MINIMIZE
               </button>
-            </div>
-          </>
-        ) : null}
-        {contactsOpen ? (
-          <ContactsHudDialog
-            title={`${label} CONTACTS`}
-            dockInteriorItems={dockInteriorItems}
-            dockInteriorLabel={label}
-            savedItems={[]}
-            inRangeItems={[]}
-            onSave={() => {}}
-            onSelect={(id) => {
-              setDockThreadId(id);
-              setContactsOpen(false);
-            }}
-            onClose={() => setContactsOpen(false)}
-          />
-        ) : null}
-        {dockThreadId
-          ? (() => {
-              const dockChat = resolveDockInteriorChat(dockThreadId);
-              if (!dockChat) return null;
-              return (
-                <DockInteriorDialogue
-                  threadId={dockThreadId}
-                  contact={dockChat.contact}
-                  dialogue={dockChat.dialogue}
-                  onClose={() => setDockThreadId(null)}
-                />
-              );
-            })()
-          : null}
-        <div className="dock-transfer-hud__footer">
-          {towable ? (
+            ) : null}
             <button
               type="button"
               className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
-              onClick={() => {
-                setContactsOpen(false);
-                setDockThreadId(null);
-                minimizeDockTransferPanel();
-              }}
-              title="Minimize transfer panel"
+              onClick={() => window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK))}
+              title="Undock from current bay"
             >
-              MINIMIZE
+              UNDOCK
             </button>
-          ) : null}
-          <button
-            type="button"
-            className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
-            onClick={() => window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK))}
-            title="Undock from current bay"
-          >
-            UNDOCK
-          </button>
+          </div>
+        </div>
+
+        {/* ── Right column: contacts directory / dialogue ── */}
+        <div className="dock-station-panel__right">
+          <div className="dock-station-panel__right-header">
+            {dockThreadId && activeDockChat ? (
+              <>
+                <button
+                  type="button"
+                  className="dock-station-panel__back-btn"
+                  onClick={() => setDockThreadId(null)}
+                >
+                  BACK
+                </button>
+                <span className="dock-station-panel__right-title">
+                  {activeDockChat.contact.name}
+                </span>
+              </>
+            ) : (
+              <span className="dock-station-panel__right-title">STATION DIRECTORY</span>
+            )}
+          </div>
+
+          {dockThreadId && activeDockChat ? (
+            <div className="dock-station-panel__dialogue-wrapper">
+              <DockInteriorDialogue
+                threadId={dockThreadId}
+                contact={activeDockChat.contact}
+                dialogue={activeDockChat.dialogue}
+                inline
+                onClose={() => setDockThreadId(null)}
+              />
+            </div>
+          ) : directoryItems.length > 0 ? (
+            <div className="dock-station-panel__directory">
+              {directoryItems.map((item) => (
+                <button
+                  key={item.threadId}
+                  type="button"
+                  className="dock-station-panel__contact-item"
+                  onClick={() => setDockThreadId(item.threadId)}
+                >
+                  {item.portrait ? (
+                    <img
+                      className="dock-station-panel__contact-portrait"
+                      src={item.portrait}
+                      alt={item.name}
+                    />
+                  ) : null}
+                  <div className="dock-station-panel__contact-info">
+                    <div className="dock-station-panel__contact-name">{item.name}</div>
+                    <div className="dock-station-panel__contact-role">{item.role}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="dock-station-panel__empty">NO CONTACTS AVAILABLE</div>
+          )}
         </div>
       </div>
     </div>

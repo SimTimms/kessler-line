@@ -36,6 +36,7 @@ import {
 } from '../../context/InventoryStore';
 import { SHIP_MIN_CREW_ONBOARD } from '../../config/dockTransferConfig';
 import { speakNpcLine } from '../../sound/PiperTTS';
+import { resolveNpcVoiceClipSrc } from '../../sound/npcVoiceClips';
 import DialogueThread from '../CommsChat/DialogueThread';
 import '../CommsChat/CommsChat.css';
 import {
@@ -58,6 +59,8 @@ interface DockInteriorDialogueProps {
   threadId: string;
   contact: DockContact;
   dialogue: DockDialogueTree;
+  /** Render inside parent container instead of as a fixed overlay. */
+  inline?: boolean;
   onClose: () => void;
 }
 
@@ -221,6 +224,7 @@ export default function DockInteriorDialogue({
   threadId,
   contact,
   dialogue,
+  inline = false,
   onClose,
 }: DockInteriorDialogueProps) {
   const [thread, setThread] = useState<ChatThread | null>(() => {
@@ -282,15 +286,17 @@ export default function DockInteriorDialogue({
     if (!firstTurn) return;
 
     const delay = 700 + Math.random() * 900;
+    const openingClipSrc = resolveNpcVoiceClipSrc(firstTurn.audio);
     setTimeout(() => {
       addChatMessage(threadId, {
         id: `npc-${threadId}-open`,
         role: 'npc',
         text: firstTurn.npcText,
         timestamp: Date.now(),
+        audioSrc: openingClipSrc,
       });
       setChatTurn(threadId, dialogue.openingTurnId, false);
-      speakNpcLine(firstTurn.npcText, dialogue.id);
+      if (!openingClipSrc) speakNpcLine(firstTurn.npcText, dialogue.id);
       if (firstTurn.trade) {
         setTradeOpen(true);
         setTradeStatus(firstTurn.trade.panelStatusOpen);
@@ -685,11 +691,13 @@ export default function DockInteriorDialogue({
       });
 
       if (nextTurn) {
+        const clipSrc = resolveNpcVoiceClipSrc(nextTurn.audio);
         addChatMessage(threadId, {
           id: `npc-${threadId}-${option.nextTurnId}-${Date.now()}`,
           role: 'npc',
           text: nextTurn.npcText,
           timestamp: Date.now(),
+          audioSrc: clipSrc,
         });
         const isTerminal = nextTurn.playerOptions.length === 0;
         setChatTurn(threadId, isTerminal ? null : option.nextTurnId!, false);
@@ -700,7 +708,7 @@ export default function DockInteriorDialogue({
           setTradeOpen(false);
           setTradeStatus('');
         }
-        speakNpcLine(nextTurn.npcText, dialogue.id);
+        if (!clipSrc) speakNpcLine(nextTurn.npcText, dialogue.id);
       } else {
         setChatTurn(threadId, null, false);
         setTradeOpen(false);
@@ -716,6 +724,7 @@ export default function DockInteriorDialogue({
     <DialogueThread
       shipId={threadId}
       shipName={contact.name}
+      inline={inline}
       character={contact}
       hideShipProfile
       commsPlatform={contact.platform ?? 'REACH'}

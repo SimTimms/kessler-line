@@ -19,6 +19,8 @@ import { setNavHudEnabled } from '../../context/NavHud';
 import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
 import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
+import { setCargo } from '../../context/Inventory';
+import { NARRATIVE_STARTER_CARGO } from './narrativeSceneConfig';
 import { DeathOverlay } from '../Ship/DeathOverlay';
 import AutosaveIndicator from '../Huds/AutosaveIndicator';
 
@@ -78,6 +80,7 @@ export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
       resetScannerRefs();
       applyNarrativeScannerDefaults();
       clearAllIncomingHails();
+      setCargo([...NARRATIVE_STARTER_CARGO]);
     }
   }, [loadSave]);
 

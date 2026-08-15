@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { formatTime } from './commsUtils';
 import type { ChatThread } from '../../context/ChatStore';
 import type { HailStatus } from '../../context/HailState';
@@ -11,13 +11,59 @@ type DisplayRow = {
   content: ReactNode;
   timestamp: number;
   timeLabel?: ReactNode;
+  audioSrc?: string;
 };
+
+/** Play / stop control for a message that carries a recorded voice clip. */
+function MessageAudioButton({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, [src]);
+
+  const toggle = () => {
+    if (!audioRef.current) {
+      const audio = new Audio(src);
+      audio.preload = 'none';
+      audio.addEventListener('ended', () => setPlaying(false));
+      audio.addEventListener('error', () => setPlaying(false));
+      audioRef.current = audio;
+    }
+    const audio = audioRef.current;
+    if (playing) {
+      audio.pause();
+      audio.currentTime = 0;
+      setPlaying(false);
+      return;
+    }
+    setPlaying(true);
+    void audio.play().catch(() => setPlaying(false));
+  };
+
+  return (
+    <button
+      type="button"
+      className="comms-chat-audio-btn"
+      onClick={toggle}
+      title={playing ? 'Stop transmission audio' : 'Play transmission audio'}
+      aria-label={playing ? 'Stop transmission audio' : 'Play transmission audio'}
+    >
+      {playing ? '■ STOP' : '▶ PLAY'}
+    </button>
+  );
+}
 
 interface DialogMessagesProps {
   isPreHail: boolean;
   showHailPrompt: boolean;
   effectiveHailStatus: HailStatus;
   isRadioActive: boolean;
+  canReceive?: boolean;
   hailOfferContent?: { header: string; body: string };
   contact: StaticContact | null;
   displayRows: DisplayRow[];
@@ -33,6 +79,7 @@ export default function DialogMessages({
   showHailPrompt,
   effectiveHailStatus,
   isRadioActive,
+  canReceive = true,
   hailOfferContent,
   contact,
   displayRows,
@@ -99,7 +146,25 @@ export default function DialogMessages({
               </button>
             </div>
           )}
-          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && !isRadioActive && (
+          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && !isRadioActive && canReceive && (
+            <div className="comms-chat-prehail">
+              <button
+                className="comms-chat-hail-btn"
+                onClick={() => {
+                  setOutOfRangeNotice(true);
+                }}
+              >
+                ATTEMPT CONTACT
+              </button>
+              <div className="comms-chat-status-line">○ INCREASE RADIO RANGE TO TRANSMIT</div>
+              {outOfRangeNotice && (
+                <div className="comms-chat-status-line comms-chat-status-line--notice">
+                  SIGNAL FAILED - TRANSMIT RANGE EXCEEDED
+                </div>
+              )}
+            </div>
+          )}
+          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && !isRadioActive && !canReceive && (
             <div className="comms-chat-prehail">
               <button
                 className="comms-chat-hail-btn"
@@ -151,7 +216,10 @@ export default function DialogMessages({
               <div className={`comms-chat-bubble comms-chat-bubble--${row.role}`}>
                 {row.content}
               </div>
-              <div className="comms-chat-time">{row.timeLabel ?? formatTime(row.timestamp)}</div>
+              <div className="comms-chat-row-footer">
+                {row.audioSrc && <MessageAudioButton src={row.audioSrc} />}
+                <div className="comms-chat-time">{row.timeLabel ?? formatTime(row.timestamp)}</div>
+              </div>
             </div>
           ))}
 

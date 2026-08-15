@@ -1402,6 +1402,54 @@ export const DIALOGUE_TREES: DialogueTree[] = [
   MSG_FAMILY_EARTH,
   MSG_NEPTUNE_CONTROL,
   MSG_EMPLOYER_RECALL,
+  // ── Narrative scripted hails (kind:'broadcast' — excluded from random assignment) ──
+  {
+    id: 'elias-voss-satellite-hail',
+    captainName: 'Elias Voss',
+    vesselName: 'Donington Station',
+    openingTurnId: 'intro',
+    kind: 'broadcast' as const,
+    turns: {
+      intro: {
+        id: 'intro',
+        npcText:
+          "Excellent, we're picking up the transmissions now. I'll take it from here, going to adjust the orbital trajectory remotely. If we hear anything from Earth, I'll let you know.",
+        playerOptions: [
+          {
+            id: 'ack',
+            label: 'ACKNOWLEDGED',
+            text: 'Copy that. Good luck with the data.',
+            nextTurnId: 'closing',
+          },
+          {
+            id: 'ask-earth',
+            label: 'ANYTHING FROM EARTH?',
+            text: "Have you had any contact from Earth recently? Anything at all?",
+            nextTurnId: 'earth',
+          },
+        ],
+      },
+      closing: {
+        id: 'closing',
+        npcText:
+          "Appreciate the work, pilot. Donington out.",
+        playerOptions: [],
+      },
+      earth: {
+        id: 'earth',
+        npcText:
+          "Nothing yet. The relay's been quiet for a while now. But that's what the satellite is for — if there's anything out there, we'll hear it. I'll keep you posted.",
+        playerOptions: [
+          {
+            id: 'earth-ack',
+            label: 'UNDERSTOOD',
+            text: "Alright. I'll be around.",
+            nextTurnId: null,
+          },
+        ],
+      },
+    },
+  },
 ];
 
 // ── Session-local tree assignment ─────────────────────────────────────────────

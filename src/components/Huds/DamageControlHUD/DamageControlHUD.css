@@ -1,0 +1,237 @@
+/* ── Damage Control — fracture list (fixed, bottom-left area) ─────────────── */
+
+.damage-control {
+  --dc-red: #ff4d5e;
+  --dc-amber: #ffb020;
+  --dc-dim: rgba(180, 200, 220, 0.45);
+  --dc-green: #44e88a;
+
+  flex-shrink: 0;
+  max-height: 200px;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-sizing: border-box;
+}
+
+/* ── Header bar ──────────────────────────────────────────────────────────── */
+
+.damage-control-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgba(0, 10, 20, 0.55);
+  border-bottom: 1px solid rgba(255, 77, 94, 0.15);
+  flex-shrink: 0;
+}
+
+.damage-control-title {
+  font-size: var(--hud-fs-sm);
+  letter-spacing: 0.22em;
+  color: rgba(180, 200, 220, 0.55);
+  line-height: 1;
+}
+
+.damage-control-count {
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.12em;
+  color: rgba(255, 77, 94, 0.6);
+  line-height: 1;
+}
+
+.damage-control-patches {
+  margin-left: auto;
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.10em;
+  color: rgba(255, 176, 32, 0.6);
+  line-height: 1;
+}
+
+/* ── Scrollable list ─────────────────────────────────────────────────────── */
+
+.damage-control-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 77, 94, 0.2) transparent;
+}
+
+.damage-control-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.damage-control-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.damage-control-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 77, 94, 0.2);
+  border-radius: 2px;
+}
+
+/* ── Individual fracture row ─────────────────────────────────────────────── */
+
+.damage-control-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgba(20, 5, 5, 0.40);
+  border-left: 2px solid var(--dc-red);
+  animation: dc-slide-in 0.3s ease-out;
+}
+
+@keyframes dc-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Breach tag ──────────────────────────────────────────────────────────── */
+
+.damage-control-tag {
+  flex-shrink: 0;
+  font-size: var(--hud-fs-2xs);
+  letter-spacing: 0.16em;
+  padding: 1px 4px;
+  border-radius: 1px;
+  line-height: 1.3;
+  color: var(--dc-red);
+  background: rgba(255, 77, 94, 0.12);
+}
+
+/* ── Section text ────────────────────────────────────────────────────────── */
+
+.damage-control-section {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--hud-fs-md);
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  color: rgba(255, 180, 180, 0.9);
+}
+
+/* ── Patch button ────────────────────────────────────────────────────────── */
+
+.damage-control-patch {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid rgba(255, 176, 32, 0.35);
+  color: rgba(255, 176, 32, 0.8);
+  font-family: inherit;
+  font-size: var(--hud-fs-2xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.damage-control-patch:hover:not(:disabled) {
+  color: #fff;
+  border-color: rgba(255, 176, 32, 0.7);
+  background: rgba(255, 176, 32, 0.15);
+}
+
+.damage-control-patch:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+
+.damage-control-empty {
+  padding: 6px;
+  font-size: var(--hud-fs-sm);
+  letter-spacing: 0.14em;
+  color: rgba(68, 232, 138, 0.5);
+  text-align: center;
+}
+
+/* ── Patch progress bar ─────────────────────────────────────────────────── */
+
+.damage-control-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.damage-control-progress {
+  display: flex;
+  gap: 1px;
+  align-items: center;
+}
+
+.damage-control-progress__seg {
+  display: block;
+  width: 4px;
+  height: 10px;
+  background: rgba(255, 176, 32, 0.15);
+  border-radius: 1px;
+  transition: background 0.1s;
+}
+
+.damage-control-progress__seg--lit {
+  background: rgba(255, 176, 32, 0.85);
+  box-shadow: 0 0 3px rgba(255, 176, 32, 0.4);
+}
+
+.damage-control-eta {
+  font-size: var(--hud-fs-2xs);
+  letter-spacing: 0.10em;
+  color: rgba(255, 176, 32, 0.6);
+  line-height: 1;
+  min-width: 2ch;
+  text-align: right;
+}
+
+/* ── Queued label ────────────────────────────────────────────────────────── */
+
+.damage-control-queued {
+  flex-shrink: 0;
+  font-size: var(--hud-fs-2xs);
+  letter-spacing: 0.14em;
+  color: rgba(180, 200, 220, 0.45);
+  padding: 1px 6px;
+  border: 1px solid rgba(180, 200, 220, 0.15);
+  line-height: 1.3;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.damage-control-queued:hover {
+  color: var(--dc-red);
+  border-color: rgba(255, 77, 94, 0.35);
+}
+
+/* ── No-patch flash ──────────────────────────────────────────────────────── */
+
+.damage-control-no-patch {
+  padding: 3px 6px;
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.12em;
+  color: var(--dc-red);
+  text-align: center;
+  animation: dc-flash 0.6s ease-out;
+}
+
+@keyframes dc-flash {
+  0%, 100% { opacity: 0; }
+  20%, 80% { opacity: 1; }
+}

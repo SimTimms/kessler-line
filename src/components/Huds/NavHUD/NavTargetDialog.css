@@ -38,7 +38,7 @@
 .ntd-dialog::before {
   content: '⊕ MERIDIAN / ARESNAV';
   display: block;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.15em;
   color: var(--ntd-text);
   opacity: 0.7;
@@ -55,7 +55,7 @@
 
 .ntd-scan-brand {
   display: block;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.15em;
   color: var(--ntd-text);
   opacity: 0.7;
@@ -66,7 +66,7 @@
 }
 
 .ntd-title {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0.14em;
   color: var(--ntd-muted);
   text-align: center;
@@ -79,7 +79,7 @@
 }
 
 .ntd-section-header {
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.18em;
   color: var(--ntd-dim);
   padding: 8px 2px 4px;
@@ -100,7 +100,7 @@ section:first-child .ntd-section-header {
   border: none;
   color: var(--ntd-text);
   font-family: monospace;
-  font-size: 13px;
+  font-size: var(--hud-fs-2xl);
   letter-spacing: 0.05em;
   cursor: pointer;
   text-align: left;
@@ -136,13 +136,13 @@ section:first-child .ntd-section-header {
 }
 
 .ntd-item-sublabel {
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   color: var(--ntd-sublabel);
   letter-spacing: 0.08em;
 }
 
 .ntd-item-distance {
-  font-size: 10px;
+  font-size: var(--hud-fs-md);
   color: var(--ntd-sublabel);
   letter-spacing: 0.06em;
   flex-shrink: 0;
@@ -159,7 +159,7 @@ section:first-child .ntd-section-header {
   border-radius: 4px;
   color: var(--ntd-dim);
   font-family: monospace;
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0.08em;
   cursor: pointer;
 }
@@ -170,7 +170,7 @@ section:first-child .ntd-section-header {
 }
 
 .ntd-empty {
-  font-size: 11px;
+  font-size: var(--hud-fs-lg);
   letter-spacing: 0.1em;
   color: var(--ntd-dim);
   text-align: center;

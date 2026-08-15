@@ -25,14 +25,14 @@
 
 .power-dialog-body {
   margin: 0 0 20px;
-  font-size: 14px;
+  font-size: var(--hud-fs-3xl);
   color: #a0e8ff;
   line-height: 1.6;
 }
 
 .power-dialog-amount {
   margin: 0 0 16px;
-  font-size: 22px;
+  font-size: var(--hud-fs-display);
   color: #ff6666;
   letter-spacing: 0.06em;
 }

@@ -129,11 +129,6 @@ interface VitalBarDef {
   level: WarnLevel;
 }
 
-const VITAL_SEGMENT_COUNT = 5;
-
-function litSegmentCount(pct: number): number {
-  return Math.max(0, Math.min(VITAL_SEGMENT_COUNT, Math.round((pct / 100) * VITAL_SEGMENT_COUNT)));
-}
 
 function CrewIcons({ count, size }: { count: number; size: number }) {
   return (
@@ -191,9 +186,6 @@ function HelmetVitalsView({
       : ammoLevel === 'orange'
         ? 'helmet-vital-val--warn'
         : '';
-  const ammoSegClass =
-    ammoLevel === 'red' ? 'helmet-seg--crit' : ammoLevel === 'orange' ? 'helmet-seg--warn' : '';
-  const ammoLit = litSegmentCount(ammoPct);
   return (
     <div className="helmet-vitals mech-vitals" aria-live="polite">
       <div className="mech-vitals-bezel">
@@ -213,13 +205,6 @@ function HelmetVitalsView({
                 : bar.level === 'orange'
                   ? 'helmet-vital-val--warn'
                   : '';
-            const segLevelClass =
-              bar.level === 'red'
-                ? 'helmet-seg--crit'
-                : bar.level === 'orange'
-                  ? 'helmet-seg--warn'
-                  : '';
-            const litCount = litSegmentCount(bar.pct);
             const ventKind = ventKindForBarId(bar.id);
             const ventable = ventKind !== null && !disabled && canVentResource(ventKind);
             return (
@@ -254,18 +239,6 @@ function HelmetVitalsView({
                   >
                     {rateLabel ?? '\u00a0'}
                   </span>
-                  <div className="helmet-vital-segments" aria-hidden>
-                    {Array.from({ length: VITAL_SEGMENT_COUNT }, (_, i) => {
-                      const tierFromBottom = i + 1;
-                      const lit = tierFromBottom <= litCount;
-                      return (
-                        <div
-                          key={tierFromBottom}
-                          className={`helmet-seg helmet-seg--v${lit ? ' helmet-seg--lit' : ''}${lit ? ` ${segLevelClass}` : ''}`}
-                        />
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             );
@@ -279,18 +252,6 @@ function HelmetVitalsView({
               <span className={`helmet-vital-val ${ammoValClass}`}>
                 {ammoCount}/{ammoMax}
               </span>
-              <div className="helmet-vital-segments" aria-hidden>
-                {Array.from({ length: VITAL_SEGMENT_COUNT }, (_, i) => {
-                  const tierFromBottom = i + 1;
-                  const lit = tierFromBottom <= ammoLit;
-                  return (
-                    <div
-                      key={tierFromBottom}
-                      className={`helmet-seg helmet-seg--v${lit ? ' helmet-seg--lit' : ''}${lit ? ` ${ammoSegClass}` : ''}`}
-                    />
-                  );
-                })}
-              </div>
             </div>
           </div>
         </div>

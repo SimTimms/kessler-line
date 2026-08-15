@@ -7,7 +7,7 @@ import TutorialNavShipIndicator from '../TutorialShared/TutorialNavShipIndicator
 import { shipPosRef } from '../../context/ShipPos';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipVelocity } from '../../context/ShipState';
-import { gravityBodies } from '../../context/GravityRegistry';
+import type { ShipUndockedDetail } from '../../hooks/shipPhysics/docking';
 import { deployedSatelliteRef } from '../../context/DeployedSatelliteState';
 import DeployedSatellite from './DeployedSatellite';
 import LaserRay from '../Combat/LaserRay';
@@ -36,6 +36,7 @@ import { unregisterCollidable } from '../../context/CollisionRegistry';
 import { orbitStatusRef } from '../../context/ShipState';
 import { addMessage } from '../../context/MessageStore';
 import { pushAlert } from '../../context/AlertsStore';
+import { fireNarrativeHail } from '../../narrative/narrativeHail';
 import {
   getNarrativeMarsNormalTravelRadius,
   getNarrativeMarsZoneCenter,
@@ -43,19 +44,20 @@ import {
   getNarrativeSecondaryFieldOrigin,
   getNarrativeShipSpawn,
   NARRATIVE_CONFIG,
+  NARRATIVE_DONINGTON_DOCK_ID,
+  NARRATIVE_DONINGTON_STATION_ID,
   NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS,
   NARRATIVE_MARS_ZONE_ID,
-  NARRATIVE_PRIMARY_FIELD_ID_PREFIX,
   NARRATIVE_PRIMARY_ZONE_ID,
   NARRATIVE_SATELLITE_CONTAINER_LABEL,
   NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID,
-  NARRATIVE_SECONDARY_FIELD_ID_PREFIX,
   NARRATIVE_SECONDARY_ZONE_ID,
 } from './narrativeSceneConfig';
 import {
   BAKERFIELD_FALLS_DOCK_CONFIG,
   DONINGTON_STATION_DOCK_CONFIG,
 } from '../../config/docks/narrativeDockConfig';
+import { registerDock } from '../../context/DockablePartnerStore';
 import { CANVAS_FOV } from '../../config/visualConfig';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
@@ -74,6 +76,19 @@ function isStableMarsOrbitForDeployment(): boolean {
   return status.bodyId === 'Mars' && status.isOrbiting === true;
 }
 
+function fireEliasVossHail() {
+  fireNarrativeHail({
+    contactId: 'elias-voss-satellite-confirmed',
+    dialogueTreeId: 'elias-voss-satellite-hail',
+    shipName: 'Donington Station',
+    captainName: 'Elias Voss',
+    dockHistory: {
+      dockId: NARRATIVE_DONINGTON_STATION_ID,
+      contactId: 'elias-voss',
+    },
+  });
+}
+
 function NarrativeSatelliteMissionController({
   satelliteContainerId,
 }: {
@@ -88,7 +103,7 @@ function NarrativeSatelliteMissionController({
   // same dispatch as the CargoContainer handler, so we can kill collision and physics
   // before anything re-registers them.
   useEffect(() => {
-    const onUndocked = () => {
+    const onUndocked = (e: Event) => {
       if (completedRef.current || !missionArmedRef.current || !wasTowedRef.current) return;
       if (!isStableMarsOrbitForDeployment()) return;
 
@@ -98,45 +113,29 @@ function NarrativeSatelliteMissionController({
       completedRef.current = true;
 
       // Kill collision immediately — before CargoContainer's handler can re-register it
-      unregisterCollidable(`${satelliteContainerId}-structure`);
+      unregisterCollidable(`${satelliteContainerId}`);
 
-      // Capture orbit parameters for the deployed satellite
-      const mars = gravityBodies.get('Mars');
-      if (mars) {
-        const relX = shipPosRef.current.x - mars.position.x;
-        const relZ = shipPosRef.current.z - mars.position.z;
-        const orbitRadius = Math.sqrt(relX * relX + relZ * relZ);
-        const initialAngle = Math.atan2(relZ, relX);
-
-        // Tangential speed → angular speed for circular orbit
-        const relVx = shipVelocity.x - mars.velocity.x;
-        const relVz = shipVelocity.z - mars.velocity.z;
-        const tanX = -Math.sin(initialAngle);
-        const tanZ = Math.cos(initialAngle);
-        const tangentialSpeed = Math.abs(relVx * tanX + relVz * tanZ);
-        const angularSpeed = orbitRadius > 0 ? tangentialSpeed / orbitRadius : 0.1;
-
-        deployedSatelliteRef.current = {
-          orbitRadius,
-          angularSpeed,
-          initialAngle,
-          yTarget: -20,
-          deployed: true,
-        };
-      }
+      // Capture release position and velocity for the deployed satellite.
+      // Phase 1 (30 s) applies gravity so it tracks the same orbit as the ship.
+      // Phase 2 locks into a non-physical circular orbit at the final position.
+      const satPos = satellite.getSimPosition();
+      const detail = (e as CustomEvent<ShipUndockedDetail>).detail;
+      const releaseVel = detail?.partnerReleaseVelocity;
+      deployedSatelliteRef.current = {
+        releaseX: satPos.x,
+        releaseZ: satPos.z,
+        releaseVelX: releaseVel?.x ?? shipVelocity.x,
+        releaseVelZ: releaseVel?.z ?? shipVelocity.z,
+        yTarget: -30,
+        deployed: true,
+      };
 
       // Hide the cargo container and mark consumed — also prevents the CargoContainer
       // undock handler from re-enabling collision (it exits early when consumed).
       satellite.completeDropOff();
 
       pushAlert('Mission Complete: Mars satellite deployed.', 'blue');
-      addMessage({
-        id: 'narrative-satellite-mission-complete',
-        from: 'Comms Officer Elias Voss',
-        subject: 'Deployment Confirmed',
-        body: 'Telemetry lock acquired. Satellite deployment is stable and complete. Excellent work, pilot.',
-        platform: 'REACH',
-      });
+      fireEliasVossHail();
     };
 
     window.addEventListener('ShipUndocked', onUndocked);
@@ -228,7 +227,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
   const shipSpawn = useMemo(() => getNarrativeShipSpawn(), []);
   const effectiveSpawn = savedSpawn ?? shipSpawn;
-  const satelliteContainerId = `${NARRATIVE_PRIMARY_FIELD_ID_PREFIX}${NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID}`;
+  const satelliteContainerId = `${NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID}`;
   const satelliteContainerDock = useMemo<DockConfig>(
     () => ({
       ...CARGO_CONTAINER_DOCK,
@@ -263,6 +262,15 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   }, []);
   const marsZoneRadius = useMemo(() => getNarrativeMarsNormalTravelRadius(), []);
 
+  // Eagerly register the Donington dock partner so that hasDockablePartner()
+  // returns true when the ShipDocked event fires from initialDockedTo.
+  // The DockingBay inside LandingPad is proximity-gated and won't mount until
+  // after the first useFrame, which is too late for the initial dock event.
+  useLayoutEffect(() => {
+    if (savedSpawn) return;
+    registerDock({ id: NARRATIVE_DONINGTON_STATION_ID, ...DONINGTON_STATION_DOCK_CONFIG });
+  }, [savedSpawn]);
+
   useLayoutEffect(() => {
     // Skip spawn override when a save was loaded — apply() already set shipPosRef
     if (savedSpawn) return;
@@ -287,6 +295,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           shipGroupRef={spaceshipGroupRef}
           initialPosition={effectiveSpawn.position}
           initialRotation={effectiveSpawn.rotation}
+          initialDockedTo={savedSpawn ? undefined : NARRATIVE_DONINGTON_DOCK_ID}
           scale={1}
           initialVelocity={savedSpawn?.velocity ?? [0, 0, 0]}
           modulesInstalled={GARBAGE_SCOW_MODULES}
@@ -313,7 +322,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
         <SolarSystem scale={solarSystemScale} />
         <SalvageField
           origin={primaryFieldOrigin}
-          idPrefix={NARRATIVE_PRIMARY_FIELD_ID_PREFIX}
+          idPrefix={''}
           showDroneFleet={false}
           dockLabelOverride="Donington Station"
           dockConfigOverride={DONINGTON_STATION_DOCK_CONFIG}
@@ -328,18 +337,6 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
         <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
 
         <group position={primaryFieldOrigin} name="narrative-primary-field-cargo-containers">
-          {extraContainersLocalToPrimaryField.map((container) => (
-            <CargoContainer
-              key={`${NARRATIVE_PRIMARY_FIELD_ID_PREFIX}${container.id}`}
-              id={`${NARRATIVE_PRIMARY_FIELD_ID_PREFIX}${container.id}`}
-              label={container.label}
-              position={container.position}
-              rotation={container.rotation}
-              scale={container.scale}
-              dock={CARGO_CONTAINER_DOCK}
-              showCaptureMesh
-            />
-          ))}
           <CargoContainer
             id={satelliteContainerId}
             label={satelliteMissionContainerLocalToPrimaryField.label}
@@ -354,7 +351,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
         <SalvageField
           origin={secondaryFieldOrigin}
-          idPrefix={NARRATIVE_SECONDARY_FIELD_ID_PREFIX}
+          idPrefix={''}
           showDroneFleet={false}
           showDroneAtmosphere
           dockLabelOverride="Bakerfield Falls"

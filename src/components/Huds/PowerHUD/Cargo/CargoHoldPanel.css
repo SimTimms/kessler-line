@@ -76,7 +76,7 @@
 }
 
 .mech-cargo-sub {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.22em;
   color: var(--mech-label);
   line-height: 1;
@@ -121,7 +121,7 @@
 .mech-cargo-count {
   position: relative;
   z-index: 1;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   color: var(--mech-cyan);
@@ -225,7 +225,7 @@
   background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
   color: var(--mech-cyan);
   font-family: inherit;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -244,7 +244,7 @@
 
 .cargo-hold-panel__hint {
   margin: 0 2px 8px;
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.1em;
   color: var(--mech-label);
 }
@@ -327,7 +327,7 @@
 }
 
 .cargo-hold-panel__detail-tag {
-  font-size: 8px;
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.16em;
   color: var(--mech-label);
 }
@@ -339,19 +339,19 @@
 
 .cargo-hold-panel__detail-qty {
   margin-left: auto;
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   color: rgba(0, 200, 255, 0.55);
   font-variant-numeric: tabular-nums;
 }
 
 .cargo-hold-panel__detail-idle {
   color: var(--mech-label);
-  font-size: 9px;
+  font-size: var(--hud-fs-sm);
   letter-spacing: 0.12em;
 }
 
-/* Helmet layout: sit above the bottom-left sensor stack */
-.helmet-sensor-stack .cargo-hold-flyout-stack.power-hud--cargo-flyout {
+/* Helmet layout: sit above the bottom-left column */
+.helmet-left-column .cargo-hold-flyout-stack.power-hud--cargo-flyout {
   position: absolute;
   top: auto;
   bottom: calc(100% + 6px);
@@ -361,7 +361,7 @@
   z-index: 1;
 }
 
-.helmet-sensor-stack .cargo-hold-flyout-stack .cargo-hold-panel {
+.helmet-left-column .cargo-hold-flyout-stack .cargo-hold-panel {
   width: 100%;
   max-width: none;
 }
