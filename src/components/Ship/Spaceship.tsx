@@ -23,9 +23,7 @@ import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { setVesselModules } from '../../context/VesselStateStore';
 import { DEBUG_THRUSTER_HITBOXES } from '../../config/debugConfig';
-import {
-  SHIP_BOX_HALF_EXTENTS,
-} from '../../config/shipConfig';
+import { SHIP_BOX_HALF_EXTENTS } from '../../config/shipConfig';
 import {
   THRUSTER_LIGHT_COLOR,
   THRUSTER_LIGHT_DECAY,

@@ -69,7 +69,7 @@ interface SalvageDropOffPadProps {
   id?: string;
   label?: string;
   scale?: number;
-  dock: DockConfig;
+  dock?: DockConfig;
   captureRadius?: number;
   maxCaptureSpeed?: number;
   radioBroadcast?: RadioBroadcastDef;
@@ -96,7 +96,7 @@ export default function SalvageDropOffPad({
   const anchorRef = useRef<THREE.Group>(null!);
   const structureCollisionId = `${id}`;
   const transitionRef = useRef<DropOffTransition | null>(null);
-  const inventoryOwnerId = dock.inventoryOwnerId ?? id;
+  const inventoryOwnerId = dock ? (dock.inventoryOwnerId ?? id) : id;
 
   // Passive beacon only — no hailRange. Delivery dialogue fires once after intake completes.
   const resolvedRadio = useMemo<RadioBroadcastDef>(
@@ -114,7 +114,7 @@ export default function SalvageDropOffPad({
     [label, radioBroadcast]
   );
 
-  useRegisterDock(id, dock);
+  useRegisterDock(id, dock ?? null);
   useRegisterRadioBroadcast(groupRef, resolvedRadio);
 
   const setGroupRef = useCallback((el: THREE.Group | null) => {
@@ -143,6 +143,7 @@ export default function SalvageDropOffPad({
   }, [label, structureCollisionId]);
 
   useFrame((_, delta) => {
+    if (!dock) return;
     const anchor = anchorRef.current;
     if (!anchor) return;
 
@@ -258,6 +259,7 @@ export default function SalvageDropOffPad({
         selectTarget(label);
       }}
     >
+      <pointLight position={[0, 40, 0]} intensity={1000} color="white" distance={60} />
       {/* <PowerSource scale={1} /> */}
       <primitive object={modelScene} scale={scale} />
       {/* Intake anchor — crate is parented here during align/descend. */}

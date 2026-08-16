@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import AppContainer from '../App/AppContainer';
+import AppContainer from '../../components/App/AppContainer';
 import NarrativeConfigScene from './NarrativeConfigScene';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
-import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
-import AllHuds from '../Huds/AllHuds';
+import { ScannerHUDElements } from '../../components/Huds/HUD/ScannerHUD';
+import AllHuds from '../../components/Huds/AllHuds';
 import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
 import { disableAutopilot } from '../../context/AutopilotState';
-import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
+import { tutorialNavViewModeRef } from '../../components/TutorialShared/TutorialFollowCamera';
 import { resetCameraMode } from '../../context/CameraMode';
 import { getScannerRange } from '../../config/scanRanges';
 import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
@@ -17,12 +17,12 @@ import { radioOnRef, radioRangeRef } from '../../context/RadioState';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { setNavHudEnabled } from '../../context/NavHud';
 import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
-import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
+import SandboxHtmlMiniMap from '../../components/Minimap/SandboxHtmlMiniMap';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
 import { setCargo } from '../../context/Inventory';
 import { NARRATIVE_STARTER_CARGO } from './narrativeSceneConfig';
-import { DeathOverlay } from '../Ship/DeathOverlay';
-import AutosaveIndicator from '../Huds/AutosaveIndicator';
+import { DeathOverlay } from '../../components/Ship/DeathOverlay';
+import AutosaveIndicator from '../../components/Huds/AutosaveIndicator';
 
 const NARRATIVE_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.DRIVE]: 2,

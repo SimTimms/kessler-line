@@ -17,6 +17,36 @@ const _hVec = new THREE.Vector3();
 const ORBITAL_STATUS_INTERVAL = 6;
 let _orbitalStatusTick = 0;
 
+// ── One-shot SFX helpers ──────────────────────────────────────────────────
+let _enteringSoiAudio: HTMLAudioElement | null = null;
+
+function playOneShotShipSfx(
+  getAudio: () => HTMLAudioElement,
+  volume = 0.5,
+): void {
+  try {
+    const audio = getAudio();
+    audio.pause();
+    audio.currentTime = 0;
+    audio.volume = volume;
+    audio.playbackRate = 1;
+    audio.loop = false;
+    void audio.play().catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
+function playEnteringSoi(): void {
+  playOneShotShipSfx(() => {
+    if (!_enteringSoiAudio) {
+      _enteringSoiAudio = new Audio('/audio/ship/entering-soi.mp3');
+      _enteringSoiAudio.preload = 'auto';
+    }
+    return _enteringSoiAudio;
+  });
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface PrimaryBodyResult {
@@ -165,6 +195,10 @@ export function applyGravityStep({
 
     // SOI transition — rebase velocity into the new primary body's reference frame
     if (bodyChanged) {
+      // Play SFX only for planetary SOI entries (not Sun, not initial spawn)
+      if (primaryGravityId.current !== null && bodyId !== 'Sun') {
+        playEnteringSoi();
+      }
       if (primaryGravityId.current) velocity.sub(primaryGravityVelocity);
       primaryGravityId.current = bodyId;
       primaryGravityVelocity.copy(body.velocity);

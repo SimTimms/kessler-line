@@ -3,6 +3,27 @@ export interface IncomingHailEventDetail {
   active: boolean;
 }
 
+// ── Incoming hail SFX ─────────────────────────────────────────────────────
+const INCOMING_HAIL_SFX_SRC = '/audio/ship/incoming-hail.mp3';
+let _incomingHailAudio: HTMLAudioElement | null = null;
+
+function playIncomingHailSound(): void {
+  try {
+    if (!_incomingHailAudio) {
+      _incomingHailAudio = new Audio(INCOMING_HAIL_SFX_SRC);
+      _incomingHailAudio.preload = 'auto';
+    }
+    _incomingHailAudio.pause();
+    _incomingHailAudio.currentTime = 0;
+    _incomingHailAudio.volume = 0.5;
+    _incomingHailAudio.playbackRate = 1;
+    _incomingHailAudio.loop = false;
+    void _incomingHailAudio.play().catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
 const _incoming = new Set<string>();
 
 export function hasIncomingHail(id: string): boolean {
@@ -15,7 +36,9 @@ export function getIncomingHails(): string[] {
 }
 
 export function setIncomingHail(id: string): void {
+  const isNew = !_incoming.has(id);
   _incoming.add(id);
+  if (isNew) playIncomingHailSound();
   window.dispatchEvent(
     new CustomEvent<IncomingHailEventDetail>('IncomingHailUpdated', { detail: { id, active: true } })
   );

@@ -9,7 +9,7 @@ import {
 import type { Marker, MarkerKind, PanCenter } from './minimapTypes';
 
 export const MAX_MARKERS_PER_GROUP = 160;
-export const ZOOM_MIN_HALF_SPAN = 1_000;
+export const ZOOM_MIN_HALF_SPAN = 100;
 
 const MAX_PLANET_ORBIT_WORLD =
   Math.max(...PLANETS.map((p) => p.orbitRadius)) * SOLAR_SYSTEM_SCALE;

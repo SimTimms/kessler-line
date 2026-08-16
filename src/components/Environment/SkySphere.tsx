@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { shipPosRef } from '../../context/ShipPos';
 import { getGraphicsSettings } from '../../context/GraphicsState';
 
-const RADIUS = 10000000;
+const RADIUS = 50000000;
 
 function makeStarfieldTexture(
   width: number,

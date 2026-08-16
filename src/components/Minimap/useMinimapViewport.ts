@@ -42,7 +42,7 @@ export function useMinimapViewport({
   );
   const [panCenter, setPanCenter] = useState<PanCenter>({ x: 0, z: 0 });
   panCenterRef.current = panCenter;
-  const [followShip, setFollowShip] = useState(false);
+  const [followShip, setFollowShip] = useState(true);
 
   const activeChartRef = fullscreen ? fullscreenContainerRef : containerRef;
 

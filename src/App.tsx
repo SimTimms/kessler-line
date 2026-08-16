@@ -37,7 +37,7 @@ import DroneConfig from './components/DroneConfig/DroneConfig';
 import LongDistanceTravelConfig from './components/LongDistanceTravelConfig/LongDistanceTravelConfig';
 import CombatConfig from './components/CombatConfig/CombatConfig';
 import HudConfig from './components/HudConfig/HudConfig';
-import NarrativeConfig from './components/NarrativeConfig/NarrativeConfig';
+import NarrativeConfig from './scenes/NarrativeConfig/NarrativeConfig';
 import ShipNavigationConfig from './components/ShipNavigationConfig/ShipNavigationConfig';
 import EmptyScene from './components/EmptyScene/EmptyScene';
 import PlanetaryConfig from './components/PlanetaryConfig/PlanetaryConfig';
@@ -109,7 +109,13 @@ function App() {
 
   switch (mode) {
     case GAME_MODES.menu:
-      return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} onNarrativeLoad={handleNarrativeLoad} />;
+      return (
+        <StartOverlay
+          onStart={handleStart}
+          onTutorialSelect={handleTutorialSelect}
+          onNarrativeLoad={handleNarrativeLoad}
+        />
+      );
     case GAME_MODES.modelConfig:
       return <ModelConfig />;
     case GAME_MODES.shipNavigationConfig:

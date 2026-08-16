@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EVENT_OPEN_COMMS_CONTACT } from '../../context/CommsUiEvents';
 import { hasDockPermission } from '../../context/DockPermissionState';
@@ -17,6 +17,8 @@ import { useMinimapProjections } from './useMinimapProjections';
 import { useMinimapTelemetry } from './useMinimapTelemetry';
 import { useMinimapViewport } from './useMinimapViewport';
 import './SandboxHtmlMiniMap.css';
+
+type PanelMode = 'chart' | 'dock' | 'pad' | 'orbit';
 
 interface SandboxHtmlMiniMapProps {
   onClose: () => void;
@@ -58,12 +60,39 @@ export default function SandboxHtmlMiniMap({
     zoomHalfSpan,
   });
 
-  const assistActive = Boolean(dockingAssist || orbitAssist);
+  // Panel toggle — lets the user switch between chart, dock, pad, and orbit views.
+  const [panelMode, setPanelMode] = useState<PanelMode>('chart');
+
+  const hasDock = Boolean(dockingAssist && dockingAssist.captureMode === 'nose');
+  const hasPad = Boolean(dockingAssist && dockingAssist.captureMode === 'hover');
+  const hasOrbit = Boolean(orbitAssist);
+
+  // Auto-switch when an assist panel appears; fall back to chart when data disappears.
+  const prevAssistRef = useRef({ dock: false, pad: false, orbit: false });
+  useEffect(() => {
+    const prev = prevAssistRef.current;
+    if (hasDock && !prev.dock) setPanelMode('dock');
+    else if (hasPad && !prev.pad) setPanelMode('pad');
+    else if (hasOrbit && !prev.orbit) setPanelMode('orbit');
+    else if (panelMode === 'dock' && !hasDock) setPanelMode('chart');
+    else if (panelMode === 'pad' && !hasPad) setPanelMode('chart');
+    else if (panelMode === 'orbit' && !hasOrbit) setPanelMode('chart');
+    prev.dock = hasDock;
+    prev.pad = hasPad;
+    prev.orbit = hasOrbit;
+  }, [hasDock, hasPad, hasOrbit, panelMode]);
+
+  const displayingAssist =
+    (panelMode === 'dock' && hasDock) ||
+    (panelMode === 'pad' && hasPad) ||
+    (panelMode === 'orbit' && hasOrbit);
+  const showTabs = hasDock || hasPad || hasOrbit;
+
   const dockingCaptureActive = useDockingCaptureActive();
   useDockPermissionVersion();
   useMinimapKeyboardClose(onClose, fullscreen, setFullscreen);
-  useExitFullscreenOnAssist(assistActive, fullscreen, setFullscreen);
-  useMinimapOverlayFlag(fullscreen || assistActive);
+  useExitFullscreenOnAssist(displayingAssist, fullscreen, setFullscreen);
+  useMinimapOverlayFlag(fullscreen || displayingAssist);
 
   const {
     dockingAssistProjection,
@@ -101,7 +130,7 @@ export default function SandboxHtmlMiniMap({
     );
   };
 
-  const chartPanel = !assistActive ? (
+  const chartPanel = (
     <StarChartPanel
       orbitRings={orbitRings}
       scannerRings={scannerRings}
@@ -112,10 +141,10 @@ export default function SandboxHtmlMiniMap({
       setHoverCard={setHoverCard}
       hoverCard={hoverCard}
     />
-  ) : null;
+  );
 
   const fullscreenOverlay =
-    fullscreen && !assistActive
+    fullscreen && !displayingAssist
       ? createPortal(
           <div
             ref={fullscreenRootRef}
@@ -166,21 +195,28 @@ export default function SandboxHtmlMiniMap({
         )
       : null;
 
-  const chartTitle = dockingAssist ? 'DOCK' : orbitAssist ? 'ORB' : 'STAR';
-  const chartSub = dockingAssist
-    ? dockingAssist.captureMode === 'nose'
+  const chartTitle =
+    panelMode === 'dock' || panelMode === 'pad'
+      ? 'DOCK'
+      : panelMode === 'orbit'
+        ? 'ORB'
+        : 'STAR';
+  const chartSub =
+    panelMode === 'dock'
       ? 'PORT'
-      : 'HOVER'
-    : orbitAssist
-      ? orbitAssist.isOrbiting
-        ? 'ORBIT'
-        : 'SOI'
-      : null;
-  const overlayModeClass = dockingAssist
-    ? ' sandbox-map-overlay--docking'
-    : orbitAssist
-      ? ' sandbox-map-overlay--orbit'
-      : '';
+      : panelMode === 'pad'
+        ? 'HOVER'
+        : panelMode === 'orbit'
+          ? orbitAssist?.isOrbiting
+            ? 'ORBIT'
+            : 'SOI'
+          : null;
+  const overlayModeClass =
+    panelMode === 'dock' || panelMode === 'pad'
+      ? ' sandbox-map-overlay--docking'
+      : panelMode === 'orbit'
+        ? ' sandbox-map-overlay--orbit'
+        : '';
 
   return (
     <>
@@ -193,7 +229,7 @@ export default function SandboxHtmlMiniMap({
             <span className="mech-chart-title">{chartTitle}</span>
             {chartSub ? <span className="mech-chart-sub">{chartSub}</span> : null}
             <div className="sandbox-map-actions">
-              {!assistActive && showSolarSystem ? (
+              {!displayingAssist && showSolarSystem ? (
                 <button
                   type="button"
                   onMouseDown={(e) => e.stopPropagation()}
@@ -210,12 +246,50 @@ export default function SandboxHtmlMiniMap({
                 onClick={toggleFollowShip}
                 className={followShip ? 'sandbox-map-action--active' : ''}
                 title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
-                disabled={assistActive}
+                disabled={displayingAssist}
               >
-                {dockingAssist ? 'DOCK' : orbitAssist ? 'ORB' : `CTR ${followShip ? 'ON' : 'OFF'}`}
+                {panelMode === 'dock' || panelMode === 'pad' ? 'DOCK' : panelMode === 'orbit' ? 'ORB' : `CTR ${followShip ? 'ON' : 'OFF'}`}
               </button>
             </div>
           </div>
+          {showTabs && (
+            <div className="mech-chart-tabs">
+              <button
+                type="button"
+                className={panelMode === 'chart' ? 'mech-chart-tab--active' : ''}
+                onClick={() => setPanelMode('chart')}
+              >
+                MAP
+              </button>
+              {hasDock && (
+                <button
+                  type="button"
+                  className={panelMode === 'dock' ? 'mech-chart-tab--active' : ''}
+                  onClick={() => setPanelMode('dock')}
+                >
+                  DCK
+                </button>
+              )}
+              {hasPad && (
+                <button
+                  type="button"
+                  className={panelMode === 'pad' ? 'mech-chart-tab--active' : ''}
+                  onClick={() => setPanelMode('pad')}
+                >
+                  PAD
+                </button>
+              )}
+              {hasOrbit && (
+                <button
+                  type="button"
+                  className={panelMode === 'orbit' ? 'mech-chart-tab--active' : ''}
+                  onClick={() => setPanelMode('orbit')}
+                >
+                  ORB
+                </button>
+              )}
+            </div>
+          )}
           <div
             ref={containerRef}
             className="mech-chart-crt"
@@ -226,7 +300,7 @@ export default function SandboxHtmlMiniMap({
             onMouseLeave={fullscreen ? undefined : stopDrag}
           >
             <div className="sandbox-map-grid" />
-            {dockingAssist ? (
+            {(panelMode === 'dock' || panelMode === 'pad') && dockingAssist ? (
               <DockingAssistPanel
                 dockingAssist={dockingAssist}
                 dockingAssistProjection={dockingAssistProjection}
@@ -236,7 +310,7 @@ export default function SandboxHtmlMiniMap({
                 dockPermissionGranted={dockPermissionGranted}
                 onRequestDockPermission={handleRequestDockPermissionFromAssist}
               />
-            ) : orbitAssist ? (
+            ) : panelMode === 'orbit' && orbitAssist ? (
               <OrbitAssistPanel
                 orbitAssist={orbitAssist}
                 orbitAssistProjection={orbitAssistProjection}

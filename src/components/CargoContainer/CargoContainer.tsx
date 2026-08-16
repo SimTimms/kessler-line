@@ -154,7 +154,7 @@ export default function CargoContainer({
       new THREE.Vector3(
         portLocalOffset[0] * scale,
         portLocalOffset[1] * scale,
-        halfExtents.z + portBox.z * 0.5
+        portLocalOffset[2] * scale + halfExtents.z + portBox.z * 0.5
       ),
     [halfExtents.z, portBox.z, portLocalOffset, scale]
   );

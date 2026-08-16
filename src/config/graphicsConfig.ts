@@ -47,7 +47,7 @@ export const QUALITY_PRESETS: Record<GraphicsQuality, GraphicsSettings> = {
     // Sky: small texture
     skyTextureWidth: 1024,
     skyTextureHeight: 512,
-    skyStarCount: 2000,
+    skyStarCount: 10000,
     // No post-processing (biggest GPU win on low-end devices)
     postProcessingEnabled: false,
     bloomEnabled: false,

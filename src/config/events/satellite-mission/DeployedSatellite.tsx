@@ -1,27 +1,18 @@
-/**
- * DeployedSatellite — renders the deployed satellite after the Elias Voss mission.
- *
- * Two-phase animation after undocking:
- *   Phase 1 (30 s) — real physics: gravity from Mars applied each frame so the
- *                     satellite tracks the same orbital path as the ship.
- *   Phase 2         — non-physical circular orbit locked at the position/speed
- *                     reached at the end of Phase 1, with y-axis descent.
- */
-
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { gravityBodies } from '../../context/GravityRegistry';
-import { deployedSatelliteRef } from '../../context/DeployedSatelliteState';
+import { gravityBodies } from '../../../context/GravityRegistry';
+import { deployedSatelliteRef } from '../../../context/DeployedSatelliteState';
+import { NARRATIVE_CONFIG } from '../../../scenes/NarrativeConfig/narrativeSceneConfig';
 
-const CONTAINER_URL = '/container.glb';
+const CONTAINER_URL = '/satellite.glb';
 
 /** How long the satellite keeps real physics after release (seconds). */
 const PHYSICS_DURATION = 30;
 
 /** Descent speed on the y-axis once orbit is locked (units/s). */
-const DESCENT_SPEED = 5;
+const DESCENT_SPEED = 10;
 
 // Scratch vectors — avoid per-frame allocations.
 const _gravDir = new THREE.Vector3();
@@ -95,9 +86,7 @@ export default function DeployedSatellite() {
         const relVz = velRef.current.z - mars.velocity.z;
         const tangentialSpeed = relVx * tanX + relVz * tanZ;
         angularSpeedRef.current =
-          orbitRadiusRef.current > 0
-            ? tangentialSpeed / orbitRadiusRef.current
-            : 0.1;
+          orbitRadiusRef.current > 0 ? tangentialSpeed / orbitRadiusRef.current : 0.1;
 
         yRef.current = 0;
         orbitLockedRef.current = true;
@@ -119,14 +108,14 @@ export default function DeployedSatellite() {
     groupRef.current.position.set(
       mars.position.x + x,
       mars.position.y + yRef.current,
-      mars.position.z + z,
+      mars.position.z + z
     );
   });
 
-  // Always mount the group so groupRef is available for useFrame.
-  // Starts hidden; useFrame sets visible=true when deployment data arrives.
+  const { satelliteMissionConfig } = NARRATIVE_CONFIG;
+
   return (
-    <group ref={groupRef} visible={false}>
+    <group ref={groupRef} visible={false} scale={satelliteMissionConfig.scale}>
       <primitive object={modelScene} />
     </group>
   );

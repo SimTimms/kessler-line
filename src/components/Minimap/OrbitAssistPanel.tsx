@@ -1,8 +1,30 @@
+import { useEffect, useRef } from 'react';
 import type {
   OrbitAssistData,
   OrbitAssistProjection,
   OrbitAssistReadouts,
 } from './minimapTypes';
+
+// ── Orbit-established one-shot SFX ────────────────────────────────────────
+const ORBIT_ESTABLISHED_SFX_SRC = '/audio/ship/orbit-established.mp3';
+let _orbitEstablishedAudio: HTMLAudioElement | null = null;
+
+function playOrbitEstablished(): void {
+  try {
+    if (!_orbitEstablishedAudio) {
+      _orbitEstablishedAudio = new Audio(ORBIT_ESTABLISHED_SFX_SRC);
+      _orbitEstablishedAudio.preload = 'auto';
+    }
+    _orbitEstablishedAudio.pause();
+    _orbitEstablishedAudio.currentTime = 0;
+    _orbitEstablishedAudio.volume = 0.5;
+    _orbitEstablishedAudio.playbackRate = 1;
+    _orbitEstablishedAudio.loop = false;
+    void _orbitEstablishedAudio.play().catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
 
 export default function OrbitAssistPanel({
   orbitAssist,
@@ -13,6 +35,15 @@ export default function OrbitAssistPanel({
   orbitAssistProjection: OrbitAssistProjection | null;
   orbitAssistReadouts: OrbitAssistReadouts | null;
 }) {
+  // Play SFX when isOrbiting transitions false → true while this panel is mounted.
+  const prevOrbitingRef = useRef(orbitAssist.isOrbiting);
+  useEffect(() => {
+    if (orbitAssist.isOrbiting && !prevOrbitingRef.current) {
+      playOrbitEstablished();
+    }
+    prevOrbitingRef.current = orbitAssist.isOrbiting;
+  }, [orbitAssist.isOrbiting]);
+
   return (
     <>
       {orbitAssistProjection && (

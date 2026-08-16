@@ -126,7 +126,6 @@ export default function SalvageField({
               id={`${idPrefix}${dropOffPad.id}`}
               label={dropOffPad.label}
               scale={SalvageConfigData.salvageBayScale}
-              dock={dropOffPad.dock}
             />
           </group>
         ) : null}

@@ -17,7 +17,7 @@ import DroneConfig from '../DroneConfig/DroneConfig';
 import LongDistanceTravelConfig from '../LongDistanceTravelConfig/LongDistanceTravelConfig';
 import CombatConfig from '../CombatConfig/CombatConfig';
 import HudConfig from '../HudConfig/HudConfig';
-import NarrativeConfig from '../NarrativeConfig/NarrativeConfig';
+import NarrativeConfig from '../../scenes/NarrativeConfig/NarrativeConfig';
 import ShipNavigationConfig from '../ShipNavigationConfig/ShipNavigationConfig';
 import EmptyScene from '../EmptyScene/EmptyScene';
 
@@ -41,7 +41,13 @@ export default function ModeRouter({
 }: ModeRouterProps) {
   switch (mode) {
     case GAME_MODES.menu:
-      return <StartOverlay onStart={handleStart} onTutorialSelect={handleTutorialSelect} onNarrativeLoad={handleNarrativeLoad} />;
+      return (
+        <StartOverlay
+          onStart={handleStart}
+          onTutorialSelect={handleTutorialSelect}
+          onNarrativeLoad={handleNarrativeLoad}
+        />
+      );
     case GAME_MODES.modelConfig:
       return <ModelConfig />;
     case GAME_MODES.shipNavigationConfig:

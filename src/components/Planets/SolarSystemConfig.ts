@@ -53,7 +53,7 @@ export const PLANETS: PlanetType[] = [
     name: 'Mercury',
     radius: r(2_440), // ≈  63
     orbitRadius: orbit(0.387 * SUN_RADIUS_BASE), // ≈  963
-    orbitY: 0,
+    orbitY: -60,
     orbitalSpeed: ov(0.241 * ORBIT_SPEED),
     spinSpeed: sv(58.6), // very slow spin
     axialTilt: 0.03 * (Math.PI / 180),
@@ -81,7 +81,7 @@ export const PLANETS: PlanetType[] = [
     name: 'Earth',
     radius: r(6_371), // ≈  92
     orbitRadius: orbit(1.0 * SUN_RADIUS_BASE), // ≈ 1409
-    orbitY: 0,
+    orbitY: -0,
     orbitalSpeed: ov(1.0 * ORBIT_SPEED),
     spinSpeed: sv(1.0),
     axialTilt: 23.4 * (Math.PI / 180),
@@ -146,7 +146,7 @@ export const PLANETS: PlanetType[] = [
     name: 'Saturn',
     radius: r(60_268), // ≈ 225
     orbitRadius: orbit(9.537 * SUN_RADIUS_BASE), // ≈ 3472
-    orbitY: 0,
+    orbitY: -200,
     orbitalSpeed: ov(29.46 * ORBIT_SPEED),
     spinSpeed: sv(0.44),
     axialTilt: 26.7 * (Math.PI / 180),
@@ -175,7 +175,7 @@ export const PLANETS: PlanetType[] = [
     name: 'Neptune',
     radius: r(24_622), // ≈ 157 display; GLB scale = radius / NEPTUNE_GLB_UNIT_RADIUS
     orbitRadius: orbit(30.07 * SUN_RADIUS_BASE), // = 5500
-    orbitY: 0,
+    orbitY: -60,
     orbitalSpeed: ov(164.8 * ORBIT_SPEED),
     spinSpeed: sv(0.67),
     axialTilt: 28.3 * (Math.PI / 180),

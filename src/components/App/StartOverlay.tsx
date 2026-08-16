@@ -58,8 +58,13 @@ const TUTORIAL_MENU_ITEMS: Array<{
     label: 'Planetary Config',
     selection: GAME_MODES.planetaryConfig,
   },
-  /*
+
   { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
+  {
+    id: 'combat-config',
+    label: 'Combat Config',
+    selection: GAME_MODES.combatConfig,
+  },
   {
     id: 'ship-navigation-config',
     label: 'Ship Navigation Config',
@@ -74,11 +79,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
     label: 'Long Distance Travel Config',
     selection: GAME_MODES.longDistanceTravelConfig,
   },
-  {
-    id: 'combat-config',
-    label: 'Combat Config',
-    selection: GAME_MODES.combatConfig,
-  },
+
   {
     id: 'hud-config',
     label: 'HUD Config',
@@ -87,12 +88,12 @@ const TUTORIAL_MENU_ITEMS: Array<{
 
   { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
   { id: 'empty-scene', label: 'Empty Scene', selection: GAME_MODES.emptyScene },
-   */
-  /* { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
+
+  { id: 'general-movement', label: 'Basic Movement', selection: GAME_MODES.tutorial },
   { id: 'resources', label: 'General Resources', selection: GAME_MODES.resources },
   { id: 'air-management', label: 'Air Management', selection: GAME_MODES.airManagement },
   { id: 'radio-management', label: 'Radio Management', selection: GAME_MODES.radioManagement },
-  { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: GAME_MODES.orbitalManagement },*/
+  { id: 'orbital-mechanics', label: 'Orbital Mechanics', selection: GAME_MODES.orbitalManagement },
 ];
 
 const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([

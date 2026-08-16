@@ -8,6 +8,46 @@ import {
 } from '../config/fastTravelConfig';
 import { pushAlert } from './AlertsStore';
 
+// ── Travel zone SFX ───────────────────────────────────────────────────────
+const CRASH_STOP_SFX_SRC = '/audio/ship/crash-stop-engaged.mp3';
+const THRUSTER_LIMITS_REMOVED_SFX_SRC = '/audio/ship/thruster-limits-removed.mp3';
+let _crashStopAudio: HTMLAudioElement | null = null;
+let _thrusterLimitsAudio: HTMLAudioElement | null = null;
+
+function playCrashStop(): void {
+  try {
+    if (!_crashStopAudio) {
+      _crashStopAudio = new Audio(CRASH_STOP_SFX_SRC);
+      _crashStopAudio.preload = 'auto';
+    }
+    _crashStopAudio.pause();
+    _crashStopAudio.currentTime = 0;
+    _crashStopAudio.volume = 0.5;
+    _crashStopAudio.playbackRate = 1;
+    _crashStopAudio.loop = false;
+    void _crashStopAudio.play().catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
+function playThrusterLimitsRemoved(): void {
+  try {
+    if (!_thrusterLimitsAudio) {
+      _thrusterLimitsAudio = new Audio(THRUSTER_LIMITS_REMOVED_SFX_SRC);
+      _thrusterLimitsAudio.preload = 'auto';
+    }
+    _thrusterLimitsAudio.pause();
+    _thrusterLimitsAudio.currentTime = 0;
+    _thrusterLimitsAudio.volume = 0.5;
+    _thrusterLimitsAudio.playbackRate = 1;
+    _thrusterLimitsAudio.loop = false;
+    void _thrusterLimitsAudio.play().catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
 /**
  * A spherical (XZ) normal-travel pocket. Outer radius is the full pocket;
  * the inner band starts at half that radius.
@@ -165,11 +205,13 @@ export function updateFastTravelMembership(shipPos: THREE.Vector3): {
   if (enteredMidFromFast) {
     armEntryBrake(NORMAL_TRAVEL_OUTER_ENTRY_MAX_SPEED);
     pushAlert('Normal Travel Enabled', 'yellow');
+    playCrashStop();
   }
   if (enteredInnerFromFast) {
     // Crossed both rings in one step — go straight to the inner target.
     armEntryBrake(NORMAL_TRAVEL_INNER_ENTRY_MAX_SPEED);
     pushAlert('Normal Travel Enabled', 'yellow');
+    playCrashStop();
   }
   if (enteredInnerFromMid) {
     armEntryBrake(NORMAL_TRAVEL_INNER_ENTRY_MAX_SPEED);
@@ -177,6 +219,7 @@ export function updateFastTravelMembership(shipPos: THREE.Vector3): {
   if (enteredFastZone) {
     clearEntryBrake();
     pushAlert('Fast Travel Enabled', 'yellow');
+    playThrusterLimitsRemoved();
   }
 
   return {

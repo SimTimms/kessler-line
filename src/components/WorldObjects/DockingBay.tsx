@@ -90,17 +90,39 @@ export default function DockingBay({
         position={position}
       >
         {showCaptureMesh && (
-          <mesh>
-            <boxGeometry args={[dimensions.x, dimensions.y, dimensions.z]} />
-            <meshStandardMaterial
-              color="#ffffff"
-              side={THREE.DoubleSide}
-              emissive="#ffffff"
-              transparent
-              opacity={0.5}
-            />
-          </mesh>
+          <>
+            <mesh>
+              <boxGeometry args={[dimensions.x, dimensions.y, dimensions.z]} />
+              <meshStandardMaterial
+                color="#ffffff"
+                side={THREE.DoubleSide}
+                emissive="#ffffff"
+                transparent
+                opacity={1}
+              />
+            </mesh>
+          </>
         )}
+        <mesh position={[-2 * scale, 0, 0]}>
+          <sphereGeometry args={[0.2 * scale, 10, 10]} />
+          <meshStandardMaterial
+            color="#ff0000"
+            side={THREE.DoubleSide}
+            emissive="#ff0000"
+            transparent
+            opacity={1}
+          />
+        </mesh>
+        <mesh position={[2 * scale, 0, 0]}>
+          <sphereGeometry args={[0.2 * scale, 10, 10]} />
+          <meshStandardMaterial
+            color="#00ff00"
+            side={THREE.DoubleSide}
+            emissive="#00ff00"
+            transparent
+            opacity={1}
+          />
+        </mesh>
       </group>
     </>
   );
