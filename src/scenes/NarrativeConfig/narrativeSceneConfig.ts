@@ -114,6 +114,9 @@ export const NARRATIVE_DONINGTON_STATION_ID = `salvage-berth`;
 /** Collision ID of the Donington Station docking bay (hover dock). */
 export const NARRATIVE_DONINGTON_DOCK_ID = `docking-bay-${NARRATIVE_DONINGTON_STATION_ID}`;
 
+/** Prefix so Bakerfield Falls SalvageField ids do not collide with Donington. */
+export const NARRATIVE_BAKERFIELD_ID_PREFIX = 'bakerfield-';
+
 /**
  * Spawn position at the Donington Station dock bay so the ship starts docked.
  * Dock local offset `[300, -20, 0]` relative to the primary field origin.

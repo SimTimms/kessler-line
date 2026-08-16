@@ -4,11 +4,9 @@
   --mech-metal-lo: #141618;
   --mech-crt-bg: #05080c;
   --mech-label: rgba(180, 200, 220, 0.55);
-  --mech-chart-width: min(192px, 38vw);
-  position: fixed;
   right: 12px;
   bottom: 14px;
-  width: var(--mech-chart-width);
+  width: min(192px, 38vw);
   z-index: 92;
   background: transparent;
   border: none;

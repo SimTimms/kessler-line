@@ -16,8 +16,6 @@ import { proximityScanOnRef, proximityScanRangeRef } from '../../context/Proximi
 import { radioOnRef, radioRangeRef } from '../../context/RadioState';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { setNavHudEnabled } from '../../context/NavHud';
-import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
-import SandboxHtmlMiniMap from '../../components/Minimap/SandboxHtmlMiniMap';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
 import { setCargo } from '../../context/Inventory';
 import { NARRATIVE_STARTER_CARGO } from './narrativeSceneConfig';
@@ -60,7 +58,6 @@ export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
   const [proximity, setProximity] = useState(true);
   const [radioOn, setRadioOn] = useState(true);
-  const [showMinimap, setShowMinimap] = useState(true);
 
   useEffect(() => {
     clearNavTarget();
@@ -84,21 +81,6 @@ export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
     }
   }, [loadSave]);
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== KEY_TOGGLE_MINIMAP || e.repeat) return;
-      e.preventDefault();
-      setShowMinimap((v) => !v);
-    };
-    const onOpenMinimap = () => setShowMinimap(true);
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('open-minimap', onOpenMinimap);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('open-minimap', onOpenMinimap);
-    };
-  }, []);
-
   return (
     <AppContainer>
       <NarrativeConfigScene loadSave={loadSave} />
@@ -116,7 +98,6 @@ export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
         disabledHudElementsState={[...NARRATIVE_DISABLED_HUD_ELEMENTS]}
         scannerInitialPowers={NARRATIVE_SCANNER_INITIAL_POWERS}
       />
-      {showMinimap && <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />}
       <DeathOverlay />
       <AutosaveIndicator />
     </AppContainer>

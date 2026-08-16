@@ -160,13 +160,6 @@
   }
 }
 
-.mech-vitals-title {
-  font-size: var(--hud-fs-lg);
-  letter-spacing: 0.28em;
-  color: var(--mech-label);
-  line-height: 1;
-}
-
 .mech-vitals-sub {
   margin-left: auto;
   font-size: var(--hud-fs-xs);
@@ -459,7 +452,7 @@
 
 /* ── Left-side column (comms → log → damage → sensors) ─────────────────── */
 
-.helmet-left-column {
+.helmet-left-stack {
   position: fixed;
   left: 12px;
   top: 12px;
@@ -473,7 +466,20 @@
   overflow: hidden;
 }
 
-.helmet-left-column > * {
+.helmet-left-stack > * {
+  pointer-events: auto;
+}
+
+.helmet-center-stack {
+  position: fixed;
+  bottom: 12px;
+  z-index: 96;
+  width: 100%;
+  border-top: 1px solid #444;
+  display: flex;
+}
+
+.helmet-center-stack > * {
   pointer-events: auto;
 }
 
@@ -498,9 +504,21 @@
   pointer-events: auto;
 }
 
+.hud-title {
+  font-size: var(--hud-fs-sm);
+  color: #aaa;
+  line-height: 1;
+}
+
+.hud-subtitle {
+  font-size: var(--hud-fs-xs);
+  color: #aaa;
+  line-height: 1;
+  margin-left: 4px;
+}
+
 .helmet-nav {
   position: relative;
-  width: 100%;
   max-width: none;
   box-sizing: border-box;
   padding: 0;
@@ -519,7 +537,6 @@
   --mech-metal-lo: #141618;
   --mech-crt-bg: #05080c;
   --mech-label: rgba(180, 200, 220, 0.55);
-  color: var(--mech-cyan);
 }
 
 .mech-nav-bezel {
@@ -529,7 +546,11 @@
   backdrop-filter: var(--mech-bezel-blur);
   -webkit-backdrop-filter: var(--mech-bezel-blur);
   border: var(--mech-bezel-border);
-  box-shadow: var(--mech-bezel-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+  width: 300px;
 }
 
 .mech-nav-head {
@@ -561,13 +582,6 @@
   50% {
     opacity: 0.55;
   }
-}
-
-.mech-nav-title {
-  font-size: var(--hud-fs-lg);
-  letter-spacing: 0.28em;
-  color: var(--mech-label);
-  line-height: 1;
 }
 
 .mech-nav-sub {
@@ -609,15 +623,6 @@
 .helmet-nav-metric--rel {
   justify-content: flex-end;
   text-align: right;
-}
-
-.helmet-nav-target-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 6px;
-  width: 100%;
-  margin-bottom: 2px;
 }
 
 .helmet-nav-tag {
@@ -697,43 +702,44 @@
   width: 100%;
 }
 
+.helmet-nav-target-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 2px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.helmet-nav-target-line-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
 .helmet-nav-btn {
-  background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
-  border: 1px solid #5a616a;
-  color: rgba(190, 230, 255, 0.85);
+  border-bottom: 1px dashed #fff;
   font-family: inherit;
   font-size: var(--hud-fs-xs);
-  padding: 5px 8px;
+  padding: 5px 4px;
   cursor: pointer;
-  letter-spacing: 0.12em;
-  border-radius: 2px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+  border-radius: 0px;
+  background: #000;
+  color: #fff;
+  width: 100%;
+  text-align: left;
 }
 
 .helmet-nav-btn:hover {
-  border-color: rgba(0, 200, 255, 0.55);
-  color: #fff;
-}
-
-.helmet-nav-btn--active {
-  color: rgba(80, 255, 160, 0.95);
-  border-color: rgba(80, 255, 160, 0.45);
-  box-shadow:
-    inset 0 0 8px rgba(80, 255, 160, 0.2),
-    0 0 8px rgba(80, 255, 160, 0.15);
+  color: #000;
+  background: #fff;
 }
 
 .helmet-nav-btn--highlight {
   animation: helmet-nav-pulse 0.9s ease-in-out infinite;
-}
-
-.helmet-nav-scan-chip--tgt {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 160px;
-  align-items: stretch;
 }
 
 .helmet-nav-scan-chip--tgt .helmet-nav-scan-label {
@@ -746,7 +752,6 @@
   align-items: center;
   justify-content: stretch;
   width: 100%;
-  min-width: 88px;
   height: 28px;
   padding: 0;
   background: transparent;
@@ -758,54 +763,24 @@
 .helmet-nav-btn--contacts-face {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
-  border: 1px solid #5a616a;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.55),
-    0 1px 2px rgba(0, 0, 0, 0.4);
-  font-family: inherit;
-  font-size: var(--hud-fs-sm);
+  padding: 5px;
+  border-radius: 0px;
+  border-bottom: 1px dashed #fff;
   letter-spacing: 0.16em;
-  line-height: 1;
-  color: inherit;
+  color: #fff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.helmet-nav-btn--contacts-face:hover {
+  background: #fff;
+  color: #000;
+  border-bottom: 1px dashed #000;
+}
+
 .helmet-nav-btn--contacts:hover {
-  color: color-mix(in srgb, var(--mech-cyan, #00c8ff) 85%, white);
-}
-
-.helmet-nav-btn--contacts:hover .helmet-nav-btn--contacts-face {
-  border-color: color-mix(in srgb, var(--mech-cyan, #00c8ff) 70%, white);
-  color: color-mix(in srgb, var(--mech-cyan, #00c8ff) 85%, white);
-}
-
-.helmet-nav-btn--contacts:active .helmet-nav-btn--contacts-face {
-  box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.7),
-    0 0 4px color-mix(in srgb, var(--mech-cyan, #00c8ff) 20%, transparent);
-  transform: translateY(1px);
-}
-
-.helmet-nav-btn--contacts-filled .helmet-nav-btn--contacts-face {
-  justify-content: flex-start;
-  text-transform: none;
-  letter-spacing: 0.04em;
-  font-size: var(--hud-fs-sm);
-  color: var(--mech-cyan);
-  border-color: color-mix(in srgb, var(--mech-cyan) 45%, #5a616a);
-  box-shadow:
-    inset 0 0 8px rgba(0, 200, 255, 0.2),
-    0 0 8px rgba(0, 200, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: #000;
 }
 
 .helmet-nav-btn--tgt {
@@ -844,6 +819,7 @@
   align-items: stretch;
   gap: 3px;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .helmet-nav-scan-label {
@@ -851,7 +827,6 @@
   font-weight: 500;
   letter-spacing: 0.18em;
   line-height: 1;
-  color: var(--mech-label);
   user-select: none;
 }
 
@@ -865,7 +840,6 @@
   position: relative;
   background: var(--mech-crt-bg);
   border: 1px solid #0a0c10;
-  color: var(--scan-accent);
   font-size: var(--hud-fs-md);
   min-width: 26px;
   padding: 5px 7px;
@@ -902,7 +876,6 @@
   flex-shrink: 0;
   min-width: 24px;
   padding: 5px 7px;
-  color: var(--mech-cyan);
   border-color: #5a616a;
   background: linear-gradient(180deg, #2c3036 0%, #16181c 100%);
   font-size: var(--hud-fs-lg);

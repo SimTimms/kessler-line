@@ -351,7 +351,7 @@
 }
 
 /* Helmet layout: sit above the bottom-left column */
-.helmet-left-column .cargo-hold-flyout-stack.power-hud--cargo-flyout {
+.helmet-left-stack .cargo-hold-flyout-stack.power-hud--cargo-flyout {
   position: absolute;
   top: auto;
   bottom: calc(100% + 6px);
@@ -361,7 +361,7 @@
   z-index: 1;
 }
 
-.helmet-left-column .cargo-hold-flyout-stack .cargo-hold-panel {
+.helmet-left-stack .cargo-hold-flyout-stack .cargo-hold-panel {
   width: 100%;
   max-width: none;
 }

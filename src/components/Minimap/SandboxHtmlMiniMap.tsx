@@ -196,11 +196,7 @@ export default function SandboxHtmlMiniMap({
       : null;
 
   const chartTitle =
-    panelMode === 'dock' || panelMode === 'pad'
-      ? 'DOCK'
-      : panelMode === 'orbit'
-        ? 'ORB'
-        : 'STAR';
+    panelMode === 'dock' || panelMode === 'pad' ? 'DOCK' : panelMode === 'orbit' ? 'ORB' : 'STAR';
   const chartSub =
     panelMode === 'dock'
       ? 'PORT'
@@ -248,7 +244,11 @@ export default function SandboxHtmlMiniMap({
                 title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
                 disabled={displayingAssist}
               >
-                {panelMode === 'dock' || panelMode === 'pad' ? 'DOCK' : panelMode === 'orbit' ? 'ORB' : `CTR ${followShip ? 'ON' : 'OFF'}`}
+                {panelMode === 'dock' || panelMode === 'pad'
+                  ? 'DOCK'
+                  : panelMode === 'orbit'
+                    ? 'ORB'
+                    : `CTR ${followShip ? 'ON' : 'OFF'}`}
               </button>
             </div>
           </div>

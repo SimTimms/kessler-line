@@ -294,9 +294,7 @@ export const NavHUD = ({
         <div className="helmet-nav mech-nav">
           <div className="mech-nav-bezel">
             <div className="mech-nav-head">
-              <span className="mech-nav-lamp" aria-hidden />
-              <span className="mech-nav-title">NAV</span>
-              <span className="mech-nav-sub">CONTACTS</span>
+              <span className="hud-title">NAV</span>
             </div>
             {isDocked ? (
               <div className="helmet-nav-docked">
@@ -319,63 +317,62 @@ export const NavHUD = ({
               <>
                 <div className="helmet-nav-target-line">
                   <div className="helmet-nav-scan-chip helmet-nav-scan-chip--tgt">
-                    <span className="helmet-nav-scan-label">TGT</span>
-                    <button
-                      type="button"
-                      className={`helmet-nav-btn helmet-nav-btn--contacts${hasActiveNavTarget ? ' helmet-nav-btn--contacts-filled' : ''}${navTargetHighlight ? ' helmet-nav-btn--highlight' : ''}`}
-                      onClick={openNavTargetDialog}
-                      title={
-                        hasActiveNavTarget
-                          ? displayLabel || 'Nav target'
-                          : `Select nav target (${totalNavContactCount} contacts)`
-                      }
-                      aria-label={
-                        hasActiveNavTarget ? `Nav target: ${displayLabel}` : 'Open contacts'
-                      }
-                    >
-                      <span className="helmet-nav-btn--contacts-face">
-                        {hasActiveNavTarget ? displayLabel || '\u2014' : 'TARGET'}
-                      </span>
-                    </button>
-                  </div>
-                  {hasActiveNavTarget ? (
-                    <button
-                      type="button"
-                      className="helmet-nav-btn helmet-nav-btn--clear-target"
-                      onClick={handleClearNavTarget}
-                      title="Clear nav target"
-                      aria-label="Clear nav target"
-                    >
-                      ✕
-                    </button>
-                  ) : (
-                    <div className="helmet-nav-scan-chip">
-                      <span className="helmet-nav-scan-label">CON</span>
+                    <span className="hud-subtitle">Target</span>
+                    <div className="helmet-nav-target-line-inner">
                       <button
                         type="button"
-                        className="helmet-nav-btn helmet-nav-btn--scan"
+                        className={`helmet-nav-btn`}
                         onClick={openNavTargetDialog}
-                        title="All contacts"
-                        aria-label={`${totalNavContactCount} contacts`}
+                        title={
+                          hasActiveNavTarget
+                            ? displayLabel || 'Nav target'
+                            : `Select nav target (${totalNavContactCount} contacts)`
+                        }
+                        aria-label={
+                          hasActiveNavTarget ? `Nav target: ${displayLabel}` : 'Open contacts'
+                        }
                       >
-                        {totalNavContactCount}
+                        <span>{hasActiveNavTarget ? displayLabel || '\u2014' : 'TARGET'}</span>
                       </button>
+                      {hasActiveNavTarget ? (
+                        <div style={{ width: '30px' }}>
+                          <button
+                            type="button"
+                            className="helmet-nav-btn"
+                            style={{ textAlign: 'center' }}
+                            onClick={handleClearNavTarget}
+                            title="Clear nav target"
+                            aria-label="Clear nav target"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ width: '30px' }}>
+                          <button
+                            type="button"
+                            className="helmet-nav-btn"
+                            style={{ textAlign: 'center' }}
+                            onClick={openNavTargetDialog}
+                            title="All contacts"
+                            aria-label={`${totalNavContactCount} contacts`}
+                          >
+                            {totalNavContactCount}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <button
-                    type="button"
-                    className={`helmet-nav-btn helmet-nav-btn--ap${!autopilotEnabled ? ' helmet-nav-btn--disabled' : ''}`}
-                    onClick={handleAutopilot}
-                    disabled={!autopilotEnabled}
-                    title={autopilotEnabled ? 'Autopilot' : 'Set a nav target first'}
-                  >
-                    AP <span ref={displayRefs.autopilotBtn} className="helmet-ap-state" />
-                  </button>
+                  </div>
                 </div>
-                <div className="helmet-nav-row helmet-nav-metrics">
+                <div className="helmet-nav-row-inner"></div>
+                <div className="helmet-nav-row">
+                  <span className="hud-subtitle">SPD</span>
+                </div>
+                <div className="helmet-nav-row-inner">
                   <div className="helmet-nav-metric">
-                    <span className="helmet-nav-tag">SPD</span>
-                    <span ref={displayRefs.speed} className="helmet-nav-speed hud-value" />
+                    <span ref={displayRefs.speed} className="helmet-nav-speed hud-value">
+                      dada
+                    </span>
                   </div>
                   <div className="helmet-nav-metric helmet-nav-metric--rel">
                     <span className="helmet-nav-tag">Δv</span>

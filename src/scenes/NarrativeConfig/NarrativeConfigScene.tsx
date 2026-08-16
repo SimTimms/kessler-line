@@ -35,6 +35,7 @@ import {
   getNarrativeSecondaryFieldOrigin,
   getNarrativeShipSpawn,
   NARRATIVE_CONFIG,
+  NARRATIVE_BAKERFIELD_ID_PREFIX,
   NARRATIVE_DONINGTON_DOCK_ID,
   NARRATIVE_DONINGTON_STATION_ID,
   NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS,
@@ -157,12 +158,10 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
             dockingPhysicsEnabled: true,
           }}
         />
-        {/*
         <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
         <PlayerBullets shipGroupRef={spaceshipGroupRef} />
         <PlayerCannonHitDamage />
         <BreakupVfx />
-        */}
         <SolarSystem scale={solarSystemScale} />
         <SalvageField
           origin={primaryFieldOrigin}
@@ -190,7 +189,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
         <SalvageField
           origin={secondaryFieldOrigin}
-          idPrefix={''}
+          idPrefix={NARRATIVE_BAKERFIELD_ID_PREFIX}
           showDroneFleet={false}
           showDroneAtmosphere
           dockLabelOverride="Bakerfield Falls"

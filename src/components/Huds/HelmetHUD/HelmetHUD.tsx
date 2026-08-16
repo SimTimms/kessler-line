@@ -19,6 +19,8 @@ import {
 import '../Hud.css';
 import './HelmetHUD.css';
 import '../ShipControlsHUD/ShipControlsHUD.css';
+import SandboxHtmlMiniMap from '../../../components/Minimap/SandboxHtmlMiniMap';
+import { KEY_TOGGLE_MINIMAP } from '../../../config/keybindings';
 
 function useShipPowerOnline(): boolean {
   const [online, setOnline] = useState(() => shipPower > 0);
@@ -77,13 +79,28 @@ const HelmetHUD = memo(function HelmetHUD({
   ...scannerProps
 }: HelmetHUDProps) {
   const powerOnline = useShipPowerOnline();
+  const [showMinimap, setShowMinimap] = useState(true);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== KEY_TOGGLE_MINIMAP || e.repeat) return;
+      e.preventDefault();
+      setShowMinimap((v) => !v);
+    };
+    const onOpenMinimap = () => setShowMinimap(true);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('open-minimap', onOpenMinimap);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('open-minimap', onOpenMinimap);
+    };
+  }, []);
   return (
     <div
       className={`helmet-hud${powerOnline ? '' : ' helmet-hud--powerless'}`}
       data-power-online={powerOnline ? 'true' : 'false'}
     >
-      <div className="helmet-left-column">
+      <div className="helmet-left-stack">
         <CommsHUD
           radioOn={radioOn}
           setRadioOn={setRadioOn}
@@ -93,7 +110,6 @@ const HelmetHUD = memo(function HelmetHUD({
           initialRadioPower={scannerInitialPowers?.radio}
           sceneRadioContactsOnly={sceneRadioContactsOnly}
         />
-        <EventLogHUD />
         <DamageControlHUD />
         <ScannerHUD
           layout="helmet"
@@ -103,17 +119,22 @@ const HelmetHUD = memo(function HelmetHUD({
           {...scannerProps}
         />
         <PowerHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
+        <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />
       </div>
-      <div className="helmet-right-stack">
+
+      <div className="helmet-center-stack">
+        <EventLogHUD />
         <NavHUD
           layout="helmet"
           disableElements={disableElements}
           focusElements={focusElements}
           customPlanetaryTargets={customPlanetaryTargets}
         />
-        <CameraHUD />
       </div>
-      <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
+      <div className="helmet-right-stack">
+        <CameraHUD />
+        <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
+      </div>
       <AlertsHUD />
       <FlightControlsHUD />
       <DockTransferHUD />

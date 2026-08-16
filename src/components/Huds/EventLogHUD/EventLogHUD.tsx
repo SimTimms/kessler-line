@@ -8,7 +8,7 @@ import {
   EVENT_LOG_TAG_LABEL,
   VISIBLE_ENTRIES,
   type EventLogEntry,
-} from '../../../context/EventLogStore';
+} from './EventLogStore';
 import { requestOpenScanPicker } from '../../../context/NavHud';
 import './EventLogHUD.css';
 
@@ -40,14 +40,9 @@ export default function EventLogHUD() {
   return (
     <div className="event-log" aria-label="Event Log" aria-live="polite">
       <div className="event-log-header">
-        <span className="event-log-title">Log</span>
-        <span className="event-log-count">{allItems.length}</span>
+        <span className="hud-title">Log</span>
         {allItems.length > 0 && (
-          <button
-            className="event-log-purge"
-            onClick={handlePurge}
-            title="Purge all logs"
-          >
+          <button className="event-log-purge" onClick={handlePurge} title="Purge all logs">
             Purge
           </button>
         )}
@@ -58,13 +53,13 @@ export default function EventLogHUD() {
           return (
             <div
               key={entry.id}
-              className={`event-log-line event-log-line--${entry.type}${clickable ? ' event-log-line--clickable' : ''}`}
+              className={`event-log-line ${clickable ? ' event-log-line--clickable' : ''}`}
               onClick={clickable ? () => handleLineClick(entry) : undefined}
               role={clickable ? 'button' : undefined}
               tabIndex={clickable ? 0 : undefined}
               title={clickable ? `Open ${EVENT_LOG_TAG_LABEL[entry.type]} contacts` : undefined}
             >
-              <span className="event-log-tag">{EVENT_LOG_TAG_LABEL[entry.type]}</span>
+              <span className="event-log-text event-tag">{EVENT_LOG_TAG_LABEL[entry.type]} | </span>
               <span className="event-log-text">{entry.text}</span>
               <button
                 className="event-log-delete"
@@ -72,7 +67,7 @@ export default function EventLogHUD() {
                 title="Delete entry"
                 aria-label="Delete log entry"
               >
-                ×
+                -
               </button>
             </div>
           );

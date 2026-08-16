@@ -1,4 +1,4 @@
-import type { ScannerRangeId } from '../config/scanRanges';
+import type { ScannerRangeId } from '../../../config/scanRanges';
 
 /**
  * Log types:
@@ -59,10 +59,10 @@ export function getEventLog(): readonly EventLogEntry[] {
  * @param text  — human-readable log line
  */
 export function pushEventLog(type: EventLogType, text: string): void {
-  entries = [
-    { id: nextId++, type, text, createdAt: performance.now() },
-    ...entries,
-  ].slice(0, MAX_ENTRIES);
+  entries = [{ id: nextId++, type, text, createdAt: performance.now() }, ...entries].slice(
+    0,
+    MAX_ENTRIES
+  );
   notify();
 }
 

@@ -21,7 +21,7 @@ import {
 } from '../../../utils/radiationZonePosition';
 import { humanizeCollidableId, type NavScanContact } from './navScanPickerContacts';
 import { formatDist, contactListSignature } from './navHudFormatters';
-import { pushEventLog, type EventLogType } from '../../../context/EventLogStore';
+import { pushEventLog, type EventLogType } from '../EventLogHUD/EventLogStore';
 import type { NavTargetItem } from './NavTargetDialog';
 import type { TutorialTargetDef } from './NavHUD';
 
@@ -41,17 +41,14 @@ const seenContactIds: Record<string, Set<string>> = {
  * Log new contacts that weren't in the previous scan pass.
  * Updates the seen-set for the scanner type.
  */
-function logNewContacts(
-  scannerType: EventLogType,
-  contacts: NavScanContact[],
-): void {
+function logNewContacts(scannerType: EventLogType, contacts: NavScanContact[]): void {
   const seen = seenContactIds[scannerType];
   if (!seen) return;
   const currentIds = new Set<string>();
   for (const c of contacts) {
     currentIds.add(c.id);
     if (!seen.has(c.id)) {
-      pushEventLog(scannerType, `${c.label} — ${c.distance}`);
+      pushEventLog(scannerType, `${c.label} | ${c.distance}`);
     }
   }
   seenContactIds[scannerType] = currentIds;
@@ -101,7 +98,7 @@ export function scanAllContacts(
   vecs: ScanScratchVecs,
   dispatch: ScanDispatchers,
   customGeneralTargets?: TutorialTargetDef[],
-  customPlanetaryTargets?: TutorialTargetDef[],
+  customPlanetaryTargets?: TutorialTargetDef[]
 ): void {
   scanNavTargets(prevSigs, vecs, dispatch, customPlanetaryTargets);
   scanGeneralTargets(prevSigs, vecs, dispatch, customGeneralTargets);
@@ -118,7 +115,7 @@ function scanNavTargets(
   prevSigs: ScanPrevSigs,
   vecs: ScanScratchVecs,
   dispatch: ScanDispatchers,
-  customPlanetaryTargets?: TutorialTargetDef[],
+  customPlanetaryTargets?: TutorialTargetDef[]
 ): void {
   const newNavItems: NavTargetItem[] = customPlanetaryTargets
     ? customPlanetaryTargets.map((def) => {
@@ -160,7 +157,7 @@ function scanGeneralTargets(
   prevSigs: ScanPrevSigs,
   vecs: ScanScratchVecs,
   dispatch: ScanDispatchers,
-  customGeneralTargets?: TutorialTargetDef[],
+  customGeneralTargets?: TutorialTargetDef[]
 ): void {
   if (customGeneralTargets) {
     const newGeneralItems: NavTargetItem[] = customGeneralTargets.map((def) => {
@@ -184,7 +181,7 @@ function scanGeneralTargets(
 function scanMagnetic(
   prevSigs: ScanPrevSigs,
   vecs: ScanScratchVecs,
-  dispatch: ScanDispatchers,
+  dispatch: ScanDispatchers
 ): void {
   if (magneticOnRef.current) {
     const range = magneticScanRangeRef.current;
@@ -222,11 +219,7 @@ function scanMagnetic(
 
 // ── Drive signature contacts ──────────────────────────────────────────
 
-function scanDrive(
-  prevSigs: ScanPrevSigs,
-  vecs: ScanScratchVecs,
-  dispatch: ScanDispatchers,
-): void {
+function scanDrive(prevSigs: ScanPrevSigs, vecs: ScanScratchVecs, dispatch: ScanDispatchers): void {
   if (driveSignatureOnRef.current) {
     const range = driveSignatureRangeRef.current;
     const sigs = getDriveSignatures();
@@ -266,7 +259,7 @@ function scanDrive(
 function scanProximity(
   prevSigs: ScanPrevSigs,
   vecs: ScanScratchVecs,
-  dispatch: ScanDispatchers,
+  dispatch: ScanDispatchers
 ): void {
   if (proximityScanOnRef.current) {
     const range = proximityScanRangeRef.current;
@@ -305,11 +298,7 @@ function scanProximity(
 
 // ── Radio broadcasts in range ─────────────────────────────────────────
 
-function scanRadio(
-  prevSigs: ScanPrevSigs,
-  vecs: ScanScratchVecs,
-  dispatch: ScanDispatchers,
-): void {
+function scanRadio(prevSigs: ScanPrevSigs, vecs: ScanScratchVecs, dispatch: ScanDispatchers): void {
   if (radioOnRef.current) {
     const range = radioRangeRef.current;
     const inRange: NavScanContact[] = [];
@@ -347,7 +336,7 @@ function scanRadio(
 function scanRadiation(
   prevSigs: ScanPrevSigs,
   vecs: ScanScratchVecs,
-  dispatch: ScanDispatchers,
+  dispatch: ScanDispatchers
 ): void {
   if (radiationOnRef.current) {
     const range = radiationRangeRef.current;

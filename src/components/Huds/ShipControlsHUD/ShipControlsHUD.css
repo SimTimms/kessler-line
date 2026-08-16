@@ -8,7 +8,6 @@
   --mech-label: rgba(180, 200, 220, 0.55);
   --mech-chart-width: min(192px, 38vw);
   --mech-hud-gap: 8px;
-  position: fixed;
   right: calc(12px + var(--mech-chart-width) + var(--mech-hud-gap));
   bottom: 14px;
   z-index: 96;
