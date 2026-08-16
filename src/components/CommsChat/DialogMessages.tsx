@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { formatTime } from './commsUtils';
 import type { ChatThread } from '../../context/ChatStore';
 import type { HailStatus } from '../../context/HailState';
 import type { StaticContact } from '../../narrative/contacts';
+import MessageAudioButton from './MessageAudioButton';
 
 type DisplayRow = {
   id: string;
@@ -13,50 +14,6 @@ type DisplayRow = {
   timeLabel?: ReactNode;
   audioSrc?: string;
 };
-
-/** Play / stop control for a message that carries a recorded voice clip. */
-function MessageAudioButton({ src }: { src: string }) {
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    return () => {
-      audioRef.current?.pause();
-      audioRef.current = null;
-    };
-  }, [src]);
-
-  const toggle = () => {
-    if (!audioRef.current) {
-      const audio = new Audio(src);
-      audio.preload = 'none';
-      audio.addEventListener('ended', () => setPlaying(false));
-      audio.addEventListener('error', () => setPlaying(false));
-      audioRef.current = audio;
-    }
-    const audio = audioRef.current;
-    if (playing) {
-      audio.pause();
-      audio.currentTime = 0;
-      setPlaying(false);
-      return;
-    }
-    setPlaying(true);
-    void audio.play().catch(() => setPlaying(false));
-  };
-
-  return (
-    <button
-      type="button"
-      className="comms-chat-audio-btn"
-      onClick={toggle}
-      title={playing ? 'Stop transmission audio' : 'Play transmission audio'}
-      aria-label={playing ? 'Stop transmission audio' : 'Play transmission audio'}
-    >
-      {playing ? '■ STOP' : '▶ PLAY'}
-    </button>
-  );
-}
 
 interface DialogMessagesProps {
   isPreHail: boolean;
@@ -109,9 +66,7 @@ export default function DialogMessages({
             <div className="comms-chat-prehail">
               <div className="comms-chat-offer">
                 <div className="comms-chat-offer-header">INCOMING HAIL</div>
-                <div className="comms-chat-offer-body">
-                  {hailOfferContent?.body ?? shipName}
-                </div>
+                <div className="comms-chat-offer-body">{hailOfferContent?.body ?? shipName}</div>
               </div>
               <div className="comms-chat-hail-actions">
                 <button className="comms-chat-accept-btn" onClick={handleAcceptHail}>
@@ -139,49 +94,60 @@ export default function DialogMessages({
               </div>
             </div>
           )}
-          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && isRadioActive && (
-            <div className="comms-chat-prehail">
-              <button className="comms-chat-hail-btn" onClick={handleHail}>
-                HAIL {shipName.toUpperCase()}
-              </button>
-            </div>
-          )}
-          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && !isRadioActive && canReceive && (
-            <div className="comms-chat-prehail">
-              <button
-                className="comms-chat-hail-btn"
-                onClick={() => {
-                  setOutOfRangeNotice(true);
-                }}
-              >
-                ATTEMPT CONTACT
-              </button>
-              <div className="comms-chat-status-line">○ INCREASE RADIO RANGE TO TRANSMIT</div>
-              {outOfRangeNotice && (
-                <div className="comms-chat-status-line comms-chat-status-line--notice">
-                  SIGNAL FAILED - TRANSMIT RANGE EXCEEDED
-                </div>
-              )}
-            </div>
-          )}
-          {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'none' && !isRadioActive && !canReceive && (
-            <div className="comms-chat-prehail">
-              <button
-                className="comms-chat-hail-btn"
-                onClick={() => {
-                  setOutOfRangeNotice(true);
-                }}
-              >
-                ATTEMPT CONTACT
-              </button>
-              <div className="comms-chat-status-line">○ OUT OF RADIO RANGE</div>
-              {outOfRangeNotice && (
-                <div className="comms-chat-status-line comms-chat-status-line--notice">
-                  SIGNAL FAILED - TARGET OUT OF RANGE
-                </div>
-              )}
-            </div>
-          )}
+          {!showHailPrompt &&
+            !hailOfferContent &&
+            effectiveHailStatus === 'none' &&
+            isRadioActive && (
+              <div className="comms-chat-prehail">
+                <button className="comms-chat-hail-btn" onClick={handleHail}>
+                  HAIL {shipName.toUpperCase()}
+                </button>
+              </div>
+            )}
+          {!showHailPrompt &&
+            !hailOfferContent &&
+            effectiveHailStatus === 'none' &&
+            !isRadioActive &&
+            canReceive && (
+              <div className="comms-chat-prehail">
+                <button
+                  className="comms-chat-hail-btn"
+                  onClick={() => {
+                    setOutOfRangeNotice(true);
+                  }}
+                >
+                  ATTEMPT CONTACT
+                </button>
+                <div className="comms-chat-status-line">○ INCREASE RADIO RANGE TO TRANSMIT</div>
+                {outOfRangeNotice && (
+                  <div className="comms-chat-status-line comms-chat-status-line--notice">
+                    SIGNAL FAILED - TRANSMIT RANGE EXCEEDED
+                  </div>
+                )}
+              </div>
+            )}
+          {!showHailPrompt &&
+            !hailOfferContent &&
+            effectiveHailStatus === 'none' &&
+            !isRadioActive &&
+            !canReceive && (
+              <div className="comms-chat-prehail">
+                <button
+                  className="comms-chat-hail-btn"
+                  onClick={() => {
+                    setOutOfRangeNotice(true);
+                  }}
+                >
+                  ATTEMPT CONTACT
+                </button>
+                <div className="comms-chat-status-line">○ OUT OF RADIO RANGE</div>
+                {outOfRangeNotice && (
+                  <div className="comms-chat-status-line comms-chat-status-line--notice">
+                    SIGNAL FAILED - TARGET OUT OF RANGE
+                  </div>
+                )}
+              </div>
+            )}
           {!showHailPrompt && !hailOfferContent && effectiveHailStatus === 'pending' && (
             <div className="comms-chat-prehail">
               <div className="comms-chat-status-line comms-chat-status-line--pulse">

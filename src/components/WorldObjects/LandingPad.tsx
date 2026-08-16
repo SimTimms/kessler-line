@@ -8,6 +8,10 @@ import {
   registerRadioBroadcast,
   unregisterRadioBroadcast,
 } from '../../context/RadioBroadcastRegistry';
+import {
+  registerDriveSignature,
+  unregisterDriveSignature,
+} from '../../context/DriveSignatureRegistry';
 import { selectTarget } from '../../context/TargetSelection';
 import DockingBay from './DockingBay';
 import type { DockConfig } from '../../config/dockConfig';
@@ -63,6 +67,8 @@ interface LandingPadProps {
   radioDialogue?: string[];
   /** Optional docking-bay identifier shown in radio contact UI. */
   radioDockingBay?: string;
+  /** Register this pad as a drive signature source (visible on drive scanner). */
+  driveSignatureEnabled?: boolean;
 }
 
 export default function LandingPad({
@@ -76,6 +82,7 @@ export default function LandingPad({
   radioBroadcastEnabled = false,
   radioDialogue,
   radioDockingBay,
+  driveSignatureEnabled = false,
 }: LandingPadProps) {
   const gltf = useGLTF('/landing-pad.glb') as unknown as { scene: THREE.Group };
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
@@ -170,6 +177,21 @@ export default function LandingPad({
       unregisterRadioBroadcast(id);
     };
   }, [id, label, radioBroadcastEnabled, radioDialogue, radioDockingBay]);
+
+  useEffect(() => {
+    if (!driveSignatureEnabled) return;
+    registerDriveSignature({
+      id,
+      label,
+      getPosition: (target) => {
+        if (groupRef.current) groupRef.current.getWorldPosition(target);
+        return target;
+      },
+    });
+    return () => {
+      unregisterDriveSignature(id);
+    };
+  }, [id, label, driveSignatureEnabled]);
 
   useEffect(() => {
     const onCaptureStarted = (event: Event) => {

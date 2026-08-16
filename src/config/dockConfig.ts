@@ -46,6 +46,12 @@ export interface DockTradeTurnConfig {
    */
   allowAskingWithoutOffer?: boolean;
   /**
+   * Contact offers their entire inventory immediately when the trade
+   * panel opens. The deal starts pre-populated in THEY GIVE with
+   * AGREE / DECLINE shown directly — no player composing step needed.
+   */
+  contactOffersAll?: boolean;
+  /**
    * Claim negotiation over player-tagged salvage in the dock depot.
    * Allows requesting goods without offering first; pulls from dock inventory
    * (via inventoryOwnerId) rather than the contact's personal hold.

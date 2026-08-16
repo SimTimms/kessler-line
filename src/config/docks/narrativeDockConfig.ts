@@ -3,6 +3,7 @@ import type { DockConfig, DockContact, DockTradeTurnConfig } from '../dockConfig
 const BILL_PARCEL_HANDOFF_TRADE: DockTradeTurnConfig = {
   cargoBarter: true,
   allowAskingWithoutOffer: true,
+  contactOffersAll: true,
   acceptThreshold: 0,
   insultThreshold: 0,
   counterMultiplier: 1,
@@ -82,7 +83,7 @@ It's all rather hush-hush if you gather my meaning. Depart at once and with the 
         playerOptions: [
           {
             id: 'accept-run',
-            label: 'Accept parcel run',
+            label: 'Accept Parcel',
             text: 'I can take it. Transfer the parcel to my hold.',
             nextTurnId: 'handoff',
           },
@@ -111,14 +112,7 @@ It's all rather hush-hush if you gather my meaning. Depart at once and with the 
         npcText:
           'Open the cargo transfer panel and take the Sealed Parcel. Fly it to Bakerfield Falls and hand it directly to Hank Johnson.',
         trade: BILL_PARCEL_HANDOFF_TRADE,
-        playerOptions: [
-          {
-            id: 'back',
-            label: 'Back',
-            text: 'Understood. Stand by.',
-            nextTurnId: 'intro',
-          },
-        ],
+        playerOptions: [],
       },
     },
   },
@@ -171,7 +165,7 @@ const ELIAS_VOSS: DockContact = {
       brief: {
         id: 'brief',
         npcText:
-          'Spectacular! The procedure is simple: dock with the marked container, tow it to a stable Mars orbit, then undock to release. Keep periapsis and apoapsis above the atmosphere and avoid high radial drift before separation.',
+          'Spectacular! The procedure is simple: dock with the marked container, tow it to a stable Mars orbit, then undock to release. Should be simple for somebody of your.... intelligence. ',
         playerOptions: [
           {
             id: 'ack',
@@ -262,6 +256,8 @@ export const DONINGTON_STATION_DOCK_CONFIG: DockConfig = {
 
 export const BAKERFIELD_FALLS_DOCK_CONFIG: DockConfig = {
   label: 'Bakerfield Falls',
+  hailAcceptanceChance: 1,
+  dockRequestAcceptanceChance: 1,
   backgroundImage: '/station.jpg',
   fuel: { amount: 45, capacity: 100 },
   o2: { amount: 50, capacity: 100 },

@@ -10,16 +10,26 @@ export const SHIP_DIRECTION_ARROW_SHAFT_LENGTH = 5;
 export const SHIP_DIRECTION_ARROW_SHAFT_WIDTH = 1.15;
 /** Guide ring line opacity. */
 export const SHIP_DIRECTION_RING_OPACITY = 0.005;
-/** Nav / selected-target arrow color. */
-export const SHIP_DIRECTION_TARGET_COLOR = '#9fdfff';
+/** Nav / selected-target indicator color. */
+export const SHIP_DIRECTION_TARGET_COLOR = '#ffffff';
 /** Magnetic selected-target arrow color. */
 export const SHIP_DIRECTION_MAGNETIC_COLOR = '#ffaa00';
-/** Velocity arrow color (matches speed readout). */
-export const SHIP_DIRECTION_VELOCITY_COLOR = '#ff8800';
+/** Velocity indicator color. */
+export const SHIP_DIRECTION_VELOCITY_COLOR = '#ffffff';
 /** Ideal circular-orbit direction / required-velocity cue. */
 export const SHIP_DIRECTION_ORBIT_COLOR = '#30ff7a';
 /** Velocity arrow scale relative to the target arrow. */
 export const SHIP_DIRECTION_VELOCITY_ARROW_SCALE = 0.5;
+/** Target split-line: length of each segment (local Z, pre-scale). */
+export const SHIP_DIRECTION_TARGET_LINE_LENGTH = 3;
+/** Target split-line: gap between the two segments (local Z, pre-scale). */
+export const SHIP_DIRECTION_TARGET_LINE_GAP = 3;
+/** Target split-line: cross-section thickness. */
+export const SHIP_DIRECTION_TARGET_LINE_THICKNESS = 0.4;
+/** Velocity line: length (local Z, pre-scale). Fits inside the target gap. */
+export const SHIP_DIRECTION_VELOCITY_LINE_LENGTH = 2;
+/** Velocity line: cross-section thickness. */
+export const SHIP_DIRECTION_VELOCITY_LINE_THICKNESS = 0.4;
 /** Hide velocity arrow below this speed (m/s). */
 export const SHIP_DIRECTION_MIN_SPEED = 0.05;
 /** Minimap predicted-trajectory sample count (gravity curve). */

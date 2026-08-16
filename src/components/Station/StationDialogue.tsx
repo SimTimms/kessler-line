@@ -323,10 +323,7 @@ export default function DockInteriorDialogue({
   const isEnded = !!thread && thread.currentTurnId === null && !thread.awaitingNpc;
   const activeTradeConfig = tradeOpen ? (currentTurn?.trade ?? null) : null;
   const useSalvageClaim = !!(activeTradeConfig?.salvageClaim && depotOwner);
-  const useCargoBarter = !!(
-    activeTradeConfig?.cargoBarter &&
-    (useSalvageClaim || contactOwner)
-  );
+  const useCargoBarter = !!(activeTradeConfig?.cargoBarter && (useSalvageClaim || contactOwner));
 
   const playerMax = useCargoBarter && !useSalvageClaim ? inventoryQtyMap(playerOwner) : {};
   const contactMax =
@@ -335,6 +332,35 @@ export default function DockInteriorDialogue({
       : useCargoBarter && contactOwner
         ? inventoryQtyMap(contactOwner)
         : {};
+
+  // When contactOffersAll is set, pre-populate the deal with all contact
+  // inventory in contactGives and immediately show AGREE / DECLINE.
+  const contactOfferAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const turnId = thread?.currentTurnId ?? null;
+
+    if (!turnId || !activeTradeConfig?.contactOffersAll) {
+      contactOfferAppliedRef.current = null;
+      return;
+    }
+
+    if (contactOfferAppliedRef.current === turnId) return;
+    if (!useCargoBarter) return;
+
+    const contactItems = Object.entries(contactMax).filter(([, v]) => v > 0);
+    if (contactItems.length === 0) return;
+
+    contactOfferAppliedRef.current = turnId;
+
+    const deal = {
+      playerGives: {} as Record<string, number>,
+      contactGives: Object.fromEntries(contactItems),
+    };
+
+    setCargoDeal(cloneBarterDeal(deal));
+    setPendingCargoTrade({ kind: 'accepted', deal: cloneBarterDeal(deal), contactAgreed: true });
+    setTradeStatus(activeTradeConfig.panelStatusAccepted);
+  });
 
   const handleTradeOfferChange = (kind: DockTradeResourceKind, value: number) => {
     const max = maxOfferFromShip();
@@ -419,14 +445,14 @@ export default function DockInteriorDialogue({
             valueOut: 0,
             ratio: 0,
           } as const)
-      : evaluateBarterDeal(deal, playerOwner, contactOwner!, {
-          acceptRatio: (activeTradeConfig.acceptRatio ?? 1) - stanceAdjust,
-          insultRatio: Math.max(
-            0.15,
-            (activeTradeConfig.insultRatio ?? 0.4) - Math.max(0, tradeStance) * 0.03
-          ),
-          counterTargetRatio: activeTradeConfig.counterTargetRatio ?? 1.15,
-        });
+        : evaluateBarterDeal(deal, playerOwner, contactOwner!, {
+            acceptRatio: (activeTradeConfig.acceptRatio ?? 1) - stanceAdjust,
+            insultRatio: Math.max(
+              0.15,
+              (activeTradeConfig.insultRatio ?? 0.4) - Math.max(0, tradeStance) * 0.03
+            ),
+            counterTargetRatio: activeTradeConfig.counterTargetRatio ?? 1.15,
+          });
 
     if (evalResult.kind === 'empty') {
       setTradeStatus(activeTradeConfig.panelStatusEmptyOffer);
@@ -563,6 +589,7 @@ export default function DockInteriorDialogue({
     refreshPlayerCargoBinding();
     setPendingCargoTrade(null);
     setCargoDeal(emptyBarterDeal());
+    setTradeOpen(false);
     setTradeStance((prev) => Math.min(3, prev + 1));
     setTradeStatus(withCargoOffer(tradeConfig.panelStatusSuccess, deal));
 
@@ -605,6 +632,7 @@ export default function DockInteriorDialogue({
     recordTradeDelivery(threadId, deal);
     setPendingResourceTrade(null);
     setTradeOffer(EMPTY_TRADE_OFFER);
+    setTradeOpen(false);
     setTradeStance((prev) => Math.min(3, prev + 1));
     setTradeStatus(withResourceOffer(tradeConfig.panelStatusSuccess, deal));
 
@@ -655,6 +683,11 @@ export default function DockInteriorDialogue({
         timestamp: Date.now(),
       });
     }
+    // For contactOffersAll, reset the ref so the offer re-applies on next
+    // render — the contact keeps offering the same deal.
+    if (tradeConfig.contactOffersAll) {
+      contactOfferAppliedRef.current = null;
+    }
   };
 
   const handleOption = (optionId: string) => {
@@ -699,7 +732,7 @@ export default function DockInteriorDialogue({
           timestamp: Date.now(),
           audioSrc: clipSrc,
         });
-        const isTerminal = nextTurn.playerOptions.length === 0;
+        const isTerminal = nextTurn.playerOptions.length === 0 && !nextTurn.trade;
         setChatTurn(threadId, isTerminal ? null : option.nextTurnId!, false);
         if (nextTurn.trade) {
           setTradeOpen(true);

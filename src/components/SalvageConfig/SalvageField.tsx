@@ -43,6 +43,8 @@ export interface SalvageFieldProps {
   dockRadioDialogue?: string[];
   /** Optional docking bay label for radio contact UI. */
   dockRadioDockingBay?: string;
+  /** Register ship berth as a drive signature source (visible on drive scanner). Default false. */
+  dockDriveSignatureEnabled?: boolean;
   /** Optional override for ship-berth display label. */
   dockLabelOverride?: string;
   /** Optional override for ship-berth dock configuration. */
@@ -66,6 +68,7 @@ export default function SalvageField({
   dockRadioBroadcastEnabled = false,
   dockRadioDialogue,
   dockRadioDockingBay,
+  dockDriveSignatureEnabled = false,
   dockLabelOverride,
   dockConfigOverride,
 }: SalvageFieldProps) {
@@ -102,6 +105,7 @@ export default function SalvageField({
               radioBroadcastEnabled={dockRadioBroadcastEnabled}
               radioDialogue={dockRadioDialogue}
               radioDockingBay={dockRadioDockingBay}
+              driveSignatureEnabled={dockDriveSignatureEnabled}
             />
             {showDockMineable && dockMineable ? (
               <Asteroid

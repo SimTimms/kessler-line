@@ -48,7 +48,7 @@ export const THRUSTER_LIGHT_INTENSITY_RCS = 405;
 
 export const THRUSTER_LIGHT_COLOR = '#8888ff';
 export const THRUSTER_LIGHT_DISTANCE = 20;
-export const THRUSTER_LIGHT_DECAY = 0.5;
+export const THRUSTER_LIGHT_DECAY = 1.5;
 
 /** How aggressively particle trails collapse back toward their thrust axis. */
 export const THRUSTER_PARTICLE_TAPER_STRENGTH = 12;

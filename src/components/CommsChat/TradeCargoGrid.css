@@ -1,0 +1,145 @@
+/* ── Trade cargo root ─────────────────────────────────────────────────── */
+
+.trade-cargo-root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Shared labels ───────────────────────────────────────────────────── */
+
+.trade-cargo-section-label {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--cc-dim);
+}
+
+.trade-cargo-section-count {
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cc-muted);
+}
+
+/* ── Hold section header ─────────────────────────────────────────────── */
+
+.trade-cargo-hold-section {
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 4px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.trade-cargo-hold-section--drop-target {
+  border-color: rgba(0, 255, 180, 0.5);
+  box-shadow:
+    inset 0 0 12px rgba(0, 255, 180, 0.08),
+    0 0 10px rgba(0, 255, 180, 0.12);
+}
+
+.trade-cargo-hold-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+/* ── Shared cell grid (contact cargo, YOU GIVE, THEY GIVE) ───────────── */
+
+.trade-cargo-cell-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--trade-grid-cols, 8), 1fr);
+  gap: 3px;
+}
+
+/* ── Individual cargo cell (same style as ship cargo summary) ────────── */
+
+.trade-cargo-cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--cargo-color, #00cfff) 35%, #1e2228);
+  background-image: url(/crate.jpg);
+  background-size: cover;
+  border-radius: 1px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cargo-color, #00cfff);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+  cursor: grab;
+  transition: filter 0.12s ease;
+}
+
+.trade-cargo-cell:hover {
+  filter: brightness(1.15);
+  box-shadow:
+    0 0 8px color-mix(in srgb, var(--cargo-color, #00cfff) 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--cargo-color, #00cfff) 40%, transparent);
+}
+
+.trade-cargo-cell:active {
+  cursor: grabbing;
+}
+
+.trade-cargo-cell--empty {
+  background-image: none;
+  background: #15191c;
+  border-color: #1e2228;
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Staged cells in deal zones — clickable to remove */
+.trade-cargo-cell--staged {
+  cursor: pointer;
+}
+
+.trade-cargo-cell--staged:active {
+  cursor: pointer;
+}
+
+/* ── Deal staging area ───────────────────────────────────────────────── */
+
+.trade-cargo-deal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.trade-cargo-deal__zone {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  min-height: 48px;
+  border: 1px solid rgba(0, 200, 255, 0.12);
+  border-radius: 2px;
+  background: rgba(0, 10, 20, 0.4);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.trade-cargo-deal__zone--drop-target {
+  border-color: rgba(0, 255, 180, 0.5);
+  box-shadow:
+    inset 0 0 12px rgba(0, 255, 180, 0.08),
+    0 0 10px rgba(0, 255, 180, 0.12);
+}
+
+.trade-cargo-deal__zone-title {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--cc-dim);
+}
+
+.trade-cargo-deal__empty {
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  color: var(--cc-muted);
+  opacity: 0.5;
+  padding: 4px 0;
+}

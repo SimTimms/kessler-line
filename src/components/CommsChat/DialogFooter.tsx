@@ -38,32 +38,8 @@ export default function DialogFooter({
   isDockPermissionGranted = false,
   onRequestDockPermission,
 }: DialogFooterProps) {
-  const pendingReplyMsg = contact ? msgs.find((m) => !m.repliedWith && m.replies?.length) : null;
-  const footerOptions = contact
-    ? (pendingReplyMsg?.replies ?? []).map((r) => ({ id: r.id, label: r.label }))
-    : !isPreHail && showOptions
-      ? playerOptions
-      : [];
-
   return (
     <div className="comms-chat-footer">
-      {!contact && !canTransmit && (
-        <div className="comms-chat-status-line">○ TRANSMIT RANGE EXCEEDED</div>
-      )}
-      {footerOptions.length > 0 && (
-        <div className="comms-chat-options">
-          {footerOptions.map((opt) => (
-            <button
-              key={opt.id}
-              className="comms-chat-opt"
-              onClick={() => handleFooterOption(opt.id)}
-              disabled={!contact && !canTransmit}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
       {!contact && !isPreHail && canRequestDockPermission ? (
         <div className="comms-chat-options">
           <button

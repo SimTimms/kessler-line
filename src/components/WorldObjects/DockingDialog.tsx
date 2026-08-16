@@ -91,7 +91,7 @@ const MISSIONS = {
     cargoLabel: '1× Emergency Data Recorder',
     availableAt: 'fuel-station',
     description:
-      'Kronos-4 went dark 48 hours ago. Docking here, you find the crew gone — a CO2 recycler failure. No distress signal was ever broadcast. No one was coming.\n\nThe station\'s emergency recorder is still active in the cargo bay. Its data is intact: the full timeline, the system alerts, who tried to fix it and when they stopped trying.\n\nGet it to the Space Station. Someone has to know what happened out here.',
+      "Kronos-4 went dark 48 hours ago. Docking here, you find the crew gone — a CO2 recycler failure. No distress signal was ever broadcast. No one was coming.\n\nThe station's emergency recorder is still active in the cargo bay. Its data is intact: the full timeline, the system alerts, who tried to fix it and when they stopped trying.\n\nGet it to the Space Station. Someone has to know what happened out here.",
   },
   mars: {
     label: 'Deliver Food to Mars',
@@ -257,7 +257,12 @@ export default function DockingDialog({
             /* All other stations: standard docking dialog */
             <>
               <p
-                style={{ margin: '0 0 6px', fontSize: 11, letterSpacing: '0.12em', color: 'rgba(0, 200, 255, 0.5)' }}
+                style={{
+                  margin: '0 0 6px',
+                  fontSize: 11,
+                  letterSpacing: '0.12em',
+                  color: 'rgba(0, 200, 255, 0.5)',
+                }}
               >
                 {isSpaceStation ? 'STATION ALPHA — DOCKED' : 'DOCKING SEQUENCE COMPLETE'}
               </p>
@@ -369,7 +374,9 @@ export default function DockingDialog({
             >
               CARGO MANIFEST
             </div>
-            <div style={{ fontSize: 14, color: '#00ff88' }}>{MISSIONS[briefMission].cargoLabel}</div>
+            <div style={{ fontSize: 14, color: '#00ff88' }}>
+              {MISSIONS[briefMission].cargoLabel}
+            </div>
             <div style={{ fontSize: 11, color: 'rgba(0, 200, 255, 0.5)', marginTop: 2 }}>
               DESTINATION: {MISSIONS[briefMission].destination}
             </div>
@@ -419,8 +426,7 @@ export default function DockingDialog({
             }}
           >
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.75, color: '#ffe080' }}>
-              Data recorder uploaded. Incident logged as:{' '}
-              <em>Equipment Failure, Non-Criminal.</em>
+              Data recorder uploaded. Incident logged as: <em>Equipment Failure, Non-Criminal.</em>
             </p>
             <p
               style={{
@@ -453,7 +459,8 @@ export default function DockingDialog({
                 paddingTop: 10,
               }}
             >
-              Your account has been credited: <span style={{ color: '#ffcc00' }}>45 fuel units</span>. That's how it works out here.
+              Your account has been credited:{' '}
+              <span style={{ color: '#ffcc00' }}>45 fuel units</span>. That's how it works out here.
             </p>
           </div>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>

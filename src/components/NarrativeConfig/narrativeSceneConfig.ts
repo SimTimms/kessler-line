@@ -14,9 +14,9 @@ export const NARRATIVE_SATELLITE_CONTAINER_LABEL = 'Orbital Survey Satellite';
 
 /** Primary salvage hub sits just outside Mars SOI. */
 const PRIMARY_FIELD_MARGIN_OUTSIDE_MARS_SOI = 12_000;
-/** Secondary drone-style hub sits further around Mars for cargo runs. */
-const SECONDARY_FIELD_ARC_RADIANS = Math.PI * 0.62;
-const SECONDARY_FIELD_EXTRA_RADIUS = 220_000;
+/** Secondary field (Bakerfield Falls) sits inside Mars SOI, ~200 k from primary. */
+const SECONDARY_FIELD_ARC_RADIANS = 0.09;
+const SECONDARY_FIELD_INSET_BELOW_SOI = 20_000;
 /** Slow zone around each asteroid hub. */
 export const NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS = 2_800;
 
@@ -105,10 +105,7 @@ export function getNarrativeSecondaryFieldOrigin(target = new THREE.Vector3()): 
   const marsSoiRadius = getMarsSoiRadius();
   return target
     .copy(marsPos)
-    .addScaledVector(
-      rotated,
-      marsSoiRadius + PRIMARY_FIELD_MARGIN_OUTSIDE_MARS_SOI + SECONDARY_FIELD_EXTRA_RADIUS
-    );
+    .addScaledVector(rotated, marsSoiRadius - SECONDARY_FIELD_INSET_BELOW_SOI);
 }
 
 /** Station ID used for the Donington dock partner registration. */

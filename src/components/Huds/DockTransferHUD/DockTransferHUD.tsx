@@ -34,6 +34,7 @@ import {
   minimizeDockTransferPanel,
 } from '../../../context/DockTransferUi';
 import DockInteriorDialogue from '../../Station/StationDialogue';
+import ShipCargoSummary from './ShipCargoSummary';
 import '../HelmetHUD/HelmetHUD.css';
 import './DockTransferHUD.css';
 
@@ -306,6 +307,11 @@ const DockTransferHUD = memo(function DockTransferHUD() {
             ) : null}
           </div>
 
+          <div className="dock-transfer-hud__divider" />
+          <div className="dock-station-panel__cargo-summary">
+            <ShipCargoSummary />
+          </div>
+
           <div className="dock-station-panel__left-footer">
             {towable ? (
               <button
@@ -336,16 +342,7 @@ const DockTransferHUD = memo(function DockTransferHUD() {
           <div className="dock-station-panel__right-header">
             {dockThreadId && activeDockChat ? (
               <>
-                <button
-                  type="button"
-                  className="dock-station-panel__back-btn"
-                  onClick={() => setDockThreadId(null)}
-                >
-                  BACK
-                </button>
-                <span className="dock-station-panel__right-title">
-                  {activeDockChat.contact.name}
-                </span>
+                <span className="dock-station-panel__right-title">COMMS OPEN</span>
               </>
             ) : (
               <span className="dock-station-panel__right-title">STATION DIRECTORY</span>

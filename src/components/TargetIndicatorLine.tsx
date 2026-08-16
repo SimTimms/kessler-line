@@ -26,7 +26,7 @@ import {
 } from '../config/shipDirectionIndicatorConfig';
 import { formatCompactDistance } from '../utils/formatCompactDistance';
 import {
-  createShipDirectionArrow,
+  createShipDirectionSplitLine,
   placeShipDirectionArrow,
   setShipDirectionArrowColor,
 } from './shipDirectionArrow';
@@ -70,7 +70,7 @@ export default function TargetIndicatorLine({
   shipGroupRef: React.RefObject<THREE.Group>;
 }) {
   const arrow = useMemo(() => {
-    const a = createShipDirectionArrow(SHIP_DIRECTION_TARGET_COLOR);
+    const a = createShipDirectionSplitLine(SHIP_DIRECTION_TARGET_COLOR);
     a.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
     return a;
   }, []);

@@ -327,9 +327,10 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           dockLabelOverride="Donington Station"
           dockConfigOverride={DONINGTON_STATION_DOCK_CONFIG}
           dockRadioBroadcastEnabled
+          dockDriveSignatureEnabled
           dockRadioDialogue={[
             'DONINGTON STATION BROADCASTING.',
-            'DOCKMASTER BILL CHURCHILL AVAILABLE FOR PARCEL HANDOFF.',
+            'BILL CHURCHILL AVAILABLE FOR PARCEL HANDOFF.',
           ]}
           dockRadioDockingBay="A1"
         />
@@ -357,6 +358,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           dockLabelOverride="Bakerfield Falls"
           dockConfigOverride={BAKERFIELD_FALLS_DOCK_CONFIG}
           dockRadioBroadcastEnabled
+          dockDriveSignatureEnabled
           dockRadioDialogue={[
             'BAKERFIELD FALLS BROADCASTING.',
             'DOCKMASTER HANK JOHNSON STANDING BY FOR PARCEL RECEIPT.',

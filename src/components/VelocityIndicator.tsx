@@ -16,6 +16,7 @@ import {
 } from '../config/shipDirectionIndicatorConfig';
 import {
   createShipDirectionArrow,
+  createShipDirectionLine,
   createShipDirectionRing,
   placeShipDirectionArrow,
 } from './shipDirectionArrow';
@@ -234,7 +235,7 @@ export default function VelocityIndicator({
     const peri = makeApsisSprite('#00e5ff');
     const apo = makeApsisSprite('#00e5ff');
 
-    const velocityArrow = createShipDirectionArrow(SHIP_DIRECTION_VELOCITY_COLOR);
+    const velocityArrow = createShipDirectionLine(SHIP_DIRECTION_VELOCITY_COLOR);
     velocityArrow.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
 
     const orbitDirArrow = createShipDirectionArrow(SHIP_DIRECTION_ORBIT_COLOR);

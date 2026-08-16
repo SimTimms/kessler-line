@@ -27,6 +27,7 @@ import DialogHeader from './DialogHeader';
 import DialogFooter from './DialogFooter';
 import DialogMessages from './DialogMessages';
 import SettlementInfoPanel from './SettlementInfoPanel';
+import TradeCargoGrid from './TradeCargoGrid';
 
 type CommsViewMode = 'messages' | 'info' | 'dossier';
 type TradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
@@ -337,6 +338,12 @@ export default function DialogueThread({
   const hasPendingDeal =
     tradeMode === 'cargo' ? !!tradePanel?.pendingCargoDeal : !!tradePanel?.pendingDeal;
 
+  const footerOptions = contact
+    ? (pendingReplyMsg?.replies ?? []).map((r) => ({ id: r.id, label: r.label }))
+    : !isPreHail && showOptions
+      ? playerOptions
+      : [];
+
   return (
     <div
       className={`comms-chat${inline ? ' comms-chat--inline' : ''}`}
@@ -462,74 +469,13 @@ export default function DialogueThread({
           <div className="comms-trade-panel-title">
             {tradeMode === 'cargo' ? 'BARTER NEGOTIATION' : 'NEGOTIATION OFFER'}
           </div>
-          {tradePanel.statusLine && (
-            <div className="comms-trade-status">{tradePanel.statusLine}</div>
-          )}
           {tradeMode === 'cargo' ? (
-            <div className="comms-trade-cargo-grid">
-              <div className="comms-trade-cargo-col">
-                <div className="comms-trade-cargo-col-title">YOU OFFER</div>
-                {(tradePanel.playerCargoRows ?? []).length === 0 ? (
-                  <div className="comms-trade-empty">Hold empty</div>
-                ) : (
-                  (tradePanel.playerCargoRows ?? []).map((row) => (
-                    <label key={`player-${row.itemId}`} className="comms-trade-slider-row">
-                      <span className="comms-trade-slider-label" title={row.label}>
-                        {row.label}
-                      </span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={row.max}
-                        value={Math.min(row.value, row.max)}
-                        step={1}
-                        onChange={(e) =>
-                          tradePanel.onCargoOfferChange?.(
-                            'playerGives',
-                            row.itemId,
-                            Number(e.target.value)
-                          )
-                        }
-                      />
-                      <span className="comms-trade-slider-value">
-                        {Math.round(Math.min(row.value, row.max))}/{Math.round(row.max)}
-                      </span>
-                    </label>
-                  ))
-                )}
-              </div>
-              <div className="comms-trade-cargo-col">
-                <div className="comms-trade-cargo-col-title">THEY OFFER</div>
-                {(tradePanel.contactCargoRows ?? []).length === 0 ? (
-                  <div className="comms-trade-empty">Nothing in hold</div>
-                ) : (
-                  (tradePanel.contactCargoRows ?? []).map((row) => (
-                    <label key={`contact-${row.itemId}`} className="comms-trade-slider-row">
-                      <span className="comms-trade-slider-label" title={row.label}>
-                        {row.label}
-                      </span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={row.max}
-                        value={Math.min(row.value, row.max)}
-                        step={1}
-                        onChange={(e) =>
-                          tradePanel.onCargoOfferChange?.(
-                            'contactGives',
-                            row.itemId,
-                            Number(e.target.value)
-                          )
-                        }
-                      />
-                      <span className="comms-trade-slider-value">
-                        {Math.round(Math.min(row.value, row.max))}/{Math.round(row.max)}
-                      </span>
-                    </label>
-                  ))
-                )}
-              </div>
-            </div>
+            <TradeCargoGrid
+              playerRows={tradePanel.playerCargoRows ?? []}
+              contactRows={tradePanel.contactCargoRows ?? []}
+              cargoDeal={tradePanel.cargoDeal}
+              onCargoOfferChange={tradePanel.onCargoOfferChange}
+            />
           ) : (
             <div className="comms-trade-sliders">
               {tradeRows.map((row) => (
@@ -569,40 +515,64 @@ export default function DialogueThread({
               </span>
             </div>
           )}
+
           <div className="comms-trade-actions">
-            <button type="button" className="comms-chat-opt" onClick={tradePanel.onReset}>
-              CLEAR
-            </button>
-            <button
-              type="button"
-              className="comms-chat-opt"
-              onClick={tradePanel.onSubmit}
-              disabled={!tradePanel.canSubmit}
-            >
-              {tradePanel.submitLabel ?? 'SEND OFFER'}
-            </button>
-            {hasPendingDeal && tradePanel.onAcceptPendingDeal && (
-              <button
-                type="button"
-                className="comms-chat-opt"
-                onClick={tradePanel.onAcceptPendingDeal}
-              >
-                AGREE
-              </button>
-            )}
-            {hasPendingDeal && tradePanel.onRejectPendingDeal && (
-              <button
-                type="button"
-                className="comms-chat-opt"
-                onClick={tradePanel.onRejectPendingDeal}
-              >
-                DECLINE
-              </button>
+            {hasPendingDeal ? (
+              <>
+                {tradePanel.onAcceptPendingDeal && (
+                  <button
+                    type="button"
+                    className="comms-chat-opt"
+                    onClick={tradePanel.onAcceptPendingDeal}
+                  >
+                    AGREE
+                  </button>
+                )}
+                {tradePanel.onRejectPendingDeal && (
+                  <button
+                    type="button"
+                    className="comms-chat-opt"
+                    onClick={tradePanel.onRejectPendingDeal}
+                  >
+                    DECLINE
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <button type="button" className="comms-chat-opt" onClick={tradePanel.onReset}>
+                  CLEAR
+                </button>
+                <button
+                  type="button"
+                  className="comms-chat-opt"
+                  onClick={tradePanel.onSubmit}
+                  disabled={!tradePanel.canSubmit}
+                >
+                  {tradePanel.submitLabel ?? 'SEND OFFER'}
+                </button>
+              </>
             )}
           </div>
         </div>
       )}
-
+      {!contact && !isRadioActive && (
+        <div className="comms-chat-status-line">○ TRANSMIT RANGE EXCEEDED</div>
+      )}
+      {footerOptions.length > 0 && (
+        <div className="comms-chat-options">
+          {footerOptions.map((opt) => (
+            <button
+              key={opt.id}
+              className="comms-chat-opt"
+              onClick={() => handleFooterOption(opt.id)}
+              disabled={!contact && !isRadioActive}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
       <DialogFooter
         contact={contact ?? null}
         msgs={msgs}

@@ -6,6 +6,11 @@ import {
   SHIP_DIRECTION_ARROW_TIP_RADIUS,
   SHIP_DIRECTION_RING_OPACITY,
   SHIP_DIRECTION_RING_RADIUS,
+  SHIP_DIRECTION_TARGET_LINE_GAP,
+  SHIP_DIRECTION_TARGET_LINE_LENGTH,
+  SHIP_DIRECTION_TARGET_LINE_THICKNESS,
+  SHIP_DIRECTION_VELOCITY_LINE_LENGTH,
+  SHIP_DIRECTION_VELOCITY_LINE_THICKNESS,
 } from '../config/shipDirectionIndicatorConfig';
 
 const _fwd = new THREE.Vector3(0, 0, 1);
@@ -78,6 +83,67 @@ export function createShipDirectionRing(color: string | number): THREE.Line {
   const ring = new THREE.Line(geo, mat);
   ring.frustumCulled = false;
   return ring;
+}
+
+/**
+ * Two short lines perpendicular to local +Z with a gap between them.
+ * When aligned with the velocity line indicator, the single velocity line
+ * sits in the gap.
+ */
+export function createShipDirectionSplitLine(color: string | number, opacity = 0.88): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthTest: false,
+    depthWrite: false,
+  });
+  group.userData.arrowMaterial = mat;
+
+  const halfGap = SHIP_DIRECTION_TARGET_LINE_GAP / 2;
+  const segLen = SHIP_DIRECTION_TARGET_LINE_LENGTH;
+  const thick = SHIP_DIRECTION_TARGET_LINE_THICKNESS;
+
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(thick, thick, segLen), mat);
+  inner.position.z = -(halfGap + segLen / 2);
+  inner.frustumCulled = false;
+  group.add(inner);
+
+  const outer = new THREE.Mesh(new THREE.BoxGeometry(thick, thick, segLen), mat);
+  outer.position.z = halfGap + segLen / 2;
+  outer.frustumCulled = false;
+  group.add(outer);
+
+  group.frustumCulled = false;
+  return group;
+}
+
+/** Single short line perpendicular to local +Z — fits in the target split gap when aligned. */
+export function createShipDirectionLine(color: string | number, opacity = 0.88): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthTest: false,
+    depthWrite: false,
+  });
+  group.userData.arrowMaterial = mat;
+
+  const line = new THREE.Mesh(
+    new THREE.BoxGeometry(
+      SHIP_DIRECTION_VELOCITY_LINE_THICKNESS,
+      SHIP_DIRECTION_VELOCITY_LINE_THICKNESS,
+      SHIP_DIRECTION_VELOCITY_LINE_LENGTH
+    ),
+    mat
+  );
+  line.frustumCulled = false;
+  group.add(line);
+
+  group.frustumCulled = false;
+  return group;
 }
 
 /** Place an arrow on the circumference in XZ, oriented along `dirWorld` (y ignored). */
