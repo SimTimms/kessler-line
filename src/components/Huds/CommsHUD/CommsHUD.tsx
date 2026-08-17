@@ -1,24 +1,18 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AudioLines, RadioTower } from 'lucide-react';
 import ContactsHUD from '../../ContactsHUD/ContactsHUD';
 import {
   clampScannerPowerLevel,
   formatScannerPowerDrain,
-  getScannerAccentColor,
   getScannerPowerDrain,
   isScannerPowerOn,
-  SCANNER_ABBREV,
   SCANNER_DEFAULT_ON_LEVEL,
   SCANNER_OFF_LEVEL,
+  SCANNER_POWER_LEVELS,
   SCANNER_RANGE_MODE_ARIA,
   SCANNER_RANGE_MODE_LABELS,
-  SCANNER_RANGE_ON_LEVELS,
   scannerPowerLevelRefs,
 } from '../../../config/scanRanges';
-import {
-  formatScannerContactCount,
-  scannerContactCountRefs,
-} from '../../../context/ScannerContactCounts';
 import { setRadioScannerState } from '../../../context/scannerStateMutators';
 import { setScannerRingHovered } from '../../../context/ScannerRingHover';
 import {
@@ -50,21 +44,6 @@ function usePadScanActive(): boolean {
     };
   }, []);
   return active;
-}
-
-function useRadioContactCount(): number {
-  const [count, setCount] = useState(() => scannerContactCountRefs.radio.current);
-  useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      const next = scannerContactCountRefs.radio.current;
-      setCount((prev) => (prev === next ? prev : next));
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-  return count;
 }
 
 function PadScanWaveform({ active }: { active: boolean }) {
@@ -110,8 +89,8 @@ export default function CommsHUD({
   initialRadioPower,
   sceneRadioContactsOnly = false,
 }: CommsHUDProps) {
+  void radioOn;
   const padScanActive = usePadScanActive();
-  const contactCount = useRadioContactCount();
   const lastPower = useRef(
     clampScannerPowerLevel(
       isScannerPowerOn(initialRadioPower ?? SCANNER_OFF_LEVEL)
@@ -125,12 +104,8 @@ export default function CommsHUD({
 
   const disabled = disableElements.includes(RADIO_ID);
   const highlight = focusElements.includes(RADIO_ID);
-  const isActive = radioOn && isScannerPowerOn(power);
-  const accentColor = getScannerAccentColor(RADIO_ID);
   const drain = getScannerPowerDrain(RADIO_ID, power);
   const drainLabel = formatScannerPowerDrain(drain);
-  const showContacts = isActive;
-  const abbrev = SCANNER_ABBREV.radio;
 
   useEffect(() => {
     const level = clampScannerPowerLevel(power);
@@ -163,127 +138,66 @@ export default function CommsHUD({
   return (
     <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly}>
       {({ open, hasIncoming }) => (
-        <div className="mech-comms mech-scanner" aria-label="Communications">
-          <div className="mech-comms-bezel">
-            <div className="mech-comms-head">
-              <span className="mech-comms-lamp" aria-hidden />
-              <span className="mech-comms-title">COMMS</span>
-              <span className="mech-comms-sub">RADIO</span>
-            </div>
-
-            <div className="mech-comms-body">
-              <div
-                className={`helmet-scanner-section mech-comms-radio${disabled ? ' helmet-scanner-row--disabled' : ''}${highlight ? ' helmet-scanner-row--highlight' : ''}${isActive ? ' helmet-scanner-row--on' : ''}`}
-                style={{ '--scan-accent': accentColor } as CSSProperties}
-                title="radio"
-                onMouseEnter={() => setScannerRingHovered('radio', true)}
-                onMouseLeave={() => setScannerRingHovered('radio', false)}
+        <div className="mech-comms" aria-label="Communications">
+          <div className="scanner-columns">
+            <div
+              className={`scanner-col${disabled ? ' scanner-col--disabled' : ''}${highlight ? ' scanner-col--highlight' : ''}`}
+              onMouseEnter={() => setScannerRingHovered('radio', true)}
+              onMouseLeave={() => setScannerRingHovered('radio', false)}
+            >
+              <div className="scanner-col-icon" title="Radio">
+                <AudioLines size={14} strokeWidth={2} aria-hidden />
+              </div>
+              <span
+                className={`resource-bar-rate${drain > 0 ? ' resource-bar-rate--loss' : ''}`}
+                title="Power drain"
               >
-                <div className="helmet-scanner-section-head">
-                  <div className="helmet-scanner-section-title">
-                    <AudioLines
-                      className="helmet-scanner-title-icon"
-                      size={12}
-                      strokeWidth={2}
-                      aria-hidden
-                    />
-                    <span className="helmet-scanner-abbr">{abbrev}</span>
-                  </div>
-                  <div className="helmet-scanner-readouts">
+                {drainLabel}
+              </span>
+              <div className="scanner-power-btns" role="group" aria-label="Radio power">
+                {SCANNER_POWER_LEVELS.map((level) => {
+                  const selected = power === level;
+                  return (
                     <button
+                      key={level}
                       type="button"
-                      className={`helmet-scanner-drain-screen helmet-scanner-cont-btn helmet-scanner-cont-btn--clickable${showContacts ? ' helmet-scanner-drain-screen--active' : ''}${hasIncoming ? ' mech-comms-cont--incoming' : ''}`}
-                      title="Open contacts"
-                      aria-label={
-                        showContacts
-                          ? `Open contacts (${formatScannerContactCount(contactCount)})`
-                          : 'Open contacts'
-                      }
+                      className={`scanner-power-btn${selected ? ' scanner-power-btn--selected' : ''}`}
                       disabled={disabled}
-                      onClick={open}
+                      aria-label={SCANNER_RANGE_MODE_ARIA[level]}
+                      aria-pressed={selected}
+                      onClick={() => applyPower(level)}
                     >
-                      <span className="helmet-scanner-drain">
-                        {showContacts ? formatScannerContactCount(contactCount) : '0'}
-                      </span>
+                      {SCANNER_RANGE_MODE_LABELS[level]}
                     </button>
-                    <span
-                      className={`helmet-scanner-drain-screen${drain > 0 ? ' helmet-scanner-drain-screen--active' : ''}`}
-                      title="Power drain"
-                    >
-                      <span className="helmet-scanner-drain">{drainLabel}</span>
-                    </span>
-                  </div>
-                </div>
-                <div className="helmet-scanner-section-crt">
-                  <div className="helmet-scanner-row">
-                    <div className="helmet-scanner-switches" role="group" aria-label="RAD controls">
-                      <button
-                        type="button"
-                        className={`helmet-scanner-switch${isActive ? '' : ' helmet-scanner-switch--off'}`}
-                        disabled={disabled}
-                        onClick={() => {
-                          if (isActive) applyPower(SCANNER_OFF_LEVEL);
-                        }}
-                        aria-label="RAD power off"
-                        aria-pressed={!isActive}
-                        title="Switch off"
-                      >
-                        <span className="helmet-scanner-switch-face" aria-hidden>
-                          O
-                        </span>
-                      </button>
-                      {SCANNER_RANGE_ON_LEVELS.map((level) => {
-                        const selected = power === level;
-                        return (
-                          <button
-                            key={level}
-                            type="button"
-                            className={`helmet-scanner-switch${selected ? ' helmet-scanner-switch--selected' : ''}`}
-                            disabled={disabled}
-                            aria-label={SCANNER_RANGE_MODE_ARIA[level]}
-                            aria-pressed={selected}
-                            onClick={() => applyPower(level)}
-                          >
-                            <span className="helmet-scanner-switch-face" aria-hidden>
-                              {SCANNER_RANGE_MODE_LABELS[level]}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-
-              <div className="mech-comms-pad">
-                <PadScanWaveform active={padScanActive} />
-              </div>
-
-              {hasIncoming && (
-                <button
-                  type="button"
-                  className="mech-comms-hail"
-                  onClick={open}
-                  title="Accept incoming hail"
-                  aria-label="Incoming hail — click to open"
-                >
-                  <div className="mech-comms-hail-icon" aria-hidden>
-                    <RadioTower size={15} strokeWidth={1.75} />
-                  </div>
-                  <div className="mech-comms-hail-wave" aria-hidden>
-                    {Array.from({ length: PAD_SCAN_WAVE_BARS }, (_, i) => (
-                      <span
-                        key={i}
-                        className="mech-comms-hail-bar"
-                        style={{ animationDelay: `${i * 0.07}s` }}
-                      />
-                    ))}
-                  </div>
-                  <span className="mech-comms-hail-label">INCOMING HAIL</span>
-                </button>
-              )}
             </div>
           </div>
+          <PadScanWaveform active={padScanActive} />
+          {hasIncoming && (
+            <button
+              type="button"
+              className="mech-comms-hail"
+              onClick={open}
+              title="Accept incoming hail"
+              aria-label="Incoming hail — click to open"
+            >
+              <div className="mech-comms-hail-icon" aria-hidden>
+                <RadioTower size={15} strokeWidth={1.75} />
+              </div>
+              <div className="mech-comms-hail-wave" aria-hidden>
+                {Array.from({ length: PAD_SCAN_WAVE_BARS }, (_, i) => (
+                  <span
+                    key={i}
+                    className="mech-comms-hail-bar"
+                    style={{ animationDelay: `${i * 0.07}s` }}
+                  />
+                ))}
+              </div>
+              <span className="mech-comms-hail-label">INCOMING HAIL</span>
+            </button>
+          )}
         </div>
       )}
     </ContactsHUD>

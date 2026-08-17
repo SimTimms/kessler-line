@@ -39,6 +39,7 @@ import {
   type DockPermissionCandidate,
 } from '../../../context/DockPermissionState';
 import { EVENT_OPEN_COMMS_CONTACT } from '../../../context/CommsUiEvents';
+import { EVENT_LOG_CONTACT_SELECT } from '../EventLogHUD/EventLogHUD';
 
 const NAV_TARGETS = NAV_TARGET_DEFS;
 
@@ -197,7 +198,9 @@ export const NavHUD = ({
     radioContacts.length +
     radiationContacts.length;
   const hasDockPermissionRequestTarget =
-    dockPermissionCandidate != null && !hasDockPermission(dockPermissionCandidate.stationId);
+    dockPermissionCandidate != null &&
+    targetId === dockPermissionCandidate.stationId &&
+    !hasDockPermission(dockPermissionCandidate.stationId);
 
   // ── Handlers ──────────────────────────────────────────────────────
 
@@ -225,6 +228,16 @@ export const NavHUD = ({
       customPlanetaryTargets
     );
   };
+
+  // Listen for contact selections from EventLogHUD tabs
+  useEffect(() => {
+    const onContactSelect = (e: Event) => {
+      const id = (e as CustomEvent<{ id: string }>).detail?.id;
+      if (id) handleSelect(id);
+    };
+    window.addEventListener(EVENT_LOG_CONTACT_SELECT, onContactSelect);
+    return () => window.removeEventListener(EVENT_LOG_CONTACT_SELECT, onContactSelect);
+  }); // intentionally no deps — handleSelect captures fresh closure each render
 
   const handleClearNavTarget = () => clearAllNavTargets(clearDispatch);
   const handleAutopilot = () => toggleApproachAutopilot(autopilotEnabled);
@@ -294,7 +307,7 @@ export const NavHUD = ({
         <div className="helmet-nav mech-nav">
           <div className="mech-nav-bezel">
             <div className="mech-nav-head">
-              <span className="hud-title">NAV</span>
+              <span className="hud-title">DESTINATION</span>
             </div>
             {isDocked ? (
               <div className="helmet-nav-docked">
@@ -364,34 +377,35 @@ export const NavHUD = ({
                     </div>
                   </div>
                 </div>
-                <div className="helmet-nav-row-inner"></div>
-                <div className="helmet-nav-row">
-                  <span className="hud-subtitle">SPD</span>
-                </div>
-                <div className="helmet-nav-row-inner">
-                  <div className="helmet-nav-metric">
-                    <span ref={displayRefs.speed} className="helmet-nav-speed hud-value">
-                      dada
-                    </span>
+                <div className="hud-divider-line"></div>
+                <div className="helmet-nav-target-line-inner">
+                  <span className="hud-subtitle">RELATIVE</span>
+
+                  <div className="helmet-nav-row">
+                    <span className="hud-subtitle">SPD</span>
                   </div>
-                  <div className="helmet-nav-metric helmet-nav-metric--rel">
-                    <span className="helmet-nav-tag">Δv</span>
-                    <span
-                      ref={displayRefs.relativeVel}
-                      className="helmet-nav-dv hud-value nav-relative-velocity"
-                    />
+                  <span ref={displayRefs.speed} className="hud-value">
+                    100
+                  </span>
+                  <span className="helmet-nav-tag">Δv</span>
+                  <span ref={displayRefs.relativeVel} className="hud-value">
+                    100
+                  </span>
+                </div>
+                <div className="hud-divider-line"></div>
+                <div className="helmet-nav-row-inner">
+                  <span className="hud-subtitle">OPTIONS</span>
+                  <div className="helmet-nav-row">
                     {hasDockPermissionRequestTarget ? (
                       <button
                         type="button"
-                        className="helmet-nav-btn nav-dock-permission-btn"
+                        className="helmet-nav-btn"
                         onClick={openDockPermissionComms}
                         title={`Request dock permission from ${dockPermissionCandidate?.label ?? 'dock'}`}
                       >
                         REQUEST DOCK PERMISSION
                       </button>
-                    ) : (
-                      <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
-                    )}
+                    ) : null}
                   </div>
                 </div>
                 <span ref={displayRefs.orbitLine} className="helmet-nav-orbit" />
@@ -489,9 +503,7 @@ export const NavHUD = ({
                         >
                           Request dock permission
                         </button>
-                      ) : (
-                        <span ref={displayRefs.dockingHint} className="nav-target-dock-hint" />
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>

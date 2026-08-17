@@ -104,3 +104,88 @@
   font-size: var(--hud-fs-3xl);
   letter-spacing: 0.05em;
 }
+
+/* ── Resource top-bar tabs (helmet layout) ─────────────────────────────── */
+
+.resource-bar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+}
+
+.resource-bar-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #fff;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: var(--hud-fs-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 3px 6px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.resource-bar-tab--warn:hover:not(:disabled) {
+  color: #ffc44d;
+}
+
+.resource-bar-tab--disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.resource-bar-tag {
+  opacity: 0.65;
+}
+
+.resource-bar-val {
+  background: #fff;
+  color: #000;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  padding: 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.resource-bar-val--warn {
+  background: #ffaa00;
+  color: #000;
+}
+
+.resource-bar-val--crit {
+  color: #000;
+}
+
+.resource-bar-rate {
+  color: #fff;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  min-width: 20px;
+  text-align: center;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #777;
+}
+
+.resource-bar-rate--gain {
+  color: #fff;
+}
+
+.resource-bar-rate--loss {
+  color: #fff;
+  min-width: 30px;
+}
+
+.resource-bar-tab--crit {
+  color: #000;
+  background: #f56969;
+}

@@ -39,10 +39,10 @@ export const SCANNER_OFF_LEVEL = 1;
 export const SCANNER_DEFAULT_ON_LEVEL = 3; // medium
 
 export const SCANNER_RANGE_MODE_LABELS: Record<ScannerPowerLevel, string> = {
-  1: 'O',
-  2: 'S',
-  3: 'M',
-  4: 'L',
+  1: '0',
+  2: '1',
+  3: '2',
+  4: '3',
 };
 
 export const SCANNER_RANGE_MODE_ARIA: Record<ScannerPowerLevel, string> = {
@@ -146,7 +146,9 @@ export function getScannerRange(id: ScannerRangeId, powerLevel: number): number 
 export function getScannerPowerDrain(id: ScannerElementId, powerLevel: number): number {
   const index = clampScannerPowerLevel(powerLevel) - 1;
   const base =
-    id === 'spotlight' ? SCANNER_SPOTLIGHT_POWER_DRAIN[index] : SCANNER_RANGE_CONFIG[id].powerDrain[index];
+    id === 'spotlight'
+      ? SCANNER_SPOTLIGHT_POWER_DRAIN[index]
+      : SCANNER_RANGE_CONFIG[id].powerDrain[index];
   return scaleSystemPowerDrainPerSecond(base);
 }
 
@@ -180,8 +182,8 @@ export function getTotalScannerPowerDrain(): number {
 }
 
 export function formatScannerPowerDrain(drainPerSec: number): string {
-  if (drainPerSec <= 0) return '0/s';
-  return `-${drainPerSec}/s`;
+  if (drainPerSec <= 0) return '0';
+  return `-${drainPerSec}`;
 }
 
 // Legacy named exports (used across HUDs and tutorials).

@@ -73,7 +73,6 @@ export function useNavHudScanning(opts: UseNavHudScanningOptions): NavHudScanSta
     apsesTarget: useRef<HTMLSpanElement>(null!),
     approach: useRef<HTMLSpanElement>(null!),
     relativeVel: useRef<HTMLSpanElement>(null!),
-    dockingHint: useRef<HTMLSpanElement>(null!),
     autopilotBtn: useRef<HTMLSpanElement>(null!),
     orbitLine: useRef<HTMLSpanElement>(null!),
     speed: useRef<HTMLSpanElement>(null!),

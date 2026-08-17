@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import PowerHUD from '../PowerHUD/PowerHUD';
+import PowerHUD, { HelmetCargoHUD } from '../PowerHUD/PowerHUD';
 import { NavHUD, type TutorialTargetDef } from '../NavHUD/NavHUD';
 import { ScannerHUD, type ScannerHUDElementId } from '../HUD/ScannerHUD';
 import CommsHUD from '../CommsHUD/CommsHUD';
@@ -100,17 +100,29 @@ const HelmetHUD = memo(function HelmetHUD({
       className={`helmet-hud${powerOnline ? '' : ' helmet-hud--powerless'}`}
       data-power-online={powerOnline ? 'true' : 'false'}
     >
+      <div className="helmet-top-bar">
+        <PowerHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
+      </div>
       <div className="helmet-left-stack">
-        <CommsHUD
-          radioOn={radioOn}
-          setRadioOn={setRadioOn}
-          radioOnRef={radioOnRef}
-          disableElements={disableElements}
-          focusElements={focusElements}
-          initialRadioPower={scannerInitialPowers?.radio}
-          sceneRadioContactsOnly={sceneRadioContactsOnly}
-        />
         <DamageControlHUD />
+        <HelmetCargoHUD />
+      </div>
+
+      <div className="helmet-center-stack">
+        <div className="helmet-minimap-anchor">
+          <CommsHUD
+            radioOn={radioOn}
+            setRadioOn={setRadioOn}
+            radioOnRef={radioOnRef}
+            disableElements={disableElements}
+            focusElements={focusElements}
+            initialRadioPower={scannerInitialPowers?.radio}
+            sceneRadioContactsOnly={sceneRadioContactsOnly}
+          />
+          <CameraHUD />
+          <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />
+        </div>
+        <EventLogHUD />
         <ScannerHUD
           layout="helmet"
           focusElements={focusElements}
@@ -118,12 +130,6 @@ const HelmetHUD = memo(function HelmetHUD({
           initialPowers={scannerInitialPowers}
           {...scannerProps}
         />
-        <PowerHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
-        <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />
-      </div>
-
-      <div className="helmet-center-stack">
-        <EventLogHUD />
         <NavHUD
           layout="helmet"
           disableElements={disableElements}
@@ -132,7 +138,6 @@ const HelmetHUD = memo(function HelmetHUD({
         />
       </div>
       <div className="helmet-right-stack">
-        <CameraHUD />
         <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
       </div>
       <AlertsHUD />

@@ -79,13 +79,6 @@
   color: rgba(160, 220, 255, 0.8);
 }
 
-.nav-target-dock-hint {
-  font-size: var(--hud-fs-sm);
-  opacity: 0.72;
-  color: rgba(160, 220, 255, 0.85);
-  letter-spacing: 0.04em;
-  text-transform: none;
-}
 
 .nav-dock-permission-btn {
   width: auto;
@@ -247,11 +240,16 @@
 }
 
 @keyframes nav-target-pulse {
-  0%, 100% {
-    box-shadow: 0 0 4px rgba(0, 170, 255, 0.24), 0 0 0 1px rgba(0, 170, 255, 0.18);
+  0%,
+  100% {
+    box-shadow:
+      0 0 4px rgba(0, 170, 255, 0.24),
+      0 0 0 1px rgba(0, 170, 255, 0.18);
   }
   50% {
-    box-shadow: 0 0 14px rgba(0, 180, 255, 0.75), 0 0 0 1px rgba(0, 180, 255, 0.52);
+    box-shadow:
+      0 0 14px rgba(0, 180, 255, 0.75),
+      0 0 0 1px rgba(0, 180, 255, 0.52);
   }
 }
 
@@ -326,9 +324,31 @@
   letter-spacing: 0.2em;
 }
 
+.hud-divider-line {
+  width: 100%;
+  margin: 2px 0;
+}
+
+.hud-title {
+  font-size: var(--hud-fs-sm);
+  color: #aaa;
+  line-height: 1;
+}
+
+.hud-subtitle {
+  font-size: var(--hud-fs-xs);
+  color: #aaa;
+  line-height: 1;
+  margin-left: 4px;
+}
+
 .hud-value {
-  font-size: var(--hud-fs-md);
-  color: rgba(160, 220, 255, 0.95);
+  font-family: inherit;
+  font-size: var(--hud-fs-xs);
+  cursor: pointer;
+  color: #fff;
+  width: 100%;
+  text-align: left;
 }
 
 @keyframes nav-rel-vel-flash {

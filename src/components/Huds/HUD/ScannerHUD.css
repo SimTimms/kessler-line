@@ -258,17 +258,108 @@ button.helmet-scanner-drain-screen {
 .mech-scanner.helmet-scanner-deck {
   position: relative;
   width: 100%;
-  max-width: none;
-  padding: 0;
+  max-width: 200px;
+  padding: 4px;
   background: transparent;
-  border: none;
+  border: 1px solid #444;
   backdrop-filter: none;
   font-family: var(--mech-font);
+  box-sizing: border-box;
 }
 
 .helmet-scanner-controls-row .mech-scanner.helmet-scanner-deck {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* ── Scanner column layout (helmet) ─────────────────────────────────────── */
+
+.scanner-columns {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.scanner-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.scanner-col--disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  filter: grayscale(100%);
+}
+
+.scanner-col--highlight {
+  filter: drop-shadow(0 0 6px rgba(0, 200, 255, 0.7));
+  animation: mech-scanner-pulse 0.9s ease-in-out infinite;
+}
+
+.scanner-col-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(180, 200, 220, 0.7);
+  padding: 2px;
+  cursor: default;
+}
+
+button.scanner-col-contacts {
+  appearance: none;
+  border: none;
+  margin: 0;
+  font: inherit;
+  cursor: default;
+}
+
+.scanner-contacts--clickable {
+  cursor: pointer;
+}
+
+.scanner-contacts--clickable:hover:not(:disabled) {
+  background: #ccc;
+}
+
+.scanner-power-btns {
+  display: flex;
+  flex-direction: column;
+  width: 20px;
+  gap: 0;
+}
+
+.scanner-power-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #777;
+  color: #000;
+  border: none;
+  border-radius: 0px;
+  padding: 4px 0;
+  font-size: var(--hud-fs-2xs);
+  cursor: pointer;
+}
+
+.scanner-power-btn--selected {
+  background: #fff;
+  color: #000;
+}
+
+.scanner-power-btn:hover:not(:disabled):not(.scanner-power-btn--selected) {
+  background: #999;
+}
+
+.scanner-power-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .mech-scanner .helmet-scanner-deck-head {

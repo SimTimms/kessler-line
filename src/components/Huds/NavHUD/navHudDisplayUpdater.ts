@@ -30,7 +30,6 @@ export interface HudDisplayRefs {
   apsesTarget: { current: HTMLSpanElement | null };
   approach: { current: HTMLSpanElement | null };
   relativeVel: { current: HTMLSpanElement | null };
-  dockingHint: { current: HTMLSpanElement | null };
   autopilotBtn: { current: HTMLSpanElement | null };
   orbitLine: { current: HTMLSpanElement | null };
   speed: { current: HTMLSpanElement | null };
@@ -44,7 +43,6 @@ export interface HudDisplayRefs {
  */
 export function updateHudDisplayRefs(
   refs: HudDisplayRefs,
-  selectedObjName: string | null,
   layout: 'classic' | 'helmet',
   focusElements: string[],
 ): void {
@@ -93,9 +91,9 @@ export function updateHudDisplayRefs(
     updateApproachRef(refs.approach.current);
   }
 
-  // Relative velocity + docking hint
+  // Relative velocity
   if (refs.relativeVel.current) {
-    updateRelativeVelocity(refs.relativeVel.current, refs.dockingHint.current, selectedObjName);
+    updateRelativeVelocity(refs.relativeVel.current);
   }
 
   // Autopilot button
@@ -157,14 +155,10 @@ function updateApproachRef(el: HTMLSpanElement): void {
 
 function updateRelativeVelocity(
   relVelEl: HTMLSpanElement,
-  dockingHintEl: HTMLSpanElement | null,
-  selectedObjName: string | null,
 ): void {
   const hasSelected = selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01;
   const hasNavId = navTargetIdRef.current.trim().length > 0;
   const hasTarget = hasSelected || hasNavId;
-
-  let relVelNum = 0;
 
   if (!hasTarget) {
     relVelEl.textContent = '\u2014';
@@ -178,36 +172,17 @@ function updateRelativeVelocity(
 
     if (dist < 1e-5) {
       relVelEl.textContent = '0 m/s';
-      relVelNum = 0;
     } else {
       _toTargetDir.multiplyScalar(1 / dist);
       const relVel =
         (shipVelocity.x - targetVel.x) * _toTargetDir.x +
         (shipVelocity.y - targetVel.y) * _toTargetDir.y +
         (shipVelocity.z - targetVel.z) * _toTargetDir.z;
-      relVelNum = relVel;
       relVelEl.textContent = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
     }
 
     const flash = Date.now() < targetFlashUntil;
     relVelEl.className = `hud-value nav-relative-velocity${flash ? ' nav-relative-velocity--flash' : ''}`;
-  }
-
-  // Docking hint
-  if (dockingHintEl) {
-    if (!hasTarget) {
-      dockingHintEl.textContent = '';
-      dockingHintEl.style.display = 'none';
-    } else {
-      const contactName = selectedObjName ?? selectedTargetName;
-      if (contactName === 'Docking Bay' && Math.abs(relVelNum) < 4) {
-        dockingHintEl.textContent = '[docking velocity]';
-        dockingHintEl.style.display = '';
-      } else {
-        dockingHintEl.textContent = '';
-        dockingHintEl.style.display = 'none';
-      }
-    }
   }
 }
 

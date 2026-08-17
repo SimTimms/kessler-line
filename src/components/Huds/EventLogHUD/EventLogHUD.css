@@ -32,6 +32,7 @@
   background: rgba(0, 10, 20, 0.55);
   border-bottom: 1px solid #444;
   flex-shrink: 0;
+  height: 30px;
 }
 
 .event-log-purge {
@@ -108,7 +109,7 @@
 
 .event-log-text {
   min-width: 0;
-  font-size: var(--hud-fs-md);
+  font-size: var(--hud-fs-xs);
   letter-spacing: 0.08em;
   line-height: 1.35;
   text-transform: capitalize;
@@ -139,4 +140,75 @@
 
 .event-log-delete:hover {
   border-bottom: 1px dashed #000;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────────────── */
+
+.event-log-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.event-log-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.event-log-tab {
+  background: none;
+  border: none;
+  border-radius: 0px;
+  border-bottom: 2px solid transparent;
+  color: #777;
+  font-family: inherit;
+  font-size: var(--hud-fs-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin-right: 6px;
+  white-space: nowrap;
+  border-bottom: 1px dashed #777;
+
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.event-log-tab:hover {
+  color: #fff;
+}
+
+.event-log-tab--active {
+  color: #fff;
+  border-bottom: 1px dashed #fff;
+}
+
+.event-log-tab-count {
+  background: #fff;
+  color: #000;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  margin-left: 6px;
+  padding: 0 4px;
+}
+
+/* ── Contact rows ────────────────────────────────────────────────────────── */
+
+.event-log-distance {
+  margin-left: auto;
+  margin-right: 10px;
+  font-size: var(--hud-fs-xs);
+  white-space: nowrap;
+}
+
+.event-log-empty {
+  color: rgba(180, 200, 220, 0.35);
+  font-style: italic;
+  font-size: var(--hud-fs-sm);
+  padding: 6px 8px;
+  text-transform: none;
 }

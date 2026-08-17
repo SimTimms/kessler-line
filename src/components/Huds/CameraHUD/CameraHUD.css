@@ -18,13 +18,16 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--mech-cyan);
+  border: 1px solid #444;
+  margin-bottom: 4px;
 }
 
 .mech-camera-bezel {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 8px 8px 6px;
+  gap: 4px;
+  padding: 4px;
   background: var(--mech-bezel-bg);
   backdrop-filter: var(--mech-bezel-blur);
   -webkit-backdrop-filter: var(--mech-bezel-blur);
@@ -32,46 +35,8 @@
   box-shadow: var(--mech-bezel-shadow);
 }
 
-.mech-camera-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 6px;
-  padding: 0 2px 5px;
-  border-bottom: 1px solid rgba(0, 200, 255, 0.22);
-}
-
-.mech-camera-lamp {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--mech-cyan);
-  box-shadow:
-    0 0 6px rgba(0, 200, 255, 0.85),
-    inset 0 0 2px rgba(180, 240, 255, 0.9);
-  animation: mech-camera-lamp-pulse 2.4s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-@keyframes mech-camera-lamp-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
-
-.mech-camera-title {
-  font-size: 9px;
-  letter-spacing: 0.22em;
-  color: var(--mech-label);
-  line-height: 1;
-  flex: 1;
-}
-
 .mech-camera-key {
+  margin-left: auto;
   font-size: var(--hud-fs-xs);
   letter-spacing: 0.08em;
   color: rgba(0, 200, 255, 0.55);
@@ -80,46 +45,6 @@
 
 .mech-camera-modes {
   display: flex;
-  flex-direction: row;
-  gap: 4px;
-}
-
-.mech-camera-mode {
-  appearance: none;
-  flex: 1;
-  margin: 0;
-  padding: 6px 2px;
-  border: 1px solid rgba(0, 200, 255, 0.22);
-  border-radius: 2px;
-  background: #05080c;
-  color: rgba(0, 200, 255, 0.55);
-  font: inherit;
-  font-size: var(--hud-fs-xs);
-  letter-spacing: 0.14em;
-  cursor: pointer;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
-  transition:
-    color 0.12s ease,
-    border-color 0.12s ease,
-    background 0.12s ease,
-    box-shadow 0.12s ease;
-}
-
-.mech-camera-mode:hover {
-  color: rgba(180, 240, 255, 0.9);
-  border-color: rgba(0, 200, 255, 0.45);
-}
-
-.mech-camera-mode--active {
-  color: #051018;
-  background: linear-gradient(180deg, #7aefff 0%, var(--mech-cyan) 55%, #0090bb 100%);
-  border-color: #b8f7ff;
-  box-shadow:
-    0 0 8px rgba(0, 200, 255, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-.mech-camera-mode:focus-visible {
-  outline: 1px solid rgba(0, 200, 255, 0.7);
-  outline-offset: 1px;
+  align-items: center;
+  gap: 2px;
 }

@@ -22,6 +22,7 @@ import {
 import { humanizeCollidableId, type NavScanContact } from './navScanPickerContacts';
 import { formatDist, contactListSignature } from './navHudFormatters';
 import { pushEventLog, type EventLogType } from '../EventLogHUD/EventLogStore';
+import { setContactStoreContacts, setContactStorePlanets } from '../EventLogHUD/ContactStore';
 import type { NavTargetItem } from './NavTargetDialog';
 import type { TutorialTargetDef } from './NavHUD';
 
@@ -142,6 +143,7 @@ function scanNavTargets(
   if (navSig !== prevSigs.nav.current) {
     prevSigs.nav.current = navSig;
     dispatch.setNavItems(newNavItems);
+    setContactStorePlanets(newNavItems);
   }
 
   // Keep custom planetary target position up to date
@@ -207,12 +209,14 @@ function scanMagnetic(
       prevSigs.magnetic.current = sig;
       logNewContacts('magnet', inRange);
       dispatch.setMagneticContacts(inRange);
+      setContactStoreContacts('magnet', inRange);
       setScannerContactCount('magnet', inRange.length);
     }
   } else if (prevSigs.magnetic.current !== '') {
     prevSigs.magnetic.current = '';
     seenContactIds.magnet.clear();
     dispatch.setMagneticContacts([]);
+    setContactStoreContacts('magnet', []);
     setScannerContactCount('magnet', 0);
   }
 }
@@ -244,12 +248,14 @@ function scanDrive(prevSigs: ScanPrevSigs, vecs: ScanScratchVecs, dispatch: Scan
       prevSigs.drive.current = sig;
       logNewContacts('drive', inRange);
       dispatch.setDriveContacts(inRange);
+      setContactStoreContacts('drive', inRange);
       setScannerContactCount('drive', inRange.length);
     }
   } else if (prevSigs.drive.current !== '') {
     prevSigs.drive.current = '';
     seenContactIds.drive.clear();
     dispatch.setDriveContacts([]);
+    setContactStoreContacts('drive', []);
     setScannerContactCount('drive', 0);
   }
 }
@@ -286,12 +292,14 @@ function scanProximity(
       prevSigs.proximity.current = sig;
       logNewContacts('proximity', inRange);
       dispatch.setProximityContacts(inRange);
+      setContactStoreContacts('proximity', inRange);
       setScannerContactCount('proximity', inRange.length);
     }
   } else if (prevSigs.proximity.current !== '') {
     prevSigs.proximity.current = '';
     seenContactIds.proximity.clear();
     dispatch.setProximityContacts([]);
+    setContactStoreContacts('proximity', []);
     setScannerContactCount('proximity', 0);
   }
 }
@@ -321,12 +329,14 @@ function scanRadio(prevSigs: ScanPrevSigs, vecs: ScanScratchVecs, dispatch: Scan
       prevSigs.radio.current = sig;
       logNewContacts('radio', inRange);
       dispatch.setRadioContacts(inRange);
+      setContactStoreContacts('radio', inRange);
       setScannerContactCount('radio', inRange.length);
     }
   } else if (prevSigs.radio.current !== '') {
     prevSigs.radio.current = '';
     seenContactIds.radio.clear();
     dispatch.setRadioContacts([]);
+    setContactStoreContacts('radio', []);
     setScannerContactCount('radio', 0);
   }
 }
@@ -363,12 +373,14 @@ function scanRadiation(
       prevSigs.radiation.current = sig;
       logNewContacts('radiation', inRange);
       dispatch.setRadiationContacts(inRange);
+      setContactStoreContacts('radiation', inRange);
       setScannerContactCount('radiation', inRange.length);
     }
   } else if (prevSigs.radiation.current !== '') {
     prevSigs.radiation.current = '';
     seenContactIds.radiation.clear();
     dispatch.setRadiationContacts([]);
+    setContactStoreContacts('radiation', []);
     setScannerContactCount('radiation', 0);
   }
 }

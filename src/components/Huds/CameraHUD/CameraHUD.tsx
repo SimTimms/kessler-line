@@ -30,13 +30,6 @@ const CameraHUD = memo(function CameraHUD() {
   return (
     <div className="mech-camera" aria-label="Camera">
       <div className="mech-camera-bezel">
-        <div className="mech-camera-head">
-          <span className="mech-camera-lamp" aria-hidden />
-          <span className="mech-camera-title">CAM</span>
-          <span className="mech-camera-key" title="Toggle camera mode">
-            {displayLabelForKeyCode(KEY_TOGGLE_CAMERA_DECOUPLE)}
-          </span>
-        </div>
         <div className="mech-camera-modes" role="group" aria-label="Camera follow mode">
           {MODES.map((entry) => {
             const active = mode === entry.id;
@@ -44,12 +37,12 @@ const CameraHUD = memo(function CameraHUD() {
               <button
                 key={entry.id}
                 type="button"
-                className={`mech-camera-mode${active ? ' mech-camera-mode--active' : ''}`}
+                className={`event-log-tab${active ? ' event-log-tab--active' : ''}`}
                 aria-pressed={active}
                 title={entry.hint}
                 onClick={() => setCameraMode(entry.id)}
               >
-                {entry.label}
+                {entry.label}CAM
               </button>
             );
           })}

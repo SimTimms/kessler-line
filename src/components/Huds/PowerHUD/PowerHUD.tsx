@@ -129,7 +129,6 @@ interface VitalBarDef {
   level: WarnLevel;
 }
 
-
 function CrewIcons({ count, size }: { count: number; size: number }) {
   return (
     <>
@@ -158,17 +157,61 @@ function ventKindForBarId(barId: string): VentResourceKind | null {
   }
 }
 
+function ResourceBarTab({
+  tag,
+  display,
+  ratePerSec,
+  level,
+  disabled,
+  ventable,
+  onClick,
+}: {
+  tag: string;
+  display: string;
+  ratePerSec: number;
+  level: WarnLevel;
+  disabled: boolean;
+  ventable: boolean;
+  onClick?: () => void;
+}) {
+  const rateLabel = formatResourceRate(ratePerSec);
+  const levelClass =
+    level === 'red'
+      ? ' resource-bar-tab--crit'
+      : level === 'orange'
+        ? ' resource-bar-tab--warn'
+        : '';
+
+  return (
+    <button
+      type="button"
+      className={`resource-bar-tab${disabled ? ' resource-bar-tab--disabled' : ''}`}
+      title={ventable ? `${tag} — click to vent` : tag}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <span className="resource-bar-tag">{tag}</span>
+      <span className={`resource-bar-val${levelClass}`}>{display}</span>
+      {tag !== 'HUL' && tag !== 'AMMO' && (
+        <span
+          className={`resource-bar-rate${ratePerSec > 0 ? ' resource-bar-rate--gain' : ' resource-bar-rate--loss'}`}
+        >
+          {rateLabel ? rateLabel : 0}
+        </span>
+      )}
+    </button>
+  );
+}
+
 function HelmetVitalsView({
   bars,
   disableElements,
-  focusElements,
   ammoCount,
   ammoMax,
   onVentRequest,
 }: {
   bars: VitalBarDef[];
   disableElements: string[];
-  focusElements: string[];
   ammoCount: number;
   ammoMax: number;
   onVentRequest: (kind: VentResourceKind) => void;
@@ -179,84 +222,85 @@ function HelmetVitalsView({
   const ammoPct = ammoMax > 0 ? (ammoCount / ammoMax) * 100 : 0;
   const ammoLevel = resourceLevel(ammoPct);
   const ammoDisabled = disableElements.includes(RESOURCE_HUD_ELEMENTS.AMMO);
-  const ammoHighlight = focusElements.includes(RESOURCE_HUD_ELEMENTS.AMMO);
-  const ammoValClass =
-    ammoLevel === 'red'
-      ? 'helmet-vital-val--crit'
-      : ammoLevel === 'orange'
-        ? 'helmet-vital-val--warn'
-        : '';
   return (
-    <div className="helmet-vitals mech-vitals" aria-live="polite">
-      <div className="mech-vitals-bezel">
-        <div className="mech-vitals-head">
-          <span className="mech-vitals-lamp" aria-hidden />
-          <span className="mech-vitals-title">RES</span>
-          <span className="mech-vitals-sub">SYSTEMS</span>
-        </div>
-        <div className="mech-vitals-modules">
-          {bars.map((bar) => {
-            const disabled = disableElements.includes(bar.id);
-            const highlight = focusElements.includes(bar.id);
-            const rateLabel = formatResourceRate(bar.ratePerSec);
-            const valClass =
-              bar.level === 'red'
-                ? 'helmet-vital-val--crit'
-                : bar.level === 'orange'
-                  ? 'helmet-vital-val--warn'
-                  : '';
-            const ventKind = ventKindForBarId(bar.id);
-            const ventable = ventKind !== null && !disabled && canVentResource(ventKind);
-            return (
-              <div
-                key={bar.id}
-                role={ventable ? 'button' : undefined}
-                tabIndex={ventable ? 0 : undefined}
-                className={`helmet-vital${disabled ? ' helmet-vital--disabled' : ''}${highlight ? ' helmet-vital--highlight' : ''}${ventable ? ' helmet-vital--ventable' : ''}`}
-                title={ventable ? `${bar.tag} — click to vent` : bar.tag}
-                onClick={ventable && ventKind ? () => requestVent(ventKind) : undefined}
-                onKeyDown={
-                  ventable && ventKind
-                    ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          requestVent(ventKind);
-                        }
-                      }
-                    : undefined
-                }
-              >
-                <div className="helmet-vital-head">
-                  <span className="helmet-vital-tag">{bar.tag}</span>
-                  <span className="helmet-vital-amount-screen" title={bar.tag}>
-                    <span className={`helmet-vital-val ${valClass}`}>{bar.display}</span>
-                  </span>
-                </div>
-                <div className="helmet-vital-crt">
-                  <span
-                    className={`helmet-vital-rate${rateLabel ? '' : ' helmet-vital-rate--empty'}${rateLabel && bar.ratePerSec > 0 ? ' helmet-vital-rate--gain' : ''}`}
-                    aria-hidden={!rateLabel}
-                  >
-                    {rateLabel ?? '\u00a0'}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-          <div
-            className={`helmet-vitals-meta${ammoDisabled ? ' helmet-vital--disabled' : ''}${ammoHighlight ? ' helmet-vital--highlight' : ''}`}
-            title="Ammunition"
-          >
-            <span className="helmet-vital-tag">AMMO</span>
-            <div className="helmet-vital-crt helmet-vitals-meta-crt">
-              <span className={`helmet-vital-val ${ammoValClass}`}>
-                {ammoCount}/{ammoMax}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="resource-bar-tabs" aria-live="polite">
+      {bars.map((bar) => {
+        const disabled = disableElements.includes(bar.id);
+        const ventKind = ventKindForBarId(bar.id);
+        const ventable = ventKind !== null && !disabled && canVentResource(ventKind);
+        return (
+          <ResourceBarTab
+            key={bar.id}
+            tag={bar.tag}
+            display={bar.display}
+            ratePerSec={bar.ratePerSec}
+            level={bar.level}
+            disabled={disabled}
+            ventable={ventable}
+            onClick={ventable && ventKind ? () => requestVent(ventKind) : undefined}
+          />
+        );
+      })}
+      <ResourceBarTab
+        tag="AMMO"
+        display={`${ammoCount}/${ammoMax}`}
+        ratePerSec={0}
+        level={ammoLevel}
+        disabled={ammoDisabled}
+        ventable={false}
+      />
     </div>
+  );
+}
+
+export function HelmetCargoHUD() {
+  const [displayCargo, setDisplayCargo] = useState<CargoItem[]>([]);
+  const [ejectState, setEjectState] = useState<EjectState | null>(null);
+  const [dockTransferUi, setDockTransferUi] = useState(getDockTransferUi);
+
+  useEffect(() => {
+    let rafId: number;
+    let prevCargoLen = -1;
+    const update = () => {
+      rafId = requestAnimationFrame(update);
+      const cl = cargo.length;
+      if (cl !== prevCargoLen) {
+        prevCargoLen = cl;
+        setDisplayCargo(cl > 0 ? [...cargo] : []);
+      }
+    };
+    rafId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
+  useEffect(() => {
+    const onUi = () => setDockTransferUi(getDockTransferUi());
+    window.addEventListener(DOCK_TRANSFER_UI_CHANGED, onUi);
+    return () => window.removeEventListener(DOCK_TRANSFER_UI_CHANGED, onUi);
+  }, []);
+
+  const cargoTransferEnabled = dockTransferUi.partnerId != null;
+
+  return (
+    <>
+      <div className="cargo-hold-flyout-stack power-hud--cargo-flyout">
+        <MiningHUD />
+        <PartnerCargoHoldPanel />
+        <CargoHoldPanel
+          items={displayCargo}
+          transferEnabled={cargoTransferEnabled}
+          onEjectItem={(item) => setEjectState({ item, step: 'confirm', amount: item.quantity })}
+        />
+      </div>
+      {ejectState && (
+        <Cargo
+          ejectState={ejectState}
+          setEjectState={setEjectState}
+          triggerEject={triggerEject}
+          reduceCargoItem={reduceCargoItem}
+        />
+      )}
+    </>
   );
 }
 
@@ -284,9 +328,15 @@ export default function PowerHUD({
 
   useEffect(() => {
     let rafId: number;
-    let prevPower = -1, prevHull = -1, prevFuel = -1, prevO2 = -1;
-    let prevAmmo = -1, prevAmmoCap = -1, prevCrew = -1;
-    let prevVelocity = -1, prevCargoLen = -1;
+    let prevPower = -1,
+      prevHull = -1,
+      prevFuel = -1,
+      prevO2 = -1;
+    let prevAmmo = -1,
+      prevAmmoCap = -1,
+      prevCrew = -1;
+    let prevVelocity = -1,
+      prevCargoLen = -1;
 
     const update = () => {
       rafId = requestAnimationFrame(update);
@@ -301,16 +351,43 @@ export default function PowerHUD({
       const cr = Math.floor(shipCrew);
       const cl = cargo.length;
 
-      if (p !== prevPower) { prevPower = p; setDisplayPower(p); }
-      if (h !== prevHull) { prevHull = h; setDisplayHull(h); }
-      if (f !== prevFuel) { prevFuel = f; setDisplayFuel(f); }
-      if (o !== prevO2) { prevO2 = o; setDisplayO2(o); }
-      if (a !== prevAmmo) { prevAmmo = a; setDisplayAmmo(a); }
-      if (ac !== prevAmmoCap) { prevAmmoCap = ac; setDisplayAmmoCapacity(ac); }
-      if (cr !== prevCrew) { prevCrew = cr; setDisplayCrew(cr); }
+      if (p !== prevPower) {
+        prevPower = p;
+        setDisplayPower(p);
+      }
+      if (h !== prevHull) {
+        prevHull = h;
+        setDisplayHull(h);
+      }
+      if (f !== prevFuel) {
+        prevFuel = f;
+        setDisplayFuel(f);
+      }
+      if (o !== prevO2) {
+        prevO2 = o;
+        setDisplayO2(o);
+      }
+      if (a !== prevAmmo) {
+        prevAmmo = a;
+        setDisplayAmmo(a);
+      }
+      if (ac !== prevAmmoCap) {
+        prevAmmoCap = ac;
+        setDisplayAmmoCapacity(ac);
+      }
+      if (cr !== prevCrew) {
+        prevCrew = cr;
+        setDisplayCrew(cr);
+      }
       const vRounded = Math.round(v * 10);
-      if (vRounded !== prevVelocity) { prevVelocity = vRounded; setDisplayVelocity(v); }
-      if (cl !== prevCargoLen) { prevCargoLen = cl; setDisplayCargo(cl > 0 ? [...cargo] : []); }
+      if (vRounded !== prevVelocity) {
+        prevVelocity = vRounded;
+        setDisplayVelocity(v);
+      }
+      if (cl !== prevCargoLen) {
+        prevCargoLen = cl;
+        setDisplayCargo(cl > 0 ? [...cargo] : []);
+      }
     };
     rafId = requestAnimationFrame(update);
     return () => cancelAnimationFrame(rafId);
@@ -417,29 +494,11 @@ export default function PowerHUD({
         <HelmetVitalsView
           bars={helmetBars}
           disableElements={disableElements}
-          focusElements={focusElements}
           ammoCount={displayAmmo}
           ammoMax={displayAmmoCapacity}
           onVentRequest={setVentKind}
         />
         {ventKind && <VentResourceModal kind={ventKind} onClose={() => setVentKind(null)} />}
-        <div className="cargo-hold-flyout-stack power-hud--cargo-flyout">
-          <MiningHUD />
-          <PartnerCargoHoldPanel />
-          <CargoHoldPanel
-            items={displayCargo}
-            transferEnabled={cargoTransferEnabled}
-            onEjectItem={(item) => setEjectState({ item, step: 'confirm', amount: item.quantity })}
-          />
-        </div>
-        {ejectState && (
-          <Cargo
-            ejectState={ejectState}
-            setEjectState={setEjectState}
-            triggerEject={triggerEject}
-            reduceCargoItem={reduceCargoItem}
-          />
-        )}
       </>
     );
   }

@@ -1,19 +1,12 @@
 import type { CSSProperties } from 'react';
 import { shipIconCssTransform } from './minimapHelpers';
-import type {
-  DockingAssistData,
-  DockingAssistProjection,
-  DockingReadouts,
-} from './minimapTypes';
+import type { DockingAssistData, DockingAssistProjection, DockingReadouts } from './minimapTypes';
 
 export default function DockingAssistPanel({
   dockingAssist,
   dockingAssistProjection,
   dockingReadouts,
   dockingCaptureActive,
-  dockPermissionRequired,
-  dockPermissionGranted,
-  onRequestDockPermission,
 }: {
   dockingAssist: DockingAssistData;
   dockingAssistProjection: DockingAssistProjection | null;
@@ -21,7 +14,6 @@ export default function DockingAssistPanel({
   dockingCaptureActive: boolean;
   dockPermissionRequired: boolean;
   dockPermissionGranted: boolean;
-  onRequestDockPermission: () => void;
 }) {
   const isHover = dockingAssist.captureMode === 'hover';
 
@@ -113,9 +105,8 @@ export default function DockingAssistPanel({
       )}
       {dockingReadouts && (
         <>
-          <div className="sandbox-map-docking-mps">MPS {dockingReadouts.relSpeedText}</div>
-          <div className="sandbox-map-docking-ideal">
-            IDEAL {dockingReadouts.idealSpeedText} MPS
+          <div className="sandbox-map-docking-mps">
+            MPS {dockingReadouts.relSpeedText} - [{dockingReadouts.idealSpeedText} IS MAX FOR DOCK]
           </div>
           {!isHover && (
             <div className="sandbox-map-docking-port-readouts">
@@ -125,17 +116,7 @@ export default function DockingAssistPanel({
           )}
         </>
       )}
-      {isHover && dockPermissionRequired && !dockingCaptureActive && (
-        <button
-          type="button"
-          className="sandbox-map-docking-action"
-          onClick={onRequestDockPermission}
-          disabled={dockPermissionGranted}
-          title={dockPermissionGranted ? 'Dock permission already granted' : 'Request dock permission'}
-        >
-          {dockPermissionGranted ? 'DOCK PERMISSION GRANTED' : 'REQUEST DOCK PERMISSION'}
-        </button>
-      )}
+
       {dockingCaptureActive && <div className="sandbox-map-docking-wait">DOCKING, PLEASE WAIT</div>}
     </>
   );

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { Flashlight, Magnet, HardDrive, Radar, Radiation } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HudButton } from '../HudButton';
@@ -11,12 +11,11 @@ import {
   getScannerAccentColor,
   getScannerPowerDrain,
   isScannerPowerOn,
-  SCANNER_ABBREV,
   SCANNER_DEFAULT_ON_LEVEL,
   SCANNER_OFF_LEVEL,
+  SCANNER_POWER_LEVELS,
   SCANNER_RANGE_MODE_ARIA,
   SCANNER_RANGE_MODE_LABELS,
-  SCANNER_RANGE_ON_LEVELS,
   scannerPowerLevelRefs,
   syncSpotlightPowerLevel,
   type ScannerElementId,
@@ -28,10 +27,10 @@ import {
   setScannerRingHovered,
 } from '../../../context/ScannerRingHover';
 import {
-  formatScannerContactCount,
+  // formatScannerContactCount,
   scannerContactCountRefs,
 } from '../../../context/ScannerContactCounts';
-import { requestOpenScanPicker } from '../../../context/NavHud';
+// import { requestOpenScanPicker } from '../../../context/NavHud';
 import {
   setDriveScannerState,
   setMagneticScannerState,
@@ -57,117 +56,88 @@ export type ScannerHUDElementId = (typeof ScannerHUDElements)[keyof typeof Scann
 
 function HelmetScannerRow({
   id,
-  abbrev,
   icon: Icon,
-  accentColor,
   power,
   isActive,
   disabled,
   highlight,
   contactCount,
-  onToggle,
   onPowerChange,
   onHoverChange,
 }: {
   id: ScannerElementId;
-  abbrev: string;
   icon: LucideIcon;
-  accentColor: string;
   power: number;
   isActive: boolean;
   disabled: boolean;
   highlight: boolean;
   contactCount: number | null;
-  onToggle: () => void;
   onPowerChange: (level: ScannerPowerLevel) => void;
   onHoverChange: (hovered: boolean) => void;
 }) {
   const drain = getScannerPowerDrain(id, power);
   const drainLabel = formatScannerPowerDrain(drain);
-  const showContacts = isActive && contactCount !== null;
-  const canOpenContacts = showContacts && (contactCount ?? 0) > 0;
-  const ringId = id === 'spotlight' ? null : (id as ScannerRangeId);
+  // const showContacts = isActive && contactCount !== null;
+  // const canOpenContacts = showContacts && (contactCount ?? 0) > 0;
+  // const ringId = id === 'spotlight' ? null : (id as ScannerRangeId);
+  const displayName = id.charAt(0).toUpperCase() + id.slice(1);
+  void contactCount;
+  void isActive;
 
   return (
     <div
-      className={`helmet-scanner-section${disabled ? ' helmet-scanner-row--disabled' : ''}${highlight ? ' helmet-scanner-row--highlight' : ''}${isActive ? ' helmet-scanner-row--on' : ''}`}
-      style={{ '--scan-accent': accentColor } as CSSProperties}
-      title={id}
+      className={`scanner-col${disabled ? ' scanner-col--disabled' : ''}${highlight ? ' scanner-col--highlight' : ''}`}
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >
-      <div className="helmet-scanner-section-head">
-        <div className="helmet-scanner-section-title">
-          <Icon className="helmet-scanner-title-icon" size={12} strokeWidth={2} aria-hidden />
-          <span className="helmet-scanner-abbr">{abbrev}</span>
-        </div>
-        <div className="helmet-scanner-readouts">
-          {contactCount !== null ? (
-            <button
-              type="button"
-              className={`helmet-scanner-drain-screen helmet-scanner-cont-btn${showContacts ? ' helmet-scanner-drain-screen--active' : ''}${canOpenContacts ? ' helmet-scanner-cont-btn--clickable' : ''}`}
-              title={canOpenContacts ? `Open ${abbrev} contacts` : `${abbrev} contacts in range`}
-              aria-label={
-                canOpenContacts ? `Open ${abbrev} contacts (${contactCount})` : `${abbrev} contacts`
-              }
-              disabled={disabled || !canOpenContacts}
-              onClick={() => {
-                if (!ringId || !canOpenContacts) return;
-                requestOpenScanPicker(ringId);
-              }}
-            >
-              <span className="helmet-scanner-drain">
-                {showContacts ? formatScannerContactCount(contactCount) : '0'}
-              </span>
-            </button>
-          ) : null}
-          <span
-            className={`helmet-scanner-drain-screen${drain > 0 ? ' helmet-scanner-drain-screen--active' : ''}`}
-            title="Power drain"
-          >
-            <span className="helmet-scanner-drain">{drainLabel}</span>
-          </span>
-        </div>
+      <div className="scanner-col-icon" title={displayName}>
+        <Icon size={14} strokeWidth={2} aria-hidden />
       </div>
-      <div className="helmet-scanner-section-crt">
-        <div className="helmet-scanner-row">
-          <div className="helmet-scanner-switches" role="group" aria-label={`${abbrev} controls`}>
+
+      {/* contactCount !== null && (
+        <button
+          type="button"
+          className={`scanner-col-contacts resource-bar-val${canOpenContacts ? ' scanner-contacts--clickable' : ''}`}
+          title={canOpenContacts ? `Open ${displayName} contacts` : `${displayName} contacts`}
+          aria-label={
+            canOpenContacts
+              ? `Open ${displayName} contacts (${contactCount})`
+              : `${displayName} contacts`
+          }
+          disabled={disabled || !canOpenContacts}
+          onClick={() => {
+            if (!ringId || !canOpenContacts) return;
+            requestOpenScanPicker(ringId);
+          }}
+        >
+          {showContacts ? formatScannerContactCount(contactCount) : '0'}
+        </button>
+      ) */}
+
+      <div className="scanner-power-btns" role="group" aria-label={`${displayName} power`}>
+        {SCANNER_POWER_LEVELS.map((level) => {
+          const selected = power === level;
+          return (
             <button
+              key={level}
               type="button"
-              className={`helmet-scanner-switch${isActive ? '' : ' helmet-scanner-switch--off'}`}
+              className={`scanner-power-btn${selected ? ' scanner-power-btn--selected' : ''}`}
               disabled={disabled}
-              onClick={() => {
-                if (isActive) onToggle();
-              }}
-              aria-label={`${abbrev} power off`}
-              aria-pressed={!isActive}
-              title="Switch off"
+              aria-label={SCANNER_RANGE_MODE_ARIA[level]}
+              aria-pressed={selected}
+              onClick={() => onPowerChange(level)}
             >
-              <span className="helmet-scanner-switch-face" aria-hidden>
-                O
-              </span>
+              {SCANNER_RANGE_MODE_LABELS[level]}
             </button>
-            {SCANNER_RANGE_ON_LEVELS.map((level) => {
-              const selected = power === level;
-              return (
-                <button
-                  key={level}
-                  type="button"
-                  className={`helmet-scanner-switch${selected ? ' helmet-scanner-switch--selected' : ''}${isActive && power >= level ? ' ' : ''}`}
-                  disabled={disabled}
-                  aria-label={SCANNER_RANGE_MODE_ARIA[level]}
-                  aria-pressed={selected}
-                  onClick={() => onPowerChange(level)}
-                >
-                  <span className="helmet-scanner-switch-face" aria-hidden>
-                    {SCANNER_RANGE_MODE_LABELS[level]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          );
+        })}
       </div>
+      <span
+        className={`resource-bar-rate${drain > 0 ? ' resource-bar-rate--loss' : ''}`}
+        title="Power drain"
+      >
+        {drainLabel}
+      </span>
     </div>
   );
 }
@@ -434,10 +404,7 @@ export const ScannerHUD = ({
 
   const handlePower = (id: string, level: number) => {
     const clamped = clampScannerPowerLevel(level);
-    if (
-      isScannerPowerOn(clamped) &&
-      (areShipSystemsForcedOffline() || shipPower <= 0)
-    ) {
+    if (isScannerPowerOn(clamped) && (areShipSystemsForcedOffline() || shipPower <= 0)) {
       return;
     }
     if (isScannerPowerOn(clamped)) lastPowers.current[id] = clamped;
@@ -459,37 +426,34 @@ export const ScannerHUD = ({
 
   if (layout === 'helmet') {
     return (
-      <MechScannerShell className="helmet-scanner-deck" ariaLabel="Sensors">
-        {BUTTON_DEFS.map(({ id, ringId, icon }) => {
-          const disabled = disableElements.includes(id);
-          const highlight = focusElements.includes(id);
-          return (
-            <HelmetScannerRow
-              key={id}
-              id={id}
-              abbrev={SCANNER_ABBREV[id]}
-              icon={icon}
-              accentColor={getScannerAccentColor(id)}
-              power={powers[id]}
-              isActive={getIsActive(id)}
-              disabled={disabled}
-              highlight={highlight}
-              contactCount={ringId ? contactCounts[ringId] : null}
-              onHoverChange={(hovered) => {
-                if (!ringId) return;
-                setScannerRingHovered(ringId, hovered);
-              }}
-              onToggle={() =>
-                handlePower(
-                  id,
-                  isScannerPowerOn(powers[id]) ? SCANNER_OFF_LEVEL : lastPowers.current[id]
-                )
-              }
-              onPowerChange={(level) => handlePower(id, level)}
-            />
-          );
-        })}
-      </MechScannerShell>
+      <div className="event-log" style={{ maxWidth: '180px' }} aria-label="Sensors">
+        <div className="event-log-header">
+          <div className="hud-title">SCANNER</div>
+        </div>
+        <div className="scanner-columns">
+          {BUTTON_DEFS.map(({ id, ringId, icon }) => {
+            const disabled = disableElements.includes(id);
+            const highlight = focusElements.includes(id);
+            return (
+              <HelmetScannerRow
+                key={id}
+                id={id}
+                icon={icon}
+                power={powers[id]}
+                isActive={getIsActive(id)}
+                disabled={disabled}
+                highlight={highlight}
+                contactCount={ringId ? contactCounts[ringId] : null}
+                onHoverChange={(hovered) => {
+                  if (!ringId) return;
+                  setScannerRingHovered(ringId, hovered);
+                }}
+                onPowerChange={(level) => handlePower(id, level)}
+              />
+            );
+          })}
+        </div>
+      </div>
     );
   }
 
