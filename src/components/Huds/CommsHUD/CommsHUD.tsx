@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioLines, RadioTower } from 'lucide-react';
 import ContactsHUD from '../../ContactsHUD/ContactsHUD';
 import {
@@ -25,6 +25,9 @@ import {
   EVENT_SHIP_POWER_DEPLETED,
 } from '../../../context/shipPowerSystems';
 import { power as shipPower } from '../../../context/ShipState';
+import { getContactsByScanner, subscribeContactStore } from '../EventLogHUD/ContactStore';
+import { EVENT_OPEN_COMMS_CONTACT } from '../../../context/CommsUiEvents';
+import type { NavScanContact } from '../NavHUD/navScanPickerContacts';
 import '../HUD/ScannerHUD.css';
 import './CommsHUD.css';
 
@@ -44,6 +47,12 @@ function usePadScanActive(): boolean {
     };
   }, []);
   return active;
+}
+
+function useRadioContacts(): NavScanContact[] {
+  const [contacts, setContacts] = useState(() => getContactsByScanner().radio);
+  useEffect(() => subscribeContactStore(() => setContacts(getContactsByScanner().radio)), []);
+  return contacts;
 }
 
 function PadScanWaveform({ active }: { active: boolean }) {
@@ -91,6 +100,8 @@ export default function CommsHUD({
 }: CommsHUDProps) {
   void radioOn;
   const padScanActive = usePadScanActive();
+  const radioContacts = useRadioContacts();
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const lastPower = useRef(
     clampScannerPowerLevel(
       isScannerPowerOn(initialRadioPower ?? SCANNER_OFF_LEVEL)
@@ -106,6 +117,15 @@ export default function CommsHUD({
   const highlight = focusElements.includes(RADIO_ID);
   const drain = getScannerPowerDrain(RADIO_ID, power);
   const drainLabel = formatScannerPowerDrain(drain);
+
+  const selectedContact = radioContacts.find((c) => c.id === selectedContactId) ?? null;
+
+  // Clear selection if the selected contact goes out of range
+  useEffect(() => {
+    if (selectedContactId && !radioContacts.some((c) => c.id === selectedContactId)) {
+      setSelectedContactId(null);
+    }
+  }, [radioContacts, selectedContactId]);
 
   useEffect(() => {
     const level = clampScannerPowerLevel(power);
@@ -135,69 +155,125 @@ export default function CommsHUD({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + depletion sync only
   }, []);
 
+  const handleContactClick = useCallback((id: string) => {
+    setSelectedContactId((prev) => (prev === id ? null : id));
+  }, []);
+
+  const handleHail = useCallback(() => {
+    if (!selectedContactId) return;
+    window.dispatchEvent(
+      new CustomEvent(EVENT_OPEN_COMMS_CONTACT, { detail: { contactId: selectedContactId } })
+    );
+    setSelectedContactId(null);
+  }, [selectedContactId]);
+
   return (
     <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly}>
       {({ open, hasIncoming }) => (
-        <div className="mech-comms" aria-label="Communications">
-          <div className="scanner-columns">
-            <div
-              className={`scanner-col${disabled ? ' scanner-col--disabled' : ''}${highlight ? ' scanner-col--highlight' : ''}`}
-              onMouseEnter={() => setScannerRingHovered('radio', true)}
-              onMouseLeave={() => setScannerRingHovered('radio', false)}
-            >
-              <div className="scanner-col-icon" title="Radio">
-                <AudioLines size={14} strokeWidth={2} aria-hidden />
-              </div>
-              <span
-                className={`resource-bar-rate${drain > 0 ? ' resource-bar-rate--loss' : ''}`}
-                title="Power drain"
+        <div className="event-log" style={{ minWidth: '260px' }} aria-label="Communications">
+          <div className="event-log-header">
+            <span className="hud-title">RADIO</span>
+          </div>
+          <div className="comms-layout">
+            {/* Left: power controls */}
+            <div className="comms-power">
+              <div
+                className={`scanner-col${disabled ? ' scanner-col--disabled' : ''}${highlight ? ' scanner-col--highlight' : ''}`}
+                onMouseEnter={() => setScannerRingHovered('radio', true)}
+                onMouseLeave={() => setScannerRingHovered('radio', false)}
               >
-                {drainLabel}
-              </span>
-              <div className="scanner-power-btns" role="group" aria-label="Radio power">
-                {SCANNER_POWER_LEVELS.map((level) => {
-                  const selected = power === level;
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      className={`scanner-power-btn${selected ? ' scanner-power-btn--selected' : ''}`}
-                      disabled={disabled}
-                      aria-label={SCANNER_RANGE_MODE_ARIA[level]}
-                      aria-pressed={selected}
-                      onClick={() => applyPower(level)}
+                <div className="scanner-col-icon" title="Radio">
+                  <AudioLines size={14} strokeWidth={2} aria-hidden />
+                </div>
+                <span
+                  className={`resource-bar-rate${drain > 0 ? ' resource-bar-rate--loss' : ''}`}
+                  title="Power drain"
+                >
+                  {drainLabel}
+                </span>
+                <div className="scanner-power-btns" role="group" aria-label="Radio power">
+                  {SCANNER_POWER_LEVELS.map((level) => {
+                    const selected = power === level;
+                    return (
+                      <button
+                        key={level}
+                        type="button"
+                        className={`scanner-power-btn${selected ? ' scanner-power-btn--selected' : ''}`}
+                        disabled={disabled}
+                        aria-label={SCANNER_RANGE_MODE_ARIA[level]}
+                        aria-pressed={selected}
+                        onClick={() => applyPower(level)}
+                      >
+                        {SCANNER_RANGE_MODE_LABELS[level]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/*  <PadScanWaveform active={padScanActive} />*/}
+              </div>
+            </div>
+
+            {/* Right: radio contacts list */}
+            <div className="comms-contacts">
+              <div className="comms-contacts-scroll">
+                {radioContacts.length === 0 ? (
+                  <div className="event-log-empty">No contacts</div>
+                ) : (
+                  radioContacts.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`event-log-line event-log-line--clickable${c.id === selectedContactId ? ' event-log-line--selected' : ''}`}
+                      onClick={() => handleContactClick(c.id)}
+                      role="button"
+                      tabIndex={0}
+                      title={`Select ${c.label}`}
                     >
-                      {SCANNER_RANGE_MODE_LABELS[level]}
-                    </button>
-                  );
-                })}
+                      <span className="event-log-text">{c.label}</span>
+                      <span className="event-log-distance">{c.distance}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
-          <PadScanWaveform active={padScanActive} />
-          {hasIncoming && (
+          {!hasIncoming ? (
             <button
               type="button"
-              className="mech-comms-hail"
+              className={`mech-comms-hail-btn ${selectedContact ? '' : 'mech-comms-hail-btn--inactive'}`}
+              onClick={handleHail}
+              title={selectedContact ? `Hail ${selectedContact.label}` : '-'}
+              aria-label={selectedContact ? `Hail ${selectedContact.label}` : 'No contact selected'}
+            >
+              <div className="mech-comms-hail-btn-icon" aria-hidden>
+                <RadioTower size={15} strokeWidth={1.75} />
+              </div>
+              <span className="mech-comms-hail-btn-label">
+                {selectedContact ? `HAIL ${selectedContact.label}` : 'No Contact Selected'}
+              </span>
+            </button>
+          ) : hasIncoming ? (
+            <button
+              type="button"
+              className="mech-comms-hail-btn mech-comms-hail-btn--incoming"
               onClick={open}
               title="Accept incoming hail"
               aria-label="Incoming hail — click to open"
             >
-              <div className="mech-comms-hail-icon" aria-hidden>
+              <div className="mech-comms-hail-btn-icon" aria-hidden>
                 <RadioTower size={15} strokeWidth={1.75} />
               </div>
-              <div className="mech-comms-hail-wave" aria-hidden>
+              <div className="mech-comms-hail-btn-wave" aria-hidden>
                 {Array.from({ length: PAD_SCAN_WAVE_BARS }, (_, i) => (
                   <span
                     key={i}
-                    className="mech-comms-hail-bar"
+                    className="mech-comms-hail-btn-bar"
                     style={{ animationDelay: `${i * 0.07}s` }}
                   />
                 ))}
               </div>
-              <span className="mech-comms-hail-label">INCOMING HAIL</span>
+              <span className="mech-comms-hail-btn-label">INCOMING HAIL</span>
             </button>
-          )}
+          ) : null}
         </div>
       )}
     </ContactsHUD>

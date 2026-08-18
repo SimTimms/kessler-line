@@ -14,12 +14,53 @@
   color: var(--mech-cyan);
   box-sizing: border-box;
   border: 1px solid #444;
-  padding: 4px;
-  margin-bottom: 4px;
+  border-left: none;
+  border-right: none;
+  padding: 0;
+  max-width: 500px;
 }
 
-.helmet-minimap-anchor .mech-comms {
-  width: min(192px, 38vw);
+/* Two-column layout: power controls left, contacts right */
+.comms-layout {
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.comms-power {
+  flex-shrink: 0;
+  padding: 4px;
+  border-right: 1px solid #444;
+}
+
+.comms-contacts {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.comms-contacts-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 20vh;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 200, 255, 0.2) transparent;
+}
+
+.comms-contacts-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comms-contacts-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comms-contacts-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.2);
+  border-radius: 2px;
 }
 
 .mech-comms-bezel {
@@ -206,58 +247,67 @@
   text-shadow: 0 0 5px rgba(255, 176, 32, 0.4);
 }
 
-/* ── Incoming hail banner ── */
+/* ── Hail / incoming hail button ── */
 
-.mech-comms-hail {
+.mech-comms-hail-btn {
   display: grid;
-  grid-template-columns: 22px 1fr auto;
+  grid-template-columns: 22px 1fr;
   align-items: center;
   gap: 8px;
   min-height: 22px;
-  color: var(--mech-amber);
+  color: #fff;
   padding: 4px 6px;
   background: var(--mech-crt-bg);
-  border-radius: 3px;
-  border: 1px solid color-mix(in srgb, var(--mech-amber) 35%, #0a0c10);
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.65);
+  border-radius: 0px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.25);
   cursor: pointer;
   font: inherit;
   text-transform: inherit;
   letter-spacing: inherit;
+}
+
+.mech-comms-hail-btn:hover {
+  background: #fff;
+  color: #000;
+}
+
+.mech-comms-hail-btn--inactive {
+  opacity: 0.5;
+}
+
+.mech-comms-hail-btn--incoming {
+  grid-template-columns: 22px 1fr auto;
   animation: mech-comms-hail-pulse 1.6s ease-in-out infinite;
 }
 
-.mech-comms-hail:hover {
-  border-color: color-mix(in srgb, var(--mech-amber) 65%, #0a0c10);
-  background: rgba(255, 176, 32, 0.06);
-}
-
 @keyframes mech-comms-hail-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
-.mech-comms-hail-icon {
+.mech-comms-hail-btn-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--mech-amber);
-  filter: drop-shadow(0 0 4px rgba(255, 176, 32, 0.65));
+  color: #fff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.45));
 }
 
-.mech-comms-hail-wave {
+.mech-comms-hail-btn-wave {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 2px;
   height: 16px;
   padding: 0 2px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 176, 32, 0.15);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-.mech-comms-hail-bar {
+.mech-comms-hail-btn-bar {
   flex: 1;
   min-width: 2px;
   max-width: 4px;
@@ -267,14 +317,18 @@
   opacity: 1;
   transform-origin: bottom center;
   animation: helmet-pad-scan-wave 0.55s ease-in-out infinite alternate;
-  box-shadow: 0 0 4px rgba(255, 176, 32, 0.5);
 }
 
-.mech-comms-hail-label {
+.mech-comms-hail-btn-label {
   font-size: var(--hud-fs-sm);
   letter-spacing: 0.14em;
   white-space: nowrap;
-  color: var(--mech-amber);
-  text-shadow: 0 0 6px rgba(255, 176, 32, 0.45);
   overflow: hidden;
+}
+
+/* ── Selected contact in list ── */
+
+.event-log-line--selected {
+  background: rgba(255, 255, 255, 0.08);
+  border-left: 2px solid #fff;
 }

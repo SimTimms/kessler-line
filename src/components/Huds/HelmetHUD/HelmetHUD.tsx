@@ -110,15 +110,6 @@ const HelmetHUD = memo(function HelmetHUD({
 
       <div className="helmet-center-stack">
         <div className="helmet-minimap-anchor">
-          <CommsHUD
-            radioOn={radioOn}
-            setRadioOn={setRadioOn}
-            radioOnRef={radioOnRef}
-            disableElements={disableElements}
-            focusElements={focusElements}
-            initialRadioPower={scannerInitialPowers?.radio}
-            sceneRadioContactsOnly={sceneRadioContactsOnly}
-          />
           <CameraHUD />
           <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />
         </div>
@@ -129,6 +120,15 @@ const HelmetHUD = memo(function HelmetHUD({
           disableElements={disableElements}
           initialPowers={scannerInitialPowers}
           {...scannerProps}
+        />
+        <CommsHUD
+          radioOn={radioOn}
+          setRadioOn={setRadioOn}
+          radioOnRef={radioOnRef}
+          disableElements={disableElements}
+          focusElements={focusElements}
+          initialRadioPower={scannerInitialPowers?.radio}
+          sceneRadioContactsOnly={sceneRadioContactsOnly}
         />
         <NavHUD
           layout="helmet"
