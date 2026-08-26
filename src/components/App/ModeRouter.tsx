@@ -36,7 +36,6 @@ export default function ModeRouter({
   hud,
   docking,
   beacon,
-  mission,
   thrust,
 }: ModeRouterProps) {
   switch (mode) {
@@ -95,17 +94,8 @@ export default function ModeRouter({
           setProximity={hud.setProximity}
           radioOn={hud.radioOn}
           setRadioOn={hud.setRadioOn}
-          showMinimap={hud.showMinimap}
           docked={docking.docked}
           dockedStation={docking.dockedStation}
-          activeMission={mission.activeMission}
-          completedMissions={mission.completedMissions}
-          refueling={docking.refueling}
-          transferringO2={docking.transferringO2}
-          onRefuel={docking.onRefuel}
-          onTransferO2={docking.onTransferO2}
-          onMissionSelect={mission.onMissionSelect}
-          onMissionComplete={mission.onMissionComplete}
           beaconActivated={beacon.beaconActivated}
           listeningToMessage={beacon.listeningToMessage}
           setListeningToMessage={beacon.setListeningToMessage}

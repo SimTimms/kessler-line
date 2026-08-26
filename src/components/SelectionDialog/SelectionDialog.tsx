@@ -20,6 +20,10 @@ interface SelectionDialogProps {
   onSelect: (id: string) => void;
   onClose: () => void;
   platform?: string;
+  /** Optional action icon (e.g. set-as-target) shown to the left of each item. */
+  onAction?: (id: string) => void;
+  /** Which item currently has the action active (highlights the icon). */
+  actionActiveId?: string;
 }
 
 export function SelectionDialog({

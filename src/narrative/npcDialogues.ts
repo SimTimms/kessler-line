@@ -6,6 +6,7 @@ import { getPlayerRegion } from './shipRegistry';
 import type { MessagePlatform, InboxMessage, ReplyOption } from '../context/MessageStore';
 import { BROADCAST_DIALOGUE_TREES } from './broadcastDialogues';
 import { PILOT_PROFILE } from './pilotProfile';
+import { COMMS_RELAY_DIALOGUE_TREE } from '../config/events/comms-relay-mission/comms-relay-dialogue';
 
 export interface PlayerOption {
   id: string;
@@ -1450,6 +1451,8 @@ export const DIALOGUE_TREES: DialogueTree[] = [
       },
     },
   },
+  // ── Comms relay emergency broadcast (kind:'broadcast') ──────────────────
+  COMMS_RELAY_DIALOGUE_TREE,
 ];
 
 // ── Session-local tree assignment ─────────────────────────────────────────────

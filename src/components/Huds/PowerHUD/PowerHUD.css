@@ -164,6 +164,16 @@
   color: #000;
 }
 
+.resource-bar-rate-power {
+  color: #fff;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  min-width: 20px;
+  text-align: center;
+  background: #777;
+}
+
 .resource-bar-rate {
   color: #fff;
   font-size: var(--hud-fs-3xs, 0.6rem);

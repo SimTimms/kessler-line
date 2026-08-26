@@ -103,7 +103,13 @@ export default function EventLogHUD() {
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
-                {<span className="event-log-tab-count">{count ? count : 0}</span>}
+                {
+                  <span
+                    className={`event-log-tab-count${count && count > 0 ? ' event-log-tab-count--active' : ''}`}
+                  >
+                    {count ? count : 0}
+                  </span>
+                }
               </button>
             );
           })}

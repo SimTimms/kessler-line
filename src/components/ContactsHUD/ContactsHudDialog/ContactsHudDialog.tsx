@@ -15,6 +15,7 @@ export interface SelectionItem {
   statusLine?: string;
   statusPulse?: boolean;
   saveable?: boolean;
+  missionFlag?: string;
 }
 
 interface ContactsHudDialogProps {
@@ -97,6 +98,9 @@ export function ContactsHudDialog({
               </span>
             )}
           </span>
+          {item.missionFlag && (
+            <span className="chd-mission-flag">{item.missionFlag}</span>
+          )}
         </button>
         {showSave && item.saveable && (
           <button

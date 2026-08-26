@@ -79,7 +79,6 @@
   color: rgba(160, 220, 255, 0.8);
 }
 
-
 .nav-dock-permission-btn {
   width: auto;
   min-width: 120px;
@@ -333,13 +332,6 @@
   font-size: var(--hud-fs-sm);
   color: #aaa;
   line-height: 1;
-}
-
-.hud-subtitle {
-  font-size: var(--hud-fs-xs);
-  color: #aaa;
-  line-height: 1;
-  margin-left: 4px;
 }
 
 .hud-value {

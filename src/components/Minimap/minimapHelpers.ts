@@ -6,7 +6,7 @@ import {
   MINIMAP_TRAJECTORY_DT,
   MINIMAP_TRAJECTORY_STEPS,
 } from '../../config/shipDirectionIndicatorConfig';
-import type { Marker, MarkerKind, PanCenter } from './minimapTypes';
+import type { Marker, MarkerKind, PanCenter, UnifiedMarker } from './minimapTypes';
 
 export const MAX_MARKERS_PER_GROUP = 160;
 export const ZOOM_MIN_HALF_SPAN = 100;
@@ -136,4 +136,99 @@ export function describeMarker(marker: Marker): string[] {
     return ['Landing Pad (Radio)', `Distance: ${distKm}`];
   }
   return ['Proximity Contact', `Distance: ${distKm}`];
+}
+
+// ── Unified marker helpers ──
+
+export function isUnifiedMarker(m: Marker | UnifiedMarker): m is UnifiedMarker {
+  return 'scanners' in m;
+}
+
+/** Priority order for choosing the primary kind when merging. Higher index = higher priority. */
+const KIND_PRIORITY: MarkerKind[] = ['hard', 'proximity', 'mag', 'drive', 'landingPad', 'radio'];
+
+const SCANNER_LABELS: Partial<Record<MarkerKind, string>> = {
+  proximity: 'PRX',
+  mag: 'MAG',
+  drive: 'DRV',
+  radio: 'RAD',
+  hard: 'HRD',
+  landingPad: 'PAD',
+};
+
+/**
+ * Merge raw markers that share the same `entityId` into a single UnifiedMarker.
+ * Ship, planet, and nav kinds are never merged — they pass through unchanged.
+ */
+export function mergeMarkersByEntity(raw: Marker[]): (Marker | UnifiedMarker)[] {
+  const passKinds = new Set<MarkerKind>(['ship', 'planet', 'nav']);
+  const passthrough: Marker[] = [];
+  const groups = new Map<string, Marker[]>();
+
+  for (const m of raw) {
+    if (passKinds.has(m.kind) || !m.entityId) {
+      passthrough.push(m);
+      continue;
+    }
+    const arr = groups.get(m.entityId);
+    if (arr) arr.push(m);
+    else groups.set(m.entityId, [m]);
+  }
+
+  const merged: (Marker | UnifiedMarker)[] = [...passthrough];
+
+  for (const [, members] of groups) {
+    if (members.length === 1) {
+      // Single-scanner entity — still unify so rendering is consistent
+      const m = members[0];
+      merged.push({
+        ...m,
+        scanners: new Set([m.kind]),
+        primaryKind: m.kind,
+      });
+      continue;
+    }
+    // Pick the highest-priority member for label / position
+    let best = members[0];
+    let bestPriority = KIND_PRIORITY.indexOf(best.kind);
+    const scanners = new Set<MarkerKind>();
+    let hasRadio = false;
+    for (const m of members) {
+      scanners.add(m.kind);
+      if (m.radioCapable) hasRadio = true;
+      const p = KIND_PRIORITY.indexOf(m.kind);
+      if (p > bestPriority) {
+        bestPriority = p;
+        best = m;
+      }
+    }
+    merged.push({
+      id: best.id,
+      entityId: best.entityId,
+      label: best.label,
+      x: best.x,
+      z: best.z,
+      color: best.color,
+      inRange: best.inRange,
+      size: best.size,
+      radiusWorld: best.radiusWorld,
+      radioCapable: hasRadio || undefined,
+      scanners,
+      primaryKind: best.kind,
+    });
+  }
+
+  return merged;
+}
+
+export function describeUnifiedMarker(marker: UnifiedMarker): string[] {
+  const ship = shipPosRef.current;
+  const dist = _tmpA.set(marker.x, 0, marker.z).distanceTo(_tmpB.set(ship.x, 0, ship.z));
+  const distKm = `${Math.max(0, Math.round(dist))} km`;
+  const scannerList = [...marker.scanners]
+    .map((k) => SCANNER_LABELS[k] ?? k.toUpperCase())
+    .join(' / ');
+  const lines = [`Scanners: ${scannerList}`, `Distance: ${distKm}`];
+  if (marker.radioCapable) lines.push('Click to hail');
+  return lines;
 }

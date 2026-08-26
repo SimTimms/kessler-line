@@ -5,7 +5,6 @@ import MagneticHUD from '../Huds/MagneticHUD';
 import DriveSignatureHUD from '../Huds/DriveSignatureHUD';
 import RadiationHUD from '../RadiationHUD';
 import ProximityHUD from '../Proximity/ProximityHUD';
-import MiniMap from '../Minimap/MiniMap';
 import CinematicOverlay from '../Cinematic/CinematicOverlay';
 import RadioChatterStream from '../Radio/RadioChatterStream';
 import HelmetHUD from '../Huds/HelmetHUD/HelmetHUD';
@@ -26,7 +25,6 @@ interface HudLayerProps {
   setProximity: Dispatch<SetStateAction<boolean>>;
   radioOn: boolean;
   setRadioOn: Dispatch<SetStateAction<boolean>>;
-  showMinimap: boolean;
   thrustLevel: number;
   setThrustLevel: Dispatch<SetStateAction<number>>;
 }
@@ -42,7 +40,6 @@ const HudLayer = memo(function HudLayer({
   setProximity,
   radioOn,
   setRadioOn,
-  showMinimap,
   thrustLevel,
   setThrustLevel,
 }: HudLayerProps) {
@@ -92,7 +89,6 @@ const HudLayer = memo(function HudLayer({
       {driveSignatureOn && <DriveSignatureHUD />}
       {proximity && <ProximityHUD />}
       <RadiationHUD />
-      {showMinimap && <MiniMap />}
 
       <RadioChatterStream />
       <CinematicOverlay />

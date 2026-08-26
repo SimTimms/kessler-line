@@ -63,6 +63,11 @@ import {
 } from '../../context/DockablePartnerStore';
 import DockInteriorDialogue from '../Station/StationDialogue';
 import { getThread } from '../../context/ChatStore';
+import {
+  activeMissionRef,
+  completedMissionsRef,
+  declinedMissionsRef,
+} from '../../context/MissionState';
 import { EVENT_OPEN_COMMS_CONTACT, type OpenCommsContactDetail } from '../../context/CommsUiEvents';
 import {
   EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED,
@@ -72,6 +77,12 @@ import {
   hasDockPermission,
   type DockPermissionCandidate,
 } from '../../context/DockPermissionState';
+import {
+  getSavedContactIds as getSavedContactIdsFromState,
+  addSavedContactId,
+  getHistoricalContactIds as getHistoricalContactIdsFromState,
+  addHistoricalContactId,
+} from '../../context/SavedContactsState';
 
 export interface DriveContact {
   id: string;
@@ -91,7 +102,8 @@ interface BroadcastContact {
 }
 
 // Session-persistent communication history (survives component remounts).
-const HISTORICAL_CONTACT_IDS = new Set<string>();
+// Also synced to SavedContactsState for save/load persistence.
+const HISTORICAL_CONTACT_IDS = new Set<string>(getHistoricalContactIdsFromState());
 
 interface ContactsHUDProps {
   /** When true, only in-scene radio registrations and drive contacts (no static inbox contacts). */
@@ -158,7 +170,9 @@ export default function ContactsHUD({
   const [incomingHails, setIncomingHails] = useState<Set<string>>(
     () => new Set(getIncomingHails())
   );
-  const [savedContactIds, setSavedContactIds] = useState<Set<string>>(new Set());
+  const [savedContactIds, setSavedContactIds] = useState<Set<string>>(
+    () => new Set(getSavedContactIdsFromState())
+  );
   const [historyContactIds, setHistoryContactIds] = useState<Set<string>>(
     () => new Set(HISTORICAL_CONTACT_IDS)
   );
@@ -346,12 +360,14 @@ export default function ContactsHUD({
 
   const saveContact = (id: string) => {
     rememberContact(id);
+    addSavedContactId(id);
     setSavedContactIds((prev) => new Set(prev).add(id));
   };
 
   function rememberContact(id: string) {
     if (!id || parseDockThreadId(id) || STATIC_CONTACTS.some((c) => c.id === id)) return;
     HISTORICAL_CONTACT_IDS.add(id);
+    addHistoricalContactId(id);
     setHistoryContactIds((prev) => new Set(prev).add(id));
   }
 
@@ -498,13 +514,22 @@ export default function ContactsHUD({
 
   const dockInteriorItems: SelectionItem[] = dockedPartnerId
     ? [
-        ...getDockContacts(dockedPartnerId).map((contact) => ({
-          id: dockContactThreadId(dockedPartnerId, contact.id),
-          label: contact.name,
-          sublabel: DOCK_ROLE_LABELS[contact.role],
-          avatarSrc: contact.portrait,
-          avatarAlt: contact.name,
-        })),
+        ...getDockContacts(dockedPartnerId).map((contact) => {
+          const mid = contact.missionId;
+          const missionAvailable =
+            mid != null &&
+            !declinedMissionsRef.current.includes(mid) &&
+            !completedMissionsRef.current.includes(mid) &&
+            !activeMissionRef.current.includes(mid);
+          return {
+            id: dockContactThreadId(dockedPartnerId, contact.id),
+            label: contact.name,
+            sublabel: DOCK_ROLE_LABELS[contact.role],
+            avatarSrc: contact.portrait,
+            avatarAlt: contact.name,
+            missionFlag: missionAvailable ? 'AVAILABLE MISSION' : undefined,
+          };
+        }),
         ...getDockJobs(dockedPartnerId)
           .filter((job) => job.dialogue)
           .map((job) => ({

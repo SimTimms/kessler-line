@@ -1,6 +1,7 @@
 import { getCargoContainer } from '../../../context/CargoContainerRegistry';
 import { unregisterCollidable } from '../../../context/CollisionRegistry';
 import { orbitStatusRef } from '../../../context/ShipState';
+import { addCompletedMission, removeActiveMission } from '../../../context/MissionState';
 import { addMessage } from '../../../context/MessageStore';
 import { pushAlert } from '../../../context/AlertsStore';
 import { fireNarrativeHail } from '../../../narrative/narrativeHail';
@@ -74,6 +75,8 @@ export function NarrativeSatelliteMissionController({
       satellite.completeDropOff();
 
       pushAlert('Mission Complete: Mars satellite deployed.', 'blue');
+      addCompletedMission('elias-voss-satellite-deployment');
+      removeActiveMission('elias-voss-satellite-deployment');
       fireEliasVossHail();
     };
 

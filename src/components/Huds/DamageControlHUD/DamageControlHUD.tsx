@@ -100,7 +100,7 @@ export default function DamageControlHUD() {
   return (
     <div className="damage-control" aria-label="Damage Control">
       <div className="damage-control-header">
-        <span className="damage-control-title">Damage Control</span>
+        <span className="hud-title">DMG CTRL</span>
         <span className="damage-control-count">{fractures.length}</span>
         <span className="damage-control-patches">Patches: {patchCount}</span>
       </div>

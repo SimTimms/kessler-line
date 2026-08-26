@@ -22,6 +22,7 @@ const HANK_PARCEL_DELIVERY_TRADE: DockTradeTurnConfig = {
   npcCounterText: 'Need this transfer: {offer}',
   npcCompleteText: 'Received. Bill said you would come through. Thank you, pilot.',
   npcCounterDeclinedAckText: 'Then we are not done.',
+  onCompleteEffects: [{ type: 'completeMission', missionId: 'bill-churchill-parcel-run' }],
   playerOfferText: 'Delivering: {offer}',
   playerAcceptText: 'Confirmed. Handing over: {offer}',
   playerCounterAcceptText: 'Counter accepted. Handing over: {offer}',

@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
 import { minimapOverlayActiveRef } from '../../context/MinimapUi';
 import { EVENT_DOCK_PERMISSION_CHANGED } from '../../context/DockPermissionState';
-import {
-  EVENT_DOCKING_CAPTURE_ENDED,
-  EVENT_DOCKING_CAPTURE_STARTED,
-} from './minimapHelpers';
+import { EVENT_DOCKING_CAPTURE_ENDED, EVENT_DOCKING_CAPTURE_STARTED } from './minimapHelpers';
 
 /** Esc backs out of fullscreen first, then closes the map; M always closes it. */
 export function useMinimapKeyboardClose(
-  onClose: () => void,
   fullscreen: boolean,
   setFullscreen: (value: boolean) => void
 ) {
@@ -20,18 +16,16 @@ export function useMinimapKeyboardClose(
           setFullscreen(false);
           return;
         }
-        onClose();
         return;
       }
       if (e.code === 'KeyM') {
         e.preventDefault();
         if (fullscreen) setFullscreen(false);
-        onClose();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose, fullscreen, setFullscreen]);
+  }, [fullscreen, setFullscreen]);
 }
 
 /** True while the docking capture sequence is running the ship into the bay. */

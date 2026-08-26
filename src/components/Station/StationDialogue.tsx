@@ -610,6 +610,18 @@ export default function DockInteriorDialogue({
         timestamp: Date.now(),
       });
     }
+
+    const cargoOutcomes = applyDialogueEffects(tradeConfig.onCompleteEffects);
+    for (const o of cargoOutcomes) {
+      if (o.text) {
+        addChatMessage(threadId, {
+          id: `fx-${threadId}-trade-complete-${Date.now()}-${Math.random()}`,
+          role: 'npc',
+          text: `» ${o.text}`,
+          timestamp: Date.now(),
+        });
+      }
+    }
   };
 
   const acceptPendingResourceTrade = () => {
@@ -652,6 +664,18 @@ export default function DockInteriorDialogue({
         text: tradeConfig.npcCompleteText,
         timestamp: Date.now(),
       });
+    }
+
+    const resourceOutcomes = applyDialogueEffects(tradeConfig.onCompleteEffects);
+    for (const o of resourceOutcomes) {
+      if (o.text) {
+        addChatMessage(threadId, {
+          id: `fx-${threadId}-trade-complete-${Date.now()}-${Math.random()}`,
+          role: 'npc',
+          text: `» ${o.text}`,
+          timestamp: Date.now(),
+        });
+      }
     }
   };
 

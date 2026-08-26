@@ -31,6 +31,7 @@ import {
   MINIMAP_TRAJECTORY_RESAMPLED_STEPS,
   MINIMAP_TRAJECTORY_UPDATE_FRAMES,
   idealOrbitRadiusForBody,
+  mergeMarkersByEntity,
   signedAngleDegXZ,
 } from './minimapHelpers';
 import type {
@@ -39,6 +40,7 @@ import type {
   MarkerKind,
   OrbitAssistData,
   PanCenter,
+  UnifiedMarker,
   VectorWorld,
 } from './minimapTypes';
 
@@ -118,6 +120,7 @@ function pushScanGroup(
   kind: MarkerKind,
   idPrefix: string
 ): void {
+  const isRadio = kind === 'radio';
   for (const entry of entries.slice(0, MAX_MARKERS_PER_GROUP)) {
     entry.getPosition(_tmpA);
     renderToSimulationSpace(_tmpA, _tmpA);
@@ -129,6 +132,8 @@ function pushScanGroup(
       z: _tmpA.z,
       kind,
       inRange: true,
+      entityId: entry.id,
+      radioCapable: isRadio || undefined,
     });
   }
 }
@@ -138,7 +143,7 @@ function pushHardObjectMarkers(out: Marker[], collidables: CollidableEntry[]): S
   const hardOverlayIds = new Set<string>();
   for (const col of collidables) {
     const hardObject = col.physicalCollision !== false || col.planetSurfaceImpact === true;
-    if (!hardObject) continue;
+    if (!hardObject || col.scannerOnlyMinimap) continue;
     col.getWorldPosition(_tmpA);
     renderToSimulationSpace(_tmpA, _tmpA);
     hardOverlayIds.add(col.id);
@@ -148,6 +153,7 @@ function pushHardObjectMarkers(out: Marker[], collidables: CollidableEntry[]): S
       x: _tmpA.x,
       z: _tmpA.z,
       kind: 'hard',
+      entityId: col.id,
     });
   }
   return hardOverlayIds;
@@ -188,6 +194,7 @@ function collectDockingBays(
         z: _dockWorldPos.z,
         kind: 'landingPad',
         inRange: true,
+        entityId: col.stationId ?? col.id,
       });
     }
     if (planarDist > DOCKING_ASSIST_RANGE) continue;
@@ -253,6 +260,7 @@ function pushProximityMarkers(
       z: _tmpA.z,
       kind: 'proximity',
       inRange: true,
+      entityId: col.id,
     });
   }
 }
@@ -422,7 +430,7 @@ export function useMinimapTelemetry({
   setPanCenter: (center: PanCenter) => void;
   zoomHalfSpan: number;
 }) {
-  const [markers, setMarkers] = useState<Marker[]>([]);
+  const [markers, setMarkers] = useState<(Marker | UnifiedMarker)[]>([]);
   const [vectorWorld, setVectorWorld] = useState<VectorWorld>({
     nav: null,
     velocityPath: [],
@@ -554,7 +562,7 @@ export function useMinimapTelemetry({
         proximityScanOnRef.current && proximityScanRangeRef.current > 0
       );
 
-      setMarkers(next);
+      setMarkers(mergeMarkersByEntity(next));
 
       if (nearestDock) {
         if (

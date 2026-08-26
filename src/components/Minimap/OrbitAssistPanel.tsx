@@ -4,6 +4,7 @@ import type {
   OrbitAssistProjection,
   OrbitAssistReadouts,
 } from './minimapTypes';
+import { pushAlert } from '../../context/AlertsStore';
 
 // ── Orbit-established one-shot SFX ────────────────────────────────────────
 const ORBIT_ESTABLISHED_SFX_SRC = '/audio/ship/orbit-established.mp3';
@@ -40,6 +41,7 @@ export default function OrbitAssistPanel({
   useEffect(() => {
     if (orbitAssist.isOrbiting && !prevOrbitingRef.current) {
       playOrbitEstablished();
+      pushAlert(`ORBITING ${orbitAssist.bodyLabel.toUpperCase()}`, 'blue');
     }
     prevOrbitingRef.current = orbitAssist.isOrbiting;
   }, [orbitAssist.isOrbiting]);

@@ -59,7 +59,7 @@ function resetShipState(forTutorial = false) {
 
 function App() {
   useAppLifecycle();
-  const { hud, docking, beacon, mission, thrust } = useAppState();
+  const { hud, docking, beacon, thrust } = useAppState();
   const [mode, setMode] = useState<GameMode>(GAME_MODES.menu);
   const [tutorialMode, setTutorialMode] = useState<TutorialMenuSelection>(GAME_MODES.tutorial);
   const [showShipTitle, setShowShipTitle] = useState(false);
@@ -165,17 +165,8 @@ function App() {
           setProximity={hud.setProximity}
           radioOn={hud.radioOn}
           setRadioOn={hud.setRadioOn}
-          showMinimap={hud.showMinimap}
           docked={docking.docked}
           dockedStation={docking.dockedStation}
-          activeMission={mission.activeMission}
-          completedMissions={mission.completedMissions}
-          refueling={docking.refueling}
-          transferringO2={docking.transferringO2}
-          onRefuel={docking.onRefuel}
-          onTransferO2={docking.onTransferO2}
-          onMissionSelect={mission.onMissionSelect}
-          onMissionComplete={mission.onMissionComplete}
           beaconActivated={beacon.beaconActivated}
           listeningToMessage={beacon.listeningToMessage}
           setListeningToMessage={beacon.setListeningToMessage}

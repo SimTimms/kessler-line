@@ -194,7 +194,7 @@ function ResourceBarTab({
       <span className={`resource-bar-val${levelClass}`}>{display}</span>
       {tag !== 'HUL' && tag !== 'AMMO' && (
         <span
-          className={`resource-bar-rate${ratePerSec > 0 ? ' resource-bar-rate--gain' : ' resource-bar-rate--loss'}`}
+          className={`resource-bar-rate-power${ratePerSec > 0 ? ' resource-bar-rate--gain' : ' resource-bar-rate--loss'}`}
         >
           {rateLabel ? rateLabel : 0}
         </span>

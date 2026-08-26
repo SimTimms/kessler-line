@@ -35,6 +35,11 @@ import {
 } from '../../../context/DockTransferUi';
 import DockInteriorDialogue from '../../Station/StationDialogue';
 import ShipCargoSummary from './ShipCargoSummary';
+import {
+  activeMissionRef,
+  completedMissionsRef,
+  declinedMissionsRef,
+} from '../../../context/MissionState';
 import '../HelmetHUD/HelmetHUD.css';
 import './DockTransferHUD.css';
 
@@ -183,6 +188,7 @@ interface DirectoryContactItem {
   name: string;
   role: string;
   portrait?: string;
+  missionFlag?: string;
 }
 
 const DockTransferHUD = memo(function DockTransferHUD() {
@@ -256,12 +262,21 @@ const DockTransferHUD = memo(function DockTransferHUD() {
   if (!partnerId || !panelOpen) return null;
 
   const kinds = listPartnerResources(partnerId);
-  const contacts: DirectoryContactItem[] = getDockContacts(partnerId).map((c) => ({
-    threadId: dockContactThreadId(partnerId, c.id),
-    name: c.name,
-    role: DOCK_ROLE_LABELS[c.role],
-    portrait: c.portrait,
-  }));
+  const contacts: DirectoryContactItem[] = getDockContacts(partnerId).map((c) => {
+    const mid = c.missionId;
+    const missionAvailable =
+      mid != null &&
+      !declinedMissionsRef.current.includes(mid) &&
+      !completedMissionsRef.current.includes(mid) &&
+      !activeMissionRef.current.includes(mid);
+    return {
+      threadId: dockContactThreadId(partnerId, c.id),
+      name: c.name,
+      role: DOCK_ROLE_LABELS[c.role],
+      portrait: c.portrait,
+      missionFlag: missionAvailable ? 'AVAILABLE MISSION' : undefined,
+    };
+  });
   const jobs: DirectoryContactItem[] = getDockJobs(partnerId)
     .filter((j) => j.dialogue)
     .map((j) => ({
@@ -379,6 +394,9 @@ const DockTransferHUD = memo(function DockTransferHUD() {
                     <div className="dock-station-panel__contact-name">{item.name}</div>
                     <div className="dock-station-panel__contact-role">{item.role}</div>
                   </div>
+                  {item.missionFlag && (
+                    <span className="dock-station-panel__mission-flag">{item.missionFlag}</span>
+                  )}
                 </button>
               ))}
             </div>

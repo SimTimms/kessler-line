@@ -29,8 +29,7 @@ import {
 import { cargo, setCargo } from './Inventory';
 import { navTargetIdRef, navTargetPosRef } from './NavTarget';
 import { messageStore } from './MessageStore';
-import { activeMissionRef, completedMissionsRef, setActiveMission, setCompletedMissions } from './MissionState';
-import type { MissionId } from './MissionState';
+import { activeMissionRef, completedMissionsRef, declinedMissionsRef, setActiveMissions, setCompletedMissions, setDeclinedMissions } from './MissionState';
 import { tutorialStepRef, dockingTutorialActiveRef } from './TutorialState';
 import { getAllSettlementRuntimes, restoreSettlement } from './SettlementTracker';
 import { getDroneUi, restoreDroneState } from './DroneStore';
@@ -60,6 +59,12 @@ import {
   setSavedContainerPosition,
   clearSavedContainerPositions,
 } from './CargoContainerRegistry';
+import {
+  getSavedContactIds,
+  setSavedContactIds,
+  getHistoricalContactIds,
+  setHistoricalContactIds,
+} from './SavedContactsState';
 
 function parseOwnerKey(ownerKey: string): InventoryOwnerRef | null {
   // "dock:X:contact:Y" → { kind: 'contact', dockId: X, contactId: Y }
@@ -157,6 +162,7 @@ export function capture(): SaveData {
     missions: {
       activeMission: activeMissionRef.current,
       completedMissions: [...completedMissionsRef.current],
+      declinedMissions: [...declinedMissionsRef.current],
     },
     tutorial: {
       step: tutorialStepRef.current,
@@ -189,6 +195,8 @@ export function capture(): SaveData {
           return [c.id, [p.x, p.y, p.z] as [number, number, number]];
         })
     ),
+    savedContactIds: getSavedContactIds(),
+    historicalContactIds: getHistoricalContactIds(),
   };
 }
 
@@ -230,9 +238,16 @@ export function apply(data: SaveData): void {
     messageStore.current.push({ ...msg });
   }
 
-  // Missions
-  setActiveMission((data.missions.activeMission as MissionId | null) ?? null);
+  // Missions — backward compat: old saves store activeMission as string | null
+  const rawActive = data.missions.activeMission;
+  const activeMissions = Array.isArray(rawActive)
+    ? rawActive
+    : rawActive != null
+      ? [rawActive]
+      : [];
+  setActiveMissions(activeMissions);
   setCompletedMissions(data.missions.completedMissions);
+  setDeclinedMissions(data.missions.declinedMissions ?? []);
 
   // Tutorial
   tutorialStepRef.current = data.tutorial.step;
@@ -300,6 +315,14 @@ export function apply(data: SaveData): void {
     for (const [id, pos] of Object.entries(data.containerPositions)) {
       setSavedContainerPosition(id, pos);
     }
+  }
+
+  // Saved contacts
+  if (data.savedContactIds) {
+    setSavedContactIds(data.savedContactIds);
+  }
+  if (data.historicalContactIds) {
+    setHistoricalContactIds(data.historicalContactIds);
   }
 }
 

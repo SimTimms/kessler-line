@@ -189,11 +189,15 @@
 }
 
 .event-log-tab-count {
-  background: #fff;
-  color: #000;
+  background: #444;
   font-size: var(--hud-fs-3xs, 0.6rem);
   margin-left: 6px;
   padding: 0 4px;
+}
+
+.event-log-tab-count--active {
+  background: #fff;
+  color: #000;
 }
 
 /* ── Contact rows ────────────────────────────────────────────────────────── */
@@ -206,8 +210,7 @@
 }
 
 .event-log-empty {
-  color: rgba(180, 200, 220, 0.35);
-  font-style: italic;
+  color: rgba(255, 255, 255, 0.75);
   font-size: var(--hud-fs-sm);
   padding: 6px 8px;
   text-transform: none;

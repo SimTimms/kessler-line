@@ -6,12 +6,13 @@ import type { ScannerRangeId } from '../../../config/scanRanges';
  * - 'alert' — system warnings, proximity events
  * - Scanner types mirror ScannerRangeId so the tag shows PRX / MAG / DRV / RAD / RDN
  */
-export type EventLogType = 'msg' | 'alert' | ScannerRangeId;
+export type EventLogType = 'msg' | 'alert' | 'res' | ScannerRangeId;
 
 /** Display labels for the tag chip (matches SCANNER_ABBREV for scanner types). */
 export const EVENT_LOG_TAG_LABEL: Record<EventLogType, string> = {
   msg: 'MSG',
   alert: 'ALT',
+  res: 'RES',
   proximity: 'PRX',
   magnet: 'MAG',
   drive: 'DRV',

@@ -298,6 +298,26 @@ section:first-child .chd-section-header {
   border-color: var(--chd-border-strong);
 }
 
+.chd-mission-flag {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 8px;
+  animation: chd-mission-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes chd-mission-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .chd-empty {
   font-size: 10px;
   letter-spacing: 0.12em;

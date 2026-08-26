@@ -3,7 +3,6 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
-  type WheelEvent as ReactWheelEvent,
 } from 'react';
 import { shipPosRef } from '../../context/ShipPos';
 import {
@@ -29,8 +28,7 @@ export function useMinimapViewport({
   clearHoverCard: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const fullscreenContainerRef = useRef<HTMLDivElement | null>(null);
-  const fullscreenRootRef = useRef<HTMLDivElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
   const dragAnchorRef = useRef<{ x: number; y: number; panX: number; panZ: number } | null>(null);
   const panCenterRef = useRef<PanCenter>({ x: 0, z: 0 });
@@ -43,8 +41,6 @@ export function useMinimapViewport({
   const [panCenter, setPanCenter] = useState<PanCenter>({ x: 0, z: 0 });
   panCenterRef.current = panCenter;
   const [followShip, setFollowShip] = useState(true);
-
-  const activeChartRef = fullscreen ? fullscreenContainerRef : containerRef;
 
   useEffect(() => {
     const ship = shipPosRef.current;
@@ -66,13 +62,14 @@ export function useMinimapViewport({
     };
   }, [fullscreen]);
 
-  // React's onWheel is passive in many browsers — attach a non-passive listener so
-  // preventDefault actually blocks trackpad navigation gestures (back/forward, new tab).
+  // Non-passive wheel/touch listener on the overlay when fullscreen so that
+  // preventDefault actually blocks trackpad navigation gestures. The zoom logic
+  // targets containerRef (the CRT), which is the same element in both modes.
   useEffect(() => {
     if (!fullscreen) return;
-    const root = fullscreenRootRef.current;
-    const chart = fullscreenContainerRef.current;
-    if (!root || !chart) return;
+    const overlay = overlayRef.current;
+    const chart = containerRef.current;
+    if (!overlay || !chart) return;
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -100,17 +97,17 @@ export function useMinimapViewport({
       e.preventDefault();
     };
 
-    root.addEventListener('wheel', onWheel, { passive: false });
-    root.addEventListener('touchmove', onTouchMove, { passive: false });
+    overlay.addEventListener('wheel', onWheel, { passive: false });
+    overlay.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => {
-      root.removeEventListener('wheel', onWheel);
-      root.removeEventListener('touchmove', onTouchMove);
+      overlay.removeEventListener('wheel', onWheel);
+      overlay.removeEventListener('touchmove', onTouchMove);
     };
   }, [fullscreen]);
 
-  function handleWheel(e: ReactWheelEvent<HTMLDivElement>) {
+  function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
     e.preventDefault();
-    const node = activeChartRef.current;
+    const node = containerRef.current;
     if (!node) return;
     const rect = node.getBoundingClientRect();
     const cursorX = e.clientX - rect.left;
@@ -144,8 +141,8 @@ export function useMinimapViewport({
   }
 
   function handleMouseMove(e: ReactMouseEvent<HTMLDivElement>) {
-    if (!draggingRef.current || !activeChartRef.current || !dragAnchorRef.current) return;
-    const rect = activeChartRef.current.getBoundingClientRect();
+    if (!draggingRef.current || !containerRef.current || !dragAnchorRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
     const unitsPerPixel = (2 * zoomHalfSpan) / rect.height;
     const dx = e.clientX - dragAnchorRef.current.x;
     const dy = e.clientY - dragAnchorRef.current.y;
@@ -187,9 +184,7 @@ export function useMinimapViewport({
 
   return {
     containerRef,
-    fullscreenContainerRef,
-    fullscreenRootRef,
-    activeChartRef,
+    overlayRef,
     zoomHalfSpan,
     panCenter,
     setPanCenter,

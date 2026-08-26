@@ -9,6 +9,7 @@ import {
 } from '../../context/FloatingOrigin';
 import { EffectComposer, Bloom, HueSaturation } from '@react-three/postprocessing';
 import { BlendFunction, NoiseEffect, DepthOfFieldEffect } from 'postprocessing';
+import { minimapEffectComposerActive } from '../../context/MinimapViewportState';
 
 const NOISE_BASE = 0.00005;
 const NOISE_MAX = 0.25;
@@ -42,6 +43,7 @@ export function ShipDepthOfField({ saturation }: ShipDepthOfFieldProps) {
   // to avoid an unnecessary full-frame render pass with no visual benefit.
   const resolvedSaturation = saturation ?? -1;
   const needsComposer = bloomEnabled || resolvedSaturation !== 0;
+  minimapEffectComposerActive.current = needsComposer;
   if (!needsComposer) return null;
 
   return (

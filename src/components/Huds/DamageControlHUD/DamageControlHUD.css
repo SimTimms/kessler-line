@@ -1,13 +1,9 @@
-/* ── Damage Control — fracture list (fixed, bottom-left area) ─────────────── */
+/* ── Damage Control — white/grey style (minimap anchor) ────────────────── */
 
 .damage-control {
-  --dc-red: #ff4d5e;
-  --dc-amber: #ffb020;
-  --dc-dim: rgba(180, 200, 220, 0.45);
-  --dc-green: #44e88a;
-
   flex-shrink: 0;
   max-height: 200px;
+  width: min(192px, 38vw);
   display: flex;
   flex-direction: column;
   pointer-events: auto;
@@ -15,6 +11,10 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   box-sizing: border-box;
+  background: rgba(0, 10, 20, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #444;
 }
 
 /* ── Header bar ──────────────────────────────────────────────────────────── */
@@ -24,22 +24,15 @@
   align-items: center;
   gap: 6px;
   padding: 3px 6px;
-  background: rgba(0, 10, 20, 0.55);
-  border-bottom: 1px solid rgba(255, 77, 94, 0.15);
+  border-bottom: 1px solid #444;
   flex-shrink: 0;
-}
-
-.damage-control-title {
-  font-size: var(--hud-fs-sm);
-  letter-spacing: 0.22em;
-  color: rgba(180, 200, 220, 0.55);
-  line-height: 1;
+  height: 26px;
 }
 
 .damage-control-count {
   font-size: var(--hud-fs-xs);
   letter-spacing: 0.12em;
-  color: rgba(255, 77, 94, 0.6);
+  color: #fff;
   line-height: 1;
 }
 
@@ -47,7 +40,7 @@
   margin-left: auto;
   font-size: var(--hud-fs-xs);
   letter-spacing: 0.10em;
-  color: rgba(255, 176, 32, 0.6);
+  color: #aaa;
   line-height: 1;
 }
 
@@ -56,13 +49,13 @@
 .damage-control-scroll {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   overflow-y: auto;
   overflow-x: hidden;
   flex: 1;
   min-height: 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 77, 94, 0.2) transparent;
+  scrollbar-color: rgba(170, 170, 170, 0.2) transparent;
 }
 
 .damage-control-scroll::-webkit-scrollbar {
@@ -74,7 +67,7 @@
 }
 
 .damage-control-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 77, 94, 0.2);
+  background: rgba(170, 170, 170, 0.2);
   border-radius: 2px;
 }
 
@@ -85,8 +78,8 @@
   align-items: center;
   gap: 6px;
   padding: 3px 6px;
-  background: rgba(20, 5, 5, 0.40);
-  border-left: 2px solid var(--dc-red);
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
   animation: dc-slide-in 0.3s ease-out;
 }
 
@@ -110,7 +103,7 @@
   padding: 1px 4px;
   border-radius: 1px;
   line-height: 1.3;
-  color: var(--dc-red);
+  color: #ff4d5e;
   background: rgba(255, 77, 94, 0.12);
 }
 
@@ -122,16 +115,17 @@
   font-size: var(--hud-fs-md);
   letter-spacing: 0.08em;
   line-height: 1.35;
-  color: rgba(255, 180, 180, 0.9);
+  color: #fff;
 }
 
 /* ── Patch button ────────────────────────────────────────────────────────── */
 
 .damage-control-patch {
   flex-shrink: 0;
-  background: none;
-  border: 1px solid rgba(255, 176, 32, 0.35);
-  color: rgba(255, 176, 32, 0.8);
+  background: #000;
+  border: none;
+  border-bottom: 1px dashed #fff;
+  color: #fff;
   font-family: inherit;
   font-size: var(--hud-fs-2xs);
   letter-spacing: 0.14em;
@@ -139,13 +133,12 @@
   padding: 1px 6px;
   cursor: pointer;
   line-height: 1.3;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
 
 .damage-control-patch:hover:not(:disabled) {
-  color: #fff;
-  border-color: rgba(255, 176, 32, 0.7);
-  background: rgba(255, 176, 32, 0.15);
+  color: #000;
+  background: #fff;
 }
 
 .damage-control-patch:disabled {
@@ -159,7 +152,7 @@
   padding: 6px;
   font-size: var(--hud-fs-sm);
   letter-spacing: 0.14em;
-  color: rgba(68, 232, 138, 0.5);
+  color: #aaa;
   text-align: center;
 }
 
@@ -195,7 +188,7 @@
 .damage-control-eta {
   font-size: var(--hud-fs-2xs);
   letter-spacing: 0.10em;
-  color: rgba(255, 176, 32, 0.6);
+  color: #aaa;
   line-height: 1;
   min-width: 2ch;
   text-align: right;
@@ -207,16 +200,17 @@
   flex-shrink: 0;
   font-size: var(--hud-fs-2xs);
   letter-spacing: 0.14em;
-  color: rgba(180, 200, 220, 0.45);
+  color: #aaa;
   padding: 1px 6px;
-  border: 1px solid rgba(180, 200, 220, 0.15);
+  border: none;
+  border-bottom: 1px dashed #aaa;
   line-height: 1.3;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
 
 .damage-control-queued:hover {
-  color: var(--dc-red);
+  color: #ff4d5e;
   border-color: rgba(255, 77, 94, 0.35);
 }
 
@@ -226,7 +220,7 @@
   padding: 3px 6px;
   font-size: var(--hud-fs-xs);
   letter-spacing: 0.12em;
-  color: var(--dc-red);
+  color: #ff4d5e;
   text-align: center;
   animation: dc-flash 0.6s ease-out;
 }

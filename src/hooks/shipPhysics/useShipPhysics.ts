@@ -332,7 +332,6 @@ export function useShipPhysics({
         stage: 'align',
         releaseLocalY: DEBUG_JUMP_HOVER_LOCAL_Y,
       };
-      void playDockAlignSound();
       window.dispatchEvent(
         new CustomEvent(EVENT_DOCKING_CAPTURE_STARTED, {
           detail: { stationId: entry.stationId ?? stationId },
@@ -517,6 +516,7 @@ export function useShipPhysics({
             ) {
               group.position.set(0, group.position.y, 0);
               transition.stage = 'descend';
+              void playDockAlignSound();
             }
           } else {
             const nextY = moveTowardScalar(group.position.y, 0, LANDING_DESCEND_SPEED * delta);
@@ -625,7 +625,6 @@ export function useShipPhysics({
               releaseLocalY: group.position.y,
             };
             if (publishToPlayerRefs) {
-              void playDockAlignSound();
               window.dispatchEvent(
                 new CustomEvent(EVENT_DOCKING_CAPTURE_STARTED, {
                   detail: { stationId: bayEntry.stationId ?? null },

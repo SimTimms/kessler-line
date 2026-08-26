@@ -332,3 +332,103 @@
   background: rgba(255, 255, 255, 0.08);
   border-left: 2px solid #fff;
 }
+
+/* ── Tab badge ── */
+
+.comms-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: rgba(0, 200, 255, 0.25);
+  color: #00c8ff;
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.comms-tab--pulse {
+  animation: comms-tab-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes comms-tab-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ── Mission Journal ── */
+
+.comms-journal {
+  display: flex;
+  flex-direction: column;
+}
+
+.comms-journal-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 20vh;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 200, 255, 0.2) transparent;
+}
+
+.comms-journal-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comms-journal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comms-journal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.2);
+  border-radius: 2px;
+}
+
+.comms-journal-entry {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comms-journal-entry--completed {
+  opacity: 0.45;
+}
+
+.comms-journal-entry-desc {
+  color: rgba(255, 255, 255, 1);
+  font-size: var(--hud-fs-xs, 9px);
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.comms-journal-waypoint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 6px;
+  background: none;
+  color: #00c8ff;
+  border: 1px dashed rgba(0, 200, 255, 0.45);
+  border-radius: 2px;
+  font: inherit;
+  font-size: var(--hud-fs-2xs, 9px);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.comms-journal-waypoint-btn:hover {
+  border-color: #00c8ff;
+  color: #fff;
+}

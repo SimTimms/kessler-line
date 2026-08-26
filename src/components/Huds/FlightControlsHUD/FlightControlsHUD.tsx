@@ -17,7 +17,7 @@ import { THRUST_BOOST_MULTIPLIER } from '../../../config/shipConfig';
 import { getActiveThrustMultiplierCap } from '../../../context/FastTravelZones';
 import './FlightControlsHUD.css';
 
-/* ── Button definitions ─────────────────────────────────────────────────── */
+/* ── Button definitions (2-column layout) ─────────────────────────────── */
 
 interface BtnDef {
   id: string;
@@ -25,29 +25,20 @@ interface BtnDef {
   label: string;
 }
 
-const ROW_1: BtnDef[] = [
+const BUTTONS: BtnDef[] = [
   { id: 'strafeL', key: 'Q', label: 'Port' },
-  { id: 'fwd', key: 'W', label: 'Forward' },
-  { id: 'strafeR', key: 'E', label: 'Stbd' },
-];
-
-const ROW_2: BtnDef[] = [
+  { id: 'fwd', key: 'W', label: 'Fwd' },
   { id: 'yawL', key: 'A', label: 'Left' },
-  { id: 'rev', key: 'S', label: 'Reverse' },
+  { id: 'rev', key: 'S', label: 'Rev' },
+  { id: 'strafeR', key: 'E', label: 'Stbd' },
   { id: 'yawR', key: 'D', label: 'Right' },
-];
-
-const ROW_3: BtnDef[] = [
-  { id: 'radOut', key: 'R', label: 'Radial+' },
-  { id: 'radIn', key: 'F', label: 'Radial\u2212' },
+  { id: 'radOut', key: 'R', label: 'Rad+' },
+  { id: 'radIn', key: 'F', label: 'Rad\u2212' },
   { id: 'fire', key: 'G', label: 'Fire' },
-];
-
-const ROW_4: BtnDef[] = [
-  { id: 'stabilize', key: 'Space', label: 'Stabilize' },
+  { id: 'stabilize', key: 'Space', label: 'Stab' },
   { id: 'boost', key: '\u2191', label: 'Boost' },
-  { id: 'thrustUp', key: '+', label: 'Thrust' },
-  { id: 'thrustDown', key: '\u2212', label: 'Thrust' },
+  { id: 'thrustUp', key: '+', label: 'Thr' },
+  { id: 'thrustDown', key: '\u2212', label: 'Thr' },
 ];
 
 /* ── Ref setters for directional thrusters ──────────────────────────────── */
@@ -93,7 +84,6 @@ function endThrustBoost() {
 /* ── Component ──────────────────────────────────────────────────────────── */
 
 const FlightControlsHUD = memo(function FlightControlsHUD() {
-  const [open, setOpen] = useState(false);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
 
   const markPressed = useCallback((id: string) => {
@@ -116,20 +106,17 @@ const FlightControlsHUD = memo(function FlightControlsHUD() {
     (id: string) => {
       markPressed(id);
 
-      // Directional / stabilizer refs
       const ref = MOBILE_REFS[id];
       if (ref) {
         ref.current = true;
         return;
       }
 
-      // Boost
       if (id === 'boost') {
         beginThrustBoost();
         return;
       }
 
-      // Fire / Thrust ±  → synthetic keydown
       if (id === 'fire') {
         dispatchKey('KeyG', 'g', 'keydown');
         return;
@@ -198,33 +185,7 @@ const FlightControlsHUD = memo(function FlightControlsHUD() {
 
   return (
     <div className="flight-controls-hud" aria-label="Flight Controls">
-      <div className="flight-controls-bezel">
-        <div
-          className={`flight-controls-head${open ? ' flight-controls-head--open' : ''}`}
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span className="flight-controls-lamp" aria-hidden />
-          <span className="flight-controls-title">RCS</span>
-          <button
-            className={`flight-controls-toggle${open ? ' flight-controls-toggle--open' : ''}`}
-          >
-            <span className="flight-controls-toggle-face">{open ? '\u25B4' : '\u25BE'}</span>
-          </button>
-        </div>
-
-        {open && (
-          <div className="flight-controls-crt">
-            <div className="flight-controls-grid">{ROW_1.map(renderBtn)}</div>
-            <div className="flight-controls-grid" style={{ marginTop: 4 }}>
-              {ROW_2.map(renderBtn)}
-            </div>
-            <div className="flight-controls-grid" style={{ marginTop: 4 }}>
-              {ROW_3.map(renderBtn)}
-            </div>
-            <div className="flight-controls-row-extra">{ROW_4.map(renderBtn)}</div>
-          </div>
-        )}
-      </div>
+      <div className="flight-controls-grid">{BUTTONS.map(renderBtn)}</div>
     </div>
   );
 });

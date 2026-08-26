@@ -8,6 +8,7 @@ import { shipPosRef } from '../../context/ShipPos';
 import DefaultLighting from '../DefaultLighting';
 import LaserRay from '../Combat/LaserRay';
 import PlayerBullets from '../Combat/PlayerBullets';
+import TorpedoManager from '../Combat/TorpedoManager';
 import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import { ShipDepthOfField } from '../Ship/ShipDepthOfField';
 import SolarSystem from '../Planets/SolarSystem';
@@ -32,6 +33,8 @@ import SandboxStarterMission from './SandboxStarterMission';
 import GhostFleet from '../NPCs/GhostFleet';
 import UBoat from '../UBoat/UBoat';
 import { UBoatConfig } from '../ModelConfig/UBoatConfig';
+import MinimapViewportRenderer from '../Minimap/MinimapViewportRenderer';
+import MinimapExclude from '../Minimap/MinimapExclude';
 /** Camera + post FX run after FloatingOrigin rebases the world (priority 3). */
 const SANDBOX_CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
@@ -69,28 +72,35 @@ export default function SandboxScene() {
         ambientIntensity={0.0002}
         position={[0, 0, -10000]}
       />
-      <SpaceParticles />
+      <MinimapExclude>
+        <SpaceParticles />
+      </MinimapExclude>
       <Suspense fallback={null}>
-        <Spaceship
-          key={sandboxSpawn.presetId}
-          url="/shuttle-low-british.glb"
-          shipGroupRef={spaceshipGroupRef}
-          initialPosition={sandboxSpawn.position}
-          initialRotation={sandboxSpawn.rotation}
-          scale={1}
-          initialVelocity={sandboxSpawn.velocity}
-          shipParticleCloudProps={{
-            count: shipParticleCount,
-            enableSpeedGate: true,
-            speedGateMin: 100000,
-            speedGateMax: 100000,
-          }}
-        />
-        <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
-        <PlayerBullets shipGroupRef={spaceshipGroupRef} />
-        <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+        <MinimapExclude>
+          <Spaceship
+            key={sandboxSpawn.presetId}
+            url="/shuttle-low-british.glb"
+            shipGroupRef={spaceshipGroupRef}
+            initialPosition={sandboxSpawn.position}
+            initialRotation={sandboxSpawn.rotation}
+            scale={1}
+            initialVelocity={sandboxSpawn.velocity}
+            shipParticleCloudProps={{
+              count: shipParticleCount,
+              enableSpeedGate: true,
+              speedGateMin: 100000,
+              speedGateMax: 100000,
+            }}
+          />
+          <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
+          <PlayerBullets shipGroupRef={spaceshipGroupRef} />
+          <TorpedoManager />
+          <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+        </MinimapExclude>
         <SolarSystem scale={solarSystemScale} />
-        <GhostFleet />
+        <MinimapExclude>
+          <GhostFleet />
+        </MinimapExclude>
       </Suspense>
       <BodyOrbit {...SANDBOX_ASTEROID_ORBIT}>
         <Asteroid
@@ -114,25 +124,27 @@ export default function SandboxScene() {
         />
       </group>
       <BodyOrbit {...SANDBOX_BATTLESHIP_ORBIT}>
-        <UBoat
-          scale={UBoatConfig.targetScale}
-          position={UBoatConfig.targetPosition}
-          scan={UBoatConfig.targetScan}
-          impactVents
-          flyable
-          initialFuel={100}
-          dockingBay={{
-            stationId: 'model-config-target',
-            dimensions: [2, 1, 1.3],
-            position: [
-              -4 / (UBoatConfig.targetScale * 0.56),
-              -0.8,
-              1110 / (UBoatConfig.targetScale * 2.1),
-            ],
-            scale: 3,
-            dock: ASTEROID_DOCK_CONFIG,
-          }}
-        ></UBoat>
+        <MinimapExclude>
+          <UBoat
+            scale={UBoatConfig.targetScale}
+            position={UBoatConfig.targetPosition}
+            scan={UBoatConfig.targetScan}
+            impactVents
+            flyable
+            initialFuel={100}
+            dockingBay={{
+              stationId: 'model-config-target',
+              dimensions: [2, 1, 1.3],
+              position: [
+                -4 / (UBoatConfig.targetScale * 0.56),
+                -0.8,
+                1110 / (UBoatConfig.targetScale * 2.1),
+              ],
+              scale: 3,
+              dock: ASTEROID_DOCK_CONFIG,
+            }}
+          />
+        </MinimapExclude>
       </BodyOrbit>
     </>
   );
@@ -179,6 +191,7 @@ export default function SandboxScene() {
         <SunGravity />
         <SharedInteractionSceneTools />
         <ShipDepthOfField saturation={-0.1} />
+        <MinimapViewportRenderer />
       </Canvas>
     </>
   );

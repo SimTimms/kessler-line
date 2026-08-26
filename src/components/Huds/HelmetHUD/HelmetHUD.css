@@ -23,7 +23,7 @@
 .helmet-hud--powerless .helmet-nav,
 .helmet-hud--powerless .helmet-scanner-deck,
 .helmet-hud--powerless .mech-comms,
-.helmet-hud--powerless .mech-alerts,
+.helmet-hud--powerless .alerts-bar,
 .helmet-hud--powerless .cargo-hold-flyout-stack {
   opacity: 0.28;
   pointer-events: none;
@@ -491,6 +491,7 @@
   bottom: 12px;
   z-index: 96;
   width: 100%;
+  height: 200px;
   border-top: 1px solid #444;
   display: flex;
 }
@@ -521,22 +522,36 @@
   width: min(192px, 38vw);
 }
 
-/* ── Right-side stack (nav + camera, above star chart) ─────────────────── */
+/* ── Unified controls panel (above bottom HUD, right-aligned) ──────────── */
 
-.helmet-right-stack {
-  position: fixed;
-  right: 12px;
-  bottom: 14px;
-  z-index: 96;
-  width: min(192px, 38vw);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
+.controls-panel {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  z-index: 1;
+  pointer-events: auto;
+  margin-bottom: 4px;
+  background: rgba(0, 10, 20, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #444;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.helmet-right-stack > * {
-  pointer-events: auto;
+.controls-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  border-bottom: 1px solid #444;
+  height: 26px;
+}
+
+.controls-panel-body {
+  display: flex;
+  align-items: stretch;
 }
 
 .hud-title {
@@ -547,9 +562,7 @@
 
 .hud-subtitle {
   font-size: var(--hud-fs-xs);
-  color: #aaa;
-  line-height: 1;
-  margin-left: 4px;
+  color: #fff;
 }
 
 .helmet-nav {

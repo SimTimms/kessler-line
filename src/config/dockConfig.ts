@@ -110,6 +110,8 @@ export interface DockTradeTurnConfig {
   npcCompleteText: string;
   /** NPC line after player declines counteroffer. */
   npcCounterDeclinedAckText: string;
+  /** Effects fired after a successful trade completion (e.g. accept/complete a mission). */
+  onCompleteEffects?: DialogueEffect[];
   /** Player line when submitting an offer. Use `{offer}` token. */
   playerOfferText: string;
   /** Player line when accepting a direct acceptance. Use `{offer}` token. */
@@ -167,6 +169,8 @@ export interface DockContact {
    * even when the ask is within a fair share.
    */
   unscrupulous?: boolean;
+  /** Links this contact to a mission for the "AVAILABLE MISSION" flag. */
+  missionId?: string;
 }
 
 /** Optional job-board entry shown alongside dock contacts while docked. */

@@ -204,6 +204,7 @@ export default function CargoContainer({
         getWorldVelocity: (target) => target.copy(velRef.current),
         shape: { type: 'box', halfExtents: halfExtents.clone() },
         physicalCollision,
+        scannerOnlyMinimap: true,
         applyImpulse: (impulse: THREE.Vector3) => {
           if (towedRef.current || dropOffRef.current || consumedRef.current) return;
           velRef.current.addScaledVector(impulse, CONTAINER_IMPULSE_SCALE);

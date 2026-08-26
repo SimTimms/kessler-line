@@ -21,6 +21,7 @@ import {
   chartScale,
   clamp,
   formatOrbitDistance,
+  isUnifiedMarker,
   projectToChart,
 } from './minimapHelpers';
 import type {
@@ -36,8 +37,10 @@ import type {
   OrbitRing,
   PanCenter,
   ScannerRings,
+  UnifiedMarker,
   VectorWorld,
   VisibleMarker,
+  VisibleUnifiedMarker,
 } from './minimapTypes';
 
 const _orbitShipForward = new THREE.Vector3();
@@ -45,7 +48,6 @@ const _orbitShipForward = new THREE.Vector3();
 /** Projects world-space telemetry into chart pixels and formats the assist readouts. */
 export function useMinimapProjections({
   containerRef,
-  activeChartRef,
   fullscreen,
   showSolarSystem,
   zoomHalfSpan,
@@ -56,12 +58,11 @@ export function useMinimapProjections({
   orbitAssist,
 }: {
   containerRef: RefObject<HTMLDivElement | null>;
-  activeChartRef: RefObject<HTMLDivElement | null>;
   fullscreen: boolean;
   showSolarSystem: boolean;
   zoomHalfSpan: number;
   panCenter: PanCenter;
-  markers: Marker[];
+  markers: (Marker | UnifiedMarker)[];
   vectorWorld: VectorWorld;
   dockingAssist: DockingAssistData | null;
   orbitAssist: OrbitAssistData | null;
@@ -69,7 +70,6 @@ export function useMinimapProjections({
   const dockingAssistProjection = useMemo<DockingAssistProjection | null>(() => {
     const node = containerRef.current;
     if (!node || !dockingAssist) return null;
-    // Dock assist always uses the corner CRT, never the fullscreen chart.
     const rect = node.getBoundingClientRect();
     if (dockingAssist.captureMode === 'nose') {
       const halfSpan = clamp(
@@ -81,7 +81,6 @@ export function useMinimapProjections({
       const scale = chartScale(rect, halfSpan);
       const shipSx = rect.width / 2;
       const shipSy = rect.height / 2;
-      // Ship-local: +X right, +forward up on screen (CSS Y grows down).
       return {
         shipSx,
         shipSy,
@@ -240,8 +239,8 @@ export function useMinimapProjections({
     };
   }, [orbitAssist]);
 
-  const visibleMarkers = useMemo<VisibleMarker[]>(() => {
-    const node = activeChartRef.current;
+  const visibleMarkers = useMemo<(VisibleMarker | VisibleUnifiedMarker)[]>(() => {
+    const node = containerRef.current;
     if (!node) return [];
     const rect = node.getBoundingClientRect();
     const scale = chartScale(rect, zoomHalfSpan);
@@ -250,16 +249,19 @@ export function useMinimapProjections({
         const { sx, sy } = projectToChart(m.x, m.z, rect, panCenter, scale);
         const pxSize =
           m.radiusWorld !== undefined ? Math.max(1, m.radiusWorld * scale * 2) : (m.size ?? 6);
-        return { ...m, sx, sy, pxSize };
+        if (isUnifiedMarker(m)) {
+          return { ...m, sx, sy, pxSize } as VisibleUnifiedMarker;
+        }
+        return { ...m, sx, sy, pxSize } as VisibleMarker;
       })
       .filter(
         (m) => m.sx >= -80 && m.sx <= rect.width + 80 && m.sy >= -80 && m.sy <= rect.height + 80
       );
-  }, [activeChartRef, markers, panCenter, zoomHalfSpan, fullscreen]);
+  }, [containerRef, markers, panCenter, zoomHalfSpan, fullscreen]);
 
   const chartNavLine = useMemo<ChartNavLine | null>(() => {
     if (!vectorWorld.nav) return null;
-    const node = activeChartRef.current;
+    const node = containerRef.current;
     if (!node) return null;
     const rect = node.getBoundingClientRect();
     const scale = chartScale(rect, zoomHalfSpan);
@@ -272,11 +274,11 @@ export function useMinimapProjections({
       y2: navPanel.sy,
       color: SHIP_DIRECTION_TARGET_COLOR,
     };
-  }, [activeChartRef, vectorWorld, panCenter, zoomHalfSpan, fullscreen]);
+  }, [containerRef, vectorWorld, panCenter, zoomHalfSpan, fullscreen]);
 
   const chartVelocityPath = useMemo<ChartVelocityPath | null>(() => {
     if (vectorWorld.velocityPath.length < 2) return null;
-    const node = activeChartRef.current;
+    const node = containerRef.current;
     if (!node) return null;
     const rect = node.getBoundingClientRect();
     const scale = chartScale(rect, zoomHalfSpan);
@@ -287,10 +289,10 @@ export function useMinimapProjections({
       })
       .join(' ');
     return { points, color: SHIP_DIRECTION_VELOCITY_COLOR };
-  }, [activeChartRef, vectorWorld, panCenter, zoomHalfSpan, fullscreen]);
+  }, [containerRef, vectorWorld, panCenter, zoomHalfSpan, fullscreen]);
 
   const orbitRings = useMemo<OrbitRing[]>(() => {
-    const node = activeChartRef.current;
+    const node = containerRef.current;
     if (!node) return [];
     if (!showSolarSystem) return [];
     const rect = node.getBoundingClientRect();
@@ -303,10 +305,10 @@ export function useMinimapProjections({
       pxRadius: planet.orbitRadius * SOLAR_SYSTEM_SCALE * scale,
       color: planet.name === 'Earth' ? '#3399ff' : planet.color,
     })).filter((ring) => ring.pxRadius > 1.5);
-  }, [activeChartRef, panCenter, showSolarSystem, zoomHalfSpan, fullscreen]);
+  }, [containerRef, panCenter, showSolarSystem, zoomHalfSpan, fullscreen]);
 
   const scannerRings = useMemo<ScannerRings | null>(() => {
-    const node = activeChartRef.current;
+    const node = containerRef.current;
     if (!node) return null;
     const rect = node.getBoundingClientRect();
     const scale = chartScale(rect, zoomHalfSpan);
@@ -334,7 +336,7 @@ export function useMinimapProjections({
       });
     }
     return { shipSx: shipPanel.sx, shipSy: shipPanel.sy, rings };
-  }, [activeChartRef, panCenter, zoomHalfSpan, markers, fullscreen]);
+  }, [containerRef, panCenter, zoomHalfSpan, markers, fullscreen]);
 
   return {
     dockingAssistProjection,

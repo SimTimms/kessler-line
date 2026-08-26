@@ -214,6 +214,25 @@
   color: rgba(0, 200, 255, 0.45);
 }
 
+.dock-station-panel__mission-flag {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.9);
+  animation: dock-mission-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes dock-mission-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .dock-station-panel__dialogue-wrapper {
   flex: 1;
   overflow: hidden;

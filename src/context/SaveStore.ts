@@ -34,8 +34,9 @@ export interface SavedMessage {
 }
 
 export interface SavedMissions {
-  activeMission: string | null;
+  activeMission: string[];
   completedMissions: string[];
+  declinedMissions?: string[];
 }
 
 export interface SavedTutorial {
@@ -111,6 +112,9 @@ export interface SaveData {
   scannerPowerLevels?: Partial<Record<ScannerElementId, number>>;
   // Cargo container sim-space positions (optional — absent in older saves)
   containerPositions?: Record<string, [number, number, number]>;
+  // Saved contacts persistence (optional — absent in older saves)
+  savedContactIds?: string[];
+  historicalContactIds?: string[];
 }
 
 // ── V1 migration ──────────────────────────────────────────────────────────────
@@ -145,7 +149,7 @@ function migrateV1toV2(v1: SaveDataV1): SaveData {
     version: 2,
     // V1 messages didn't have the extra fields — spread keeps existing fields
     messages: v1.messages.map((m) => ({ ...m })),
-    missions: { activeMission: null, completedMissions: [] },
+    missions: { activeMission: [], completedMissions: [] },
     tutorial: { step: 0, dockingActive: false },
     settlements: {},
     drone: {

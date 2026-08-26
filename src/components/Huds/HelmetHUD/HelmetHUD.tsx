@@ -79,22 +79,7 @@ const HelmetHUD = memo(function HelmetHUD({
   ...scannerProps
 }: HelmetHUDProps) {
   const powerOnline = useShipPowerOnline();
-  const [showMinimap, setShowMinimap] = useState(true);
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== KEY_TOGGLE_MINIMAP || e.repeat) return;
-      e.preventDefault();
-      setShowMinimap((v) => !v);
-    };
-    const onOpenMinimap = () => setShowMinimap(true);
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('open-minimap', onOpenMinimap);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('open-minimap', onOpenMinimap);
-    };
-  }, []);
   return (
     <div
       className={`helmet-hud${powerOnline ? '' : ' helmet-hud--powerless'}`}
@@ -102,16 +87,27 @@ const HelmetHUD = memo(function HelmetHUD({
     >
       <div className="helmet-top-bar">
         <PowerHUD layout="helmet" disableElements={disableElements} focusElements={focusElements} />
+        <AlertsHUD />
       </div>
       <div className="helmet-left-stack">
-        <DamageControlHUD />
         <HelmetCargoHUD />
       </div>
 
       <div className="helmet-center-stack">
         <div className="helmet-minimap-anchor">
+          <DamageControlHUD />
           <CameraHUD />
-          <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem />
+          <SandboxHtmlMiniMap showSolarSystem />
+        </div>
+        <div className="controls-panel">
+          <div className="controls-panel-head">
+            <span className="hud-title">RCS</span>
+            <span className="hud-title">ENG</span>
+          </div>
+          <div className="controls-panel-body">
+            <FlightControlsHUD />
+            <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
+          </div>
         </div>
         <EventLogHUD />
         <ScannerHUD
@@ -137,11 +133,6 @@ const HelmetHUD = memo(function HelmetHUD({
           customPlanetaryTargets={customPlanetaryTargets}
         />
       </div>
-      <div className="helmet-right-stack">
-        <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
-      </div>
-      <AlertsHUD />
-      <FlightControlsHUD />
       <DockTransferHUD />
     </div>
   );

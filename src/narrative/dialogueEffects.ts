@@ -7,6 +7,7 @@
 import { cargo, reduceCargoItem, addCargoItem } from '../context/Inventory';
 import { fuel, o2, power, setFuel, setO2, setPower, damageHull } from '../context/ShipState';
 import { addMessage, type MessagePlatform } from '../context/MessageStore';
+import { addDeclinedMission, addActiveMission, removeActiveMission, addCompletedMission } from '../context/MissionState';
 
 type ShipResource = 'fuel' | 'o2' | 'power';
 
@@ -22,7 +23,13 @@ export type DialogueEffect =
   /** Apply hull damage. */
   | { type: 'damageHull'; amount: number; chance?: number; resultText?: string; failText?: string }
   /** Drop an inbox message / share a piece of information. */
-  | { type: 'shareInfo'; from?: string; subject?: string; text: string; platform?: MessagePlatform; chance?: number; resultText?: string; failText?: string };
+  | { type: 'shareInfo'; from?: string; subject?: string; text: string; platform?: MessagePlatform; chance?: number; resultText?: string; failText?: string }
+  /** Mark a mission as permanently declined. */
+  | { type: 'declineMission'; missionId: string }
+  /** Accept a mission — sets it as the active mission in the journal. */
+  | { type: 'acceptMission'; missionId: string }
+  /** Complete a mission — moves it to the completed list and clears active. */
+  | { type: 'completeMission'; missionId: string };
 
 export interface EffectOutcome {
   /** True if the effect's chance roll succeeded and the state change was applied. */
@@ -52,6 +59,21 @@ function addCargo(item: string, qty: number): void {
 
 /** Apply one effect, returning whether it fired and an optional outcome line. */
 function applyOne(effect: DialogueEffect): EffectOutcome {
+  // Mission effects are always-fire with no chance roll.
+  if (effect.type === 'declineMission') {
+    addDeclinedMission(effect.missionId);
+    return { fired: true, text: null };
+  }
+  if (effect.type === 'acceptMission') {
+    addActiveMission(effect.missionId);
+    return { fired: true, text: null };
+  }
+  if (effect.type === 'completeMission') {
+    removeActiveMission(effect.missionId);
+    addCompletedMission(effect.missionId);
+    return { fired: true, text: null };
+  }
+
   const chance = effect.chance ?? 1;
   if (Math.random() > chance) {
     return { fired: false, text: effect.failText ?? null };

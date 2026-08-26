@@ -21,10 +21,19 @@ export type Marker = {
   inRange?: boolean;
   size?: number;
   radiusWorld?: number;
+  entityId?: string;
+  radioCapable?: boolean;
 };
 
+export type UnifiedMarker = Omit<Marker, 'kind'> & {
+  scanners: Set<MarkerKind>;
+  primaryKind: MarkerKind;
+};
+
+export type VisibleUnifiedMarker = UnifiedMarker & { sx: number; sy: number; pxSize: number };
+
 export type HoverCardState = {
-  marker: Marker;
+  marker: Marker | UnifiedMarker;
   x: number;
   y: number;
 };

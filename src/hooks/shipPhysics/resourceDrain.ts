@@ -14,6 +14,7 @@ import {
 } from '../../context/VesselStateStore';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { setFuel, setO2, setPower } from '../../context/ShipState';
+import { pushEventLog } from '../../components/Huds/EventLogHUD/EventLogStore';
 
 interface DrainParams {
   vesselId: string;
@@ -31,6 +32,11 @@ interface DrainParams {
 }
 
 let o2DepletedFired = false;
+let powerLowFired = false;
+let fuelLowFired = false;
+let o2LowFired = false;
+
+const RESOURCE_LOW_THRESHOLD = 20;
 
 const RCS_FUEL_RATE_FACTOR = 0.01;
 const RCS_THRUST_MULTIPLIER_CAP = 2;
@@ -111,5 +117,29 @@ export function applyResourceDrain({
     setO2(newO2);
   } else {
     setVesselO2(vesselId, newO2);
+  }
+
+  // Low-resource event log entries (player only, fires once per crossing)
+  if (vesselId === PLAYER_VESSEL_ID) {
+    if (vesselState.power <= RESOURCE_LOW_THRESHOLD && !powerLowFired) {
+      powerLowFired = true;
+      pushEventLog('res', 'POWER LOW - FIND POWER SOURCE');
+    } else if (vesselState.power > RESOURCE_LOW_THRESHOLD) {
+      powerLowFired = false;
+    }
+
+    if (vesselState.fuel <= RESOURCE_LOW_THRESHOLD && !fuelLowFired) {
+      fuelLowFired = true;
+      pushEventLog('res', 'FUEL LOW - FIND FUEL SOURCE');
+    } else if (vesselState.fuel > RESOURCE_LOW_THRESHOLD) {
+      fuelLowFired = false;
+    }
+
+    if (newO2 <= RESOURCE_LOW_THRESHOLD && !o2LowFired) {
+      o2LowFired = true;
+      pushEventLog('res', 'O2 LOW - FIND O2 SOURCE');
+    } else if (newO2 > RESOURCE_LOW_THRESHOLD) {
+      o2LowFired = false;
+    }
   }
 }

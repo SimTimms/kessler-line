@@ -54,6 +54,12 @@ export interface CollidableEntry {
    */
   physicalCollision?: boolean;
 
+  /**
+   * When true, the minimap will NOT show this as an always-visible "hard" contact.
+   * The object can still appear via scanner detection (proximity, mag, etc.).
+   */
+  scannerOnlyMinimap?: boolean;
+
   /** Optional docking capture profile used by docking helpers for this bay. */
   dockingProfile?: DockCaptureProfile;
 }

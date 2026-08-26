@@ -8,6 +8,8 @@ import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import DeployedSatellite from '../../config/events/satellite-mission/DeployedSatellite';
 import LaserRay from '../../components/Combat/LaserRay';
 import PlayerBullets from '../../components/Combat/PlayerBullets';
+import TorpedoManager from '../../components/Combat/TorpedoManager';
+import DoningtonTorpedoLaunch from '../../components/Combat/DoningtonTorpedoLaunch';
 import PlayerCannonHitDamage from '../../components/Combat/PlayerCannonHitDamage';
 import BreakupVfx from '../../components/Combat/BreakupVfx';
 import SharedInteractionSceneTools from '../../components/SharedInteractionSceneTools';
@@ -27,6 +29,9 @@ import SalvageField from '../../components/SalvageConfig/SalvageField';
 import NormalTravelZoneRing from '../../components/FastTravel/NormalTravelZoneRing';
 import { NarrativeSatelliteMissionController } from '../../config/events/satellite-mission/deploy-satellite';
 import OrbitalSatellite from '../../config/events/satellite-mission/OrbitalSatellite';
+import CommsRelayMissionController from '../../config/events/comms-relay-mission/CommsRelayMissionController';
+import CommsBufferSatellite from '../../config/events/comms-relay-mission/CommsBufferSatellite';
+import CarrierGRB from '../../components/Ships/CarrierGRB';
 
 import {
   getNarrativeMarsNormalTravelRadius,
@@ -161,6 +166,8 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
         <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
         <PlayerBullets shipGroupRef={spaceshipGroupRef} />
         <PlayerCannonHitDamage />
+        <TorpedoManager />
+        <DoningtonTorpedoLaunch />
         <BreakupVfx />
         <SolarSystem scale={solarSystemScale} />
         <SalvageField
@@ -219,6 +226,16 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
         />
         <NarrativeSatelliteMissionController satelliteContainerId={satelliteContainerId} />
         <DeployedSatellite />
+        <CommsRelayMissionController />
+        <CommsBufferSatellite />
+        <CarrierGRB
+          position={[
+            primaryFieldOrigin[0] + 1000,
+            primaryFieldOrigin[1] - 200,
+            primaryFieldOrigin[2] - 500,
+          ]}
+          scale={5}
+        />
       </Suspense>
     </>
   );
