@@ -25,7 +25,7 @@ export default function CarrierGRB({
   const groupRef = useRef<THREE.Group>(null);
 
   return (
-    <group ref={groupRef} position={position} rotation={rotation}>
+    <group ref={groupRef} position={position} rotation={rotation} castShadow receiveShadow>
       <primitive object={modelScene} scale={scale} />
     </group>
   );

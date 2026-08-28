@@ -14,6 +14,7 @@ import { STATIC_CONTACTS } from '../../narrative/contacts';
 import {
   type HailStatus,
   setHailStatus,
+  getHailStatus,
   getAllHailStates,
 } from '../../context/HailState';
 import {
@@ -558,13 +559,13 @@ export default function ContactsHUD({
   const chatCanReceive = chatShipId
     ? (inRangeDrives.find((d) => d.id === chatShipId)?.inPassiveRange ??
       broadcastContacts.find((b) => b.entry.id === chatShipId)?.inPassiveRange ??
-      incomingHails.has(chatShipId))
+      (incomingHails.has(chatShipId) || getHailStatus(chatShipId) === 'accepted'))
     : false;
 
   const chatCanTransmit = chatShipId
     ? (inRangeDrives.find((d) => d.id === chatShipId)?.radioActive ??
       broadcastContacts.find((b) => b.entry.id === chatShipId)?.inRadioRange ??
-      incomingHails.has(chatShipId))
+      (incomingHails.has(chatShipId) || getHailStatus(chatShipId) === 'accepted'))
     : false;
   const chatDockPermissionGranted = chatShipId ? hasDockPermission(chatShipId) : false;
 

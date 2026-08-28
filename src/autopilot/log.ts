@@ -1,16 +1,3 @@
-/**
- * Autopilot event logger.
- *
- * Prints to the browser console only when state actually changes — never
- * every frame. Yaw is collapsed to a single "turning / stopped" boolean so
- * the bang-bang controller's rapid oscillation doesn't flood the output.
- *
- * Colours:
- *   orange  — phase transitions  (ALIGN → BURN)
- *   blue    — status text        (BRAKING 120 m/s → 20 m/s)
- *   green   — thrust events      (▶ ENGINE ON  /  ■ engine off)
- */
-
 type ThrustSnapshot = { fw: boolean; rv: boolean; yaw: boolean };
 
 const _prev = {

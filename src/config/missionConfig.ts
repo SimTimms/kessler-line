@@ -1,4 +1,5 @@
 import { MARS_DEF } from './worldConfig';
+import { COMMS_BUFFER_SATELLITE_ID } from './events/comms-relay-mission/comms-relay-config';
 
 export interface MissionDef {
   id: string;
@@ -6,6 +7,8 @@ export interface MissionDef {
   description: string;
   waypoint?: [number, number, number];
   waypointLabel?: string;
+  /** Collidable ID for dynamic tracking — nav line follows this object each frame. */
+  waypointCollidableId?: string;
 }
 
 export const MISSION_DEFS: Record<string, MissionDef> = {
@@ -32,6 +35,7 @@ export const MISSION_DEFS: Record<string, MissionDef> = {
       'Dock with the comms buffer satellite in Mars orbit and download the emergency communication logs.',
     waypoint: [...MARS_DEF.position],
     waypointLabel: 'Comms Buffer Satellite',
+    waypointCollidableId: `docking-bay-${COMMS_BUFFER_SATELLITE_ID}`,
   },
 };
 

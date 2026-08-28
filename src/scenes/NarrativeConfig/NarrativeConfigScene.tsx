@@ -136,7 +136,13 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   const worldContent = (
     <>
       <ambientLight intensity={lighting.ambientIntensity} />
-      <directionalLight position={[0, 100, -1000]} intensity={3} color="#ff8819" />
+      <directionalLight
+        position={[0, 100, -1000]}
+        intensity={3}
+        color="#ff8819"
+        castShadow
+        receiveShadow
+      />
       <SkySphere />
       <SpaceParticles />
       <Suspense fallback={null}>

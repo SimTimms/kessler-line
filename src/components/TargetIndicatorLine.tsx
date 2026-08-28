@@ -3,7 +3,6 @@ import type React from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { hasNavTarget, navTargetIdRef, navTargetPosRef } from '../context/NavTarget';
-import { shipVelocity } from '../context/ShipState';
 import {
   selectedTargetKey,
   selectedTargetName,
@@ -12,10 +11,13 @@ import {
   selectedTargetVelocity,
 } from '../context/TargetSelection';
 import { navHudEnabledRef } from '../context/NavHud';
+import { shipVelocity } from '../context/ShipState';
 import { minimapOverlayActiveRef } from '../context/MinimapUi';
 import { getMagneticTargets } from '../context/MagneticRegistry';
 import { getDriveSignatures } from '../context/DriveSignatureRegistry';
-import { getCollidables } from '../context/CollisionRegistry';
+import { getCollidables, type CollidableEntry } from '../context/CollisionRegistry';
+import { getRadioBroadcasts } from '../context/RadioBroadcastRegistry';
+import { getClosingSpeed } from '../utils/relativeVelocity';
 import { gravityBodies } from '../context/GravityRegistry';
 import { MOON_BODY_ID } from '../config/moonConfig';
 import { FUEL_STATION_DEF } from '../config/worldConfig';
@@ -24,7 +26,7 @@ import {
   SHIP_DIRECTION_TARGET_COLOR,
   SHIP_DIRECTION_VELOCITY_ARROW_SCALE,
 } from '../config/shipDirectionIndicatorConfig';
-import { formatCompactDistance } from '../utils/formatCompactDistance';
+import { formatDist } from './Huds/NavHUD/navHudFormatters';
 import {
   createShipDirectionSplitLine,
   placeShipDirectionArrow,
@@ -40,6 +42,12 @@ const TUTORIAL_NAV_DAEDALUS_ID = 'tutorial-daedalus';
 const TUTORIAL_NAV_LUNA_ID = 'tutorial-luna';
 const TUTORIAL_DOCKING_BAY_COLLIDER_ID = 'docking-bay-tutorial-space-station';
 
+/** Find collidable by ID, also trying docking-bay- prefix (radio broadcast ID → collidable). */
+function findCollidable(id: string): CollidableEntry | undefined {
+  const all = getCollidables();
+  return all.find((c) => c.id === id) ?? all.find((c) => c.id === `docking-bay-${id}`);
+}
+
 function resolveTargetLabel(): string {
   if (selectedTargetName) return selectedTargetName;
   const id = navTargetIdRef.current.trim();
@@ -52,8 +60,8 @@ function resolveTargetLabel(): string {
 
 const _tgtWorld = new THREE.Vector3();
 const _shipWorld = new THREE.Vector3();
-const _targetVel = new THREE.Vector3();
 const _toTgt = new THREE.Vector3();
+const _targetVel = new THREE.Vector3();
 const _colorDefault = new THREE.Color(SHIP_DIRECTION_TARGET_COLOR);
 const _colorMagnetic = new THREE.Color(SHIP_DIRECTION_MAGNETIC_COLOR);
 
@@ -151,7 +159,22 @@ export default function TargetIndicatorLine({
           tgt.copy(selectedTargetPosition);
         }
       } else {
-        tgt.copy(selectedTargetPosition);
+        const liveCollidable = findCollidable(selectedTargetKey!);
+        if (liveCollidable) {
+          liveCollidable.getWorldPosition(tgt);
+          selectedTargetPosition.copy(tgt);
+          navTargetPosRef.current.copy(tgt);
+        } else {
+          // Fall back to radio broadcast live position
+          const broadcast = getRadioBroadcasts().find((e) => e.id === selectedTargetKey);
+          if (broadcast) {
+            broadcast.getPosition(tgt);
+            selectedTargetPosition.copy(tgt);
+            navTargetPosRef.current.copy(tgt);
+          } else {
+            tgt.copy(selectedTargetPosition);
+          }
+        }
       }
     } else {
       const nid = navTargetIdRef.current;
@@ -172,39 +195,18 @@ export default function TargetIndicatorLine({
           tgt.copy(navTargetPosRef.current);
         }
       } else {
-        const liveCollidable = getCollidables().find((c) => c.id === nid);
+        const liveCollidable = findCollidable(nid);
         if (liveCollidable) {
           liveCollidable.getWorldPosition(tgt);
           navTargetPosRef.current.copy(tgt);
         } else {
-          tgt.copy(navTargetPosRef.current);
-        }
-      }
-    }
-
-    _targetVel.set(0, 0, 0);
-    if (!scanHudShowsReadout) {
-      if (hasSelectedPos && selectedTargetKey) {
-        if (selectedTargetType === 'magnetic') {
-          const liveMag = getMagneticTargets().find((m) => m.id === selectedTargetKey);
-          if (liveMag?.getVelocity) liveMag.getVelocity(_targetVel);
-          else _targetVel.copy(selectedTargetVelocity);
-        } else if (selectedTargetType === 'ship') {
-          const liveDrive = getDriveSignatures().find((d) => d.id === selectedTargetKey);
-          if (liveDrive?.getVelocity) liveDrive.getVelocity(_targetVel);
-          else _targetVel.copy(selectedTargetVelocity);
-        } else {
-          _targetVel.copy(selectedTargetVelocity);
-        }
-      } else if (hasNavTargetId) {
-        const nid = navTargetIdRef.current;
-        if (nid === TUTORIAL_NAV_DAEDALUS_ID) {
-          const bay = getCollidables().find((c) => c.id === TUTORIAL_DOCKING_BAY_COLLIDER_ID);
-          if (bay?.getWorldVelocity) bay.getWorldVelocity(_targetVel);
-        } else {
-          const liveCollidable = getCollidables().find((c) => c.id === nid);
-          if (liveCollidable?.getWorldVelocity) {
-            liveCollidable.getWorldVelocity(_targetVel);
+          // Fall back to radio broadcast live position
+          const broadcast = getRadioBroadcasts().find((e) => e.id === nid);
+          if (broadcast) {
+            broadcast.getPosition(tgt);
+            navTargetPosRef.current.copy(tgt);
+          } else {
+            tgt.copy(navTargetPosRef.current);
           }
         }
       }
@@ -253,22 +255,36 @@ export default function TargetIndicatorLine({
       nameRef.current.style.textShadow = nameShadow;
     }
 
+    // ── Look up live target velocity ────────────────────────────────────
+    _targetVel.set(0, 0, 0);
+    if (hasSelectedPos && selectedTargetKey) {
+      if (selectedTargetType === 'magnetic') {
+        const liveMag = getMagneticTargets().find((m) => m.id === selectedTargetKey);
+        if (liveMag?.getVelocity) liveMag.getVelocity(_targetVel);
+      } else if (selectedTargetType === 'ship') {
+        const liveDrive = getDriveSignatures().find((d) => d.id === selectedTargetKey);
+        if (liveDrive?.getVelocity) liveDrive.getVelocity(_targetVel);
+      } else {
+        const liveCollidable = findCollidable(selectedTargetKey);
+        if (liveCollidable?.getWorldVelocity) liveCollidable.getWorldVelocity(_targetVel);
+      }
+    } else {
+      const nid = navTargetIdRef.current;
+      const liveCollidable = findCollidable(nid);
+      if (liveCollidable?.getWorldVelocity) liveCollidable.getWorldVelocity(_targetVel);
+    }
+    // Keep selectedTargetVelocity in sync so navHudDisplayUpdater gets fresh data.
+    selectedTargetVelocity.copy(_targetVel);
+
     if (scanHudShowsReadout) {
       if (metricsRef.current) metricsRef.current.style.display = 'none';
     } else {
-      let relVelStr = '—';
-      if (distWorld > 1e-5) {
-        const inv = 1 / distWorld;
-        const relVel =
-          ((shipVelocity.x - _targetVel.x) * _toTgt.x +
-            (shipVelocity.y - _targetVel.y) * _toTgt.y +
-            (shipVelocity.z - _targetVel.z) * _toTgt.z) *
-          inv;
-        relVelStr = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
-      }
+      const targetId = selectedTargetKey ?? navTargetIdRef.current;
+      const relVel = getClosingSpeed(targetId, shipVelocity, _targetVel, _toTgt, distWorld);
+      const relVelStr = `${relVel >= 0 ? '+' : ''}${relVel.toFixed(1)} m/s`;
       if (metricsRef.current) {
         metricsRef.current.style.display = '';
-        metricsRef.current.textContent = `${formatCompactDistance(distWorld, { unitSuffix: 'm' })} | ${relVelStr}`;
+        metricsRef.current.textContent = `${formatDist(distWorld)} | ${relVelStr}`;
         metricsRef.current.style.color = nameColor;
         metricsRef.current.style.textShadow = nameShadow;
       }

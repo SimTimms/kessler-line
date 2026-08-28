@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "conversationId": "conv-1787823830090-xsxzbjf70",
+  "records": [
+    {
+      "schemaVersion": 1,
+      "id": "msg-1787823830203-q2a3ljw",
+      "userTurnOrdinal": 1,
+      "state": "accepted",
+      "localMessageId": "msg-1787823830083-z5zbibd",
+      "timestamp": 1787823830083,
+      "rawDisplayText": "Currently, we're reading all the readmes from node modules. Can we omit node modules from this vault, please?",
+      "canonicalText": "Currently, we're reading all the readmes from node modules. Can we omit node modules from this vault, please?",
+      "images": [],
+      "contentDigest": "18ade8eafa4ae826a4f72f6aea5ac02a20bade2135f55d5f76646f6e9e075ace",
+      "providerUserMessageId": "97202261-cf61-4233-b616-e1115f6a8ac4",
+      "providerAssistantMessageId": "b46cec62-052c-4522-880b-b11b4981b0aa"
+    }
+  ]
+}

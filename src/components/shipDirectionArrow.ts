@@ -9,6 +9,9 @@ import {
   SHIP_DIRECTION_TARGET_LINE_GAP,
   SHIP_DIRECTION_TARGET_LINE_LENGTH,
   SHIP_DIRECTION_TARGET_LINE_THICKNESS,
+  SHIP_DIRECTION_VELOCITY_ARC_REF_SPEED,
+  SHIP_DIRECTION_VELOCITY_ARC_SCALE_MAX,
+  SHIP_DIRECTION_VELOCITY_ARC_SCALE_MIN,
   SHIP_DIRECTION_VELOCITY_LINE_LENGTH,
   SHIP_DIRECTION_VELOCITY_LINE_THICKNESS,
 } from '../config/shipDirectionIndicatorConfig';
@@ -119,6 +122,44 @@ export function createShipDirectionSplitLine(color: string | number, opacity = 0
   return group;
 }
 
+/**
+ * Three short line segments along local +Z with gaps between them.
+ * Used for the orbit-direction indicator.
+ */
+export function createShipDirectionTripleLine(color: string | number, opacity = 0.88): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthTest: false,
+    depthWrite: false,
+  });
+  group.userData.arrowMaterial = mat;
+
+  const gap = SHIP_DIRECTION_TARGET_LINE_GAP;
+  const segLen = SHIP_DIRECTION_TARGET_LINE_LENGTH;
+  const thick = SHIP_DIRECTION_TARGET_LINE_THICKNESS;
+
+  const center = new THREE.Mesh(new THREE.BoxGeometry(thick, thick, segLen), mat);
+  center.position.z = 0;
+  center.frustumCulled = false;
+  group.add(center);
+
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(thick, thick, segLen), mat);
+  inner.position.z = -(gap + segLen);
+  inner.frustumCulled = false;
+  group.add(inner);
+
+  const outer = new THREE.Mesh(new THREE.BoxGeometry(thick, thick, segLen), mat);
+  outer.position.z = gap + segLen;
+  outer.frustumCulled = false;
+  group.add(outer);
+
+  group.frustumCulled = false;
+  return group;
+}
+
 /** Single short line perpendicular to local +Z — fits in the target split gap when aligned. */
 export function createShipDirectionLine(color: string | number, opacity = 0.88): THREE.Group {
   const group = new THREE.Group();
@@ -144,6 +185,21 @@ export function createShipDirectionLine(color: string | number, opacity = 0.88):
 
   group.frustumCulled = false;
   return group;
+}
+
+/**
+ * World-space radius of the velocity ring for the current ship speed.
+ * {@link SHIP_DIRECTION_VELOCITY_ARC_REF_SPEED} (0.9 m/s) maps to
+ * {@link SHIP_DIRECTION_RING_RADIUS}.
+ */
+export function velocityRingRadiusForSpeed(speed: number): number {
+  const r = SHIP_DIRECTION_RING_RADIUS;
+  const ref = SHIP_DIRECTION_VELOCITY_ARC_REF_SPEED;
+  const minR = r * SHIP_DIRECTION_VELOCITY_ARC_SCALE_MIN;
+  const maxR = r * SHIP_DIRECTION_VELOCITY_ARC_SCALE_MAX;
+  if (!(speed > 0) || !(ref > 0)) return minR;
+  const scaled = r * (Math.log1p(speed) / Math.log1p(ref));
+  return Math.min(Math.max(scaled, minR), maxR);
 }
 
 /** Place an arrow on the circumference in XZ, oriented along `dirWorld` (y ignored). */

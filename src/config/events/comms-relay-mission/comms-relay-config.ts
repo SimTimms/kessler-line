@@ -25,9 +25,8 @@ const marsConfig = getPlanet('Mars');
 const MARS_R = (marsConfig?.radius ?? 0) * SOLAR_SYSTEM_SCALE;
 
 /** Orbital radius as a multiplier of Mars world radius. */
-export const BUFFER_ORBIT_RADIUS_FACTOR = 5.2;
+export const BUFFER_ORBIT_RADIUS_FACTOR = 2.6;
 export const BUFFER_ORBIT_RADIUS = MARS_R * BUFFER_ORBIT_RADIUS_FACTOR;
-export const BUFFER_ORBIT_SPEED = 0.08;
-export const BUFFER_ORBIT_PHASE = 1.4;
-export const BUFFER_ORBIT_INCLINATION_Z = 0.25;
-export const BUFFER_ORBIT_INCLINATION_X = 0.1;
+export const BUFFER_ORBIT_PHASE = (140 / 180) * Math.PI;
+export const BUFFER_ORBIT_INCLINATION_Z = 0;
+export const BUFFER_ORBIT_INCLINATION_X = 0;

@@ -1,0 +1,23 @@
+{
+  "id": "conv-1787823830090-xsxzbjf70",
+  "providerId": "claude",
+  "title": "**Exclude node_modules from Obsidian vault**\n\n(...",
+  "titleGenerationStatus": "success",
+  "createdAt": 1787823830096,
+  "lastActivityAt": 1787823853736,
+  "sessionId": "45d8a27f-dbca-468c-96ae-83350255c7bc",
+  "selectedModel": "opus",
+  "providerState": {
+    "providerSessionId": "45d8a27f-dbca-468c-96ae-83350255c7bc"
+  },
+  "usage": {
+    "model": "opus",
+    "inputTokens": 1,
+    "cacheCreationInputTokens": 259,
+    "cacheReadInputTokens": 21858,
+    "contextWindow": 200000,
+    "contextTokens": 22118,
+    "percentage": 11,
+    "contextWindowIsAuthoritative": true
+  }
+}

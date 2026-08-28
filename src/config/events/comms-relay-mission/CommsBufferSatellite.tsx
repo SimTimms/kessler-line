@@ -1,20 +1,25 @@
 /**
  * CommsBufferSatellite — dockable satellite orbiting Mars.
  *
- * Tracks Mars position via gravityBodies each frame (same pattern as MarsSystem).
- * Registers a collidable with velocity tracking so the docking system can compute
- * correct relative speed. Uses useRegisterDock for the dock config registration.
+ * Uses the shared gravity integrator (`src/physics/`) so that all orbiting
+ * objects share the same reference-frame tracking pipeline as the ship.
+ * Registers a collidable with velocity tracking so the docking system can
+ * compute correct relative speed. Uses useRegisterDock for the dock config
+ * registration.
  */
 
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { gravityBodies } from '../../../context/GravityRegistry';
 import {
   registerCollidable,
   unregisterCollidable,
 } from '../../../context/CollisionRegistry';
+import {
+  registerRadioBroadcast,
+  unregisterRadioBroadcast,
+} from '../../../context/RadioBroadcastRegistry';
 import { selectTarget } from '../../../context/TargetSelection';
 import { useRegisterDock } from '../../../hooks/useRegisterDockablePartner';
 import { DEFAULT_DOCK_CAPTURE_PROFILE } from '../../dockCaptureConfig';
@@ -23,11 +28,12 @@ import {
   COMMS_BUFFER_SATELLITE_ID,
   COMMS_BUFFER_SATELLITE_LABEL,
   BUFFER_ORBIT_RADIUS,
-  BUFFER_ORBIT_SPEED,
   BUFFER_ORBIT_PHASE,
   BUFFER_ORBIT_INCLINATION_Z,
   BUFFER_ORBIT_INCLINATION_X,
 } from './comms-relay-config';
+import { initCircularOrbit, stepOrbit } from '../../../physics';
+import type { OrbitState } from '../../../physics';
 
 const SATELLITE_URL = '/satellite.glb';
 const COLLISION_ID = `docking-bay-${COMMS_BUFFER_SATELLITE_ID}`;
@@ -46,12 +52,8 @@ export const commsBufferWorldPos = new THREE.Vector3();
 export default function CommsBufferSatellite() {
   const { scene: modelScene } = useGLTF(SATELLITE_URL);
 
-  const rootRef = useRef<THREE.Group>(null);
-  const orbitRef = useRef<THREE.Group>(null);
-  const innerRef = useRef<THREE.Group>(null);
-  const prevPosRef = useRef(new THREE.Vector3());
-  const velocityRef = useRef(new THREE.Vector3());
-  const hasPrevRef = useRef(false);
+  const groupRef = useRef<THREE.Group>(null);
+  const orbitStateRef = useRef<OrbitState | null>(null);
 
   // Register dock config so the dock interior panel works when docked.
   const dockConfig = useMemo(() => COMMS_BUFFER_DOCK_CONFIG, []);
@@ -64,14 +66,17 @@ export default function CommsBufferSatellite() {
       label: COMMS_BUFFER_SATELLITE_LABEL,
       stationId: COMMS_BUFFER_SATELLITE_ID,
       getWorldPosition: (target) => {
-        if (innerRef.current) innerRef.current.getWorldPosition(target);
+        if (groupRef.current) groupRef.current.getWorldPosition(target);
         return target;
       },
       getWorldQuaternion: (target) => {
-        if (innerRef.current) innerRef.current.getWorldQuaternion(target);
+        if (groupRef.current) groupRef.current.getWorldQuaternion(target);
         return target;
       },
-      getWorldVelocity: (target) => target.copy(velocityRef.current),
+      getWorldVelocity: (target) => {
+        const state = orbitStateRef.current;
+        return state ? target.copy(state.velocity) : target.set(0, 0, 0);
+      },
       shape: {
         type: 'box',
         halfExtents: new THREE.Vector3(
@@ -82,55 +87,68 @@ export default function CommsBufferSatellite() {
       },
       physicalCollision: false,
       dockingProfile: SATELLITE_DOCK_PROFILE,
-      getObject3D: () => innerRef.current,
+      getObject3D: () => groupRef.current,
     });
     return () => unregisterCollidable(COLLISION_ID);
   }, []);
 
+  // Register as a radio broadcast so the scanner can detect the satellite.
+  useEffect(() => {
+    registerRadioBroadcast({
+      id: COMMS_BUFFER_SATELLITE_ID,
+      label: COMMS_BUFFER_SATELLITE_LABEL,
+      getPosition: (target) => target.copy(commsBufferWorldPos),
+      dialogue: [
+        'COMMS BUFFER SATELLITE — AUTOMATED BEACON.',
+        'RELAY NODE OFFLINE. LOCAL BUFFER STORAGE ACTIVE.',
+        'DOCKING PORT AVAILABLE FOR LOG RETRIEVAL.',
+      ],
+      dockable: true,
+    });
+    return () => unregisterRadioBroadcast(COMMS_BUFFER_SATELLITE_ID);
+  }, []);
+
   useFrame((_, delta) => {
-    const mars = gravityBodies.get('Mars');
-    if (!rootRef.current || !mars) return;
+    if (!groupRef.current) return;
 
-    // Follow Mars
-    rootRef.current.position.copy(mars.position);
+    // ── Initialise on first frame ──────────────────────────────────────
+    if (!orbitStateRef.current) {
+      const init = initCircularOrbit({
+        bodyId: 'Mars',
+        radius: BUFFER_ORBIT_RADIUS,
+        phase: BUFFER_ORBIT_PHASE,
+        inclinationX: BUFFER_ORBIT_INCLINATION_X,
+        inclinationZ: BUFFER_ORBIT_INCLINATION_Z,
+      });
 
-    // Advance orbit
-    if (orbitRef.current) {
-      orbitRef.current.rotation.y += BUFFER_ORBIT_SPEED * delta;
+      orbitStateRef.current = {
+        position: init.position,
+        velocity: init.velocity,
+        primaryBodyId: init.bodyId,
+        primaryBodyVelocity: init.bodyVelocity,
+      };
     }
 
-    // Track world position + velocity for docking and nav waypoint
-    if (innerRef.current) {
-      innerRef.current.getWorldPosition(commsBufferWorldPos);
+    const state = orbitStateRef.current;
 
-      if (hasPrevRef.current && delta > 0) {
-        velocityRef.current
-          .subVectors(commsBufferWorldPos, prevPosRef.current)
-          .multiplyScalar(1 / delta);
-      } else {
-        velocityRef.current.set(0, 0, 0);
-      }
-      prevPosRef.current.copy(commsBufferWorldPos);
-      hasPrevRef.current = true;
-    }
+    // ── Gravity integration ────────────────────────────────────────────
+    stepOrbit(state, delta);
+    state.position.addScaledVector(state.velocity, delta);
+
+    // ── Sync scene + exports ───────────────────────────────────────────
+    commsBufferWorldPos.copy(state.position);
+    groupRef.current.position.copy(state.position);
   });
 
   return (
-    <group ref={rootRef}>
-      <group rotation-z={BUFFER_ORBIT_INCLINATION_Z} rotation-x={BUFFER_ORBIT_INCLINATION_X}>
-        <group ref={orbitRef} rotation-y={BUFFER_ORBIT_PHASE}>
-          <group
-            ref={innerRef}
-            position={[BUFFER_ORBIT_RADIUS, 0, 0]}
-            onClick={(e) => {
-              e.stopPropagation();
-              selectTarget(COLLISION_ID);
-            }}
-          >
-            <primitive object={modelScene} scale={0.4} />
-          </group>
-        </group>
-      </group>
+    <group
+      ref={groupRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        selectTarget(COLLISION_ID);
+      }}
+    >
+      <primitive object={modelScene} scale={0.4} />
     </group>
   );
 }

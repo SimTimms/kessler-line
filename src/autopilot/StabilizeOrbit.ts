@@ -86,7 +86,6 @@ export function StabilizeOrbit(ctx: AutopilotCtx): AutopilotPhase | null {
     burnLabel = dv >= 0 ? 'RAISING PERIAPSIS' : 'LOWERING PERIAPSIS';
   }
 
-  // Coast when not at an apsis, or when burn is complete (|dv| < 1 m/s)
   if (dv === null || Math.abs(dv) < 1) {
     // Emergency radial-out: periapsis below surface and falling toward it.
     // Radial-out works at any orbital position — no need to wait for apoapsis.

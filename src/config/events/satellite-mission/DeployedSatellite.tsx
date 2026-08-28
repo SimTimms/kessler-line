@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { gravityBodies } from '../../../context/GravityRegistry';
 import { deployedSatelliteRef } from '../../../context/DeployedSatelliteState';
 import { NARRATIVE_CONFIG } from '../../../scenes/NarrativeConfig/narrativeSceneConfig';
+import { stepOrbit } from '../../../physics';
+import type { OrbitState } from '../../../physics';
 
 const CONTAINER_URL = '/satellite.glb';
 
@@ -14,17 +16,12 @@ const PHYSICS_DURATION = 30;
 /** Descent speed on the y-axis once orbit is locked (units/s). */
 const DESCENT_SPEED = 10;
 
-// Scratch vectors — avoid per-frame allocations.
-const _gravDir = new THREE.Vector3();
-
 export default function DeployedSatellite() {
   const { scene: modelScene } = useGLTF(CONTAINER_URL);
   const groupRef = useRef<THREE.Group>(null);
 
   // ── Phase 1 (physics) state ──
-  const initializedRef = useRef(false);
-  const posRef = useRef(new THREE.Vector3());
-  const velRef = useRef(new THREE.Vector3());
+  const orbitStateRef = useRef<OrbitState | null>(null);
   const timerRef = useRef(0);
 
   // ── Phase 2 (locked orbit) state ──
@@ -45,45 +42,46 @@ export default function DeployedSatellite() {
     if (!mars) return;
 
     // ── Initialise from release data (once) ──
-    if (!initializedRef.current) {
-      posRef.current.set(data.releaseX, mars.position.y, data.releaseZ);
-      velRef.current.set(data.releaseVelX, 0, data.releaseVelZ);
+    if (!orbitStateRef.current) {
+      orbitStateRef.current = {
+        position: new THREE.Vector3(data.releaseX, mars.position.y, data.releaseZ),
+        velocity: new THREE.Vector3(data.releaseVelX, 0, data.releaseVelZ),
+        primaryBodyId: 'Mars',
+        primaryBodyVelocity: mars.velocity.clone(),
+      };
+      // Add Mars velocity to match ship's reference frame
+      orbitStateRef.current.velocity.add(mars.velocity);
       timerRef.current = 0;
       orbitLockedRef.current = false;
       yRef.current = 0;
-      initializedRef.current = true;
     }
+
+    const state = orbitStateRef.current;
 
     // ── Phase 1: physics with gravity ──
     if (!orbitLockedRef.current) {
       timerRef.current += delta;
 
-      // Gravitational acceleration toward Mars: a = mu / r², direction toward centre
-      const distSq = posRef.current.distanceToSquared(mars.position);
-      if (distSq > 1) {
-        _gravDir.subVectors(mars.position, posRef.current).normalize();
-        velRef.current.addScaledVector(_gravDir, (mars.mu / distSq) * delta);
-      }
+      stepOrbit(state, delta);
+      state.position.addScaledVector(state.velocity, delta);
 
-      // Integrate position
-      posRef.current.addScaledVector(velRef.current, delta);
       // Keep on the orbital plane
-      posRef.current.y = mars.position.y;
+      state.position.y = mars.position.y;
 
-      groupRef.current.position.copy(posRef.current);
+      groupRef.current.position.copy(state.position);
 
       // Transition to Phase 2 after PHYSICS_DURATION
       if (timerRef.current >= PHYSICS_DURATION) {
-        const relX = posRef.current.x - mars.position.x;
-        const relZ = posRef.current.z - mars.position.z;
+        const relX = state.position.x - mars.position.x;
+        const relZ = state.position.z - mars.position.z;
         orbitRadiusRef.current = Math.sqrt(relX * relX + relZ * relZ);
         angleRef.current = Math.atan2(relZ, relX);
 
         // Tangential speed → angular speed for circular orbit lock
         const tanX = -Math.sin(angleRef.current);
         const tanZ = Math.cos(angleRef.current);
-        const relVx = velRef.current.x - mars.velocity.x;
-        const relVz = velRef.current.z - mars.velocity.z;
+        const relVx = state.velocity.x - mars.velocity.x;
+        const relVz = state.velocity.z - mars.velocity.z;
         const tangentialSpeed = relVx * tanX + relVz * tanZ;
         angularSpeedRef.current =
           orbitRadiusRef.current > 0 ? tangentialSpeed / orbitRadiusRef.current : 0.1;

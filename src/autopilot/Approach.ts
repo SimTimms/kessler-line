@@ -14,7 +14,6 @@ const T_FLIP_180 = 2 * Math.sqrt(Math.PI / YAW_THRUST);
  * Gravity-body targets (planets):
  *   - Fly straight at the planet center at full thrust.
  *   - Compute the brake distance needed to arrive at arrivalRadius
- *     (1500 units) doing exactly PLANET_RETRO_ARRIVAL_SPEED (100 m/s).
  *   - Flip to 'retroburn' as soon as that brake distance is reached.
  *
  * Non-gravity targets (stations):

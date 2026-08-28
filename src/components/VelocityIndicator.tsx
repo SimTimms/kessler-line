@@ -15,9 +15,9 @@ import {
   SHIP_DIRECTION_VELOCITY_COLOR,
 } from '../config/shipDirectionIndicatorConfig';
 import {
-  createShipDirectionArrow,
   createShipDirectionLine,
   createShipDirectionRing,
+  createShipDirectionTripleLine,
   placeShipDirectionArrow,
 } from './shipDirectionArrow';
 import {
@@ -152,18 +152,10 @@ export default function VelocityIndicator({
     if (!root) return;
 
     root.replaceChildren();
-    const col = document.createElement('div');
-    col.style.cssText =
-      'display:flex;flex-direction:column;align-items:center;gap:2px;font-family:monospace;pointer-events:none;opacity:0.92;text-align:center;';
-    const title = document.createElement('div');
-    title.style.cssText =
-      'font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;color:#30ff7a;text-shadow:0 0 8px rgba(48,255,122,0.5);';
-    title.textContent = 'CIRC';
     const speed = document.createElement('div');
     speed.style.cssText =
-      'font-size:9px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;color:#30ff7a;text-shadow:0 0 8px rgba(48,255,122,0.55);';
-    col.append(title, speed);
-    root.append(col);
+      'font-family:monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;pointer-events:none;opacity:0.92;color:#999;text-shadow:0 0 6px rgba(153,153,153,0.4);';
+    root.append(speed);
     orbitReqSpeedRef.current = speed;
 
     return () => {
@@ -238,7 +230,7 @@ export default function VelocityIndicator({
     const velocityArrow = createShipDirectionLine(SHIP_DIRECTION_VELOCITY_COLOR);
     velocityArrow.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
 
-    const orbitDirArrow = createShipDirectionArrow(SHIP_DIRECTION_ORBIT_COLOR);
+    const orbitDirArrow = createShipDirectionTripleLine(SHIP_DIRECTION_ORBIT_COLOR);
     orbitDirArrow.scale.setScalar(SHIP_DIRECTION_VELOCITY_ARROW_SCALE);
     const orbitDirRing = createShipDirectionRing(SHIP_DIRECTION_ORBIT_COLOR);
     (orbitDirRing.material as THREE.LineBasicMaterial).opacity = 0.005;
@@ -293,19 +285,14 @@ export default function VelocityIndicator({
     if (arrowPlaced) {
       velocityArrow.updateWorldMatrix(true, true);
     }
-    const showSpeedLabel =
-      arrowPlaced && speed > MIN_SPEED && !minimapOverlayActiveRef.current;
     syncShipDirectionScreenLabel(
       speedLabelAnchorRef.current,
       screenLabelRef.current,
       camera,
       size,
-      showSpeedLabel,
+      false,
       40
     );
-    if (speedRef.current && showSpeedLabel) {
-      speedRef.current.textContent = `${speed.toFixed(1)} m/s`;
-    }
 
     const ship = shipPositionRef.current;
     const sx = ship.x;
@@ -365,7 +352,7 @@ export default function VelocityIndicator({
           }
 
           // Resolve live primary body for orbit visualization
-          const pBody = pid ? gravityBodies.get(pid) ?? null : null;
+          const pBody = pid ? (gravityBodies.get(pid) ?? null) : null;
           const isPlanet = pid !== null && pid !== 'Sun';
 
           // Update caches for per-frame sections
@@ -432,7 +419,11 @@ export default function VelocityIndicator({
             if (periapsis > 0 && apoapsis > 0) {
               const periAlt = Math.max(0, periapsis - surfaceRadius);
               const apoAlt = Math.max(0, apoapsis - surfaceRadius);
-              orbitSpriteCtx.fillText(`PERI: ${Math.round(periAlt)}  APO: ${Math.round(apoAlt)}`, 128, 20);
+              orbitSpriteCtx.fillText(
+                `PERI: ${Math.round(periAlt)}  APO: ${Math.round(apoAlt)}`,
+                128,
+                20
+              );
             }
             orbitSpriteCtx.fillText('CIRCULAR ORBIT', 128, 34);
             (orbitSprite.material as THREE.SpriteMaterial).map!.needsUpdate = true;
@@ -445,8 +436,7 @@ export default function VelocityIndicator({
     const ringMat = directionRing.material as THREE.LineBasicMaterial;
     if (trajectoryHighlightRef.current) {
       ringMat.opacity =
-        SHIP_DIRECTION_RING_OPACITY +
-        0.14 * (0.5 + 0.5 * Math.sin(Date.now() * 0.004));
+        SHIP_DIRECTION_RING_OPACITY + 0.14 * (0.5 + 0.5 * Math.sin(Date.now() * 0.004));
     } else {
       ringMat.opacity = SHIP_DIRECTION_RING_OPACITY;
     }
@@ -466,7 +456,12 @@ export default function VelocityIndicator({
       periMarker.sprite.visible = false;
     }
 
-    if (_cachedPrimaryIsPlanet && _cachedPrimaryBody && _cachedApoStep >= 0 && _cachedOrbitClosedAt >= 0) {
+    if (
+      _cachedPrimaryIsPlanet &&
+      _cachedPrimaryBody &&
+      _cachedApoStep >= 0 &&
+      _cachedOrbitClosedAt >= 0
+    ) {
       const apx = posArr[_cachedApoStep * 3] + sx;
       const apz = posArr[_cachedApoStep * 3 + 2] + sz;
       apoMarker.sprite.visible = true;
@@ -530,8 +525,7 @@ export default function VelocityIndicator({
       if (orbitArrowPlaced) {
         orbitDirArrow.updateWorldMatrix(true, true);
       }
-      const showOrbitReqLabel =
-        orbitArrowPlaced && !minimapOverlayActiveRef.current;
+      const showOrbitReqLabel = orbitArrowPlaced && !minimapOverlayActiveRef.current;
       syncShipDirectionScreenLabel(
         orbitReqLabelAnchorRef.current,
         orbitReqScreenLabelRef.current,

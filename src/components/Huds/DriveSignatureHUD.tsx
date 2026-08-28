@@ -101,8 +101,7 @@ function isOnScreenWithHysteresis(
   wasOnScreen: boolean
 ): boolean {
   if (isBehind) return false;
-  const inPrimary =
-    x > EDGE_PAD && x < width - EDGE_PAD && y > EDGE_PAD && y < height - EDGE_PAD;
+  const inPrimary = x > EDGE_PAD && x < width - EDGE_PAD && y > EDGE_PAD && y < height - EDGE_PAD;
   if (inPrimary) return true;
   if (!wasOnScreen) return false;
   return (
@@ -393,12 +392,7 @@ export default function DriveSignatureHUD() {
 
           if (dockOnScreen) {
             styleDot(dockMarker, DOT_SIZE_ON_SCREEN, BAY_MARKER_COLOR, baySelected);
-            const smoothed = smoothMarkerPosition(
-              bayMarkerStates,
-              dockMarkerId,
-              dockSx,
-              dockSy
-            );
+            const smoothed = smoothMarkerPosition(bayMarkerStates, dockMarkerId, dockSx, dockSy);
             dockMarker.root.style.left = `${Math.round(smoothed.x)}px`;
             dockMarker.root.style.top = `${Math.round(smoothed.y)}px`;
             dockMarker.root.style.transform = 'translate(-50%, -50%)';
@@ -418,12 +412,7 @@ export default function DriveSignatureHUD() {
             const dockEx = dockScale < 1 ? cx + dockDx * dockScale : dockSx;
             const dockEy = dockScale < 1 ? cy + dockDy * dockScale : dockSy;
             styleDot(dockMarker, DOT_SIZE_OFF_SCREEN, BAY_MARKER_COLOR, baySelected);
-            const smoothed = smoothMarkerPosition(
-              bayMarkerStates,
-              dockMarkerId,
-              dockEx,
-              dockEy
-            );
+            const smoothed = smoothMarkerPosition(bayMarkerStates, dockMarkerId, dockEx, dockEy);
             dockMarker.root.style.left = `${Math.round(smoothed.x)}px`;
             dockMarker.root.style.top = `${Math.round(smoothed.y)}px`;
             dockMarker.root.style.transform = 'translate(-50%, -50%)';

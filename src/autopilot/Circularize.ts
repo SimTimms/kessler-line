@@ -18,7 +18,6 @@ const _deltaV = new THREE.Vector3();
  *   deltaV    = tangential(v_insert) − current_velocity
  *
  * Exits early to 'stabilize-orbit' if the orbit calculator already reports a valid
- * bound orbit (isOrbiting true, both apsides > 0). Otherwise burns until |deltaV| < 1 m/s.
  * The ship then coasts unpowered to periapsis; stabilize-orbit waits there
  * to perform the apoapsis-raising burn.
  *

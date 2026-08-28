@@ -8,7 +8,7 @@ function handleSetNav(missionId: string) {
   const def = getMissionDef(missionId);
   if (!def?.waypoint) return;
   const pos = new THREE.Vector3(def.waypoint[0], def.waypoint[1], def.waypoint[2]);
-  setNavTarget(def.waypointLabel ?? def.id, pos);
+  setNavTarget(def.waypointCollidableId ?? def.waypointLabel ?? def.id, pos);
 }
 
 export default function JournalPanel() {

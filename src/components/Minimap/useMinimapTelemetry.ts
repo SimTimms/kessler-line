@@ -265,13 +265,44 @@ function pushProximityMarkers(
   }
 }
 
+/** Resolve live nav target position from collidable or radio broadcast registry. */
+const _navTmp = new THREE.Vector3();
+function resolveNavTargetPos(): { x: number; z: number } {
+  const nid = navTargetIdRef.current;
+  if (nid) {
+    // Try direct collidable match (e.g. from journal SET NAV with waypointCollidableId)
+    const col = getCollidables().find((c) => c.id === nid);
+    if (col) {
+      col.getWorldPosition(_navTmp);
+      navTargetPosRef.current.copy(_navTmp);
+      return { x: _navTmp.x, z: _navTmp.z };
+    }
+    // Try docking-bay prefixed collidable (radio broadcast ID → collidable ID)
+    const dockCol = getCollidables().find((c) => c.id === `docking-bay-${nid}`);
+    if (dockCol) {
+      dockCol.getWorldPosition(_navTmp);
+      navTargetPosRef.current.copy(_navTmp);
+      return { x: _navTmp.x, z: _navTmp.z };
+    }
+    // Try radio broadcast registry (live position from getPosition callback)
+    const broadcast = getRadioBroadcasts().find((e) => e.id === nid);
+    if (broadcast) {
+      broadcast.getPosition(_navTmp);
+      navTargetPosRef.current.copy(_navTmp);
+      return { x: _navTmp.x, z: _navTmp.z };
+    }
+  }
+  return { x: navTargetPosRef.current.x, z: navTargetPosRef.current.z };
+}
+
 /** Selected target wins over the nav beacon for the blue guidance cue. */
 function resolveTargetPoint(): PathPoint | null {
   if (selectedTargetName !== null && selectedTargetPosition.lengthSq() > 0.01) {
     return { x: selectedTargetPosition.x, z: selectedTargetPosition.z };
   }
   if (hasNavTarget()) {
-    return { x: navTargetPosRef.current.x, z: navTargetPosRef.current.z };
+    const pos = resolveNavTargetPos();
+    return pos;
   }
   return null;
 }
@@ -469,11 +500,12 @@ export function useMinimapTelemetry({
       });
 
       if (hasNavTarget()) {
+        const navPos = resolveNavTargetPos();
         next.push({
           id: 'nav-target',
           label: `Nav Target (${navTargetIdRef.current})`,
-          x: navTargetPosRef.current.x,
-          z: navTargetPosRef.current.z,
+          x: navPos.x,
+          z: navPos.z,
           kind: 'nav',
         });
       }

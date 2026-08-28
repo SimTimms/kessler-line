@@ -1,5 +1,14 @@
 /** Radius of the direction-indicator circle around the ship (world units). */
 export const SHIP_DIRECTION_RING_RADIUS = 48;
+/**
+ * Ship speed (m/s) at which the velocity ring sits at {@link SHIP_DIRECTION_RING_RADIUS}.
+ * Faster/slower motion scales the arc logarithmically around this reference.
+ */
+export const SHIP_DIRECTION_VELOCITY_ARC_REF_SPEED = 0.9;
+/** Minimum velocity-ring scale vs {@link SHIP_DIRECTION_RING_RADIUS}. */
+export const SHIP_DIRECTION_VELOCITY_ARC_SCALE_MIN = 0.25;
+/** Maximum velocity-ring scale vs {@link SHIP_DIRECTION_RING_RADIUS}. */
+export const SHIP_DIRECTION_VELOCITY_ARC_SCALE_MAX = 6;
 /** Cone tip radius for circumference arrows. */
 export const SHIP_DIRECTION_ARROW_TIP_RADIUS = 2.6;
 /** Cone height for circumference arrows. */
