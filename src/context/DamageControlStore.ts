@@ -37,8 +37,12 @@ export const SHIP_SECTIONS = [
 
 // ── Internal state ───────────────────────────────────────────────────────────
 
-let nextId = 1;
-let fractures: Fracture[] = [];
+let nextId = 3; // DEBUG: bumped to match seeded fractures — revert to 1
+// DEBUG: seed fractures for styling — revert to [] when done
+let fractures: Fracture[] = [
+  { id: 1, section: 'Forward Hull', createdAt: performance.now() },
+  { id: 2, section: 'Port Nacelle', createdAt: performance.now() },
+];
 let lastTrackedHull = hullIntegrity;
 let damageAccumulator = 0;
 let patchJobs: PatchJob[] = [];

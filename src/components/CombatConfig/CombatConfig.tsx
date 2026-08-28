@@ -106,7 +106,7 @@ export default function CombatConfig() {
       {showMinimap && (
         <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem={false} />
       )}
-      <DeathOverlay />
+      <DeathOverlay respawnEnabled />
     </AppContainer>
   );
 }

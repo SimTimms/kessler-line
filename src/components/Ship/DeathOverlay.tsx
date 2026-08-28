@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { clearAllSaves } from '../../context/SaveStore';
+import { respawnAsNewShip } from '../../context/respawnAsNewShip';
 
 export type DeathCause = 'o2' | 'hull' | 'radiation' | 'speed';
 
@@ -37,14 +38,24 @@ interface DeathOverlayProps {
   /** When set, Restart runs this instead of clearing saves and reloading the page. */
   onRestart?: () => void;
   restartLabel?: string;
+  /** Show a "Take Over Ship" respawn button alongside the restart button. */
+  respawnEnabled?: boolean;
 }
 
-export function DeathOverlay({ onRestart, restartLabel = 'Restart' }: DeathOverlayProps) {
+export function DeathOverlay({
+  onRestart,
+  restartLabel = 'Restart',
+  respawnEnabled = false,
+}: DeathOverlayProps) {
   const triggeredRef = useRef(false);
   const [cause, setCause] = useState<DeathCause | null>(null);
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
+    // When respawn is enabled, DerelictField (inside the Canvas) owns death handling.
+    // Do not capture/respawn from this DOM tree — that freezes the WebGL root.
+    if (respawnEnabled) return;
+
     const trigger = (c: DeathCause) => {
       if (triggeredRef.current) return;
       triggeredRef.current = true;
@@ -64,7 +75,7 @@ export function DeathOverlay({ onRestart, restartLabel = 'Restart' }: DeathOverl
       window.removeEventListener('O2Depleted', onO2);
       window.removeEventListener('ShipDestroyed', onHull);
     };
-  }, []);
+  }, [respawnEnabled]);
 
   const triggered = cause !== null;
   const config = cause ? CAUSE_CONFIG[cause] : null;
@@ -78,6 +89,14 @@ export function DeathOverlay({ onRestart, restartLabel = 'Restart' }: DeathOverl
     window.location.reload();
   };
 
+  const handleRespawn = () => {
+    if (!cause) return;
+    // Defer so module-level ref resets don't run inside a DOM click handler.
+    queueMicrotask(() => {
+      respawnAsNewShip(cause);
+    });
+  };
+
   return (
     <div
       style={{
@@ -85,7 +104,7 @@ export function DeathOverlay({ onRestart, restartLabel = 'Restart' }: DeathOverl
         inset: 0,
         background: 'black',
         opacity: triggered ? 1 : 0,
-        transition: 'opacity 3s ease-in',
+        transition: triggered ? 'opacity 3s ease-in' : 'opacity 0.5s ease-out',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -118,10 +137,20 @@ export function DeathOverlay({ onRestart, restartLabel = 'Restart' }: DeathOverl
           >
             {config.subtitle}
           </div>
+          {respawnEnabled && (
+            <button
+              type="button"
+              className="start-button restart-button"
+              style={{ marginTop: 28 }}
+              onClick={handleRespawn}
+            >
+              Take Over Ship
+            </button>
+          )}
           <button
             type="button"
             className="start-button restart-button"
-            style={{ marginTop: 28 }}
+            style={{ marginTop: respawnEnabled ? 8 : 28 }}
             onClick={handleRestart}
           >
             {restartLabel}

@@ -165,6 +165,11 @@ export const PLAYER_SHIPS: PlayerShip[] = [
   { name: 'Last Waypoint', mission: 'Independent freight, no fixed route' },
 ];
 
-/** Current session ship — will be randomly selected from PLAYER_SHIPS in a future update. */
-export const CURRENT_SHIP: PlayerShip =
+/** Current session ship — randomly selected from PLAYER_SHIPS. */
+export let CURRENT_SHIP: PlayerShip =
   PLAYER_SHIPS[Math.floor(Math.random() * PLAYER_SHIPS.length)];
+
+/** Pick a new random ship identity (name + mission). */
+export function randomizeCurrentShip(): void {
+  CURRENT_SHIP = PLAYER_SHIPS[Math.floor(Math.random() * PLAYER_SHIPS.length)];
+}

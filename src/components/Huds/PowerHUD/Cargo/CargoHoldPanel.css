@@ -350,20 +350,118 @@
   letter-spacing: 0.12em;
 }
 
-/* Helmet layout: sit above the bottom-left column */
+/* ── Helmet left-stack overrides ──────────────────────────────────────────── */
+
 .helmet-left-stack .cargo-hold-flyout-stack.power-hud--cargo-flyout {
-  position: absolute;
-  top: auto;
-  bottom: calc(100% + 6px);
-  left: 0;
-  width: 200px;
+  width: 100%;
   max-width: none;
-  z-index: 1;
 }
 
 .helmet-left-stack .cargo-hold-flyout-stack .cargo-hold-panel {
   width: 100%;
   max-width: none;
+}
+
+/* White-bordered wrapper matching other HUD panels */
+.helmet-left-stack .mech-cargo-bezel {
+  padding: 0;
+  background: rgba(0, 10, 20, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #444;
+  box-shadow: none;
+}
+
+/* Header — match event-log / damage-control header style */
+.helmet-left-stack .mech-cargo-head {
+  margin: 0;
+  padding: 3px 6px;
+  gap: 6px;
+  border-bottom: 1px solid #444;
+  height: 26px;
+}
+
+/* Remove blue indicator dot */
+.helmet-left-stack .mech-cargo-lamp {
+  display: none;
+}
+
+/* White title */
+.helmet-left-stack .mech-cargo-title {
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.12em;
+  color: #fff;
+}
+
+.helmet-left-stack .mech-cargo-sub {
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.12em;
+  color: #fff;
+}
+
+/* Count — plain text, no CRT screen */
+.helmet-left-stack .mech-cargo-count-screen {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  min-width: auto;
+}
+
+.helmet-left-stack .mech-cargo-count-screen::before {
+  display: none;
+}
+
+.helmet-left-stack .mech-cargo-count {
+  color: #aaa;
+  text-shadow: none;
+}
+
+/* Toggle — dashed-underline text button */
+.helmet-left-stack .mech-cargo-toggle {
+  width: auto;
+  height: auto;
+  color: #fff;
+}
+
+.helmet-left-stack .mech-cargo-toggle-face {
+  width: auto;
+  height: auto;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed #fff;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: var(--hud-fs-2xs);
+  letter-spacing: 0.14em;
+  padding: 1px 6px;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.helmet-left-stack .mech-cargo-toggle--open {
+  color: #fff;
+}
+
+.helmet-left-stack .mech-cargo-toggle--open .mech-cargo-toggle-face {
+  background: none;
+  border: none;
+  border-bottom: 1px dashed #fff;
+  box-shadow: none;
+  color: #fff;
+}
+
+.helmet-left-stack .mech-cargo-toggle:hover .mech-cargo-toggle-face {
+  background: #fff;
+  color: #000;
+  border-color: #000;
+}
+
+/* Grid area — remove inner CRT border radius to sit flush */
+.helmet-left-stack .mech-cargo-crt {
+  border-radius: 0;
+  border: none;
+  border-top: none;
 }
 
 /* Classic layout: keep panel in the left power-hud column */

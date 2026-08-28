@@ -19,12 +19,11 @@
   pointer-events: auto;
 }
 
-/* Ship power depleted — kill interactive decks; keep RES vitals + dock transfer usable. */
+/* Ship power depleted — kill interactive decks; keep RES vitals + dock transfer + cargo usable. */
 .helmet-hud--powerless .helmet-nav,
 .helmet-hud--powerless .helmet-scanner-deck,
 .helmet-hud--powerless .mech-comms,
-.helmet-hud--powerless .alerts-bar,
-.helmet-hud--powerless .cargo-hold-flyout-stack {
+.helmet-hud--powerless .alerts-bar {
   opacity: 0.28;
   pointer-events: none;
   filter: grayscale(0.9) brightness(0.7);
@@ -471,7 +470,7 @@
 .helmet-left-stack {
   position: fixed;
   left: 12px;
-  top: 12px;
+  top: 28px;
   bottom: 14px;
   z-index: 96;
   width: min(260px, 48vw);
@@ -479,7 +478,8 @@
   flex-direction: column;
   gap: 4px;
   pointer-events: none;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .helmet-left-stack > * {

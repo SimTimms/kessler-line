@@ -9,6 +9,8 @@ import { getInventoryItemUi } from '../../../../config/inventoryCatalog';
 import type { InventoryOwnerRef } from '../../../../context/InventoryStore';
 import { PLAYER_VESSEL_ID } from '../../../../context/PlayerShipState';
 import { CARGO_HOLD_SLOT_COUNT } from './cargoHoldConstants';
+import { CO2_FILTER_ITEM_ID, HULL_REPAIR_PATCH_ITEM_ID } from '../../../../config/damageConfig';
+import { removeInstalledFilter } from '../../../../context/CO2FilterStore';
 import {
   expandCargoToCells,
   isCargoDragEvent,
@@ -18,6 +20,9 @@ import {
   type CargoDragPayload,
 } from './cargoHoldHelpers';
 import './CargoHoldPanel.css';
+
+/** Sentinel vesselId used when dragging a filter out of the CO2 slot. */
+export const CO2_FILTER_SLOT_OWNER = '__co2-filter-slot__';
 
 export { CARGO_HOLD_SLOT_COUNT };
 
@@ -67,13 +72,18 @@ export default function CargoHoldPanel({
     dockTransferUi.partnerId != null && dockTransferUi.towable && !dockTransferUi.panelOpen;
 
   function onDragStart(e: DragEvent, itemId: string, quantity: number, salvagedBy?: string) {
-    if (!transferEnabled) return;
+    if (!transferEnabled && itemId !== CO2_FILTER_ITEM_ID && itemId !== HULL_REPAIR_PATCH_ITEM_ID) return;
     const payload: CargoDragPayload = { itemId, quantity, from: PLAYER_OWNER, salvagedBy };
     writeCargoDragPayload(e.dataTransfer, payload);
   }
 
   function onDragOver(e: DragEvent) {
-    if (!transferEnabled || !isCargoDragEvent(e.dataTransfer)) return;
+    if (!isCargoDragEvent(e.dataTransfer)) return;
+    // Accept normal transfers when docked, and always accept CO2 filter slot returns
+    if (!transferEnabled) {
+      // Peek: we can't read payload on dragOver in all browsers, so we allow
+      // the drop and validate in onDrop instead.
+    }
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOver(true);
@@ -85,10 +95,21 @@ export default function CargoHoldPanel({
 
   function onDrop(e: DragEvent) {
     setDragOver(false);
-    if (!transferEnabled) return;
     e.preventDefault();
     const payload = readCargoDragPayload(e.dataTransfer);
     if (!payload) return;
+
+    // Accept drops from the CO2 filter slot sentinel
+    const fromCO2Slot =
+      payload.from.kind === 'vessel' &&
+      payload.from.vesselId === CO2_FILTER_SLOT_OWNER;
+
+    if (fromCO2Slot && payload.itemId === CO2_FILTER_ITEM_ID) {
+      removeInstalledFilter();
+      return;
+    }
+
+    if (!transferEnabled) return;
     transferCargoStack(
       payload.from,
       PLAYER_OWNER,
@@ -168,7 +189,7 @@ export default function CargoHoldPanel({
                     role="listitem"
                     className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
                     style={{ '--cargo-color': color } as CSSProperties}
-                    draggable={transferEnabled}
+                    draggable={transferEnabled || itemId === CO2_FILTER_ITEM_ID || itemId === HULL_REPAIR_PATCH_ITEM_ID}
                     onDragStart={(e) => onDragStart(e, itemId, 1, salvagedBy)}
                     onMouseEnter={() =>
                       setHovered({

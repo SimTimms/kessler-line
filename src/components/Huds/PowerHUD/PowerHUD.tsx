@@ -260,13 +260,16 @@ export function HelmetCargoHUD() {
 
   useEffect(() => {
     let rafId: number;
-    let prevCargoLen = -1;
+    let prevCargoFp = -1;
     const update = () => {
       rafId = requestAnimationFrame(update);
-      const cl = cargo.length;
-      if (cl !== prevCargoLen) {
-        prevCargoLen = cl;
-        setDisplayCargo(cl > 0 ? [...cargo] : []);
+      // Fingerprint covers both array length and total item quantities so we
+      // detect individual stack changes (e.g. using a hull repair patch).
+      let fp = cargo.length;
+      for (const c of cargo) fp = fp * 31 + c.quantity;
+      if (fp !== prevCargoFp) {
+        prevCargoFp = fp;
+        setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
       }
     };
     rafId = requestAnimationFrame(update);
@@ -336,7 +339,7 @@ export default function PowerHUD({
       prevAmmoCap = -1,
       prevCrew = -1;
     let prevVelocity = -1,
-      prevCargoLen = -1;
+      prevCargoFp = -1;
 
     const update = () => {
       rafId = requestAnimationFrame(update);
@@ -349,7 +352,10 @@ export default function PowerHUD({
       const ac = ammoCapacity;
       const v = getShipSpeedMps();
       const cr = Math.floor(shipCrew);
-      const cl = cargo.length;
+      // Fingerprint covers both array length and total item quantities so we
+      // detect individual stack changes (e.g. using a hull repair patch).
+      let cargoFp = cargo.length;
+      for (const c of cargo) cargoFp = cargoFp * 31 + c.quantity;
 
       if (p !== prevPower) {
         prevPower = p;
@@ -384,9 +390,9 @@ export default function PowerHUD({
         prevVelocity = vRounded;
         setDisplayVelocity(v);
       }
-      if (cl !== prevCargoLen) {
-        prevCargoLen = cl;
-        setDisplayCargo(cl > 0 ? [...cargo] : []);
+      if (cargoFp !== prevCargoFp) {
+        prevCargoFp = cargoFp;
+        setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
       }
     };
     rafId = requestAnimationFrame(update);

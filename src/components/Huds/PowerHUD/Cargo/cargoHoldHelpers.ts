@@ -1,5 +1,7 @@
 import {
+  AirVent,
   Droplets,
+  Hammer,
   Wind,
   Zap,
   Package,
@@ -31,6 +33,8 @@ export const ITEM_ICONS: Record<string, LucideIcon> = {
   'unmarked-canister': Package,
   organics: Leaf,
   'spare-parts': Wrench,
+  'co2-filter': AirVent,
+  'hull-repair-patch': Hammer,
 };
 
 export type HoldCell =

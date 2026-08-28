@@ -1,7 +1,8 @@
-import { useRef, useCallback, useEffect, useLayoutEffect } from 'react';
+import { useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useTutorialThrustersHighlighted } from '../TutorialMovement/useTutorialThrustersHighlighted';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { cloneGltfScene } from '../../utils/cloneGltfScene';
 import ThrusterParticles from './ThrusterParticles';
 import ThrusterHitboxDebug from './ThrusterHitboxDebug';
 import DockingReleaseParticles from '../WorldObjects/DockingReleaseParticles';
@@ -17,6 +18,8 @@ import LowO2BreathingEffect from './LowO2BreathingEffect';
 import ShipBreakApart from './ShipBreakApart';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { useShipPhysics, type ShipPhysicsOptions } from '../../hooks/shipPhysics';
+import { shipPosRef } from '../../context/ShipPos';
+import { EVENT_SHIP_RESPAWNED } from '../../context/respawnAsNewShip';
 import TargetIndicatorLine from '../TargetIndicatorLine';
 import VelocityIndicator from '../VelocityIndicator';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
@@ -103,6 +106,15 @@ export default function Spaceship({
   modulesInstalled,
 }: SpaceshipProps) {
   const gltf = useGLTF(url) as unknown as { scene: THREE.Group };
+  const clonedScene = useMemo(() => {
+    const clone = cloneGltfScene(gltf.scene);
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        (child as THREE.Mesh).castShadow = true;
+      }
+    });
+    return clone;
+  }, [gltf.scene]);
   const groupRef = useRef<THREE.Group>(null!);
   const leanRef = useRef<THREE.Group>(null!);
   const shadowLightTarget = useRef(new THREE.Object3D());
@@ -111,14 +123,6 @@ export default function Spaceship({
     if (!modulesInstalled) return;
     setVesselModules(vesselId, modulesInstalled);
   }, [vesselId, modulesInstalled]);
-
-  useEffect(() => {
-    gltf.scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        (child as THREE.Mesh).castShadow = true;
-      }
-    });
-  }, [gltf.scene]);
   const dockingPortRef = useRef<THREE.Group>(null!);
 
   const setGroupRef = useCallback(
@@ -173,6 +177,19 @@ export default function Spaceship({
     groupRef.current.position.set(...initialPosition);
   }, [initialPosition]);
 
+  // Snap ship group to new position after respawn
+  useEffect(() => {
+    if (vesselId !== PLAYER_VESSEL_ID) return;
+    const onRespawn = () => {
+      if (!groupRef.current) return;
+      groupRef.current.position.copy(shipPosRef.current);
+      groupRef.current.quaternion.set(0, 0, 0, 1);
+      groupRef.current.updateMatrixWorld(true);
+    };
+    window.addEventListener(EVENT_SHIP_RESPAWNED, onRespawn);
+    return () => window.removeEventListener(EVENT_SHIP_RESPAWNED, onRespawn);
+  }, [vesselId]);
+
   const thrustersHighlighted = useTutorialThrustersHighlighted();
 
   return (
@@ -183,7 +200,7 @@ export default function Spaceship({
         <group ref={leanRef}>
           <PlanetSurfaceImpactDust />
 
-          <primitive object={gltf.scene} scale={scale} rotation={modelRotation} castShadow={true} />
+          <primitive object={clonedScene} scale={scale} rotation={modelRotation} castShadow={true} />
           <group position={[0, -2, 0]}>
             <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
           </group>

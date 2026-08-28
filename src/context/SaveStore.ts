@@ -115,6 +115,10 @@ export interface SaveData {
   // Saved contacts persistence (optional — absent in older saves)
   savedContactIds?: string[];
   historicalContactIds?: string[];
+  // CO2 filter state (optional — absent in older saves)
+  co2FilterLevel?: number | null;
+  co2SpareFilters?: number[];
+  co2NoFilterElapsed?: number;
 }
 
 // ── V1 migration ──────────────────────────────────────────────────────────────

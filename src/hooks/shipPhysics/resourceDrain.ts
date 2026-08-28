@@ -36,6 +36,14 @@ let powerLowFired = false;
 let fuelLowFired = false;
 let o2LowFired = false;
 
+/** Reset one-shot flags so resource events can fire again after respawn. */
+export function resetResourceDrainFlags(): void {
+  o2DepletedFired = false;
+  powerLowFired = false;
+  fuelLowFired = false;
+  o2LowFired = false;
+}
+
 const RESOURCE_LOW_THRESHOLD = 20;
 
 const RCS_FUEL_RATE_FACTOR = 0.01;

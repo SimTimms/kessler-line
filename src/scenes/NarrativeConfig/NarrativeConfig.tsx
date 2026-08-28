@@ -98,7 +98,7 @@ export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
         disabledHudElementsState={[...NARRATIVE_DISABLED_HUD_ELEMENTS]}
         scannerInitialPowers={NARRATIVE_SCANNER_INITIAL_POWERS}
       />
-      <DeathOverlay />
+      <DeathOverlay respawnEnabled />
       <AutosaveIndicator />
     </AppContainer>
   );

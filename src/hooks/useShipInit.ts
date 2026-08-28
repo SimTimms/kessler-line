@@ -11,6 +11,7 @@ import { loadSlot, AUTOSAVE_SLOT } from '../context/SaveStore';
 import { apply, savedQuaternionToEuler } from '../context/SaveManager';
 import { shipPosRef } from '../context/ShipPos';
 import { DEV_JUPITER_TEST, DEV_MARS_TEST } from '../config/debugConfig';
+import { resetCO2Filter } from '../context/CO2FilterStore';
 
 export interface ShipInitResult {
   shipInitPos: [number, number, number];
@@ -49,6 +50,7 @@ export function useShipInit(): ShipInitResult {
       };
     } else {
       shipPosRef.current.set(...defaultStart);
+      resetCO2Filter();
     }
     didInitRef.current = true;
   }

@@ -32,6 +32,7 @@ import OrbitalSatellite from '../../config/events/satellite-mission/OrbitalSatel
 import CommsRelayMissionController from '../../config/events/comms-relay-mission/CommsRelayMissionController';
 import CommsBufferSatellite from '../../config/events/comms-relay-mission/CommsBufferSatellite';
 import CarrierGRB from '../../components/Ships/CarrierGRB';
+import DerelictField from '../../components/Ship/DerelictField';
 
 import {
   getNarrativeMarsNormalTravelRadius,
@@ -242,6 +243,9 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           ]}
           scale={5}
         />
+      </Suspense>
+      <Suspense fallback={null}>
+        <DerelictField />
       </Suspense>
     </>
   );

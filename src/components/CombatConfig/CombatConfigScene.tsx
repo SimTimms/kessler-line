@@ -23,6 +23,7 @@ import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
 import NpcFighter from '../NPCs/NpcFighter';
 import { COMBAT_CONFIG, COMBAT_ID_PREFIX, getCombatShipSpawn } from './combatSceneConfig';
 import { CANVAS_FOV } from '../../config/visualConfig';
+import DerelictField from '../Ship/DerelictField';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
@@ -125,6 +126,9 @@ export default function CombatConfigScene() {
           collisionRadius={targetDroneFleet.collisionRadius}
           physicalCollision
         />
+      </Suspense>
+      <Suspense fallback={null}>
+        <DerelictField modelUrl={playerShipUrl} />
       </Suspense>
 
       <Suspense fallback={null}>

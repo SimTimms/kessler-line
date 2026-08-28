@@ -94,56 +94,15 @@
   }
 }
 
-/* ── Breach tag ──────────────────────────────────────────────────────────── */
-
-.damage-control-tag {
-  flex-shrink: 0;
-  font-size: var(--hud-fs-2xs);
-  letter-spacing: 0.16em;
-  padding: 1px 4px;
-  border-radius: 1px;
-  line-height: 1.3;
-  color: #ff4d5e;
-  background: rgba(255, 77, 94, 0.12);
-}
-
 /* ── Section text ────────────────────────────────────────────────────────── */
 
 .damage-control-section {
+  font-size: var(--hud-fs-xs);
+  color: #aaa;
+  letter-spacing: 0.10em;
+  line-height: 1.35;
   flex: 1;
   min-width: 0;
-  font-size: var(--hud-fs-md);
-  letter-spacing: 0.08em;
-  line-height: 1.35;
-  color: #fff;
-}
-
-/* ── Patch button ────────────────────────────────────────────────────────── */
-
-.damage-control-patch {
-  flex-shrink: 0;
-  background: #000;
-  border: none;
-  border-bottom: 1px dashed #fff;
-  color: #fff;
-  font-family: inherit;
-  font-size: var(--hud-fs-2xs);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 1px 6px;
-  cursor: pointer;
-  line-height: 1.3;
-  transition: color 0.15s, background 0.15s;
-}
-
-.damage-control-patch:hover:not(:disabled) {
-  color: #000;
-  background: #fff;
-}
-
-.damage-control-patch:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
 }
 
 /* ── Empty state ─────────────────────────────────────────────────────────── */
@@ -156,76 +115,222 @@
   text-align: center;
 }
 
-/* ── Patch progress bar ─────────────────────────────────────────────────── */
+/* ── Fracture row: right wrapper ─────────────────────────────────────────── */
 
-.damage-control-progress-wrap {
+.dc-fracture-right {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
 
-.damage-control-progress {
-  display: flex;
-  gap: 1px;
-  align-items: center;
-}
+/* ── Fracture row: percentage chip ───────────────────────────────────────── */
 
-.damage-control-progress__seg {
-  display: block;
-  width: 4px;
-  height: 10px;
-  background: rgba(255, 176, 32, 0.15);
-  border-radius: 1px;
-  transition: background 0.1s;
-}
-
-.damage-control-progress__seg--lit {
-  background: rgba(255, 176, 32, 0.85);
-  box-shadow: 0 0 3px rgba(255, 176, 32, 0.4);
-}
-
-.damage-control-eta {
-  font-size: var(--hud-fs-2xs);
-  letter-spacing: 0.10em;
-  color: #aaa;
+.dc-patch-level {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  letter-spacing: 0.04em;
   line-height: 1;
-  min-width: 2ch;
-  text-align: right;
-}
-
-/* ── Queued label ────────────────────────────────────────────────────────── */
-
-.damage-control-queued {
-  flex-shrink: 0;
-  font-size: var(--hud-fs-2xs);
-  letter-spacing: 0.14em;
-  color: #aaa;
-  padding: 1px 6px;
-  border: none;
-  border-bottom: 1px dashed #aaa;
-  line-height: 1.3;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.damage-control-queued:hover {
-  color: #ff4d5e;
-  border-color: rgba(255, 77, 94, 0.35);
-}
-
-/* ── No-patch flash ──────────────────────────────────────────────────────── */
-
-.damage-control-no-patch {
-  padding: 3px 6px;
-  font-size: var(--hud-fs-xs);
-  letter-spacing: 0.12em;
-  color: #ff4d5e;
+  color: #fff;
+  background: #777;
+  padding: 2px 4px;
+  min-width: 20px;
   text-align: center;
-  animation: dc-flash 0.6s ease-out;
 }
 
-@keyframes dc-flash {
-  0%, 100% { opacity: 0; }
-  20%, 80% { opacity: 1; }
+.dc-patch-level--empty {
+  background: #555;
+  color: #999;
 }
+
+/* ── Fracture row: patch slot cell ───────────────────────────────────────── */
+
+.dc-patch-slot {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #1e2228;
+  background: #15191c;
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
+}
+
+.dc-patch-slot--filled {
+  background-image: url(/crate.jpg);
+  background-size: cover;
+  color: #ff6a4d;
+  border-color: color-mix(in srgb, #ff6a4d 35%, #1e2228);
+  cursor: grab;
+}
+
+.dc-patch-slot--filled:active {
+  cursor: grabbing;
+}
+
+.dc-patch-slot--filled:hover {
+  filter: brightness(1.15);
+  box-shadow:
+    0 0 8px color-mix(in srgb, #ff6a4d 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #ff6a4d 40%, transparent);
+}
+
+.dc-patch-slot--drop-target {
+  border-color: rgba(0, 255, 200, 0.7);
+  box-shadow:
+    0 0 6px rgba(0, 255, 200, 0.3),
+    inset 0 0 6px rgba(0, 255, 200, 0.1);
+  background: rgba(0, 255, 200, 0.08);
+}
+
+/* ── CO2 Filter row ─────────────────────────────────────────────────────── */
+
+.co2-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.co2-filter-label {
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.10em;
+  line-height: 1.35;
+  color: #aaa;
+  flex-shrink: 0;
+}
+
+.co2-filter-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.co2-filter-level {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #fff;
+  background: #777;
+  padding: 2px 4px;
+  min-width: 20px;
+  text-align: center;
+  transition: background 0.3s;
+}
+
+.co2-filter-level--warn {
+  background: #8a6a10;
+}
+
+.co2-filter-level--crit {
+  background: #8a2030;
+}
+
+.co2-filter-level--empty {
+  background: #555;
+  color: #999;
+}
+
+.co2-filter-warn {
+  flex-shrink: 0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  animation: co2-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes co2-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── CO2 Filter row states ─────────────────────────────────────────────── */
+
+.co2-filter-row--empty {
+  background: rgba(255, 50, 50, 0.1);
+}
+
+/* ── CO2 Filter square slot cell ──────────────────────────────────────── */
+
+.co2-filter-slot {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #1e2228;
+  background: #15191c;
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
+}
+
+.co2-filter-slot--filled {
+  background-image: url(/crate.jpg);
+  background-size: cover;
+  color: #00cfff;
+  border-color: color-mix(in srgb, #00cfff 35%, #1e2228);
+  cursor: grab;
+}
+
+.co2-filter-slot--filled:active {
+  cursor: grabbing;
+}
+
+.co2-filter-slot--filled:hover {
+  filter: brightness(1.15);
+  box-shadow:
+    0 0 8px color-mix(in srgb, #00cfff 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #00cfff 40%, transparent);
+}
+
+.co2-filter-slot--drop-target {
+  border-color: rgba(0, 255, 200, 0.7);
+  box-shadow:
+    0 0 6px rgba(0, 255, 200, 0.3),
+    inset 0 0 6px rgba(0, 255, 200, 0.1);
+  background: rgba(0, 255, 200, 0.08);
+}
+
+.co2-filter-slot__plus {
+  font-size: 12px;
+  line-height: 1;
+  color: #444;
+  user-select: none;
+}
+
+/* ── CO2 Filter status text ───────────────────────────────────────────── */
+
+.co2-filter-empty-label {
+  font-size: var(--hud-fs-md);
+  letter-spacing: 0.10em;
+  line-height: 1.35;
+  color: #ff4d5e;
+  flex-shrink: 0;
+}
+
+.co2-filter-countdown {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--hud-fs-md);
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  color: #ff4d5e;
+  flex-shrink: 0;
+}
+

@@ -205,7 +205,9 @@ export default function TutorialFollowCamera({
   useFrame((_, delta) => {
     const camera = cameraOverride?.current ?? defaultCamera;
     if (!camera) return;
-    if (shipDestroyed.current) return; // lock camera at last pose on destruction
+    if (shipDestroyed.current) {
+      return; // lock camera at last pose on destruction
+    }
 
     if (!didInit.current) {
       _offset.set(...followOffset);

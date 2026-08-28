@@ -21,6 +21,8 @@ import { syncShipWorldRefs } from './helpers/syncShipWorldRefs';
 import { runPrimaryPhysicsFrame } from './helpers/runPrimaryPhysicsFrame';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipVelocity } from '../../context/ShipState';
+import { shipPosRef } from '../../context/ShipPos';
+import { EVENT_SHIP_RESPAWNED } from '../../context/respawnAsNewShip';
 import { playDockAlignSound } from '../../sound/SoundManager';
 import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';
 import { isLandingPadElevatorReady } from '../../context/LandingPadElevator';
@@ -352,6 +354,37 @@ export function useShipPhysics({
     scene,
     vesselState,
   ]);
+
+  // Reset internal refs when the player respawns as a new ship
+  useEffect(() => {
+    if (vesselId !== PLAYER_VESSEL_ID) return;
+    const onRespawn = () => {
+      // Detach from dock BEFORE clearing dockedTo (only when actually docked)
+      if (dockedTo.current && groupRef.current) {
+        detachShipFromDock(groupRef.current, scene);
+      }
+      destroyedFired.current = false;
+      destroyedSpinSet.current = false;
+      angularVelocity.current = 0;
+      angularVelocity3.current.set(0, 0, 0);
+      velocity.current.set(0, 0, 0);
+      dockedTo.current = null;
+      hoverDockingTransition.current = null;
+      hoverUndockingTransition.current = null;
+      dockReentryBlock.current = null;
+      // Snap group to the new respawn position before physics re-inits
+      if (groupRef.current) {
+        groupRef.current.position.copy(shipPosRef.current);
+        groupRef.current.quaternion.set(0, 0, 0, 1);
+        groupRef.current.updateMatrixWorld(true);
+      }
+      physicsPosition.current.copy(shipPosRef.current);
+      renderPosition.current.copy(shipPosRef.current);
+      didInitPositions.current = false;
+    };
+    window.addEventListener(EVENT_SHIP_RESPAWNED, onRespawn);
+    return () => window.removeEventListener(EVENT_SHIP_RESPAWNED, onRespawn);
+  }, [vesselId, groupRef, scene]);
 
   useFrame((_, delta) => {
     if (!physicsEnabled) return;

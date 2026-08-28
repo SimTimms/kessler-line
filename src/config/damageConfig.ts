@@ -61,3 +61,13 @@ export const FRACTURE_MAX = 7;
 export const HULL_REPAIR_PATCH_ITEM_ID = 'hull-repair-patch';
 /** Real-time seconds for a crew member to seal one fracture. */
 export const PATCH_DURATION_SECONDS = 30;
+
+// ── CO2 Filter ────────────────────────────────────────────────────────────────
+/** CO2 filter degradation rate (units/sec). ~30 min from 100→0. */
+export const CO2_FILTER_DRAIN_RATE = 0.055;
+/** Filter level (%) at which the warning icon appears. */
+export const CO2_FILTER_WARN_THRESHOLD = 10;
+/** Inventory item id for CO2 filter spares. */
+export const CO2_FILTER_ITEM_ID = 'co2-filter';
+/** Seconds without a working filter before asphyxiation death (10 min). */
+export const CO2_NO_FILTER_DEATH_SECONDS = 600;

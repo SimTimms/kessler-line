@@ -65,6 +65,7 @@ import {
   getHistoricalContactIds,
   setHistoricalContactIds,
 } from './SavedContactsState';
+import { captureCO2FilterState, applyCO2FilterState } from './CO2FilterStore';
 
 function parseOwnerKey(ownerKey: string): InventoryOwnerRef | null {
   // "dock:X:contact:Y" → { kind: 'contact', dockId: X, contactId: Y }
@@ -197,6 +198,9 @@ export function capture(): SaveData {
     ),
     savedContactIds: getSavedContactIds(),
     historicalContactIds: getHistoricalContactIds(),
+    co2FilterLevel: captureCO2FilterState().level,
+    co2SpareFilters: captureCO2FilterState().spares,
+    co2NoFilterElapsed: captureCO2FilterState().noFilterElapsed,
   };
 }
 
@@ -323,6 +327,15 @@ export function apply(data: SaveData): void {
   }
   if (data.historicalContactIds) {
     setHistoricalContactIds(data.historicalContactIds);
+  }
+
+  // CO2 filter
+  if (data.co2FilterLevel !== undefined) {
+    applyCO2FilterState(
+      data.co2FilterLevel,
+      data.co2SpareFilters ?? [],
+      data.co2NoFilterElapsed ?? 0,
+    );
   }
 }
 
