@@ -113,6 +113,10 @@
   letter-spacing: 0.08em;
   line-height: 1.35;
   text-transform: capitalize;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .event-tag {

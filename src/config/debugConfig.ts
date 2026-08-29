@@ -19,6 +19,10 @@ export const DEBUG_ENGINE_DISABLE_CHANGES = false;
 export const DEV_JUPITER_TEST = false;
 /** Spawn near Mars instead of Neptune (ignores autosave). */
 export const DEV_MARS_TEST = false;
+/** Spawn next to the Comms Buffer Satellite orbiting Mars (ignores autosave). */
+export const DEV_COMMS_BUFFER_SATELLITE_TEST = false;
+/** Open the Comms Buffer Satellite dock panel after first undock (debug mission dialogue). */
+export const DEV_COMMS_BUFFER_PANEL_ON_UNDOCK = true;
 
 // ── Large-world rendering ─────────────────────────────────────────────────
 /** Sandbox uses {@link FloatingOrigin} (ship-relative GPU coords). Main Scene.tsx next. */

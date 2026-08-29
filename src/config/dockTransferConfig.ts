@@ -1,5 +1,5 @@
 /** Per-click transfer when using arrow buttons. */
-export const DOCK_TRANSFER_STEP = 5;
+export const DOCK_TRANSFER_STEP = 1;
 
 /** Continuous transfer rate while holding an arrow (units per second). */
 export const DOCK_TRANSFER_HOLD_RATE = 12;

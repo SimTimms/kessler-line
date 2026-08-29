@@ -118,9 +118,9 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   const marsZoneRadius = useMemo(() => getNarrativeMarsNormalTravelRadius(), []);
 
   useLayoutEffect(() => {
-    if (savedSpawn) return;
+    if (savedSpawn || shipSpawn.skipDock) return;
     registerDock({ id: NARRATIVE_DONINGTON_STATION_ID, ...DONINGTON_STATION_DOCK_CONFIG });
-  }, [savedSpawn]);
+  }, [savedSpawn, shipSpawn.skipDock]);
 
   useLayoutEffect(() => {
     // Skip spawn override when a save was loaded — apply() already set shipPosRef
@@ -138,7 +138,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
     <>
       <ambientLight intensity={lighting.ambientIntensity} />
       <directionalLight
-        position={[0, 100, -1000]}
+        position={[0, 300, -1000]}
         intensity={3}
         color="#ff8819"
         castShadow
@@ -152,7 +152,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           shipGroupRef={spaceshipGroupRef}
           initialPosition={effectiveSpawn.position}
           initialRotation={effectiveSpawn.rotation}
-          initialDockedTo={savedSpawn ? undefined : NARRATIVE_DONINGTON_DOCK_ID}
+          initialDockedTo={savedSpawn || shipSpawn.skipDock ? undefined : NARRATIVE_DONINGTON_DOCK_ID}
           scale={1}
           initialVelocity={savedSpawn?.velocity ?? [0, 0, 0]}
           modulesInstalled={GARBAGE_SCOW_MODULES}

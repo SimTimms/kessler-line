@@ -28,9 +28,12 @@ import {
   COMMS_RELAY_MISSION_ID,
   COMMS_RELAY_HAIL_CONTACT_ID,
   COMMS_RELAY_DIALOGUE_TREE_ID,
+  COMMS_BUFFER_SATELLITE_ID,
   // COMMS_RELAY_HAIL_DELAY_MS,        // TODO: re-enable with prerequisite block
   // COMMS_RELAY_PREREQUISITE_MISSIONS, // TODO: re-enable with prerequisite block
 } from './comms-relay-config';
+import { DEV_COMMS_BUFFER_PANEL_ON_UNDOCK } from '../../debugConfig';
+import { syncDockTransferOnDock } from '../../../context/DockTransferUi';
 
 export default function CommsRelayMissionController() {
   /** True once the hail has been fired (fires at most once per session). */
@@ -43,6 +46,22 @@ export default function CommsRelayMissionController() {
   const logsDeliveredRef = useRef(false);
   /** Timer handle for the 20-second delay. */
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── DEBUG: open comms buffer satellite panel after first undock ────────
+  // TODO: remove this block before shipping
+  useEffect(() => {
+    if (!DEV_COMMS_BUFFER_PANEL_ON_UNDOCK) return;
+    const onUndocked = () => {
+      // Small delay so the undock clears first, then open the satellite panel
+      setTimeout(() => {
+        console.info('[comms-relay] DEBUG: opening Comms Buffer Satellite panel');
+        syncDockTransferOnDock(COMMS_BUFFER_SATELLITE_ID);
+      }, 500);
+      window.removeEventListener('ShipUndocked', onUndocked);
+    };
+    window.addEventListener('ShipUndocked', onUndocked);
+    return () => window.removeEventListener('ShipUndocked', onUndocked);
+  }, []);
 
   // ── DEBUG: auto-fire hail 10s after mount (bypass prerequisites) ─────
   // TODO: remove this block before shipping

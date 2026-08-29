@@ -153,6 +153,8 @@
   font-size: var(--hud-fs-3xs, 0.6rem);
   padding: 0 4px;
   font-variant-numeric: tabular-nums;
+  text-align: center;
+  padding: 2px;
 }
 
 .resource-bar-val--warn {

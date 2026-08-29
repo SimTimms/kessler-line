@@ -565,6 +565,11 @@
   color: #fff;
 }
 
+.hud-subtitle-grey {
+  font-size: var(--hud-fs-xs);
+  color: #aaa;
+}
+
 .helmet-nav {
   position: relative;
   max-width: none;

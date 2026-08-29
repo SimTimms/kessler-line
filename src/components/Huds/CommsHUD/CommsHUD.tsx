@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioLines, RadioTower } from 'lucide-react';
 import ContactsHUD from '../../ContactsHUD/ContactsHUD';
 import JournalPanel from './JournalPanel';
+import ContactsPanel from './ContactsPanel';
 import {
   clampScannerPowerLevel,
   formatScannerPowerDrain,
@@ -33,7 +34,7 @@ import type { NavScanContact } from '../NavHUD/navScanPickerContacts';
 import '../HUD/ScannerHUD.css';
 import './CommsHUD.css';
 
-type CommsTabId = 'radio' | 'journal';
+type CommsTabId = 'radio' | 'journal' | 'contacts';
 
 const PAD_SCAN_WAVE_BARS = 12;
 const RADIO_ID = 'radio' as const;
@@ -174,7 +175,7 @@ export default function CommsHUD({
 
   return (
     <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly}>
-      {({ open, hasIncoming }) => (
+      {({ open, hasIncoming, savedItems, inRangeItems, incomingItems, historyItems, dockInteriorItems, dockInteriorLabel, onSave, onSelect }) => (
         <div className="event-log" style={{ minWidth: '260px' }} aria-label="Communications">
           <div className="event-log-header">
             <button
@@ -193,6 +194,13 @@ export default function CommsHUD({
               {activeMissionRef.current.length > 0 && (
                 <span className="comms-tab-badge">{activeMissionRef.current.length}</span>
               )}
+            </button>
+            <button
+              type="button"
+              className={`event-log-tab${activeTab === 'contacts' ? ' event-log-tab--active' : ''}`}
+              onClick={() => setActiveTab('contacts')}
+            >
+              CONTACTS
             </button>
           </div>
           {activeTab === 'radio' && (
@@ -300,6 +308,18 @@ export default function CommsHUD({
             </>
           )}
           {activeTab === 'journal' && <JournalPanel />}
+          {activeTab === 'contacts' && (
+            <ContactsPanel
+              savedItems={savedItems}
+              inRangeItems={inRangeItems}
+              incomingItems={incomingItems}
+              historyItems={historyItems}
+              dockInteriorItems={dockInteriorItems}
+              dockInteriorLabel={dockInteriorLabel}
+              onSave={onSave}
+              onSelect={onSelect}
+            />
+          )}
         </div>
       )}
     </ContactsHUD>

@@ -8,24 +8,73 @@ import {
   setHullIntegrity,
   setFuel,
   setO2,
+  setPower,
   setShipCrew,
   resetAmmo,
+  fuel,
+  o2,
+  power,
 } from './ShipState';
 import { addDerelict, type DerelictRecord } from './DerelictStore';
-import { addCargoItem, clearCargo } from './Inventory';
+import { addCargoItem, clearCargo, cargo } from './Inventory';
 import { resetCO2Filter } from './CO2FilterStore';
 import { HULL_REPAIR_PATCH_ITEM_ID } from '../config/damageConfig';
 import { clearFractures } from './DamageControlStore';
-import { setSavedContactIds, setHistoricalContactIds } from './SavedContactsState';
+import {
+  setSavedContactIds,
+  setHistoricalContactIds,
+  getSavedContactIds,
+  getHistoricalContactIds,
+} from './SavedContactsState';
 import { disableAutopilot } from './AutopilotState';
 import { clearNavTarget } from './NavTarget';
 import { clearSelectedTarget } from './TargetSelection';
 import { resetCameraMode } from './CameraMode';
 import { minimapShipPosition } from './MinimapShipPosition';
-import { randomizeCurrentShip } from '../config/shipConfig';
+import { CURRENT_SHIP, randomizeCurrentShip } from '../config/shipConfig';
 import { resetResourceDrainFlags } from '../hooks/shipPhysics/resourceDrain';
+import { messageStore, clearMessages } from './MessageStore';
+import { getAllThreads } from './ChatStore';
+import type { DossierData } from '../components/CommsChat/ContactDossier';
 
 export const EVENT_SHIP_RESPAWNED = 'ShipRespawned';
+
+const PILOT_FIRST_NAMES = [
+  'Yuri', 'Ines', 'Kwame', 'Lin', 'Hector', 'Sable', 'Jaya', 'Orin',
+  'Reva', 'Tomas', 'Nessa', 'Callum', 'Ada', 'Mikhail', 'Zuri', 'Dex',
+  'Noor', 'Jules', 'Petra', 'Harlan',
+];
+const PILOT_SURNAMES = [
+  'Voss', 'Okafor', 'Shen', 'Duvall', 'Nkosi', 'Brandt', 'Ochoa', 'Kwan',
+  'Morrow', 'Falk', 'Keita', 'Holst', 'Renn', 'Vasquez', 'Ito', 'Kask',
+  'Okoye', 'Strand', 'Mallick', 'Gentry',
+];
+const PILOT_BIRTHPLACES = [
+  'Ceres, Belt', 'Ganymede Station', 'Titan Colony', 'Europa Hab', 'Phobos Yard',
+  'Vesta Settlement', 'Mars, Hellas Basin', 'Luna, Tycho', 'Enceladus Outpost',
+  'Callisto, Valhalla', 'Pallas Station', 'Triton Relay', 'Io Mining Camp',
+  'Earth, Lagos', 'Earth, Reykjavik', 'Earth, Jakarta',
+];
+const PILOT_COMPANIES = [
+  undefined, undefined, undefined, // independent weight
+  'Helix Freight', 'Aether Haulage', 'Kuiper Logistics', 'Outer Reach Salvage',
+  'Meridian Corp', 'Belt Union Co-op', 'Titan Industrial',
+];
+
+function pick<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generatePilotDossier(shipName: string): DossierData {
+  return {
+    name: `${pick(PILOT_FIRST_NAMES)} ${pick(PILOT_SURNAMES)}`,
+    age: 24 + Math.floor(Math.random() * 35),
+    birthplace: pick(PILOT_BIRTHPLACES),
+    company: pick(PILOT_COMPANIES),
+    role: 'drifter',
+    bio: `Sole crew of the ${shipName}. No further records on file.`,
+  };
+}
 
 /** Player ship model used for derelict rendering. */
 export const PLAYER_SHIP_MODEL_URL = '/shuttle-low-british.glb';
@@ -44,6 +93,17 @@ export function captureDerelictAtDeath(deathCause: string): DerelictRecord {
     velocity: shipVelocity.clone(),
     modelUrl: PLAYER_SHIP_MODEL_URL,
     deathCause,
+    cargo: cargo.map((c) => ({ itemId: c.name, quantity: c.quantity })),
+    fuel,
+    o2,
+    power,
+    isDockable: deathCause === 'o2',
+    shipName: CURRENT_SHIP.name,
+    savedContactIds: getSavedContactIds(),
+    historicalContactIds: getHistoricalContactIds(),
+    messages: [...messageStore.current],
+    chatThreads: [...getAllThreads().values()],
+    pilotDossier: generatePilotDossier(CURRENT_SHIP.name),
   });
 }
 
@@ -65,6 +125,7 @@ export function respawnAsNewShip(_deathCause: string): void {
   setHullIntegrity(100);
   setFuel(100);
   setO2(100);
+  setPower(90);
   setShipCrew(1);
   resetAmmo();
   resetResourceDrainFlags();
@@ -92,9 +153,10 @@ export function respawnAsNewShip(_deathCause: string): void {
   // 7. Clear existing fractures (new ship has no prior damage)
   clearFractures();
 
-  // 8. Clear contacts
+  // 8. Clear contacts and messages
   setSavedContactIds([]);
   setHistoricalContactIds([]);
+  clearMessages();
 
   // 9. Reset navigation/targeting/autopilot/camera
   disableAutopilot();

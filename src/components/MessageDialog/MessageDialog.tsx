@@ -89,7 +89,9 @@ export default function MessageDialog({
   const date = new Date(message.timestamp).toISOString().slice(0, 10);
   const platform: MessagePlatform = 'REACH';
   const cfg = PLATFORM_CONFIG[platform];
-  const isPriority = (PRIORITY_PLATFORMS as readonly string[]).includes(message.platform ?? 'REACH');
+  const isPriority = (PRIORITY_PLATFORMS as readonly string[]).includes(
+    message.platform ?? 'REACH'
+  );
 
   const [replyOpen, setReplyOpen] = useState(false);
   const [sent, setSent] = useState<SentState | null>(() => {

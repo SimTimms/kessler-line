@@ -170,7 +170,7 @@ export default function DialogMessages({
           )}
           {!contact && displayRows.length === 0 && thread?.awaitingNpc && (
             <div className="comms-chat-connecting">
-              <span className="comms-chat-ellipsis">◈ OPENING CHANNEL</span>
+              <span className="comms-chat-ellipsis">OPENING CHANNEL</span>
             </div>
           )}
 
@@ -179,12 +179,9 @@ export default function DialogMessages({
               {row.role === 'npc' && row.senderName && (
                 <div className="comms-chat-sender">{row.senderName}</div>
               )}
-              <div className={`comms-chat-bubble comms-chat-bubble--${row.role}`}>
-                {row.content}
-              </div>
+              <div className={`chat-log-text comms-chat-bubble--${row.role}`}>{row.content}</div>
               <div className="comms-chat-row-footer">
                 {row.audioSrc && <MessageAudioButton src={row.audioSrc} />}
-                <div className="comms-chat-time">{row.timeLabel ?? formatTime(row.timestamp)}</div>
               </div>
             </div>
           ))}
@@ -192,7 +189,7 @@ export default function DialogMessages({
           {!contact && displayRows.length > 0 && thread?.awaitingNpc && (
             <div className="comms-chat-row comms-chat-row--npc">
               <div className="comms-chat-sender">{thread.captainName}</div>
-              <div className="comms-chat-bubble comms-chat-bubble--pending">
+              <div className="comms-chat-bubble--pending">
                 <span className="comms-chat-ellipsis">◈ TRANSMITTING</span>
               </div>
             </div>

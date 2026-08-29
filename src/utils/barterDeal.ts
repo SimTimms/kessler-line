@@ -89,7 +89,7 @@ export function formatBarterSide(side: BarterSide): string {
 }
 
 export function formatBarterDeal(deal: BarterDeal): string {
-  return `You give ${formatBarterSide(deal.playerGives)} ↔ They give ${formatBarterSide(deal.contactGives)}`;
+  return `You give ${formatBarterSide(deal.playerGives)} - They give ${formatBarterSide(deal.contactGives)}`;
 }
 
 /** Value of a side from a given owner's supply/demand POV. */
@@ -116,7 +116,8 @@ export function evaluateBarterDeal(
 
   const valueIn = valueBarterSide(contact, deal.playerGives);
   const valueOut = valueBarterSide(contact, deal.contactGives);
-  const ratio = valueOut <= 0.0001 ? (valueIn > 0 ? Number.POSITIVE_INFINITY : 0) : valueIn / valueOut;
+  const ratio =
+    valueOut <= 0.0001 ? (valueIn > 0 ? Number.POSITIVE_INFINITY : 0) : valueIn / valueOut;
 
   const acceptRatio = config.acceptRatio ?? DEFAULT_ACCEPT;
   const insultRatio = config.insultRatio ?? DEFAULT_INSULT;
@@ -172,8 +173,7 @@ export function buildCounterDeal(
     const giveEntry = Object.entries(deal.contactGives)
       .filter(([, qty]) => qty > 0)
       .sort(
-        (a, b) =>
-          getOwnerUnitValue(contact, b[0]) * b[1] - getOwnerUnitValue(contact, a[0]) * a[1]
+        (a, b) => getOwnerUnitValue(contact, b[0]) * b[1] - getOwnerUnitValue(contact, a[0]) * a[1]
       )[0];
     if (giveEntry) {
       const [itemId, qty] = giveEntry;
@@ -295,8 +295,7 @@ function scaleClaimToShare(
     const entry = Object.entries(next)
       .filter(([, qty]) => qty > 0)
       .sort(
-        (a, b) =>
-          getOwnerUnitValue(depot, b[0]) * b[1] - getOwnerUnitValue(depot, a[0]) * a[1]
+        (a, b) => getOwnerUnitValue(depot, b[0]) * b[1] - getOwnerUnitValue(depot, a[0]) * a[1]
       )[0];
     if (!entry) break;
     const [itemId, qty] = entry;

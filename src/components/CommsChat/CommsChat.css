@@ -131,10 +131,8 @@
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
 .comms-chat-header {
-  padding: 14px 20px 12px;
-  border-bottom: 1px solid var(--cc-border-soft);
-  background: var(--cc-header-bg);
-  flex-shrink: 0;
+  padding: 4px;
+  border-bottom: 1px solid #777;
 }
 
 .comms-chat-header-top {
@@ -162,16 +160,13 @@
 
 .comms-chat-header-toggle {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--cc-btn-border);
-  background: var(--cc-btn-bg);
-  color: var(--cc-btn-text);
+  padding: 2px 4px;
+  color: #fff;
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
-  border-radius: 2px;
+  background: transparent;
+  border-radius: 0px;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -179,9 +174,8 @@
 }
 
 .comms-chat-header-toggle:hover {
-  background: var(--cc-btn-bg-hover);
-  border-color: var(--cc-btn-border-hover);
-  color: var(--cc-btn-text-hover);
+  color: #000;
+  background: #fff;
 }
 
 .comms-chat-header-action {
@@ -311,7 +305,7 @@
 .comms-chat-connecting {
   text-align: center;
   padding: 20px 0;
-  color: var(--cc-muted);
+  color: #fff;
   font-size: 10px;
   letter-spacing: 0.18em;
 }
@@ -336,41 +330,38 @@
 .comms-chat-sender {
   font-size: 8px;
   letter-spacing: 0.14em;
-  color: var(--cc-dim);
+  color: #777;
 }
 
 /* ── Bubbles ─────────────────────────────────────────────────────────────── */
 
-.comms-chat-bubble {
-  padding: 13px 0px;
-  font-size: 12px;
-  line-height: 1.55;
-  letter-spacing: 0.03em;
-  border-radius: 2px;
+.chat-log-text {
+  min-width: 0;
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   text-transform: none;
 }
 
+.comms-chat-bubble {
+}
+
 .comms-chat-bubble--npc {
-  color: var(--cc-npc-text);
-  border-bottom-left-radius: 0;
+  color: #aaa;
 }
 
 .comms-chat-bubble--player {
-  color: var(--cc-player-text);
-  border-bottom-right-radius: 0;
+  color: #fff;
 }
 
 .comms-chat-bubble--pending {
   background: rgba(0, 200, 255, 0.03);
   border: 1px solid rgba(0, 200, 255, 0.1);
   color: rgba(0, 200, 255, 0.4);
-}
-
-.comms-chat-time {
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.18);
-  padding: 0 6px;
 }
 
 .comms-chat-row-footer {
@@ -380,24 +371,18 @@
 }
 
 .comms-chat-audio-btn {
-  padding: 8px;
-  background: var(--cc-btn-bg);
-  color: var(--cc-btn-text);
+  background: transparent;
+  color: #fff;
   font-family: monospace;
-  font-size: 16px;
-  letter-spacing: 0.13em;
-  line-height: 1.4;
   cursor: pointer;
   border-radius: 0px;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+  border-bottom: 1px dashed #fff;
+  line-height: 0.6;
 }
 
 .comms-chat-audio-btn:hover {
-  background: var(--cc-btn-bg-hover);
-  color: var(--cc-btn-text-hover);
+  background: #fff;
+  color: #000;
 }
 
 /* ── Ellipsis animation for pending ──────────────────────────────────────── */
@@ -420,19 +405,16 @@
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 
 .comms-chat-footer {
-  border-top: 1px solid var(--cc-border-soft);
-  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   flex-shrink: 0;
-  background: rgba(0, 5, 12, 0.6);
+  border-top: 1px solid #777;
 }
 
 /* ── Dock trade panel ─────────────────────────────────────────────────────── */
 
 .comms-trade-panel {
-  border-top: 1px solid var(--cc-border-soft);
+  border-top: 1px solid #777;
   padding: 10px 14px 12px;
   display: flex;
   flex-direction: column;
@@ -517,7 +499,6 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  border-top: 1px solid var(--cc-border-soft);
   padding-top: 6px;
 }
 
@@ -530,7 +511,7 @@
 .comms-trade-pending-values {
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: var(--cc-text);
+  color: #777;
 }
 
 .comms-trade-actions {
@@ -573,30 +554,25 @@
 .comms-chat-ended {
   font-size: 9px;
   letter-spacing: 0.18em;
-  color: var(--cc-dim);
+  color: #777;
   text-align: center;
   padding: 2px 0;
 }
 
 .comms-chat-close {
-  align-self: flex-start;
-  padding: 7px 18px;
-  font-family: monospace;
+  align-self: center;
   font-size: 10px;
   letter-spacing: 0.12em;
   background: transparent;
-  color: var(--cc-muted);
-  border: 1px solid var(--cc-border-soft);
-  border-radius: 2px;
+  color: #fff;
+  border-bottom: 1px dashed #fff;
+  border-radius: 0px;
   cursor: pointer;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
 }
 
 .comms-chat-close:hover {
-  border-color: var(--cc-border);
-  color: var(--cc-text);
+  color: #000;
+  background: #fff;
 }
 
 /* ── Pre-hail states ─────────────────────────────────────────────────────── */
@@ -755,17 +731,6 @@
   display: flex;
   align-items: center;
   gap: 14px;
-}
-
-.comms-chat-portrait {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
-  border: 1px solid var(--cc-border);
-  border-radius: 2px;
-  filter: grayscale(0.35) contrast(1.05);
-  box-shadow: 0 0 18px var(--cc-glow);
 }
 
 .comms-chat-character-id {

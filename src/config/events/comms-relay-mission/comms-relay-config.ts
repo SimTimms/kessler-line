@@ -6,7 +6,7 @@ export const COMMS_RELAY_MISSION_ID = 'elias-voss-comms-relay';
 export const COMMS_RELAY_HAIL_CONTACT_ID = 'elias-voss-emergency-broadcast';
 export const COMMS_RELAY_DIALOGUE_TREE_ID = 'elias-voss-emergency-broadcast';
 export const COMMS_BUFFER_SATELLITE_ID = 'comms-buffer-satellite';
-export const COMMS_BUFFER_SATELLITE_LABEL = 'Comms Buffer Satellite';
+export const COMMS_BUFFER_SATELLITE_LABEL = 'CB MRS-412';
 
 /** Prerequisite missions — completing either one triggers the emergency broadcast. */
 export const COMMS_RELAY_PREREQUISITE_MISSIONS = [

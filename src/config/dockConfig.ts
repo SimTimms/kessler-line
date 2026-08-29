@@ -17,13 +17,14 @@ export type DockCharacterRole =
   | 'comms-officer'
   | 'drifter'
   | 'trader'
+  | 'system'
   | 'police';
 
 export type DockTradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
 
 export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   dockmaster: 'Dockmaster',
-  'entente-cordiale-liaison': 'Entente Cordiale Liaison',
+  'entente-cordiale-liaison': 'Liaison',
   'communications-chief': 'Communications Chief',
   gangster: 'Syndicate',
   merchant: 'Merchant',
@@ -32,6 +33,7 @@ export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   drifter: 'Drifter',
   trader: 'Trader',
   police: 'Security',
+  system: 'System',
 };
 
 export interface DockTradeTurnConfig {

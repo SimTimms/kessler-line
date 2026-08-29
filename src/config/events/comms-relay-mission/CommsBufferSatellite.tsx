@@ -12,10 +12,7 @@ import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import {
-  registerCollidable,
-  unregisterCollidable,
-} from '../../../context/CollisionRegistry';
+import { registerCollidable, unregisterCollidable } from '../../../context/CollisionRegistry';
 import {
   registerRadioBroadcast,
   unregisterRadioBroadcast,
@@ -82,7 +79,7 @@ export default function CommsBufferSatellite() {
         halfExtents: new THREE.Vector3(
           BAY_DIMENSIONS.x * 0.5,
           BAY_DIMENSIONS.y * 0.5,
-          BAY_DIMENSIONS.z * 0.5,
+          BAY_DIMENSIONS.z * 0.5
         ),
       },
       physicalCollision: false,
@@ -99,7 +96,7 @@ export default function CommsBufferSatellite() {
       label: COMMS_BUFFER_SATELLITE_LABEL,
       getPosition: (target) => target.copy(commsBufferWorldPos),
       dialogue: [
-        'COMMS BUFFER SATELLITE — AUTOMATED BEACON.',
+        'COMMS BUFFER — AUTOMATED BEACON.',
         'RELAY NODE OFFLINE. LOCAL BUFFER STORAGE ACTIVE.',
         'DOCKING PORT AVAILABLE FOR LOG RETRIEVAL.',
       ],

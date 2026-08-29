@@ -4,10 +4,7 @@
 
 import type { DockConfig } from '../../dockConfig';
 import type { DialogueEffect } from '../../../narrative/dialogueEffects';
-import {
-  COMMS_RELAY_MISSION_ID,
-  COMMS_BUFFER_SATELLITE_LABEL,
-} from './comms-relay-config';
+import { COMMS_RELAY_MISSION_ID, COMMS_BUFFER_SATELLITE_LABEL } from './comms-relay-config';
 
 const completeMissionEffect: DialogueEffect = {
   type: 'completeMission',
@@ -16,14 +13,14 @@ const completeMissionEffect: DialogueEffect = {
 
 export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
   label: COMMS_BUFFER_SATELLITE_LABEL,
-  backgroundImage: '/station.jpg',
+  backgroundImage: '/satellite-interior.jpg',
   power: { amount: 12, capacity: 20 },
   contacts: [
     {
       id: 'buffer-system',
-      name: 'Buffer System',
-      role: 'comms-officer',
-      portrait: '/Image_0.jpg',
+      name: 'Communications Buffer',
+      role: 'system',
+      portrait: '/satellite-interior.jpg',
       bio: 'Automated relay buffer — caches incoming transmissions for retrieval.',
       dialogue: {
         id: 'buffer-system-dialogue',

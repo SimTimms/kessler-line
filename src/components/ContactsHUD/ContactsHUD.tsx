@@ -3,11 +3,7 @@ import * as THREE from 'three';
 import { isWithinRadioRange, isWithinPassiveRadioRange } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
-import {
-  messageStore,
-  queueMessage,
-  getUnreadCount,
-} from '../../context/MessageStore';
+import { messageStore, queueMessage, getUnreadCount } from '../../context/MessageStore';
 import { activePlatform, PLATFORM_UI } from '../../context/ActivePlatform';
 import { KM_PER_UNIT, RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
 import { STATIC_CONTACTS } from '../../narrative/contacts';
@@ -22,10 +18,7 @@ import {
   getIncomingHails,
   type IncomingHailEventDetail,
 } from '../../context/IncomingHailState';
-import {
-  getRadioBroadcasts,
-  type RadioBroadcastEntry,
-} from '../../context/RadioBroadcastRegistry';
+import { getRadioBroadcasts, type RadioBroadcastEntry } from '../../context/RadioBroadcastRegistry';
 import { setDriveSignaturesToRadio } from './helpers/setDriveSignaturesToRadio';
 import {
   type HailOffer,
@@ -121,6 +114,14 @@ export type ContactsTriggerApi = {
   contactCount: number;
   hasIncoming: boolean;
   isActive: boolean;
+  savedItems: SelectionItem[];
+  inRangeItems: SelectionItem[];
+  incomingItems: SelectionItem[];
+  historyItems: SelectionItem[];
+  dockInteriorItems: SelectionItem[];
+  dockInteriorLabel?: string;
+  onSave: (id: string) => void;
+  onSelect: (id: string) => void;
 };
 
 function resolveDockInteriorChat(threadId: string): {
@@ -233,10 +234,18 @@ export default function ContactsHUD({
                 : `${km.toFixed(0)} km`;
           const inRadioRange = isWithinRadioRange(dist);
           const inPassiveRange = isWithinPassiveRadioRange(dist);
-          newBcasts.push({ entry, distanceLabel: distLabel, distanceRaw: dist, inRadioRange, inPassiveRange });
+          newBcasts.push({
+            entry,
+            distanceLabel: distLabel,
+            distanceRaw: dist,
+            inRadioRange,
+            inPassiveRange,
+          });
         }
 
-        const bcastSig = newBcasts.map((b) => `${b.entry.id}:${b.inRadioRange ? 1 : 0}:${b.inPassiveRange ? 1 : 0}`).join('|');
+        const bcastSig = newBcasts
+          .map((b) => `${b.entry.id}:${b.inRadioRange ? 1 : 0}:${b.inPassiveRange ? 1 : 0}`)
+          .join('|');
         if (bcastSig !== prevBcastSigRef.current) {
           prevBcastSigRef.current = bcastSig;
           setBroadcastContacts(newBcasts);
@@ -385,7 +394,11 @@ export default function ContactsHUD({
     rememberContact(shipId);
     const result = acceptHailOffer(shipId, hailOffers.get(shipId));
     if (result.clearOffer) {
-      setHailOffers((prev) => { const next = new Map(prev); next.delete(shipId); return next; });
+      setHailOffers((prev) => {
+        const next = new Map(prev);
+        next.delete(shipId);
+        return next;
+      });
     }
     if (result.closeChatPanel) {
       setChatShipId(null);
@@ -406,7 +419,9 @@ export default function ContactsHUD({
       id: d.id,
       label: d.name,
       sublabel: `DRIVE SIG · ${d.distanceLabel}`,
-      statusLine: isIncoming ? commsStatus.incoming : driveStatusLine(hs, d.radioActive, d.inPassiveRange),
+      statusLine: isIncoming
+        ? commsStatus.incoming
+        : driveStatusLine(hs, d.radioActive, d.inPassiveRange),
       statusPulse: isIncoming ? true : driveStatusPulse(hs, d.radioActive),
     };
   }
@@ -528,7 +543,7 @@ export default function ContactsHUD({
             sublabel: DOCK_ROLE_LABELS[contact.role],
             avatarSrc: contact.portrait,
             avatarAlt: contact.name,
-            missionFlag: missionAvailable ? 'AVAILABLE MISSION' : undefined,
+            missionFlag: missionAvailable ? 'CALLING' : undefined,
           };
         }),
         ...getDockJobs(dockedPartnerId)
@@ -589,6 +604,14 @@ export default function ContactsHUD({
           contactCount: rosterCount,
           hasIncoming,
           isActive: contactsActive,
+          savedItems,
+          inRangeItems,
+          incomingItems,
+          historyItems,
+          dockInteriorItems,
+          dockInteriorLabel,
+          onSave: saveContact,
+          onSelect: handleSelect,
         })
       ) : (
         <div className="contacts-hud-wrapper">
@@ -661,7 +684,13 @@ export default function ContactsHUD({
               hailStatus={hailStates.get(chatShipId) ?? 'none'}
               radioActive={chatCanTransmit}
               canReceive={chatCanReceive}
-              showHailPrompt={shouldShowHailPrompt(chatShipId, incomingHails, toBroadcastSlim(broadcastContacts), hailStates, getThread)}
+              showHailPrompt={shouldShowHailPrompt(
+                chatShipId,
+                incomingHails,
+                toBroadcastSlim(broadcastContacts),
+                hailStates,
+                getThread
+              )}
               hailOfferContent={chatOfferContent}
               onHail={() => sendHailContact(chatShipId, chatShipName)}
               onAcceptHail={() => handleAcceptHail(chatShipId)}

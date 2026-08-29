@@ -88,6 +88,12 @@ export function queueMessage(
   window.dispatchEvent(new Event('InboxUpdated'));
 }
 
+export function clearMessages(): void {
+  _messages.length = 0;
+  _pending.length = 0;
+  window.dispatchEvent(new Event('InboxUpdated'));
+}
+
 export function markRead(id: string) {
   const m = _messages.find((msg) => msg.id === id);
   if (m && !m.read) {

@@ -35,12 +35,18 @@ import {
 } from '../../../context/DockTransferUi';
 import DockInteriorDialogue from '../../Station/StationDialogue';
 import ShipCargoSummary from './ShipCargoSummary';
+import DockCargoSummary from './DockCargoSummary';
 import {
   activeMissionRef,
   completedMissionsRef,
   declinedMissionsRef,
 } from '../../../context/MissionState';
+import { getDerelicts, type DerelictRecord } from '../../../context/DerelictStore';
+import type { InboxMessage } from '../../../context/MessageStore';
+import type { ChatThread } from '../../../context/ChatStore';
+import ContactDossier from '../../CommsChat/ContactDossier';
 import '../HelmetHUD/HelmetHUD.css';
+import '../../CommsChat/CommsChat.css';
 import './DockTransferHUD.css';
 
 const RESOURCE_META: Record<
@@ -127,14 +133,13 @@ function TransferRow({ partnerId, kind }: TransferRowProps) {
 
   return (
     <div className="dock-transfer-hud__row">
-      <span className="dock-transfer-hud__label">
+      <span className="event-log-text">
         <Icon size={11} strokeWidth={1.5} />
         {meta.label}
       </span>
       <div>
-        <div className="dock-transfer-hud__amount">{shipVal}</div>
-        <div className="dock-transfer-hud__amount dock-transfer-hud__amount--muted">
-          / {meta.shipMax}
+        <div className="resource-bar-val" style={{ width: 60 }}>
+          {shipVal} / {meta.shipMax}
         </div>
       </div>
       <div className="dock-transfer-hud__controls">
@@ -174,9 +179,8 @@ function TransferRow({ partnerId, kind }: TransferRowProps) {
         </button>
       </div>
       <div>
-        <div className="dock-transfer-hud__amount">{Math.floor(partnerVal)}</div>
-        <div className="dock-transfer-hud__amount dock-transfer-hud__amount--muted">
-          / {Math.floor(partnerCap)}
+        <div className="resource-bar-val" style={{ width: 60 }}>
+          {Math.floor(partnerVal)} / {Math.floor(partnerCap)}
         </div>
       </div>
     </div>
@@ -195,6 +199,12 @@ const DockTransferHUD = memo(function DockTransferHUD() {
   const [ui, setUi] = useState(getDockTransferUi);
   const [dockThreadId, setDockThreadId] = useState<string | null>(null);
   const [, bump] = useState(0);
+  const [selectedLogEntry, setSelectedLogEntry] = useState<
+    | { kind: 'message'; id: string }
+    | { kind: 'thread'; shipId: string }
+    | { kind: 'dossier' }
+    | null
+  >(null);
 
   useEffect(() => {
     const onUi = () => {
@@ -216,6 +226,11 @@ const DockTransferHUD = memo(function DockTransferHUD() {
 
   const partnerId = ui.partnerId;
   const panelOpen = ui.panelOpen;
+
+  const isDerelict = partnerId ? partnerId.startsWith('derelict-') : false;
+  const derelictRecord: DerelictRecord | undefined = isDerelict
+    ? getDerelicts().find((d) => d.id === partnerId)
+    : undefined;
 
   useEffect(() => {
     let raf = 0;
@@ -274,7 +289,7 @@ const DockTransferHUD = memo(function DockTransferHUD() {
       name: c.name,
       role: DOCK_ROLE_LABELS[c.role],
       portrait: c.portrait,
-      missionFlag: missionAvailable ? 'AVAILABLE MISSION' : undefined,
+      missionFlag: missionAvailable ? 'CALLING' : undefined,
     };
   });
   const jobs: DirectoryContactItem[] = getDockJobs(partnerId)
@@ -286,7 +301,7 @@ const DockTransferHUD = memo(function DockTransferHUD() {
     }));
   const directoryItems = [...contacts, ...jobs];
 
-  if (kinds.length === 0 && directoryItems.length === 0) return null;
+  if (kinds.length === 0 && directoryItems.length === 0 && !isDerelict) return null;
 
   const label = getDockablePartnerLabel(partnerId);
   const backgroundImage = getDock(partnerId)?.backgroundImage ?? DEFAULT_DOCK_BACKGROUND_IMAGE;
@@ -309,12 +324,6 @@ const DockTransferHUD = memo(function DockTransferHUD() {
           <div className="dock-station-panel__transfers">
             {kinds.length > 0 ? (
               <>
-                <div className="dock-station-panel__section-label">Transfer</div>
-                <div className="dock-transfer-hud__cols">
-                  <span>Ship</span>
-                  <span />
-                  <span>Dock</span>
-                </div>
                 {kinds.map((kind) => (
                   <TransferRow key={kind} partnerId={partnerId} kind={kind} />
                 ))}
@@ -327,28 +336,39 @@ const DockTransferHUD = memo(function DockTransferHUD() {
             <ShipCargoSummary />
           </div>
 
-          <div className="dock-station-panel__left-footer">
-            {towable ? (
+          {isDerelict && partnerId ? (
+            <>
+              <div className="dock-transfer-hud__divider" />
+              <div className="dock-station-panel__cargo-summary">
+                <DockCargoSummary partnerId={partnerId} />
+              </div>
+            </>
+          ) : null}
+
+          <div className="comms-chat-footer">
+            <div className="comms-chat-footer-buttons">
+              {towable ? (
+                <button
+                  type="button"
+                  className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
+                  onClick={() => {
+                    setDockThreadId(null);
+                    minimizeDockTransferPanel();
+                  }}
+                  title="Minimize transfer panel"
+                >
+                  MINIMIZE
+                </button>
+              ) : null}
               <button
                 type="button"
-                className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
-                onClick={() => {
-                  setDockThreadId(null);
-                  minimizeDockTransferPanel();
-                }}
-                title="Minimize transfer panel"
+                className="comms-chat-close"
+                onClick={() => window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK))}
+                title="Undock from current bay"
               >
-                MINIMIZE
+                UNDOCK
               </button>
-            ) : null}
-            <button
-              type="button"
-              className="dock-transfer-hud__btn dock-transfer-hud__btn--wide"
-              onClick={() => window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK))}
-              title="Undock from current bay"
-            >
-              UNDOCK
-            </button>
+            </div>
           </div>
         </div>
 
@@ -357,10 +377,14 @@ const DockTransferHUD = memo(function DockTransferHUD() {
           <div className="dock-station-panel__right-header">
             {dockThreadId && activeDockChat ? (
               <>
-                <span className="dock-station-panel__right-title">COMMS OPEN</span>
+                <span className="hud-title">COMMS OPEN</span>
               </>
+            ) : selectedLogEntry && isDerelict ? (
+              <span className="dock-station-panel__right-title">
+                {selectedLogEntry.kind === 'dossier' ? 'PILOT DOSSIER' : 'COMMS LOG'}
+              </span>
             ) : (
-              <span className="dock-station-panel__right-title">STATION DIRECTORY</span>
+              <span className="hud-title">{isDerelict ? 'SHIP PERSONNEL' : 'DIRECTORY'}</span>
             )}
           </div>
 
@@ -374,8 +398,88 @@ const DockTransferHUD = memo(function DockTransferHUD() {
                 onClose={() => setDockThreadId(null)}
               />
             </div>
-          ) : directoryItems.length > 0 ? (
+          ) : selectedLogEntry && isDerelict && derelictRecord ? (
+            selectedLogEntry.kind === 'dossier' ? (
+              <div className="dock-station-panel__comms-log-view">
+                <ContactDossier data={derelictRecord.pilotDossier} />
+                <button
+                  type="button"
+                  className="dock-station-panel__comms-log-back"
+                  onClick={() => setSelectedLogEntry(null)}
+                >
+                  ◀ BACK
+                </button>
+              </div>
+            ) : selectedLogEntry.kind === 'message' ? (
+              <DerelictMessageView
+                message={derelictRecord.messages.find((m) => m.id === selectedLogEntry.id)}
+                onBack={() => setSelectedLogEntry(null)}
+              />
+            ) : (
+              <DerelictThreadView
+                thread={derelictRecord.chatThreads.find(
+                  (t) => t.shipId === selectedLogEntry.shipId
+                )}
+                onBack={() => setSelectedLogEntry(null)}
+              />
+            )
+          ) : directoryItems.length > 0 || (isDerelict && derelictRecord) ? (
             <div className="dock-station-panel__directory">
+              {isDerelict && derelictRecord ? (
+                <>
+                  <button
+                    type="button"
+                    className="dock-station-panel__contact-item dock-station-panel__contact-item--deceased"
+                    onClick={() => setSelectedLogEntry({ kind: 'dossier' })}
+                    title="View pilot dossier"
+                  >
+                    <div className="dock-station-panel__contact-info">
+                      <div className="hud-subtitle">{derelictRecord.pilotDossier.name}</div>
+                      <div className="dock-station-panel__contact-role">PILOT</div>
+                    </div>
+                    <span className="dock-station-panel__mission-flag dock-station-panel__mission-flag--deceased">
+                      DECEASED
+                    </span>
+                  </button>
+                  {(derelictRecord.chatThreads.length > 0 ||
+                    derelictRecord.messages.length > 0) && (
+                    <div className="dock-station-panel__comms-log-section">
+                      <div className="dock-station-panel__section-label">Comms Log</div>
+                      {derelictRecord.chatThreads.map((thread) => (
+                        <button
+                          key={thread.shipId}
+                          type="button"
+                          className="dock-station-panel__comms-log-entry"
+                          onClick={() =>
+                            setSelectedLogEntry({ kind: 'thread', shipId: thread.shipId })
+                          }
+                          title={`Conversation with ${thread.shipName}`}
+                        >
+                          <div className="dock-station-panel__comms-log-from">
+                            {thread.shipName}
+                          </div>
+                          <div className="dock-station-panel__comms-log-subject">
+                            {thread.messages.length} message
+                            {thread.messages.length !== 1 ? 's' : ''}
+                          </div>
+                        </button>
+                      ))}
+                      {derelictRecord.messages.map((msg) => (
+                        <button
+                          key={msg.id}
+                          type="button"
+                          className="dock-station-panel__comms-log-entry"
+                          onClick={() => setSelectedLogEntry({ kind: 'message', id: msg.id })}
+                          title={msg.subject}
+                        >
+                          <div className="dock-station-panel__comms-log-from">{msg.from}</div>
+                          <div className="dock-station-panel__comms-log-subject">{msg.subject}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : null}
               {directoryItems.map((item) => (
                 <button
                   key={item.threadId}
@@ -391,8 +495,8 @@ const DockTransferHUD = memo(function DockTransferHUD() {
                     />
                   ) : null}
                   <div className="dock-station-panel__contact-info">
-                    <div className="dock-station-panel__contact-name">{item.name}</div>
-                    <div className="dock-station-panel__contact-role">{item.role}</div>
+                    <div className="hud-subtitle">{item.name}</div>
+                    <div className="hud-subtitle-grey">{item.role}</div>
                   </div>
                   {item.missionFlag && (
                     <span className="dock-station-panel__mission-flag">{item.missionFlag}</span>
@@ -408,5 +512,81 @@ const DockTransferHUD = memo(function DockTransferHUD() {
     </div>
   );
 });
+
+function DerelictMessageView({
+  message,
+  onBack,
+}: {
+  message: InboxMessage | undefined;
+  onBack: () => void;
+}) {
+  if (!message) {
+    return (
+      <div className="dock-station-panel__directory">
+        <div className="dock-station-panel__empty">Message not found</div>
+        <button type="button" className="dock-station-panel__comms-log-back" onClick={onBack}>
+          ◀ BACK
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dock-station-panel__comms-log-view">
+      <div className="dock-station-panel__comms-log-view-header">
+        <div className="dock-station-panel__comms-log-view-from">{message.from}</div>
+        <div className="dock-station-panel__comms-log-view-subject">{message.subject}</div>
+      </div>
+      <div className="dock-station-panel__comms-log-view-body">{message.body}</div>
+      <button type="button" className="dock-station-panel__comms-log-back" onClick={onBack}>
+        ◀ BACK
+      </button>
+    </div>
+  );
+}
+
+function DerelictThreadView({
+  thread,
+  onBack,
+}: {
+  thread: ChatThread | undefined;
+  onBack: () => void;
+}) {
+  if (!thread) {
+    return (
+      <div className="dock-station-panel__directory">
+        <div className="dock-station-panel__empty">Thread not found</div>
+        <button type="button" className="dock-station-panel__comms-log-back" onClick={onBack}>
+          ◀ BACK
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dock-station-panel__comms-log-view">
+      <div className="dock-station-panel__comms-log-view-header">
+        <div className="dock-station-panel__comms-log-view-from">{thread.shipName}</div>
+        <div className="dock-station-panel__comms-log-view-subject">{thread.captainName}</div>
+      </div>
+      <div className="dock-station-panel__comms-thread-messages">
+        {thread.messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`dock-station-panel__comms-thread-line dock-station-panel__comms-thread-line--${msg.role}`}
+          >
+            <span className="dock-station-panel__comms-thread-role">
+              {msg.role === 'player' ? 'YOU' : thread.captainName}
+            </span>
+            <span className="dock-station-panel__comms-thread-text">{msg.text}</span>
+          </div>
+        ))}
+      </div>
+      <button type="button" className="dock-station-panel__comms-log-back" onClick={onBack}>
+        ◀ BACK
+      </button>
+    </div>
+  );
+}
 
 export default DockTransferHUD;

@@ -23,6 +23,7 @@ import { waypointPromptDef } from '../../context/WaypointPrompt';
 import { getOrCreateShipRecord, formatShipClass, formatAgenda } from '../../narrative/shipRegistry';
 import { SETTLEMENT_BY_OBJECT_ID } from '../../config/settlementConfig';
 import { DOCK_ROLE_LABELS, type DockContact } from '../../config/dockConfig';
+import ContactDossier from './ContactDossier';
 import DialogHeader from './DialogHeader';
 import DialogFooter from './DialogFooter';
 import DialogMessages from './DialogMessages';
@@ -352,10 +353,14 @@ export default function DialogueThread({
       {/* ── Header ── */}
       {character ? (
         <div className="comms-chat-header comms-chat-header--character">
-          <img className="comms-chat-portrait" src={character.portrait} alt={character.name} />
+          <img
+            className="dock-station-panel__contact-portrait"
+            src={character.portrait}
+            alt={character.name}
+          />
           <div className="comms-chat-character-id">
             <div className="comms-chat-header-top">
-              <div className="comms-chat-vessel">{character.name}</div>
+              <div className="hud-title">{character.name}</div>
               <button
                 type="button"
                 className="comms-chat-header-toggle"
@@ -366,9 +371,10 @@ export default function DialogueThread({
                 {viewMode === 'dossier' ? '✉' : 'ⓘ'}
               </button>
             </div>
-            <div className="comms-chat-captain">
+            <div className="hud-subtitle-grey">
               {DOCK_ROLE_LABELS[character.role].toUpperCase()}
-              {character.company ? ` · ${character.company.toUpperCase()}` : ' · INDEPENDENT'}
+              <br />
+              {character.company ? ` ${character.company.toUpperCase()}` : ' INDEPENDENT'}
             </div>
           </div>
         </div>
@@ -421,29 +427,7 @@ export default function DialogueThread({
       )}
 
       {viewMode === 'dossier' && character ? (
-        <div className="comms-chat-dossier">
-          <div className="comms-dossier-row">
-            <span className="comms-dossier-key">NAME</span>
-            <span className="comms-dossier-val">{character.name}</span>
-          </div>
-          <div className="comms-dossier-row">
-            <span className="comms-dossier-key">AGE</span>
-            <span className="comms-dossier-val">{character.age}</span>
-          </div>
-          <div className="comms-dossier-row">
-            <span className="comms-dossier-key">BORN</span>
-            <span className="comms-dossier-val">{character.birthplace}</span>
-          </div>
-          <div className="comms-dossier-row">
-            <span className="comms-dossier-key">EMPLOYER</span>
-            <span className="comms-dossier-val">{character.company ?? 'Independent'}</span>
-          </div>
-          <div className="comms-dossier-row">
-            <span className="comms-dossier-key">ROLE</span>
-            <span className="comms-dossier-val">{DOCK_ROLE_LABELS[character.role]}</span>
-          </div>
-          {character.bio && <p className="comms-dossier-bio">{character.bio}</p>}
-        </div>
+        <ContactDossier data={character} />
       ) : viewMode === 'info' && hasSettlement ? (
         <SettlementInfoPanel objectId={shipId} />
       ) : (
@@ -466,8 +450,8 @@ export default function DialogueThread({
       )}
       {tradePanel?.visible && (
         <div className="comms-trade-panel">
-          <div className="comms-trade-panel-title">
-            {tradeMode === 'cargo' ? 'BARTER NEGOTIATION' : 'NEGOTIATION OFFER'}
+          <div className="hud-subtitle-grey">
+            {tradeMode === 'cargo' ? 'NEGOTIATION' : 'NEGOTIATION OFFER'}
           </div>
           {tradeMode === 'cargo' ? (
             <TradeCargoGrid
@@ -498,7 +482,6 @@ export default function DialogueThread({
           )}
           {tradeMode === 'cargo' && tradePanel.pendingCargoDeal && (
             <div className="comms-trade-pending">
-              <span className="comms-trade-pending-title">PROPOSED DEAL</span>
               <span className="comms-trade-pending-values">
                 {tradePanel.pendingCargoSummary ?? 'Awaiting confirmation'}
               </span>
@@ -506,7 +489,6 @@ export default function DialogueThread({
           )}
           {tradeMode === 'resources' && tradePanel.pendingDeal && (
             <div className="comms-trade-pending">
-              <span className="comms-trade-pending-title">PROPOSED DEAL</span>
               <span className="comms-trade-pending-values">
                 F {Math.round(tradePanel.pendingDeal.fuel)} · O{' '}
                 {Math.round(tradePanel.pendingDeal.o2)} · P{' '}
@@ -522,7 +504,7 @@ export default function DialogueThread({
                 {tradePanel.onAcceptPendingDeal && (
                   <button
                     type="button"
-                    className="comms-chat-opt"
+                    className="comms-chat-close"
                     onClick={tradePanel.onAcceptPendingDeal}
                   >
                     AGREE
@@ -531,7 +513,7 @@ export default function DialogueThread({
                 {tradePanel.onRejectPendingDeal && (
                   <button
                     type="button"
-                    className="comms-chat-opt"
+                    className="comms-chat-close"
                     onClick={tradePanel.onRejectPendingDeal}
                   >
                     DECLINE
@@ -540,12 +522,12 @@ export default function DialogueThread({
               </>
             ) : (
               <>
-                <button type="button" className="comms-chat-opt" onClick={tradePanel.onReset}>
+                <button type="button" className="comms-chat-close" onClick={tradePanel.onReset}>
                   CLEAR
                 </button>
                 <button
                   type="button"
-                  className="comms-chat-opt"
+                  className="comms-chat-close"
                   onClick={tradePanel.onSubmit}
                   disabled={!tradePanel.canSubmit}
                 >
@@ -564,7 +546,7 @@ export default function DialogueThread({
           {footerOptions.map((opt) => (
             <button
               key={opt.id}
-              className="comms-chat-opt"
+              className="comms-chat-close"
               onClick={() => handleFooterOption(opt.id)}
               disabled={!contact && !isRadioActive}
             >

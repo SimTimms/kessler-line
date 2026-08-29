@@ -264,6 +264,7 @@
   font: inherit;
   text-transform: inherit;
   letter-spacing: inherit;
+  width: 200px;
 }
 
 .mech-comms-hail-btn:hover {
@@ -431,4 +432,40 @@
 .comms-journal-waypoint-btn:hover {
   border-color: #00c8ff;
   color: #fff;
+}
+
+/* ── Inline Contacts Panel ── */
+
+.comms-contacts-panel {
+  display: flex;
+  flex-direction: column;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+.comms-contacts-panel .chd-item,
+.comms-contacts-panel .chd-save-btn {
+  font-family: inherit;
+}
+
+.comms-contacts-panel-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 20vh;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 200, 255, 0.2) transparent;
+}
+
+.comms-contacts-panel-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comms-contacts-panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comms-contacts-panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.2);
+  border-radius: 2px;
 }

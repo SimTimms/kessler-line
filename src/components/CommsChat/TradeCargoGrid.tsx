@@ -9,11 +9,7 @@ import './TradeCargoGrid.css';
 
 export const TRADE_DRAG_MIME = 'application/x-crubbs-trade';
 
-export type TradeDragSource =
-  | 'shipCargo'
-  | 'contactCargo'
-  | 'youGive'
-  | 'theyGive';
+export type TradeDragSource = 'shipCargo' | 'contactCargo' | 'youGive' | 'theyGive';
 
 export interface TradeDragPayload {
   itemId: string;
@@ -76,10 +72,7 @@ interface GridCell {
   color: string;
 }
 
-function expandCells(
-  rows: CargoBarterRow[],
-  subtract: Record<string, number>
-): GridCell[] {
+function expandCells(rows: CargoBarterRow[], subtract: Record<string, number>): GridCell[] {
   const cells: GridCell[] = [];
   for (const row of rows) {
     const ui = getInventoryItemUi(row.itemId);
@@ -93,10 +86,7 @@ function expandCells(
   return cells;
 }
 
-function expandStagedCells(
-  amounts: Record<string, number>,
-  rows: CargoBarterRow[]
-): GridCell[] {
+function expandStagedCells(amounts: Record<string, number>, rows: CargoBarterRow[]): GridCell[] {
   const cells: GridCell[] = [];
   for (const [itemId, qty] of Object.entries(amounts)) {
     if (qty <= 0) continue;
@@ -158,10 +148,7 @@ export default function TradeCargoGrid({
 
   // Contact cargo cells minus what's been staged into THEY GIVE.
   const contactCells = expandCells(contactRows, contactStaged);
-  const contactPadTo = Math.max(
-    GRID_COLS,
-    Math.ceil(contactCells.length / GRID_COLS) * GRID_COLS
-  );
+  const contactPadTo = Math.max(GRID_COLS, Math.ceil(contactCells.length / GRID_COLS) * GRID_COLS);
 
   // Deal zone cells — individual squares per staged unit.
   const youGiveCells = expandStagedCells(playerStaged, playerRows);
@@ -276,9 +263,7 @@ export default function TradeCargoGrid({
         >
           <div className="trade-cargo-hold-section__header">
             <span className="trade-cargo-section-label">Contact Cargo</span>
-            <span className="trade-cargo-section-count">
-              {contactCells.length}
-            </span>
+            <span className="trade-cargo-section-count">{contactCells.length}</span>
           </div>
           <div className="trade-cargo-cell-grid" style={gridStyle}>
             {contactCells.map((cell, i) => {
@@ -315,7 +300,7 @@ export default function TradeCargoGrid({
         >
           <div className="trade-cargo-deal__zone-title">YOU GIVE</div>
           {youGiveCells.length === 0 ? (
-            <div className="trade-cargo-deal__empty">Drag from Ship Cargo</div>
+            <div className="trade-cargo-deal__empty"></div>
           ) : (
             <div className="trade-cargo-cell-grid trade-cargo-cell-grid--deal" style={gridStyle}>
               {youGiveCells.map((cell, i) => {
