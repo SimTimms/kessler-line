@@ -9,8 +9,15 @@ import { getInventoryItemUi } from '../../../../config/inventoryCatalog';
 import type { InventoryOwnerRef } from '../../../../context/InventoryStore';
 import { PLAYER_VESSEL_ID } from '../../../../context/PlayerShipState';
 import { CARGO_HOLD_SLOT_COUNT } from './cargoHoldConstants';
-import { CO2_FILTER_ITEM_ID, HULL_REPAIR_PATCH_ITEM_ID } from '../../../../config/damageConfig';
+import {
+  CO2_FILTER_ITEM_ID,
+  HULL_REPAIR_PATCH_ITEM_ID,
+  COMMS_BUFFER_ITEM_ID,
+  EMERGENCY_BATTERY_ITEM_ID,
+} from '../../../../config/damageConfig';
 import { removeInstalledFilter } from '../../../../context/CO2FilterStore';
+import { removeInstalledBuffer } from '../../../../context/CommsBufferStore';
+import { removeInstalledBattery } from '../../../../context/EmergencyBatteryStore';
 import {
   expandCargoToCells,
   isCargoDragEvent,
@@ -23,6 +30,10 @@ import './CargoHoldPanel.css';
 
 /** Sentinel vesselId used when dragging a filter out of the CO2 slot. */
 export const CO2_FILTER_SLOT_OWNER = '__co2-filter-slot__';
+/** Sentinel vesselId used when dragging a buffer out of the comms buffer slot. */
+export const COMMS_BUFFER_SLOT_OWNER = '__comms-buffer-slot__';
+/** Sentinel vesselId used when dragging a battery out of the emergency battery slot. */
+export const EMERGENCY_BATTERY_SLOT_OWNER = '__emergency-battery-slot__';
 
 export { CARGO_HOLD_SLOT_COUNT };
 
@@ -72,7 +83,14 @@ export default function CargoHoldPanel({
     dockTransferUi.partnerId != null && dockTransferUi.towable && !dockTransferUi.panelOpen;
 
   function onDragStart(e: DragEvent, itemId: string, quantity: number, salvagedBy?: string) {
-    if (!transferEnabled && itemId !== CO2_FILTER_ITEM_ID && itemId !== HULL_REPAIR_PATCH_ITEM_ID) return;
+    if (
+      !transferEnabled &&
+      itemId !== CO2_FILTER_ITEM_ID &&
+      itemId !== HULL_REPAIR_PATCH_ITEM_ID &&
+      itemId !== COMMS_BUFFER_ITEM_ID &&
+      itemId !== EMERGENCY_BATTERY_ITEM_ID
+    )
+      return;
     const payload: CargoDragPayload = { itemId, quantity, from: PLAYER_OWNER, salvagedBy };
     writeCargoDragPayload(e.dataTransfer, payload);
   }
@@ -101,11 +119,29 @@ export default function CargoHoldPanel({
 
     // Accept drops from the CO2 filter slot sentinel
     const fromCO2Slot =
-      payload.from.kind === 'vessel' &&
-      payload.from.vesselId === CO2_FILTER_SLOT_OWNER;
+      payload.from.kind === 'vessel' && payload.from.vesselId === CO2_FILTER_SLOT_OWNER;
 
     if (fromCO2Slot && payload.itemId === CO2_FILTER_ITEM_ID) {
       removeInstalledFilter();
+      return;
+    }
+
+    // Accept drops from the comms buffer slot sentinel
+    const fromCommsSlot =
+      payload.from.kind === 'vessel' && payload.from.vesselId === COMMS_BUFFER_SLOT_OWNER;
+
+    if (fromCommsSlot && payload.itemId === COMMS_BUFFER_ITEM_ID) {
+      removeInstalledBuffer();
+      return;
+    }
+
+    // Accept drops from the emergency battery slot sentinel
+    const fromBatterySlot =
+      payload.from.kind === 'vessel' &&
+      payload.from.vesselId === EMERGENCY_BATTERY_SLOT_OWNER;
+
+    if (fromBatterySlot && payload.itemId === EMERGENCY_BATTERY_ITEM_ID) {
+      removeInstalledBattery();
       return;
     }
 
@@ -188,8 +224,13 @@ export default function CargoHoldPanel({
                     type="button"
                     role="listitem"
                     className="cargo-hold-panel__cell cargo-hold-panel__cell--filled"
-                    style={{ '--cargo-color': color } as CSSProperties}
-                    draggable={transferEnabled || itemId === CO2_FILTER_ITEM_ID || itemId === HULL_REPAIR_PATCH_ITEM_ID}
+                    draggable={
+                      transferEnabled ||
+                      itemId === CO2_FILTER_ITEM_ID ||
+                      itemId === HULL_REPAIR_PATCH_ITEM_ID ||
+                      itemId === COMMS_BUFFER_ITEM_ID ||
+                      itemId === EMERGENCY_BATTERY_ITEM_ID
+                    }
                     onDragStart={(e) => onDragStart(e, itemId, 1, salvagedBy)}
                     onMouseEnter={() =>
                       setHovered({

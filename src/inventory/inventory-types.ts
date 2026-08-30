@@ -30,4 +30,9 @@ export const inventoryItems: Record<string, InventoryItem> = {
     name: 'Hull Repair Patch',
     description: 'A hull repair patch',
   },
+  emergencyBattery: {
+    id: 'emergency-battery',
+    name: 'Emergency Battery',
+    description: 'A portable battery pack that recharges ship power',
+  },
 };

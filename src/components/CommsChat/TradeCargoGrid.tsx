@@ -261,17 +261,13 @@ export default function TradeCargoGrid({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop('contactCargo')}
         >
-          <div className="trade-cargo-hold-section__header">
-            <span className="trade-cargo-section-label">Contact Cargo</span>
-            <span className="trade-cargo-section-count">{contactCells.length}</span>
-          </div>
           <div className="trade-cargo-cell-grid" style={gridStyle}>
             {contactCells.map((cell, i) => {
               const Icon = ITEM_ICONS[cell.itemId] ?? Package;
               return (
                 <div
                   key={`cc-${cell.itemId}-${i}`}
-                  className="trade-cargo-cell"
+                  className="dock-cargo-summary__cell dock-cargo-summary__cell--filled"
                   style={{ '--cargo-color': cell.color } as CSSProperties}
                   title={`${cell.label} — drag to THEY GIVE`}
                   draggable
@@ -283,7 +279,10 @@ export default function TradeCargoGrid({
               );
             })}
             {Array.from({ length: contactPadTo - contactCells.length }, (_, i) => (
-              <div key={`pad-${i}`} className="trade-cargo-cell trade-cargo-cell--empty" />
+              <div
+                key={`pad-${i}`}
+                className="dock-cargo-summary__cell dock-cargo-summary__cell--empty"
+              />
             ))}
           </div>
         </div>
@@ -309,7 +308,6 @@ export default function TradeCargoGrid({
                   <div
                     key={`yg-${cell.itemId}-${i}`}
                     className="trade-cargo-cell trade-cargo-cell--staged"
-                    style={{ '--cargo-color': cell.color } as CSSProperties}
                     title={`${cell.label} — drag back or click to remove`}
                     draggable
                     onDragStart={(e) => onYouGiveDragStart(e, cell.itemId)}
@@ -333,7 +331,7 @@ export default function TradeCargoGrid({
         >
           <div className="trade-cargo-deal__zone-title">THEY GIVE</div>
           {theyGiveCells.length === 0 ? (
-            <div className="trade-cargo-deal__empty">Drag from Contact Cargo</div>
+            <div className="trade-cargo-deal__empty"></div>
           ) : (
             <div className="trade-cargo-cell-grid trade-cargo-cell-grid--deal" style={gridStyle}>
               {theyGiveCells.map((cell, i) => {

@@ -15,6 +15,12 @@ export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
   label: COMMS_BUFFER_SATELLITE_LABEL,
   backgroundImage: '/satellite-interior.jpg',
   power: { amount: 12, capacity: 20 },
+  inventory: {
+    label: 'Object Inventory',
+    slots: [
+      { itemId: 'comms-buffer', quantity: 1, salvagedBy: 'cb-mrs-412' },
+    ],
+  },
   contacts: [
     {
       id: 'buffer-system',
@@ -29,7 +35,7 @@ export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
           status: {
             id: 'status',
             npcText:
-              'COMMS BUFFER NODE ONLINE.\n\nBuffer contains 7 cached transmissions — emergency priority.\nLast received: 4 hours ago.\nRelay link: OFFLINE.\n\nReady for download.',
+              'COMMS BUFFER NODE ONLINE.\n\nBuffer contains 4 cached transmissions — emergency priority.\nLast received: 4 hours ago.\nRelay link: OFFLINE.\n\nReady for download.',
             playerOptions: [
               {
                 id: 'download',
@@ -49,13 +55,13 @@ export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
           downloading: {
             id: 'downloading',
             npcText:
-              'TRANSFER COMPLETE.\n\n7 transmissions downloaded to inbox.\n  - 3x distress calls (unknown vessels)\n  - 2x SolNet relay node status\n  - 1x fragmented emergency broadcast\n  - 1x system failure alert\n\nBuffer purged. Relay link remains offline.',
+              'TRANSFER COMPLETE.\n\nPlaying back 4 cached transmissions...',
             playerOptions: [],
           },
           diagnostics: {
             id: 'diagnostics',
             npcText:
-              'DIAGNOSTIC REPORT:\n\n  Antenna array: NOMINAL\n  Power cells: 62% capacity\n  Buffer storage: 7/512 slots used\n  Relay uplink: NO SIGNAL\n  Last Earth contact: 6 days ago\n  Last relay handshake: 4 hours ago (failed)\n\nUplink failure is not local. Relay network appears non-responsive.',
+              'DIAGNOSTIC REPORT:\n\n  Antenna array: NOMINAL\n  Power cells: 62% capacity\n  Buffer storage: 4/512 slots used\n  Relay uplink: NO SIGNAL\n  Last Earth contact: 6 days ago\n  Last relay handshake: 4 hours ago (failed)\n\nUplink failure is not local. Relay network appears non-responsive.',
             playerOptions: [
               {
                 id: 'download-after-diag',

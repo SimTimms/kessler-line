@@ -71,3 +71,15 @@ export const CO2_FILTER_WARN_THRESHOLD = 10;
 export const CO2_FILTER_ITEM_ID = 'co2-filter';
 /** Seconds without a working filter before asphyxiation death (10 min). */
 export const CO2_NO_FILTER_DEATH_SECONDS = 600;
+
+// ── Comms Buffer ────────────────────────────────────────────────────────────
+/** Inventory item id for comms buffer modules. */
+export const COMMS_BUFFER_ITEM_ID = 'comms-buffer';
+
+// ── Emergency Battery ────────────────────────────────────────────────────────
+/** Inventory item id for emergency battery spares. */
+export const EMERGENCY_BATTERY_ITEM_ID = 'emergency-battery';
+/** Units of power the battery can deliver before depletion. */
+export const EMERGENCY_BATTERY_CAPACITY = 30;
+/** Power restored per second while battery is installed and power < 100. */
+export const EMERGENCY_BATTERY_RECHARGE_RATE = 2;

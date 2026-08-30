@@ -188,7 +188,6 @@ const MINING_SUPERVISOR: DockContact = {
           },
         ],
       },
-
       'ore-done': {
         id: 'ore-done',
         npcText: "Loaded. Watch your mass limits on undock — that ore's dense.",

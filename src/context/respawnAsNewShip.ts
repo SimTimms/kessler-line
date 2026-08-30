@@ -18,6 +18,8 @@ import {
 import { addDerelict, type DerelictRecord } from './DerelictStore';
 import { addCargoItem, clearCargo, cargo } from './Inventory';
 import { resetCO2Filter } from './CO2FilterStore';
+import { resetCommsBuffer } from './CommsBufferStore';
+import { resetEmergencyBattery } from './EmergencyBatteryStore';
 import { HULL_REPAIR_PATCH_ITEM_ID } from '../config/damageConfig';
 import { clearFractures } from './DamageControlStore';
 import {
@@ -145,9 +147,11 @@ export function respawnAsNewShip(_deathCause: string): void {
   // 5. Reset quaternion to identity
   shipQuaternion.set(0, 0, 0, 1);
 
-  // 6. Clear cargo, then reset CO2 filter (adds 2 filters) + hull patches
+  // 6. Clear cargo, then reset CO2 filter (adds 2 filters) + hull patches + comms buffer
   clearCargo();
   resetCO2Filter();
+  resetCommsBuffer();
+  resetEmergencyBattery();
   addCargoItem(HULL_REPAIR_PATCH_ITEM_ID, 2);
 
   // 7. Clear existing fractures (new ship has no prior damage)

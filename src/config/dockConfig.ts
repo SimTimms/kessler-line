@@ -18,6 +18,7 @@ export type DockCharacterRole =
   | 'drifter'
   | 'trader'
   | 'system'
+  | 'quartermaster'
   | 'police';
 
 export type DockTradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
@@ -34,6 +35,7 @@ export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   trader: 'Trader',
   police: 'Security',
   system: 'System',
+  quartermaster: 'Quartermaster',
 };
 
 export interface DockTradeTurnConfig {

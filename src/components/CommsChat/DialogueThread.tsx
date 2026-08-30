@@ -501,22 +501,22 @@ export default function DialogueThread({
           <div className="comms-trade-actions">
             {hasPendingDeal ? (
               <>
-                {tradePanel.onAcceptPendingDeal && (
-                  <button
-                    type="button"
-                    className="comms-chat-close"
-                    onClick={tradePanel.onAcceptPendingDeal}
-                  >
-                    AGREE
-                  </button>
-                )}
                 {tradePanel.onRejectPendingDeal && (
                   <button
                     type="button"
                     className="comms-chat-close"
                     onClick={tradePanel.onRejectPendingDeal}
                   >
-                    DECLINE
+                    Back
+                  </button>
+                )}
+                {tradePanel.onAcceptPendingDeal && (
+                  <button
+                    type="button"
+                    className="comms-chat-close"
+                    onClick={tradePanel.onAcceptPendingDeal}
+                  >
+                    Confirm
                   </button>
                 )}
               </>

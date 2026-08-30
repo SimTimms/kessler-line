@@ -334,3 +334,191 @@
   flex-shrink: 0;
 }
 
+/* ── Comms Buffer row ──────────────────────────────────────────────────── */
+
+.comms-buffer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.comms-buffer-row--empty {
+  background: rgba(160, 224, 255, 0.06);
+}
+
+.comms-buffer-label {
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.10em;
+  line-height: 1.35;
+  color: #aaa;
+  flex-shrink: 0;
+}
+
+.comms-buffer-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.comms-buffer-id {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #fff;
+  background: #577;
+  padding: 2px 4px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.comms-buffer-id--empty {
+  background: #555;
+  color: #999;
+}
+
+.comms-buffer-slot {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #1e2228;
+  background: #15191c;
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
+}
+
+.comms-buffer-slot--filled {
+  background-image: url(/crate.jpg);
+  background-size: cover;
+  color: #a0e0ff;
+  border-color: color-mix(in srgb, #a0e0ff 35%, #1e2228);
+  cursor: grab;
+}
+
+.comms-buffer-slot--filled:active {
+  cursor: grabbing;
+}
+
+.comms-buffer-slot--filled:hover {
+  filter: brightness(1.15);
+  box-shadow:
+    0 0 8px color-mix(in srgb, #a0e0ff 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #a0e0ff 40%, transparent);
+}
+
+.comms-buffer-slot--drop-target {
+  border-color: rgba(0, 255, 200, 0.7);
+  box-shadow:
+    0 0 6px rgba(0, 255, 200, 0.3),
+    inset 0 0 6px rgba(0, 255, 200, 0.1);
+  background: rgba(0, 255, 200, 0.08);
+}
+
+/* ── Emergency Battery row ────────────────────────────────────────────── */
+
+.emrg-battery-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.emrg-battery-row--empty {
+  background: rgba(255, 157, 0, 0.06);
+}
+
+.emrg-battery-label {
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.10em;
+  line-height: 1.35;
+  color: #aaa;
+  flex-shrink: 0;
+}
+
+.emrg-battery-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.emrg-battery-level {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--hud-fs-3xs, 0.6rem);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #fff;
+  background: #775500;
+  padding: 2px 4px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.emrg-battery-level--empty {
+  background: #555;
+  color: #999;
+}
+
+.emrg-battery-level--depleted {
+  background: #8a2030;
+}
+
+.emrg-battery-slot {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #1e2228;
+  background: #15191c;
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
+}
+
+.emrg-battery-slot--filled {
+  background-image: url(/crate.jpg);
+  background-size: cover;
+  color: #ff9d00;
+  border-color: color-mix(in srgb, #ff9d00 35%, #1e2228);
+  cursor: grab;
+}
+
+.emrg-battery-slot--filled:active {
+  cursor: grabbing;
+}
+
+.emrg-battery-slot--filled:hover {
+  filter: brightness(1.15);
+  box-shadow:
+    0 0 8px color-mix(in srgb, #ff9d00 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #ff9d00 40%, transparent);
+}
+
+.emrg-battery-slot--drop-target {
+  border-color: rgba(0, 255, 200, 0.7);
+  box-shadow:
+    0 0 6px rgba(0, 255, 200, 0.3),
+    inset 0 0 6px rgba(0, 255, 200, 0.1);
+  background: rgba(0, 255, 200, 0.08);
+}
+

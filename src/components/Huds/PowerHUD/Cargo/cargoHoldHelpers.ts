@@ -1,7 +1,9 @@
 import {
   AirVent,
+  Battery,
   Droplets,
   Hammer,
+  Radio,
   Wind,
   Zap,
   Package,
@@ -35,6 +37,8 @@ export const ITEM_ICONS: Record<string, LucideIcon> = {
   'spare-parts': Wrench,
   'co2-filter': AirVent,
   'hull-repair-patch': Hammer,
+  'comms-buffer': Radio,
+  'emergency-battery': Battery,
 };
 
 export type HoldCell =
@@ -78,7 +82,7 @@ export function expandCargoToCells(
     const Icon = ITEM_ICONS[itemId] ?? Package;
     const qty = Math.max(0, Math.floor(item.quantity));
     const provenanceLabel = provenanceLabelFor(item.salvagedBy);
-    for (let i = 0; i < qty && cells.length < slotCount; i++) {
+    for (let i = 0; i < (qty ?? 8) && cells.length < slotCount; i++) {
       cells.push({
         filled: true,
         itemId,
@@ -97,9 +101,7 @@ export function expandCargoToCells(
   return cells;
 }
 
-export function slotsToCargoItems(
-  slots: ReturnType<typeof listInventorySlots>
-): CargoItem[] {
+export function slotsToCargoItems(slots: ReturnType<typeof listInventorySlots>): CargoItem[] {
   return slots
     .filter((slot) => slot.quantity > 0)
     .map((slot) => ({

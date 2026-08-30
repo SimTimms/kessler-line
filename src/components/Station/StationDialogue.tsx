@@ -415,7 +415,7 @@ export default function DockInteriorDialogue({
       addChatMessage(threadId, {
         id: `npc-${threadId}-trade-need-offer-${Date.now()}`,
         role: 'npc',
-        text: 'Nothing for nothing. Put something on the table.',
+        text: `You'll get Nothing for nothing here. Put something on the table.`,
         timestamp: Date.now(),
       });
       return;
@@ -589,7 +589,8 @@ export default function DockInteriorDialogue({
     refreshPlayerCargoBinding();
     setPendingCargoTrade(null);
     setCargoDeal(emptyBarterDeal());
-    setTradeOpen(false);
+    const hasEffects = (tradeConfig.onCompleteEffects?.length ?? 0) > 0;
+    if (hasEffects) setTradeOpen(false);
     setTradeStance((prev) => Math.min(3, prev + 1));
     setTradeStatus(withCargoOffer(tradeConfig.panelStatusSuccess, deal));
 
@@ -644,7 +645,8 @@ export default function DockInteriorDialogue({
     recordTradeDelivery(threadId, deal);
     setPendingResourceTrade(null);
     setTradeOffer(EMPTY_TRADE_OFFER);
-    setTradeOpen(false);
+    const hasEffects = (tradeConfig.onCompleteEffects?.length ?? 0) > 0;
+    if (hasEffects) setTradeOpen(false);
     setTradeStance((prev) => Math.min(3, prev + 1));
     setTradeStatus(withResourceOffer(tradeConfig.panelStatusSuccess, deal));
 

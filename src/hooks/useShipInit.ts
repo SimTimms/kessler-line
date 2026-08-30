@@ -12,6 +12,8 @@ import { apply, savedQuaternionToEuler } from '../context/SaveManager';
 import { shipPosRef } from '../context/ShipPos';
 import { DEV_JUPITER_TEST, DEV_MARS_TEST } from '../config/debugConfig';
 import { resetCO2Filter } from '../context/CO2FilterStore';
+import { resetCommsBuffer } from '../context/CommsBufferStore';
+import { resetEmergencyBattery } from '../context/EmergencyBatteryStore';
 
 export interface ShipInitResult {
   shipInitPos: [number, number, number];
@@ -51,6 +53,8 @@ export function useShipInit(): ShipInitResult {
     } else {
       shipPosRef.current.set(...defaultStart);
       resetCO2Filter();
+      resetCommsBuffer();
+      resetEmergencyBattery();
     }
     didInitRef.current = true;
   }

@@ -1,3 +1,5 @@
+import { commsBufferInstalledRef } from './CommsBufferRef';
+
 export type MessagePlatform = 'REACH' | 'HERALD' | 'OPENLINE' | 'MERIDIAN' | 'BROADCAST';
 
 export interface NpcResponseTemplate {
@@ -69,6 +71,7 @@ setInterval(() => {
 }, 1000);
 
 export function addMessage(msg: Omit<InboxMessage, 'read' | 'timestamp'>, hailId?: string) {
+  if (!commsBufferInstalledRef.current) return; // no buffer — message lost
   if (_messages.some((m) => m.id === msg.id)) return;
   if (_pending.some((p) => p.msg.id === msg.id)) return;
   _messages.push({ ...msg, read: false, timestamp: Date.now() });
@@ -82,6 +85,7 @@ export function queueMessage(
   delayMs: number,
   hailId?: string
 ) {
+  if (!commsBufferInstalledRef.current) return; // no buffer — message lost
   if (_messages.some((m) => m.id === msg.id)) return;
   if (_pending.some((p) => p.msg.id === msg.id)) return;
   _pending.push({ msg, deliverAt: Date.now() + delayMs, hailId });
@@ -120,4 +124,19 @@ export function getPendingCount(): number {
 
 export function isMessagePending(id: string): boolean {
   return _pending.some((p) => p.msg.id === id);
+}
+
+/** Deep-copy the current inbox for buffer snapshotting. */
+export function snapshotMessages(): InboxMessage[] {
+  return _messages.map((m) => ({ ...m, replies: m.replies?.map((r) => ({ ...r })) }));
+}
+
+/** Replace the live inbox with a snapshot, clearing pending queue. */
+export function restoreMessages(msgs: InboxMessage[]): void {
+  _messages.length = 0;
+  _pending.length = 0;
+  for (const m of msgs) {
+    _messages.push({ ...m, replies: m.replies?.map((r) => ({ ...r })) });
+  }
+  window.dispatchEvent(new Event('InboxUpdated'));
 }

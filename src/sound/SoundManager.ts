@@ -41,6 +41,8 @@ let ambientBedAudio: HTMLAudioElement | null = null;
 let padScanAudio: HTMLAudioElement | null = null;
 let dockAlignAudio: HTMLAudioElement | null = null;
 let dockConnectAudio: HTMLAudioElement | null = null;
+let commsBufferEjectAudio: HTMLAudioElement | null = null;
+let batterySwitchAudio: HTMLAudioElement | null = null;
 let lowO2BreathingAudio: HTMLAudioElement | null = null;
 let hullCriticalAlarmAudio: HTMLAudioElement | null = null;
 let hullBreachHissAudio: HTMLAudioElement | null = null;
@@ -84,10 +86,7 @@ function jitteredDockSfxPlaybackRate(): number {
   return Math.max(0.25, DOCK_SFX_PLAYBACK_RATE * rateJitter);
 }
 
-function playOneShotHtmlAudio(
-  getOrCreate: () => HTMLAudioElement,
-  volume: number
-): Promise<void> {
+function playOneShotHtmlAudio(getOrCreate: () => HTMLAudioElement, volume: number): Promise<void> {
   resumeAudioContext();
   return new Promise((resolve) => {
     try {
@@ -456,9 +455,7 @@ export function stopDockAlignSound(): void {
  * Play when the ship's front docking bay hard-connects to another bay
  * (station / ship / container nose dock). Fixed playback rate — no pitch jitter.
  */
-export function playDockConnectSound(
-  volume = soundsConfig.dockConnect.volume
-): void {
+export function playDockConnectSound(volume = soundsConfig.dockConnect.volume): void {
   try {
     resumeAudioContext();
     if (!dockConnectAudio) {
@@ -472,6 +469,48 @@ export function playDockConnectSound(
     dockConnectAudio.loop = false;
     const playPromise = dockConnectAudio.play();
     if (playPromise) void playPromise.catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
+/** Comms buffer slot insert / eject cassette SFX. */
+export const COMMS_BUFFER_EJECT_SFX_SRC = '/audio/soundreality-cassette-eject-172757.mp3';
+
+export function playCommsBufferEject(volume = 0.1): void {
+  try {
+    resumeAudioContext();
+    if (!commsBufferEjectAudio) {
+      commsBufferEjectAudio = new Audio(COMMS_BUFFER_EJECT_SFX_SRC);
+      commsBufferEjectAudio.preload = 'auto';
+    }
+    commsBufferEjectAudio.pause();
+    commsBufferEjectAudio.currentTime = 0;
+    commsBufferEjectAudio.playbackRate = 1;
+    commsBufferEjectAudio.volume = Math.max(0, Math.min(1, volume));
+    commsBufferEjectAudio.loop = false;
+    const p = commsBufferEjectAudio.play();
+    if (p) void p.catch(() => undefined);
+  } catch {
+    /* non-critical */
+  }
+}
+
+/** Emergency battery slot insert / remove SFX. */
+export function playBatterySwitch(volume = 0.15): void {
+  try {
+    resumeAudioContext();
+    if (!batterySwitchAudio) {
+      batterySwitchAudio = new Audio('/switch.mp3');
+      batterySwitchAudio.preload = 'auto';
+    }
+    batterySwitchAudio.pause();
+    batterySwitchAudio.currentTime = 0;
+    batterySwitchAudio.playbackRate = 1;
+    batterySwitchAudio.volume = Math.max(0, Math.min(1, volume));
+    batterySwitchAudio.loop = false;
+    const p = batterySwitchAudio.play();
+    if (p) void p.catch(() => undefined);
   } catch {
     /* non-critical */
   }
@@ -1079,9 +1118,7 @@ export function playCannonShotSound(volume = soundsConfig.cannonShot.volume): vo
  * Hull strike against a solid collidable (asteroid, drone, station hull, etc.).
  * Not used for docking-bay capture. Playback rate is intentionally varied.
  */
-export function playHullCollisionSound(
-  volume = soundsConfig.hullCollision.volume
-): void {
+export function playHullCollisionSound(volume = soundsConfig.hullCollision.volume): void {
   try {
     const now = performance.now();
     if (now - lastHullCollisionSfxAt < HULL_COLLISION_SFX_COOLDOWN_MS) return;
@@ -1106,9 +1143,7 @@ export function playHullCollisionSound(
  * Incoming machine-gun round striking the player hull.
  * Playback rate is varied so rapid hits don't sound identical.
  */
-export function playPlayerBulletHitSound(
-  volume = soundsConfig.playerBulletHit.volume
-): void {
+export function playPlayerBulletHitSound(volume = soundsConfig.playerBulletHit.volume): void {
   try {
     const now = performance.now();
     if (now - lastPlayerBulletHitSfxAt < PLAYER_BULLET_HIT_SFX_COOLDOWN_MS) return;

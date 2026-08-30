@@ -6,6 +6,8 @@ import {
   HULL_BREACH_O2_DRAIN_MULTIPLIER,
 } from '../../config/damageConfig';
 import { getTotalScannerPowerDrain } from '../../config/scanRanges';
+import { getInstalledBatteryLevel } from '../../context/EmergencyBatteryStore';
+import { EMERGENCY_BATTERY_RECHARGE_RATE } from '../../config/damageConfig';
 import {
   setVesselFuel,
   setVesselO2,
@@ -109,6 +111,12 @@ export function applyResourceDrain({
       ? HULL_BREACH_O2_DRAIN_MULTIPLIER
       : 1;
   const o2Drain = o2DrainRateForCrew(vesselState.shipCrew) * breachO2Multiplier;
+
+  // Account for emergency battery recharge in the displayed rate
+  const batteryLevel = getInstalledBatteryLevel();
+  if (batteryLevel !== null && batteryLevel > 0 && vesselState.power < 100) {
+    powerRate += EMERGENCY_BATTERY_RECHARGE_RATE;
+  }
 
   if (trackHudRates) {
     resourceRateRefs.power.current = powerRate;

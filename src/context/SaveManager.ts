@@ -66,6 +66,8 @@ import {
   setHistoricalContactIds,
 } from './SavedContactsState';
 import { captureCO2FilterState, applyCO2FilterState } from './CO2FilterStore';
+import { captureCommsBufferState, applyCommsBufferState } from './CommsBufferStore';
+import { captureEmergencyBatteryState, applyEmergencyBatteryState } from './EmergencyBatteryStore';
 
 function parseOwnerKey(ownerKey: string): InventoryOwnerRef | null {
   // "dock:X:contact:Y" → { kind: 'contact', dockId: X, contactId: Y }
@@ -201,6 +203,10 @@ export function capture(): SaveData {
     co2FilterLevel: captureCO2FilterState().level,
     co2SpareFilters: captureCO2FilterState().spares,
     co2NoFilterElapsed: captureCO2FilterState().noFilterElapsed,
+    commsBufferInstalledId: captureCommsBufferState().installedBufferId,
+    commsBufferSnapshots: captureCommsBufferState().snapshots,
+    emergencyBatteryLevel: captureEmergencyBatteryState().level,
+    emergencyBatterySpares: captureEmergencyBatteryState().spares,
   };
 }
 
@@ -335,6 +341,22 @@ export function apply(data: SaveData): void {
       data.co2FilterLevel,
       data.co2SpareFilters ?? [],
       data.co2NoFilterElapsed ?? 0,
+    );
+  }
+
+  // Comms buffer (installed buffer's live data already restored by message/thread restore above)
+  if (data.commsBufferInstalledId !== undefined) {
+    applyCommsBufferState(
+      data.commsBufferInstalledId,
+      data.commsBufferSnapshots ?? {},
+    );
+  }
+
+  // Emergency battery
+  if (data.emergencyBatteryLevel !== undefined) {
+    applyEmergencyBatteryState(
+      data.emergencyBatteryLevel,
+      data.emergencyBatterySpares ?? [],
     );
   }
 }

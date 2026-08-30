@@ -84,4 +84,5 @@ export function restoreThreads(saved: Record<string, ChatThread>): void {
   for (const [id, thread] of Object.entries(saved)) {
     _threads.set(id, { ...thread, messages: thread.messages.map((m) => ({ ...m })) });
   }
+  window.dispatchEvent(new CustomEvent('ChatUpdated', { detail: { shipId: '__restore__' } }));
 }

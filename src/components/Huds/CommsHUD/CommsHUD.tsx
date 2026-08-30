@@ -3,6 +3,7 @@ import { AudioLines, RadioTower } from 'lucide-react';
 import ContactsHUD from '../../ContactsHUD/ContactsHUD';
 import JournalPanel from './JournalPanel';
 import ContactsPanel from './ContactsPanel';
+import HistoryPanel from './HistoryPanel';
 import {
   clampScannerPowerLevel,
   formatScannerPowerDrain,
@@ -34,7 +35,7 @@ import type { NavScanContact } from '../NavHUD/navScanPickerContacts';
 import '../HUD/ScannerHUD.css';
 import './CommsHUD.css';
 
-type CommsTabId = 'radio' | 'journal' | 'contacts';
+type CommsTabId = 'radio' | 'journal' | 'contacts' | 'messages';
 
 const PAD_SCAN_WAVE_BARS = 12;
 const RADIO_ID = 'radio' as const;
@@ -197,6 +198,13 @@ export default function CommsHUD({
             </button>
             <button
               type="button"
+              className={`event-log-tab${activeTab === 'messages' ? ' event-log-tab--active' : ''}`}
+              onClick={() => setActiveTab('messages')}
+            >
+              MESSAGES
+            </button>
+            <button
+              type="button"
               className={`event-log-tab${activeTab === 'contacts' ? ' event-log-tab--active' : ''}`}
               onClick={() => setActiveTab('contacts')}
             >
@@ -308,6 +316,7 @@ export default function CommsHUD({
             </>
           )}
           {activeTab === 'journal' && <JournalPanel />}
+          {activeTab === 'messages' && <HistoryPanel />}
           {activeTab === 'contacts' && (
             <ContactsPanel
               savedItems={savedItems}

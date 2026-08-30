@@ -20,11 +20,25 @@ import {
   installFilterFromCargo,
 } from '../../../context/CO2FilterStore';
 import {
+  getInstalledBufferId,
+  subscribeCommsBuffer,
+  installBufferFromCargo,
+} from '../../../context/CommsBufferStore';
+import {
+  getInstalledBatteryLevel,
+  subscribeEmergencyBattery,
+  tickEmergencyBattery,
+  installBatteryFromCargo,
+} from '../../../context/EmergencyBatteryStore';
+import {
   PATCH_DURATION_SECONDS,
   CO2_FILTER_WARN_THRESHOLD,
   CO2_FILTER_ITEM_ID,
   CO2_NO_FILTER_DEATH_SECONDS,
   HULL_REPAIR_PATCH_ITEM_ID,
+  COMMS_BUFFER_ITEM_ID,
+  EMERGENCY_BATTERY_ITEM_ID,
+  EMERGENCY_BATTERY_CAPACITY,
 } from '../../../config/damageConfig';
 import {
   isCargoDragEvent,
@@ -32,9 +46,9 @@ import {
   writeCargoDragPayload,
   type CargoDragPayload,
 } from '../PowerHUD/Cargo/cargoHoldHelpers';
-import { CO2_FILTER_SLOT_OWNER } from '../PowerHUD/Cargo/CargoHoldPanel';
+import { CO2_FILTER_SLOT_OWNER, COMMS_BUFFER_SLOT_OWNER, EMERGENCY_BATTERY_SLOT_OWNER } from '../PowerHUD/Cargo/CargoHoldPanel';
 import type { InventoryOwnerRef } from '../../../context/InventoryStore';
-import { AlertTriangle, AirVent, Hammer } from 'lucide-react';
+import { AlertTriangle, AirVent, Hammer, Radio, Battery } from 'lucide-react';
 import './DamageControlHUD.css';
 
 const DURATION_MS = PATCH_DURATION_SECONDS * 1000;
@@ -42,6 +56,16 @@ const DURATION_MS = PATCH_DURATION_SECONDS * 1000;
 const CO2_SLOT_OWNER_REF: InventoryOwnerRef = {
   kind: 'vessel',
   vesselId: CO2_FILTER_SLOT_OWNER,
+};
+
+const COMMS_BUFFER_SLOT_OWNER_REF: InventoryOwnerRef = {
+  kind: 'vessel',
+  vesselId: COMMS_BUFFER_SLOT_OWNER,
+};
+
+const BATTERY_SLOT_OWNER_REF: InventoryOwnerRef = {
+  kind: 'vessel',
+  vesselId: EMERGENCY_BATTERY_SLOT_OWNER,
 };
 
 function formatCountdown(remainingSeconds: number): string {
@@ -81,11 +105,33 @@ function useCO2Filter() {
   return { co2Level: level, co2Spares: spares, noFilterElapsed: elapsed };
 }
 
+function useCommsBuffer() {
+  const [bufferId, setBufferId] = useState(() => getInstalledBufferId());
+  useEffect(
+    () => subscribeCommsBuffer(() => setBufferId(getInstalledBufferId())),
+    []
+  );
+  return bufferId;
+}
+
+function useEmergencyBattery() {
+  const [level, setLevel] = useState(() => getInstalledBatteryLevel());
+  useEffect(
+    () => subscribeEmergencyBattery(() => setLevel(getInstalledBatteryLevel())),
+    []
+  );
+  return level;
+}
+
 export default function DamageControlHUD() {
   const { fractures, patchJobs } = useDamageControl();
   const { co2Level, co2Spares, noFilterElapsed } = useCO2Filter();
+  const commsBufferId = useCommsBuffer();
+  const batteryLevel = useEmergencyBattery();
   const [patchCount, setPatchCount] = useState(() => getPatchCount());
   const [co2DropTarget, setCo2DropTarget] = useState(false);
+  const [commsDropTarget, setCommsDropTarget] = useState(false);
+  const [batteryDropTarget, setBatteryDropTarget] = useState(false);
   const [patchDropTarget, setPatchDropTarget] = useState<number | null>(null);
   const [now, setNow] = useState(() => performance.now());
   const rafRef = useRef(0);
@@ -103,6 +149,7 @@ export default function DamageControlHUD() {
       tickDamageControl();
       tickPatchJobs();
       tickCO2Filter(delta);
+      tickEmergencyBattery(delta);
       setPatchCount(getPatchCount());
       setNow(now);
       rafRef.current = requestAnimationFrame(loop);
@@ -154,6 +201,76 @@ export default function DamageControlHUD() {
     // Don't accept drops from the CO2 slot itself (would be a no-op)
     if (payload.from.kind === 'vessel' && payload.from.vesselId === CO2_FILTER_SLOT_OWNER) return;
     installFilterFromCargo();
+  }
+
+  // ── Comms buffer drag-and-drop ────────────────────────────────────────────
+  const commsInstalled = commsBufferId !== null;
+
+  function onCommsDragStart(e: DragEvent) {
+    if (!commsInstalled) return;
+    const payload: CargoDragPayload = {
+      itemId: COMMS_BUFFER_ITEM_ID,
+      quantity: 1,
+      from: COMMS_BUFFER_SLOT_OWNER_REF,
+      salvagedBy: commsBufferId,
+    };
+    writeCargoDragPayload(e.dataTransfer, payload);
+  }
+
+  function onCommsDragOver(e: DragEvent) {
+    if (!isCargoDragEvent(e.dataTransfer)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setCommsDropTarget(true);
+  }
+
+  function onCommsDragLeave() {
+    setCommsDropTarget(false);
+  }
+
+  function onCommsDrop(e: DragEvent) {
+    setCommsDropTarget(false);
+    e.preventDefault();
+    const payload = readCargoDragPayload(e.dataTransfer);
+    if (!payload || payload.itemId !== COMMS_BUFFER_ITEM_ID) return;
+    // Don't accept drops from the comms buffer slot itself
+    if (payload.from.kind === 'vessel' && payload.from.vesselId === COMMS_BUFFER_SLOT_OWNER) return;
+    if (!payload.salvagedBy) return;
+    installBufferFromCargo(payload.salvagedBy);
+  }
+
+  // ── Emergency battery drag-and-drop ──────────────────────────────────────
+  const batteryInstalled = batteryLevel !== null;
+
+  function onBatteryDragStart(e: DragEvent) {
+    if (!batteryInstalled) return;
+    const payload: CargoDragPayload = {
+      itemId: EMERGENCY_BATTERY_ITEM_ID,
+      quantity: 1,
+      from: BATTERY_SLOT_OWNER_REF,
+    };
+    writeCargoDragPayload(e.dataTransfer, payload);
+  }
+
+  function onBatteryDragOver(e: DragEvent) {
+    if (!isCargoDragEvent(e.dataTransfer)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setBatteryDropTarget(true);
+  }
+
+  function onBatteryDragLeave() {
+    setBatteryDropTarget(false);
+  }
+
+  function onBatteryDrop(e: DragEvent) {
+    setBatteryDropTarget(false);
+    e.preventDefault();
+    const payload = readCargoDragPayload(e.dataTransfer);
+    if (!payload || payload.itemId !== EMERGENCY_BATTERY_ITEM_ID) return;
+    // Don't accept drops from the battery slot itself
+    if (payload.from.kind === 'vessel' && payload.from.vesselId === EMERGENCY_BATTERY_SLOT_OWNER) return;
+    installBatteryFromCargo();
   }
 
   // ── Fracture drag-and-drop ────────────────────────────────────────────────
@@ -246,6 +363,68 @@ export default function DamageControlHUD() {
           >
             {filterInstalled ? (
               <AirVent size={13} strokeWidth={1.75} />
+            ) : (
+              <span className="co2-filter-slot__plus">+</span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className={`comms-buffer-row${!commsInstalled ? ' comms-buffer-row--empty' : ''}`}>
+        <span className="comms-buffer-label">COMMS BUF</span>
+        <div className="comms-buffer-right">
+          {commsInstalled ? (
+            <span className="comms-buffer-id">
+              {commsBufferId === 'player-ship' ? 'SELF' : commsBufferId}
+            </span>
+          ) : (
+            <span className="comms-buffer-id comms-buffer-id--empty">—</span>
+          )}
+          <div
+            className={`comms-buffer-slot${commsInstalled ? ' comms-buffer-slot--filled' : ''}${commsDropTarget ? ' comms-buffer-slot--drop-target' : ''}`}
+            draggable={commsInstalled}
+            onDragStart={onCommsDragStart}
+            onDragOver={onCommsDragOver}
+            onDragLeave={onCommsDragLeave}
+            onDrop={onCommsDrop}
+            title={
+              commsInstalled
+                ? `Comms buffer: ${commsBufferId === 'player-ship' ? 'SELF' : commsBufferId} — drag to cargo to remove`
+                : 'Drag a comms buffer here from cargo'
+            }
+          >
+            {commsInstalled ? (
+              <Radio size={13} strokeWidth={1.75} />
+            ) : (
+              <span className="co2-filter-slot__plus">+</span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className={`emrg-battery-row${!batteryInstalled ? ' emrg-battery-row--empty' : ''}`}>
+        <span className="emrg-battery-label">EMRG BATT</span>
+        <div className="emrg-battery-right">
+          {batteryInstalled ? (
+            <span className={`emrg-battery-level${batteryLevel <= 0 ? ' emrg-battery-level--depleted' : ''}`}>
+              {Math.round(batteryLevel)}/{EMERGENCY_BATTERY_CAPACITY}
+            </span>
+          ) : (
+            <span className="emrg-battery-level emrg-battery-level--empty">—</span>
+          )}
+          <div
+            className={`emrg-battery-slot${batteryInstalled ? ' emrg-battery-slot--filled' : ''}${batteryDropTarget ? ' emrg-battery-slot--drop-target' : ''}`}
+            draggable={batteryInstalled}
+            onDragStart={onBatteryDragStart}
+            onDragOver={onBatteryDragOver}
+            onDragLeave={onBatteryDragLeave}
+            onDrop={onBatteryDrop}
+            title={
+              batteryInstalled
+                ? `Emergency battery ${Math.round(batteryLevel)}/${EMERGENCY_BATTERY_CAPACITY} — drag to cargo to remove`
+                : 'Drag an emergency battery here from cargo'
+            }
+          >
+            {batteryInstalled ? (
+              <Battery size={13} strokeWidth={1.75} />
             ) : (
               <span className="co2-filter-slot__plus">+</span>
             )}

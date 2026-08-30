@@ -89,6 +89,34 @@ export const INVENTORY_ITEMS = {
     baseValue: 25,
     defaultCapacity: 10,
   },
+  commsBuffer: {
+    id: 'comms-buffer',
+    label: 'Comms Buffer',
+    category: 'parts',
+    baseValue: 40,
+    defaultCapacity: 1,
+  },
+  emergencyBattery: {
+    id: 'emergency-battery',
+    label: 'Emergency Battery',
+    category: 'parts',
+    baseValue: 45,
+    defaultCapacity: 3,
+  },
+  foodRation: {
+    id: 'food-ration',
+    label: 'Food Ration',
+    category: 'lifeSupport',
+    baseValue: 30,
+    defaultCapacity: 10,
+  },
+  waterRation: {
+    id: 'water-ration',
+    label: 'Water Ration',
+    category: 'lifeSupport',
+    baseValue: 30,
+    defaultCapacity: 10,
+  },
 } as const satisfies Record<string, InventoryItemDef>;
 
 export type InventoryItemId = (typeof INVENTORY_ITEMS)[keyof typeof INVENTORY_ITEMS]['id'];
@@ -127,6 +155,8 @@ export const INVENTORY_ITEM_UI: Record<string, InventoryItemUi> = {
   'churchill-parcel': { color: '#c9a9ff', tag: 'TASK' },
   'hull-repair-patch': { color: '#ff6a4d', tag: 'RPR' },
   'co2-filter': { color: '#7ec8e3', tag: 'CO2' },
+  'comms-buffer': { color: '#a0e0ff', tag: 'COM' },
+  'emergency-battery': { color: '#ff9d00', tag: 'BATT' },
 };
 
 export function getInventoryItemUi(itemIdOrLabel: string): InventoryItemUi {
@@ -138,10 +168,6 @@ export function getInventoryItemUi(itemIdOrLabel: string): InventoryItemUi {
  * Effective barter value for one unit.
  * High demand raises value; high supply lowers it.
  */
-export function effectiveTradeValue(
-  baseValue: number,
-  supply = 0,
-  demand = 0
-): number {
+export function effectiveTradeValue(baseValue: number, supply = 0, demand = 0): number {
   return (baseValue * (1 + Math.max(0, demand))) / (1 + Math.max(0, supply));
 }

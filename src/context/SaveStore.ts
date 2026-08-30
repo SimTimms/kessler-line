@@ -119,6 +119,12 @@ export interface SaveData {
   co2FilterLevel?: number | null;
   co2SpareFilters?: number[];
   co2NoFilterElapsed?: number;
+  // Comms buffer state (optional — absent in older saves)
+  commsBufferInstalledId?: string | null;
+  commsBufferSnapshots?: Record<string, { messages: SavedMessage[]; chatThreads: Record<string, ChatThread> }>;
+  // Emergency battery state (optional — absent in older saves)
+  emergencyBatteryLevel?: number | null;
+  emergencyBatterySpares?: number[];
 }
 
 // ── V1 migration ──────────────────────────────────────────────────────────────

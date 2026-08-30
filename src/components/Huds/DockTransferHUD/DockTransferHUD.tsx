@@ -231,6 +231,7 @@ const DockTransferHUD = memo(function DockTransferHUD() {
   const derelictRecord: DerelictRecord | undefined = isDerelict
     ? getDerelicts().find((d) => d.id === partnerId)
     : undefined;
+  const hasDockInventory = partnerId ? !!getDock(partnerId)?.inventory : false;
 
   useEffect(() => {
     let raf = 0;
@@ -336,7 +337,7 @@ const DockTransferHUD = memo(function DockTransferHUD() {
             <ShipCargoSummary />
           </div>
 
-          {isDerelict && partnerId ? (
+          {(isDerelict || hasDockInventory) && partnerId ? (
             <>
               <div className="dock-transfer-hud__divider" />
               <div className="dock-station-panel__cargo-summary">
