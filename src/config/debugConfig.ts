@@ -22,7 +22,7 @@ export const DEV_MARS_TEST = false;
 /** Spawn next to the Comms Buffer Satellite orbiting Mars (ignores autosave). */
 export const DEV_COMMS_BUFFER_SATELLITE_TEST = false;
 /** Open the Comms Buffer Satellite dock panel after first undock (debug mission dialogue). */
-export const DEV_COMMS_BUFFER_PANEL_ON_UNDOCK = true;
+export const DEV_COMMS_BUFFER_PANEL_ON_UNDOCK = false;
 
 // ── Large-world rendering ─────────────────────────────────────────────────
 /** Sandbox uses {@link FloatingOrigin} (ship-relative GPU coords). Main Scene.tsx next. */

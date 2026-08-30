@@ -98,7 +98,7 @@ export default function CommsRelayMissionController() {
           contactId: 'elias-voss',
         },
       });
-    }, 10_000);
+    }, 300_000);
 
     return () => clearTimeout(handle);
   }, []);
