@@ -1,0 +1,39 @@
+.collision-test-panel {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 85, 85, 0.45);
+  background: rgba(10, 0, 0, 0.72);
+  color: rgba(255, 200, 200, 0.95);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  pointer-events: auto;
+  z-index: 9999;
+}
+
+.collision-test-button-row {
+  display: flex;
+  gap: 6px;
+}
+
+.collision-test-button {
+  border: 1px solid rgba(255, 120, 120, 0.55);
+  background: rgba(35, 0, 0, 0.8);
+  color: rgba(255, 210, 210, 0.95);
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.collision-test-button.disabled {
+  opacity: 0.5;
+}
