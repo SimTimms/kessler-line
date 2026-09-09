@@ -37,27 +37,16 @@ export interface CollidableEntry {
   /** Returns the actual rendered Three.js object for wireframe overlay, if available. */
   getObject3D?: () => THREE.Object3D | null;
 
-  /**
-   * Called when the ship collides with this object.
-   * `impulse` is `collisionNormal * impactSpeed` — a vector pointing away from
-   * the ship's approach direction, pre-scaled by impact magnitude.
-   * The receiver should scale by its own mass/impulse factor.
-   */
+  /** Collision callback; `impulse` is `collisionNormal * impactSpeed` for the receiver to scale. */
   applyImpulse?: (impulse: THREE.Vector3) => void;
 
   /** Spherical body surface — inward impact destroys the ship and spawns dust VFX. */
   planetSurfaceImpact?: boolean;
 
-  /**
-   * When false, the object stays in the registry for scanners / debug overlays but
-   * does not participate in ship hull collision resolution.
-   */
+  /** When false, stays visible to scanners/debug but is skipped in hull collision. */
   physicalCollision?: boolean;
 
-  /**
-   * When true, the minimap will NOT show this as an always-visible "hard" contact.
-   * The object can still appear via scanner detection (proximity, mag, etc.).
-   */
+  /** When true, hidden from the minimap as a hard contact (scanner detection still works). */
   scannerOnlyMinimap?: boolean;
 
   /** Optional docking capture profile used by docking helpers for this bay. */

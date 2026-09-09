@@ -33,7 +33,7 @@ export function spawnProjectile(
   target: CollidableEntry | null,
   defaultAim: THREE.Vector3 | null,
   projectiles: TestProjectile[],
-  getNextId: () => number,
+  getNextId: () => number
 ): void {
   if (target) {
     target.getWorldPosition(_shipPos);

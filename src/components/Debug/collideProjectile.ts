@@ -25,7 +25,7 @@ const _hitPoint = new THREE.Vector3();
 export function collideProjectile(
   projectile: TestProjectile,
   target: CollidableEntry,
-  preferredTargetId: string | undefined,
+  preferredTargetId: string | undefined
 ): void {
   target.getWorldPosition(_targetPos);
   const shape = target.shape;
@@ -38,6 +38,7 @@ export function collideProjectile(
     if (dist < minDist && dist > 1e-6) {
       hit = true;
       overlap = minDist - dist;
+      //bounce the projectile off the target
       _collisionNormal.subVectors(projectile.position, _targetPos).normalize();
     }
   } else if (shape.type === 'box') {
@@ -109,6 +110,7 @@ export function collideProjectile(
   if (!hit) return;
   projectile.position.addScaledVector(_collisionNormal, overlap);
   const normalSpeed = projectile.velocity.dot(_collisionNormal);
+  //if moving in opposite direction of the collision normal, reflect the velocity
   if (normalSpeed < 0) {
     projectile.velocity.addScaledVector(
       _collisionNormal,
@@ -116,6 +118,7 @@ export function collideProjectile(
     );
     projectile.velocity.multiplyScalar(PROJECTILE_DRAG_ON_IMPACT);
 
+    //Cosmetic venting effect
     const ventTargetId = preferredTargetId ?? projectile.targetId;
     const shouldVent =
       target.id === ventTargetId &&
