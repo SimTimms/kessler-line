@@ -55,7 +55,7 @@ export const ELIAS_VOSS: DockContact = {
           {
             id: 'ack',
             label: 'Acknowledge',
-            text: 'Copy all. I will report once the satellite is deployed.',
+            text: 'Copy. I will report once the satellite is deployed.',
             nextTurnId: null,
           },
         ],

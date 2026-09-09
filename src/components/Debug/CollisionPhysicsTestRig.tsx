@@ -1,26 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { unregisterCollidable, getCollidables } from '../../context/CollisionRegistry';
 import { clearProjectiles } from './clearProjectiles';
-import { collideProjectile } from './collideProjectile';
 import { findCollisionTarget } from './findCollisionTarget';
 import { spawnProjectile, PROJECTILE_RADIUS, type TestProjectile } from './spawnProjectile';
+import { syncInstancedMesh } from './syncInstancedMesh';
+import { tickProjectiles } from './tickProjectiles';
 import './CollisionPhysicsTestRig.css';
 import { DEBUG_COLLISION_PHYSICS_TESTS } from '../../config/debugConfig';
 
 const MAX_PROJECTILES = 48;
-const PROJECTILE_LIFETIME_SEC = 14;
-
 const BURST_COUNT = 5;
 
 export const EVENT_COLLISION_TEST_TOGGLE = 'DebugCollisionTestToggle';
 export const EVENT_COLLISION_TEST_SET_MODE = 'DebugCollisionTestSetMode';
 export const EVENT_COLLISION_TEST_FIRE = 'DebugCollisionTestFire';
 export const EVENT_COLLISION_TEST_BURST = 'DebugCollisionTestBurst';
-
-const _dummy = new THREE.Object3D();
 
 interface CollisionPhysicsTestRigProps {
   enabled?: boolean;
@@ -31,7 +26,6 @@ interface CollisionPhysicsTestRigProps {
 
 export default function CollisionPhysicsTestRig({
   enabled = DEBUG_COLLISION_PHYSICS_TESTS,
-  showPanel = true,
   defaultAimPosition,
   preferredTargetId,
 }: CollisionPhysicsTestRigProps) {
@@ -121,36 +115,11 @@ export default function CollisionPhysicsTestRig({
       return;
     }
 
-    const projectiles = projectilesRef.current;
-    let write = 0;
-    for (let i = 0; i < projectiles.length; i++) {
-      const projectile = projectiles[i];
-      projectile.ageSec += deltaSec;
-      if (projectile.ageSec > PROJECTILE_LIFETIME_SEC) {
-        unregisterCollidable(projectile.id);
-        continue;
-      }
-      projectile.position.addScaledVector(projectile.velocity, deltaSec);
-      const target =
-        getCollidables().find((entry) => entry.id === projectile.targetId) ?? findTarget();
-      if (target) {
-        collideProjectile(projectile, target, preferredTargetId);
-      }
-      projectiles[write++] = projectile;
-    }
-    projectiles.length = write;
+    tickProjectiles(projectilesRef.current, deltaSec, preferredTargetId, findTarget);
 
-    if (!meshRef.current) return;
-    const visibleCount = Math.min(projectiles.length, MAX_PROJECTILES);
-    meshRef.current.count = visibleCount;
-    for (let i = 0; i < visibleCount; i++) {
-      _dummy.position.copy(projectiles[i].position);
-      _dummy.quaternion.identity();
-      _dummy.scale.setScalar(1);
-      _dummy.updateMatrix();
-      meshRef.current.setMatrixAt(i, _dummy.matrix);
+    if (meshRef.current) {
+      syncInstancedMesh(meshRef.current, projectilesRef.current, MAX_PROJECTILES);
     }
-    meshRef.current.instanceMatrix.needsUpdate = true;
   });
 
   if (!enabled) return null;
@@ -163,44 +132,8 @@ export default function CollisionPhysicsTestRig({
         frustumCulled={false}
       >
         <sphereGeometry args={[PROJECTILE_RADIUS, 10, 8]} />
-        <meshStandardMaterial
-          color="#ff3355"
-          emissive="#440000"
-          emissiveIntensity={0.7}
-          metalness={0.2}
-          roughness={0.5}
-        />
+        <meshStandardMaterial color="#ff3355" emissive="#440000" emissiveIntensity={0.7} />
       </instancedMesh>
-      {showPanel ? (
-        <Html fullscreen zIndexRange={[12000, 12000]}>
-          <div className="collision-test-panel">
-            <div>Collision Test {testModeActive ? 'ON' : 'OFF'} (F8)</div>
-            <div className="collision-test-button-row">
-              <button type="button" className="collision-test-button" onClick={toggleTestMode}>
-                {testModeActive ? 'Disable' : 'Enable'}
-              </button>
-              <button
-                type="button"
-                className={`collision-test-button${testModeActive ? '' : ' disabled'}`}
-                onClick={() => spawn()}
-                disabled={!testModeActive}
-              >
-                Fire (J)
-              </button>
-              <button
-                type="button"
-                className={`collision-test-button${testModeActive ? '' : ' disabled'}`}
-                onClick={() => {
-                  for (let i = 0; i < BURST_COUNT; i++) spawn();
-                }}
-                disabled={!testModeActive}
-              >
-                Burst (K)
-              </button>
-            </div>
-          </div>
-        </Html>
-      ) : null}
     </>
   );
 }

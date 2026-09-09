@@ -394,6 +394,13 @@ function PlanetSurfaceMaterial({
       bumpMap={bumpMap}
       bumpScale={bumpScale}
       fog={false}
+      onBeforeCompile={(shader) => {
+        // DEBUG: intentionally break the fragment shader for Spector.js testing
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <output_fragment>',
+          `gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0); // MAGENTA DEBUG BREAK`
+        );
+      }}
     />
   );
 }

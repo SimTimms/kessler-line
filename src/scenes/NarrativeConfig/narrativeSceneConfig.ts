@@ -3,7 +3,7 @@ import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/vis
 import { getPlanetPosition, getPlanetWorldRadius } from '../../config/planetPosition';
 import { PLANET_SOI_MULTIPLIER, SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
 import { inventoryItems, type InventoryItem } from '../../inventory/inventory-types';
-import { DEV_COMMS_BUFFER_SATELLITE_TEST } from '../../config/debugConfig';
+import { DEV_COMMS_BUFFER_SATELLITE_TEST, DEV_NEPTUNE_TEST } from '../../config/debugConfig';
 import {
   BUFFER_ORBIT_RADIUS,
   BUFFER_ORBIT_PHASE,
@@ -134,6 +134,20 @@ export function getNarrativeShipSpawn(): {
   rotation: Vec3;
   skipDock?: boolean;
 } {
+  if (DEV_NEPTUNE_TEST) {
+    const neptunePos = getPlanetPosition('Neptune');
+    const neptuneRadius = getPlanetWorldRadius('Neptune');
+    // Spawn 500 units above Neptune's surface, facing toward it
+    const radial = neptunePos.clone().setY(0).normalize();
+    const shipPos = neptunePos.clone().add(radial.clone().multiplyScalar(neptuneRadius + 500));
+    const yaw = Math.atan2(-radial.x, -radial.z);
+    return {
+      position: [shipPos.x, 0, shipPos.z],
+      rotation: [0, yaw, 0],
+      skipDock: true,
+    };
+  }
+
   if (DEV_COMMS_BUFFER_SATELLITE_TEST) {
     const marsPos = getPlanetPosition('Mars');
     const satX = marsPos.x + BUFFER_ORBIT_RADIUS * Math.cos(BUFFER_ORBIT_PHASE);

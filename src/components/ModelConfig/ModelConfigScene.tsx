@@ -3,11 +3,8 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Perf } from 'r3f-perf';
-import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
-import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
-import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
 import DustCloud from '../DustCloud/DustCloud';
 import CollisionPhysicsTestRig from '../Debug/CollisionPhysicsTestRig';
 import CollisionDebug from '../Debug/CollisionDebug';
@@ -15,6 +12,8 @@ import Spaceship from '../Ship/Spaceship';
 import { SpaceshipConfig } from './SpaceshipConfig';
 import { CANVAS_FOV } from '../../config/visualConfig';
 
+//this is a hack to get the camera reference into the context
+//it is used to get the camera position for the HUD
 function CameraCapture() {
   const { camera } = useThree();
   useEffect(() => {
@@ -33,17 +32,6 @@ interface ModelConfigSceneProps {
 export default function ModelConfigScene({ showCollisionDebug = false }: ModelConfigSceneProps) {
   useEffect(() => {
     shipPosRef.current.set(0, 0, 0);
-    minimapShipPosition.set(0, 0, 0);
-  }, []);
-
-  useEffect(() => {
-    const onRequestUndock = () => {
-      window.dispatchEvent(new CustomEvent('ShipUndocked'));
-    };
-    window.addEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
-    return () => {
-      window.removeEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
-    };
   }, []);
 
   return (
@@ -61,6 +49,7 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
         far: SpaceshipConfig.scene.canvasFar,
       }}
       gl={{
+        //reduce z-fighting by using logarithmic depth buffer
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: SpaceshipConfig.scene.toneMappingExposure,
@@ -74,12 +63,11 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
       <directionalLight position={[140, 100, 240]} intensity={14.4} color="#ff6600" />
       <directionalLight position={[-140, 10, 240]} intensity={4.4} color="#ffffff" />
 
-      {/*
       <gridHelper
         args={[SpaceshipConfig.gridSize, SpaceshipConfig.gridDivisions, '#006666', '#003333']}
       />
       <axesHelper args={[120]} />
-      */}
+
       <Suspense fallback={null}>
         <Spaceship
           url={SpaceshipConfig.url}
@@ -93,7 +81,6 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
           physicsOptions={SpaceshipConfig.physicsOptions}
         />
       </Suspense>
-      <SharedInteractionSceneTools />
       <OrbitControls
         makeDefault
         target={[
@@ -117,12 +104,13 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
         ]}
         opacity={0.2}
       />
+      {/* used to fire collision objects at the ship */}
       <CollisionPhysicsTestRig
         enabled
-        showPanel={false}
         defaultAimPosition={SpaceshipConfig.targetPosition}
         preferredTargetId={SpaceshipConfig.targetScan.id}
       />
+      {/* used to debug the collision objects */}
       <CollisionDebug
         visible={showCollisionDebug}
         attachToObjects

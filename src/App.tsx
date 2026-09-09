@@ -116,6 +116,8 @@ function App() {
           onNarrativeLoad={handleNarrativeLoad}
         />
       );
+    case GAME_MODES.narrativeConfig:
+      return <NarrativeConfig loadSave={narrativeLoadSave} />;
     case GAME_MODES.modelConfig:
       return <ModelConfig />;
     case GAME_MODES.shipNavigationConfig:
@@ -134,8 +136,7 @@ function App() {
       return <CombatConfig />;
     case GAME_MODES.hudConfig:
       return <HudConfig />;
-    case GAME_MODES.narrativeConfig:
-      return <NarrativeConfig loadSave={narrativeLoadSave} />;
+
     case GAME_MODES.emptyScene:
       return <EmptyScene />;
     case GAME_MODES.planetaryConfig:

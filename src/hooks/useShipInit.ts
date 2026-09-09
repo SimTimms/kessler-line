@@ -10,7 +10,7 @@ import { getShipSpawnNearPlanet } from '../config/planetPosition';
 import { loadSlot, AUTOSAVE_SLOT } from '../context/SaveStore';
 import { apply, savedQuaternionToEuler } from '../context/SaveManager';
 import { shipPosRef } from '../context/ShipPos';
-import { DEV_JUPITER_TEST, DEV_MARS_TEST } from '../config/debugConfig';
+import { DEV_JUPITER_TEST, DEV_MARS_TEST, DEV_NEPTUNE_TEST } from '../config/debugConfig';
 import { resetCO2Filter } from '../context/CO2FilterStore';
 import { resetCommsBuffer } from '../context/CommsBufferStore';
 import { resetEmergencyBattery } from '../context/EmergencyBatteryStore';
@@ -23,6 +23,7 @@ export interface ShipInitResult {
 }
 
 function resolveStartPlanetName(): string {
+  if (DEV_NEPTUNE_TEST) return 'Neptune';
   if (DEV_MARS_TEST) return 'Mars';
   if (DEV_JUPITER_TEST) return 'Jupiter';
   return START_PLANET;
@@ -43,7 +44,7 @@ export function useShipInit(): ShipInitResult {
   } | null>(null);
 
   if (!didInitRef.current) {
-    const savedData = DEV_JUPITER_TEST || DEV_MARS_TEST ? null : loadSlot(AUTOSAVE_SLOT);
+    const savedData = DEV_JUPITER_TEST || DEV_MARS_TEST || DEV_NEPTUNE_TEST ? null : loadSlot(AUTOSAVE_SLOT);
     if (savedData) {
       apply(savedData);
       savedInitRef.current = {

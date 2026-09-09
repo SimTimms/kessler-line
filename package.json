@@ -19,6 +19,7 @@
     "r3f-perf": "^7.2.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "spectorjs": "^0.9.30",
     "three": "^0.182.0"
   },
   "devDependencies": {
