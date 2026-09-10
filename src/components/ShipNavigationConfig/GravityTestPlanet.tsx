@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { useTexture } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
@@ -23,6 +25,8 @@ interface GravityTestPlanetProps {
   planetColor?: string;
   planetMass?: number;
   planetInitialVelocity?: THREE.Vector3;
+  planetTextureUrl?: string;
+  planetSpin?: number;
 }
 
 export default function GravityTestPlanet({
@@ -32,11 +36,14 @@ export default function GravityTestPlanet({
   planetMu = NAV_PLANET_MU,
   planetSoi = NAV_PLANET_SOI,
   planetOrbitAlt = NAV_PLANET_ORBIT_ALT,
-  planetColor = '#4466ff',
+  planetColor = '#ffffff',
   planetMass = NAV_PLANET_MASS,
   planetInitialVelocity = new THREE.Vector3(0, 0, 0),
+  planetTextureUrl = '/mars.jpg',
+  planetSpin = 0.1,
 }: GravityTestPlanetProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const planetPos = useMemo(
     () => new THREE.Vector3(planetPosition[0], planetPosition[1], planetPosition[2]),
     [planetPosition]
@@ -79,11 +86,25 @@ export default function GravityTestPlanet({
 
   useSyncPhysicalBody(planetId, groupRef);
 
+  useFrame((_, delta) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y += planetSpin * delta;
+    }
+  });
+
+  const marsTexture = useTexture(planetTextureUrl);
+  marsTexture.colorSpace = THREE.SRGBColorSpace;
+
   return (
     <group ref={groupRef} position={planetPosition}>
-      <mesh>
+      <mesh ref={meshRef}>
         <sphereGeometry args={[planetRadius, 64, 64]} />
-        <meshStandardMaterial color={planetColor} emissive="#112244" emissiveIntensity={0.6} />
+        <meshStandardMaterial
+          color={planetColor}
+          map={marsTexture}
+          emissive="#112244"
+          emissiveIntensity={0.6}
+        />
       </mesh>
     </group>
   );

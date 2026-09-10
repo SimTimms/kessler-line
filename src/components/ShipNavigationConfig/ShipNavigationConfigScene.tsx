@@ -7,7 +7,6 @@ import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
 import DustCloud from '../DustCloud/DustCloud';
 import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import GravityTestPlanet from './GravityTestPlanet';
-import NavTargetProbe from './NavTargetProbe';
 import BodyPhysics from '../BodyPhysics/BodyPhysics';
 import { calcOrbitalVelocity } from '../../config/bodyPhysicsConfig';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
@@ -20,18 +19,28 @@ import {
 } from '../../config/visualConfig';
 
 const NAV_SCENE_FOG = '#000000';
-const PLANET_1_POS: [number, number, number] = [4800, -2000, -7600];
-const PLANET_1_MASS = 100000;
-const PLANET_2_POS: [number, number, number] = [4800, -2000, -2600];
-const PLANET_2_VELOCITY = calcOrbitalVelocity(PLANET_1_MASS, PLANET_2_POS, PLANET_1_POS);
 
+const PLANET_1_POS: [number, number, number] = [0, -2000, 0];
+const PLANET_1_MASS = 100000;
+const PLANET_2_POS: [number, number, number] = [300, -2000, -1600];
+const PLANET_2_MASS = 10000;
+const PLANET_2_VELOCITY = calcOrbitalVelocity(PLANET_1_MASS, PLANET_2_POS, PLANET_1_POS);
+const PLANET_3_POS: [number, number, number] = [3000, -2000, -1600];
+const PLANET_3_VELOCITY = calcOrbitalVelocity(PLANET_1_MASS, PLANET_3_POS, PLANET_1_POS);
+const PLANET_3_MASS = 100;
+const PLANET_4_POS: [number, number, number] = [300, -2000, -1800];
+const PLANET_4_MASS = 100;
+const PLANET_4_ORBIT_VELOCITY = calcOrbitalVelocity(PLANET_2_MASS, PLANET_4_POS, PLANET_2_POS);
+const PLANET_4_VELOCITY: [number, number, number] = [
+  PLANET_2_VELOCITY[0] + PLANET_4_ORBIT_VELOCITY[0],
+  PLANET_2_VELOCITY[1] + PLANET_4_ORBIT_VELOCITY[1],
+  PLANET_2_VELOCITY[2] + PLANET_4_ORBIT_VELOCITY[2],
+];
 interface ShipNavigationConfigSceneProps {
   gravityEnabled?: boolean;
 }
 
-export default function ShipNavigationConfigScene({
-  gravityEnabled = true,
-}: ShipNavigationConfigSceneProps) {
+export default function ShipNavigationConfigScene({}: ShipNavigationConfigSceneProps) {
   const spaceshipGroupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
@@ -61,7 +70,7 @@ export default function ShipNavigationConfigScene({
       <TutorialFollowCamera
         followTarget={shipPosRef}
         followOffset={[0, 100, 120]}
-        zoomMax={820}
+        zoomMax={20000}
         attachTo={spaceshipGroupRef}
         flattenBanking
         lockPolarAngle
@@ -93,39 +102,66 @@ export default function ShipNavigationConfigScene({
             dockingPhysicsEnabled: false,
           }}
         />
-        {gravityEnabled ? (
-          <GravityTestPlanet
-            planetId="nav-config-planet"
-            planetPosition={PLANET_1_POS}
-            planetMass={PLANET_1_MASS}
-          />
-        ) : null}
-        {gravityEnabled ? (
-          <GravityTestPlanet
-            planetId="nav-config-planet-2"
-            planetPosition={PLANET_2_POS}
-            planetRadius={300}
-            planetInitialVelocity={
-              new THREE.Vector3(PLANET_2_VELOCITY[0], PLANET_2_VELOCITY[1], PLANET_2_VELOCITY[2])
-            }
-            planetMu={18_000_000}
-            planetSoi={9000}
-            planetOrbitAlt={1600}
-            planetColor="#ff0000"
-            planetMass={100}
-          />
-        ) : null}
-        <NavTargetProbe
-          id="nav-config-probe-alpha"
-          label="Nav Probe Alpha"
-          position={[2400, 0, -1600]}
-          color="#00d1ff"
+        <GravityTestPlanet
+          planetId="nav-config-planet"
+          planetPosition={PLANET_1_POS}
+          planetMass={PLANET_1_MASS}
         />
-        <NavTargetProbe
-          id="nav-config-probe-beta"
-          label="Nav Probe Beta"
-          position={[-1800, 0, 3200]}
-          color="#ffbb33"
+        <GravityTestPlanet
+          planetId="nav-config-planet-2"
+          planetPosition={PLANET_2_POS}
+          planetRadius={300}
+          planetInitialVelocity={
+            new THREE.Vector3(PLANET_2_VELOCITY[0], PLANET_2_VELOCITY[1], PLANET_2_VELOCITY[2])
+          }
+          planetMu={18_000_000}
+          planetSoi={9000}
+          planetOrbitAlt={1600}
+          planetColor="#77ffaa"
+          planetMass={PLANET_2_MASS}
+          planetTextureUrl="/neptune.jpg"
+        />
+        <GravityTestPlanet
+          planetId="nav-config-planet-3"
+          planetPosition={PLANET_3_POS}
+          planetRadius={100}
+          planetInitialVelocity={
+            new THREE.Vector3(PLANET_3_VELOCITY[0], PLANET_3_VELOCITY[1], PLANET_3_VELOCITY[2])
+          }
+          planetMu={18_000_000}
+          planetSoi={9000}
+          planetOrbitAlt={1600}
+          planetColor="#ff00ff"
+          planetMass={PLANET_3_MASS}
+          planetTextureUrl="/mars.jpg"
+        />{' '}
+        <GravityTestPlanet
+          planetId="nav-config-planet-3"
+          planetPosition={PLANET_3_POS}
+          planetRadius={100}
+          planetInitialVelocity={
+            new THREE.Vector3(PLANET_3_VELOCITY[0], PLANET_3_VELOCITY[1], PLANET_3_VELOCITY[2])
+          }
+          planetMu={18_000_000}
+          planetSoi={9000}
+          planetOrbitAlt={1600}
+          planetColor="#ff00ff"
+          planetMass={PLANET_3_MASS}
+          planetTextureUrl="/mars.jpg"
+        />
+        <GravityTestPlanet
+          planetId="nav-config-planet-4"
+          planetPosition={PLANET_4_POS}
+          planetRadius={200}
+          planetInitialVelocity={
+            new THREE.Vector3(PLANET_4_VELOCITY[0], PLANET_4_VELOCITY[1], PLANET_4_VELOCITY[2])
+          }
+          planetMu={18_000_000}
+          planetSoi={9000}
+          planetOrbitAlt={1600}
+          planetColor="#00ff00"
+          planetMass={PLANET_4_MASS}
+          planetTextureUrl="/mars.jpg"
         />
       </Suspense>
       <BodyPhysics />

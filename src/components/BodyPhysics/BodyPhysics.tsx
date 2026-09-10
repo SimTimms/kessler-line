@@ -4,10 +4,13 @@ import * as THREE from 'three';
 import { getPhysicals } from '../../context/PhysicalRegistry';
 import { GRAVITATIONAL_CONSTANT, SOFTENING } from '../../config/bodyPhysicsConfig';
 
+const deltaMultiplier = 3;
 export default function BodyPhysics() {
   const snapshotPositions = useRef(new Map<string, THREE.Vector3>());
   useFrame((_, delta) => {
     const physicals = getPhysicals();
+
+    const deltaMultiplied = delta * deltaMultiplier;
 
     //1. copy positions and velocity
     physicals.forEach((physical) => {
@@ -36,13 +39,14 @@ export default function BodyPhysics() {
         );
 
         const gravityPullForce =
-          (GRAVITATIONAL_CONSTANT * physical.mass * otherPhysical.mass) / (distance ** 2 + SOFTENING ** 2);
+          (GRAVITATIONAL_CONSTANT * physical.mass * otherPhysical.mass) /
+          (distance ** 2 + SOFTENING ** 2);
 
         const acceleration = gravityPullForce / physical.mass;
 
-        physical.velocity.addScaledVector(gravityPullDirection, acceleration * delta);
+        physical.velocity.addScaledVector(gravityPullDirection, acceleration * deltaMultiplied);
       });
-      physical.position.addScaledVector(physical.velocity, delta);
+      physical.position.addScaledVector(physical.velocity, deltaMultiplied);
     });
   });
   return null;
