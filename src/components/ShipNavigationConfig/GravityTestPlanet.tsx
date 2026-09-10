@@ -11,6 +11,7 @@ const NAV_PLANET_POSITION: [number, number, number] = [4800, -2000, -7600];
 const NAV_PLANET_MU = 18_000_000;
 const NAV_PLANET_SOI = 9000;
 const NAV_PLANET_ORBIT_ALT = 1600;
+const NAV_PLANET_MASS = 10000;
 
 interface GravityTestPlanetProps {
   planetId?: string;
@@ -20,6 +21,8 @@ interface GravityTestPlanetProps {
   planetSoi?: number;
   planetOrbitAlt?: number;
   planetColor?: string;
+  planetMass?: number;
+  planetInitialVelocity?: THREE.Vector3;
 }
 
 export default function GravityTestPlanet({
@@ -30,8 +33,9 @@ export default function GravityTestPlanet({
   planetSoi = NAV_PLANET_SOI,
   planetOrbitAlt = NAV_PLANET_ORBIT_ALT,
   planetColor = '#4466ff',
+  planetMass = NAV_PLANET_MASS,
+  planetInitialVelocity = new THREE.Vector3(0, 0, 0),
 }: GravityTestPlanetProps) {
-  console.log('planetPosition', planetPosition);
   const groupRef = useRef<THREE.Group>(null);
   const planetPos = useMemo(
     () => new THREE.Vector3(planetPosition[0], planetPosition[1], planetPosition[2]),
@@ -60,10 +64,10 @@ export default function GravityTestPlanet({
     registerPhysical({
       id: planetId,
       initialPosition: planetPos,
-      initialVelocity: new THREE.Vector3(0, 0, 0),
+      initialVelocity: planetInitialVelocity,
       position: planetPos,
-      velocity: new THREE.Vector3(0, 0, 0),
-      mass: 10000,
+      velocity: planetInitialVelocity.clone(),
+      mass: planetMass,
     });
 
     return () => {

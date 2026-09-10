@@ -9,6 +9,7 @@ import TutorialFollowCamera from '../TutorialShared/TutorialFollowCamera';
 import GravityTestPlanet from './GravityTestPlanet';
 import NavTargetProbe from './NavTargetProbe';
 import BodyPhysics from '../BodyPhysics/BodyPhysics';
+import { calcOrbitalVelocity } from '../../config/bodyPhysicsConfig';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import {
@@ -19,6 +20,10 @@ import {
 } from '../../config/visualConfig';
 
 const NAV_SCENE_FOG = '#000000';
+const PLANET_1_POS: [number, number, number] = [4800, -2000, -7600];
+const PLANET_1_MASS = 100000;
+const PLANET_2_POS: [number, number, number] = [4800, -2000, -2600];
+const PLANET_2_VELOCITY = calcOrbitalVelocity(PLANET_1_MASS, PLANET_2_POS, PLANET_1_POS);
 
 interface ShipNavigationConfigSceneProps {
   gravityEnabled?: boolean;
@@ -88,16 +93,26 @@ export default function ShipNavigationConfigScene({
             dockingPhysicsEnabled: false,
           }}
         />
-        {gravityEnabled ? <GravityTestPlanet planetId="nav-config-planet" /> : null}
+        {gravityEnabled ? (
+          <GravityTestPlanet
+            planetId="nav-config-planet"
+            planetPosition={PLANET_1_POS}
+            planetMass={PLANET_1_MASS}
+          />
+        ) : null}
         {gravityEnabled ? (
           <GravityTestPlanet
             planetId="nav-config-planet-2"
-            planetPosition={[4800, -2000, -2600]}
-            planetRadius={900}
+            planetPosition={PLANET_2_POS}
+            planetRadius={300}
+            planetInitialVelocity={
+              new THREE.Vector3(PLANET_2_VELOCITY[0], PLANET_2_VELOCITY[1], PLANET_2_VELOCITY[2])
+            }
             planetMu={18_000_000}
             planetSoi={9000}
             planetOrbitAlt={1600}
             planetColor="#ff0000"
+            planetMass={100}
           />
         ) : null}
         <NavTargetProbe

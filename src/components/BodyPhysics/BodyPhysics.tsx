@@ -2,9 +2,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getPhysicals } from '../../context/PhysicalRegistry';
-
-const GRAVITATIONAL_CONSTANT = 10000;
-const SOFTENING = 500;
+import { GRAVITATIONAL_CONSTANT, SOFTENING } from '../../config/bodyPhysicsConfig';
 
 export default function BodyPhysics() {
   const snapshotPositions = useRef(new Map<string, THREE.Vector3>());
