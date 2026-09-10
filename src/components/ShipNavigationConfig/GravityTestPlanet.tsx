@@ -1,0 +1,86 @@
+import { useEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
+import { gravityBodies } from '../../context/GravityRegistry';
+import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
+import { registerPhysical, unregisterPhysical } from '../../context/PhysicalRegistry';
+import useSyncPhysicalBody from '../../hooks/useSyncPhysicalBody';
+
+const NAV_PLANET_ID = 'nav-config-planet';
+const NAV_PLANET_RADIUS = 900;
+const NAV_PLANET_POSITION: [number, number, number] = [4800, -2000, -7600];
+const NAV_PLANET_MU = 18_000_000;
+const NAV_PLANET_SOI = 9000;
+const NAV_PLANET_ORBIT_ALT = 1600;
+
+interface GravityTestPlanetProps {
+  planetId?: string;
+  planetPosition?: [number, number, number];
+  planetRadius?: number;
+  planetMu?: number;
+  planetSoi?: number;
+  planetOrbitAlt?: number;
+  planetColor?: string;
+}
+
+export default function GravityTestPlanet({
+  planetId = NAV_PLANET_ID,
+  planetPosition = NAV_PLANET_POSITION,
+  planetRadius = NAV_PLANET_RADIUS,
+  planetMu = NAV_PLANET_MU,
+  planetSoi = NAV_PLANET_SOI,
+  planetOrbitAlt = NAV_PLANET_ORBIT_ALT,
+  planetColor = '#4466ff',
+}: GravityTestPlanetProps) {
+  console.log('planetPosition', planetPosition);
+  const groupRef = useRef<THREE.Group>(null);
+  const planetPos = useMemo(
+    () => new THREE.Vector3(planetPosition[0], planetPosition[1], planetPosition[2]),
+    [planetPosition]
+  );
+
+  useEffect(() => {
+    gravityBodies.set(planetId, {
+      position: planetPos,
+      velocity: new THREE.Vector3(0, 0, 0),
+      mu: planetMu,
+      soiRadius: planetSoi,
+      surfaceRadius: planetRadius,
+      orbitAltitude: planetOrbitAlt,
+    });
+
+    registerCollidable({
+      id: planetId,
+      label: 'Navigation Test Planet',
+      getWorldPosition: (target) => target.copy(planetPos),
+      shape: { type: 'sphere', radius: planetRadius },
+      planetSurfaceImpact: true,
+      getObject3D: () => groupRef.current,
+    });
+
+    registerPhysical({
+      id: planetId,
+      initialPosition: planetPos,
+      initialVelocity: new THREE.Vector3(0, 0, 0),
+      position: planetPos,
+      velocity: new THREE.Vector3(0, 0, 0),
+      mass: 10000,
+    });
+
+    return () => {
+      gravityBodies.delete(planetId);
+      unregisterCollidable(planetId);
+      unregisterPhysical(planetId);
+    };
+  }, [planetId, planetPos, planetRadius, planetMu, planetSoi, planetOrbitAlt]);
+
+  useSyncPhysicalBody(planetId, groupRef);
+
+  return (
+    <group ref={groupRef} position={planetPosition}>
+      <mesh>
+        <sphereGeometry args={[planetRadius, 64, 64]} />
+        <meshStandardMaterial color={planetColor} emissive="#112244" emissiveIntensity={0.6} />
+      </mesh>
+    </group>
+  );
+}

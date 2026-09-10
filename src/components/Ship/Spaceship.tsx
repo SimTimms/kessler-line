@@ -200,7 +200,12 @@ export default function Spaceship({
         <group ref={leanRef}>
           <PlanetSurfaceImpactDust />
 
-          <primitive object={clonedScene} scale={scale} rotation={modelRotation} castShadow={true} />
+          <primitive
+            object={clonedScene}
+            scale={scale}
+            rotation={modelRotation}
+            castShadow={true}
+          />
           <group position={[0, -2, 0]}>
             <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
           </group>
@@ -260,6 +265,10 @@ export default function Spaceship({
           </mesh>
         </group>
       </group>
+      <TargetIndicatorLine shipGroupRef={groupRef} />
+      <VelocityIndicator shipGroupRef={groupRef} />
+
+      {/*Cosmetic effects*/}
       <group position={[0, 0, 9]}>
         <DockingReleaseParticles shipGroupRef={groupRef} triggerRef={releaseParticleTrigger} />
       </group>
@@ -273,8 +282,6 @@ export default function Spaceship({
       <LowO2BreathingEffect />
       {enableShipExplosion && <ShipExplosion shipGroupRef={groupRef} />}
       {enableShipExplosion && <ShipBreakApart shipGroupRef={groupRef} />}
-      <TargetIndicatorLine shipGroupRef={groupRef} />
-      <VelocityIndicator shipGroupRef={groupRef} />
     </>
   );
 }

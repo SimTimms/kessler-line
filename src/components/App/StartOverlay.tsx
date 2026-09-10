@@ -67,7 +67,7 @@ const TUTORIAL_MENU_ITEMS: Array<{
   },
   {
     id: 'ship-navigation-config',
-    label: 'Ship Navigation Config',
+    label: 'Gravity Config',
     selection: GAME_MODES.shipNavigationConfig,
   },
   { id: 'ship-config', label: 'Landing Pad Config', selection: GAME_MODES.shipConfig },
