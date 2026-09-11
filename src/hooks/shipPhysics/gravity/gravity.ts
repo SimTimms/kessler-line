@@ -1,15 +1,13 @@
 import * as THREE from 'three';
-import { gravityBodies } from '../../../context/GravityRegistry';
-import { orbitingBodyIdRef, orbitStatusRef } from '../../../context/ShipState';
+import { orbitingBodyIdRef } from '../../../context/ShipState';
 import { renderToSimulationSpace } from '../../../context/FloatingOrigin';
-import { stepGravity, computeOrbitalParameters } from '../../../physics';
+import { stepGravity } from '../../../physics';
 import type { OrbitState } from '../../../physics';
 import { playEnteringSoi } from './helpers/gravitySfx';
+import { clearOrbitalStatus, updateOrbitalStatus } from './helpers/orbitalStatus';
 
 // Scratch vectors
 const _shipWorldPos = new THREE.Vector3();
-const _relPos = new THREE.Vector3();
-const _relVel = new THREE.Vector3();
 
 // Orbital status throttle - update orbital status every n frames
 const ORBITAL_STATUS_INTERVAL = 6;
@@ -40,12 +38,7 @@ export function applyGravityStep({
 }: ApplyGravityStepParams): void {
   if (disableGravity) {
     orbitingBodyIdRef.current = null;
-    orbitStatusRef.current.bodyId = null;
-    orbitStatusRef.current.isOrbiting = false;
-    orbitStatusRef.current.periapsis = 0;
-    orbitStatusRef.current.apoapsis = 0;
-    orbitStatusRef.current.surfaceRadius = 0;
-    orbitStatusRef.current.hyperbolicPeriapsis = 0;
+    clearOrbitalStatus();
     if (primaryGravityId.current) {
       velocity.sub(primaryGravityVelocity);
       primaryGravityId.current = null;
@@ -85,35 +78,10 @@ export function applyGravityStep({
     _orbitalStatusTick++;
     if (bodyChanged || _orbitalStatusTick >= ORBITAL_STATUS_INTERVAL) {
       _orbitalStatusTick = 0;
-      const primaryBody = gravityBodies.get(result.primaryBodyId!);
-      if (primaryBody) {
-        _relPos.subVectors(_shipWorldPos, primaryBody.position);
-        _relVel.subVectors(velocity, primaryBody.velocity);
-        const r = Math.sqrt(result.distSq);
-        const params = computeOrbitalParameters(
-          primaryBody,
-          result.primaryBodyId,
-          _relPos,
-          _relVel,
-          r
-        );
-        orbitStatusRef.current.bodyId = params.bodyId;
-        orbitStatusRef.current.isOrbiting = params.isOrbiting;
-        orbitStatusRef.current.surfaceRadius = params.surfaceRadius;
-        orbitStatusRef.current.radialVelocity = params.radialVelocity;
-        orbitStatusRef.current.hyperbolicPeriapsis = params.hyperbolicPeriapsis;
-        orbitStatusRef.current.periapsis = params.periapsis;
-        orbitStatusRef.current.apoapsis = params.apoapsis;
-      }
+      updateOrbitalStatus(_shipWorldPos, velocity, result.primaryBodyId!, result.distSq);
     }
   } else {
     // Outside all SOIs — clear orbital status
-    orbitStatusRef.current.bodyId = null;
-    orbitStatusRef.current.isOrbiting = false;
-    orbitStatusRef.current.periapsis = 0;
-    orbitStatusRef.current.apoapsis = 0;
-    orbitStatusRef.current.surfaceRadius = 0;
-    orbitStatusRef.current.radialVelocity = 0;
-    orbitStatusRef.current.hyperbolicPeriapsis = 0;
+    clearOrbitalStatus();
   }
 }
