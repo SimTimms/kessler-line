@@ -21,7 +21,7 @@ import { syncShipWorldRefs } from './helpers/syncShipWorldRefs';
 import { runPrimaryPhysicsFrame } from './helpers/runPrimaryPhysicsFrame';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipVelocity } from '../../context/ShipState';
-import { shipPosRef } from '../../context/ShipPos';
+import { shipPoxsRef } from '../../context/ShipPos';
 import { EVENT_SHIP_RESPAWNED } from '../../context/respawnAsNewShip';
 import { playDockAlignSound } from '../../sound/SoundManager';
 import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';
@@ -48,7 +48,7 @@ const MIN_DOCK_PERMISSION_PROMPT_RADIUS = 80;
 
 function stationIdFromDockEntryId(dockEntryId: string): string | null {
   const match = /^docking-bay-(.+)$/.exec(dockEntryId);
-  return match ? match[1] ?? null : null;
+  return match ? (match[1] ?? null) : null;
 }
 
 function moveTowardScalar(current: number, target: number, maxStep: number): number {
@@ -234,10 +234,7 @@ export function useShipPhysics({
       dockObject.attach(groupRef.current);
     }
     const releaseLocalY = hoverDockReleaseLocalY.current.get(dockId);
-    const targetY =
-      releaseLocalY ??
-      profile.hoverReleaseLocalY ??
-      groupRef.current.position.y;
+    const targetY = releaseLocalY ?? profile.hoverReleaseLocalY ?? groupRef.current.position.y;
     hoverUndockingTransition.current = {
       dockEntryId: dockId,
       targetY,
@@ -492,17 +489,12 @@ export function useShipPhysics({
               window.dispatchEvent(new CustomEvent('ShipUndocked'));
             }
             detachShipFromDock(group, scene);
-            const releaseDir = computeUndockReleaseDirection(
-              group,
-              entry,
-              _hoverUndockReleaseDir
-            );
+            const releaseDir = computeUndockReleaseDirection(group, entry, _hoverUndockReleaseDir);
             group.position.addScaledVector(releaseDir, 1);
             const releaseSpeed = getDockCaptureProfile(entry).undockReleaseSpeed;
             velocity.current.copy(releaseDir.clone().multiplyScalar(releaseSpeed));
             dockReentryBlock.current = transition.dockEntryId;
-            dockingPortDisabledUntil.current =
-              performance.now() + SHIP_UNDOCK_DOCKING_COOLDOWN_MS;
+            dockingPortDisabledUntil.current = performance.now() + SHIP_UNDOCK_DOCKING_COOLDOWN_MS;
             releaseParticleTrigger.current = true;
             group.getWorldPosition(physicsPosition.current);
           }
@@ -560,13 +552,13 @@ export function useShipPhysics({
               dockedTo.current = transition.dockEntryId;
               if (publishToPlayerRefs) {
                 window.dispatchEvent(
-                new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED, {
-                  detail: { stationId: transition.stationId },
-                })
-              );
-              window.dispatchEvent(
-                new CustomEvent('ShipDocked', { detail: { stationId: transition.stationId } })
-              );
+                  new CustomEvent(EVENT_DOCKING_CAPTURE_ENDED, {
+                    detail: { stationId: transition.stationId },
+                  })
+                );
+                window.dispatchEvent(
+                  new CustomEvent('ShipDocked', { detail: { stationId: transition.stationId } })
+                );
               }
               hoverDockingTransition.current = null;
             }

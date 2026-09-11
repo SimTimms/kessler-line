@@ -2,10 +2,13 @@ import * as THREE from 'three';
 import type { GravityBody, OrbitalParameters } from './types';
 
 // Scratch vector — allocated once.
+// hVEC = "help vector" - it's used to help compute the orbital parameters
 const _hVec = new THREE.Vector3();
 
 /**
  * Compute conic orbital parameters from relative position/velocity.
+ * a conic orbit is an ellipse, parabola, or hyperbola
+ * I'm ignoring parabola because it's apparently almost impossible. And I think theoretically, unless I change anything in the game design, as soon as an object achieves a hyperbolic orbit, it will be captured by the sun.
  * Pure math — no side effects.
  *
  * @param body    - The gravity body being orbited.
@@ -19,7 +22,7 @@ export function computeOrbitalParameters(
   bodyId: string,
   relPos: THREE.Vector3,
   relVel: THREE.Vector3,
-  r: number,
+  r: number
 ): OrbitalParameters {
   const mu = body.mu;
   const v2 = relVel.lengthSq();

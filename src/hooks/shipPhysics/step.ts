@@ -4,7 +4,7 @@ import { THRUST_BOOST_YAW_SCALE } from '../../config/shipConfig';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { applyYawAndRoll, getYawFromQuaternion } from '../../orbitalRoll/shipYawRoll';
 import { renderToSimulationSpace } from '../../context/FloatingOrigin';
-import { applyGravityStep } from './gravity';
+import { applyGravityStep } from './gravity/gravity';
 import { resolveCollisions, type CollisionResolveOptions } from './collisions';
 
 const _localForward = new THREE.Vector3();

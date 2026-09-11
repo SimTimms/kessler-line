@@ -1,5 +1,5 @@
 export { findPrimaryBody } from './findPrimaryBody';
-export { stepOrbit } from './stepOrbit';
+export { stepGravity } from './stepGravity';
 export { computeOrbitalParameters } from './orbitalParameters';
 export { initCircularOrbit } from './initCircularOrbit';
 

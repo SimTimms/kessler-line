@@ -10,7 +10,7 @@ export interface OrbitState {
   primaryBodyVelocity: THREE.Vector3;
 }
 
-/** Returned by `stepOrbit` — caller uses these for SFX, HUD, etc. */
+/** Returned by `stepGravity` — caller uses these for SFX, HUD, etc. */
 export interface StepResult {
   primaryBodyId: string | null;
   soiTransition: { from: string | null; to: string | null } | null;

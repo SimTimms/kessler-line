@@ -1,61 +1,34 @@
 import * as THREE from 'three';
-import { gravityBodies } from '../../context/GravityRegistry';
-import { orbitingBodyIdRef, orbitStatusRef } from '../../context/ShipState';
-import { renderToSimulationSpace } from '../../context/FloatingOrigin';
-import { stepOrbit, computeOrbitalParameters } from '../../physics';
-import type { OrbitState } from '../../physics';
+import { gravityBodies } from '../../../context/GravityRegistry';
+import { orbitingBodyIdRef, orbitStatusRef } from '../../../context/ShipState';
+import { renderToSimulationSpace } from '../../../context/FloatingOrigin';
+import { stepGravity, computeOrbitalParameters } from '../../../physics';
+import type { OrbitState } from '../../../physics';
+import { playEnteringSoi } from './helpers/gravitySfx';
 
-// ── Scratch vectors (module-level — never allocated per-frame) ─────────────
+// Scratch vectors
 const _shipWorldPos = new THREE.Vector3();
 const _relPos = new THREE.Vector3();
 const _relVel = new THREE.Vector3();
 
-// ── Orbital status throttle ────────────────────────────────────────────────
+// Orbital status throttle - update orbital status every n frames
 const ORBITAL_STATUS_INTERVAL = 6;
 let _orbitalStatusTick = 0;
 
-// ── One-shot SFX helpers ──────────────────────────────────────────────────
-let _enteringSoiAudio: HTMLAudioElement | null = null;
-
-function playOneShotShipSfx(
-  getAudio: () => HTMLAudioElement,
-  volume = 0.5,
-): void {
-  try {
-    const audio = getAudio();
-    audio.pause();
-    audio.currentTime = 0;
-    audio.volume = volume;
-    audio.playbackRate = 1;
-    audio.loop = false;
-    void audio.play().catch(() => undefined);
-  } catch {
-    /* non-critical */
-  }
-}
-
-function playEnteringSoi(): void {
-  playOneShotShipSfx(() => {
-    if (!_enteringSoiAudio) {
-      _enteringSoiAudio = new Audio('/audio/ship/entering-soi.mp3');
-      _enteringSoiAudio.preload = 'auto';
-    }
-    return _enteringSoiAudio;
-  });
-}
-
-// ── Types ──────────────────────────────────────────────────────────────────
-
 export interface ApplyGravityStepParams {
+  /** Whether to disable gravity. */
   disableGravity: boolean;
+  /** The group to apply gravity to. */
   group: THREE.Object3D;
+  /** The velocity to apply to the group. */
   velocity: THREE.Vector3;
+  /** The primary gravity id. */
   primaryGravityId: { current: string | null };
+  /** The primary gravity velocity. */
   primaryGravityVelocity: THREE.Vector3;
+  /** The delta time. */
   dt: number;
 }
-
-// ── Main export ────────────────────────────────────────────────────────────
 
 export function applyGravityStep({
   disableGravity,
@@ -92,9 +65,9 @@ export function applyGravityStep({
     primaryBodyVelocity: primaryGravityVelocity,
   };
 
-  const result = stepOrbit(state, dt);
+  const result = stepGravity(state, dt);
 
-  // Sync back — stepOrbit may have changed the primary body
+  // Sync back — stepGravity may have changed the primary body
   primaryGravityId.current = state.primaryBodyId;
   orbitingBodyIdRef.current = result.primaryBodyId;
 
@@ -122,7 +95,7 @@ export function applyGravityStep({
           result.primaryBodyId,
           _relPos,
           _relVel,
-          r,
+          r
         );
         orbitStatusRef.current.bodyId = params.bodyId;
         orbitStatusRef.current.isOrbiting = params.isOrbiting;

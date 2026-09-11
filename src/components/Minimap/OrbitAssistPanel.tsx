@@ -1,9 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type {
-  OrbitAssistData,
-  OrbitAssistProjection,
-  OrbitAssistReadouts,
-} from './minimapTypes';
+import type { OrbitAssistData, OrbitAssistProjection, OrbitAssistReadouts } from './minimapTypes';
 import { pushAlert } from '../../context/AlertsStore';
 
 // ── Orbit-established one-shot SFX ────────────────────────────────────────
@@ -77,10 +73,19 @@ export default function OrbitAssistPanel({
               r={Math.max(3, orbitAssistProjection.idealPx)}
             />
             {orbitAssistProjection.predictedPoints.length > 0 && (
+              <ellipse
+                className="sandbox-map-orbit-assist-path"
+                cx={orbitAssistProjection.shipSx}
+                cy={orbitAssistProjection.shipSy}
+                rx={10}
+                ry={10}
+              />
+              /*
               <polyline
                 className="sandbox-map-orbit-assist-path"
                 points={orbitAssistProjection.predictedPoints}
               />
+              */
             )}
             {orbitAssistProjection.targetSx != null && orbitAssistProjection.targetSy != null && (
               <line
@@ -97,14 +102,6 @@ export default function OrbitAssistPanel({
               y1={orbitAssistProjection.shipSy}
               x2={orbitAssistProjection.bodySx}
               y2={orbitAssistProjection.bodySy}
-              markerEnd="url(#sandbox-map-orbit-assist-planet-arrow)"
-            />
-            <line
-              className="sandbox-map-orbit-assist-req"
-              x1={orbitAssistProjection.shipSx}
-              y1={orbitAssistProjection.shipSy}
-              x2={orbitAssistProjection.reqTipSx}
-              y2={orbitAssistProjection.reqTipSy}
             />
             <line
               className="sandbox-map-orbit-assist-prograde"
@@ -116,17 +113,8 @@ export default function OrbitAssistPanel({
             <g
               transform={`translate(${orbitAssistProjection.shipSx}, ${orbitAssistProjection.shipSy}) rotate(${orbitAssistProjection.shipFacingDeg})`}
             >
-              <polygon
-                className="sandbox-map-orbit-assist-ship-arrow"
-                points="0,-11 7,8 -7,8"
-              />
+              <polygon className="sandbox-map-orbit-assist-ship-arrow" points="0,-11 7,8 -7,8" />
             </g>
-            <circle
-              className="sandbox-map-orbit-assist-ship-ring"
-              cx={orbitAssistProjection.shipSx}
-              cy={orbitAssistProjection.shipSy}
-              r={orbitAssistProjection.shipRingPx}
-            />
           </svg>
           {orbitAssistReadouts && (
             <div
@@ -136,7 +124,6 @@ export default function OrbitAssistPanel({
                 top: `${orbitAssistProjection.shipSy + orbitAssistProjection.shipRingPx + 10}px`,
               }}
             >
-              <span>CIRC</span>
               <span>{orbitAssistReadouts.reqText} MPS</span>
             </div>
           )}

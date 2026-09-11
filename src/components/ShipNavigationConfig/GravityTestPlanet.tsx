@@ -5,12 +5,12 @@ import * as THREE from 'three';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { registerPhysical, unregisterPhysical } from '../../context/PhysicalRegistry';
+import { GRAVITATIONAL_CONSTANT } from '../../config/bodyPhysicsConfig';
 import useSyncPhysicalBody from '../../hooks/useSyncPhysicalBody';
 
 const NAV_PLANET_ID = 'nav-config-planet';
 const NAV_PLANET_RADIUS = 900;
 const NAV_PLANET_POSITION: [number, number, number] = [4800, -2000, -7600];
-const NAV_PLANET_MU = 18_000_000;
 const NAV_PLANET_SOI = 9000;
 const NAV_PLANET_ORBIT_ALT = 1600;
 const NAV_PLANET_MASS = 10000;
@@ -19,7 +19,6 @@ interface GravityTestPlanetProps {
   planetId?: string;
   planetPosition?: [number, number, number];
   planetRadius?: number;
-  planetMu?: number;
   planetSoi?: number;
   planetOrbitAlt?: number;
   planetColor?: string;
@@ -27,13 +26,13 @@ interface GravityTestPlanetProps {
   planetInitialVelocity?: THREE.Vector3;
   planetTextureUrl?: string;
   planetSpin?: number;
+  isAffectedByGravity?: boolean;
 }
 
 export default function GravityTestPlanet({
   planetId = NAV_PLANET_ID,
   planetPosition = NAV_PLANET_POSITION,
   planetRadius = NAV_PLANET_RADIUS,
-  planetMu = NAV_PLANET_MU,
   planetSoi = NAV_PLANET_SOI,
   planetOrbitAlt = NAV_PLANET_ORBIT_ALT,
   planetColor = '#ffffff',
@@ -41,7 +40,9 @@ export default function GravityTestPlanet({
   planetInitialVelocity = new THREE.Vector3(0, 0, 0),
   planetTextureUrl = '/mars.jpg',
   planetSpin = 0.1,
+  isAffectedByGravity = false,
 }: GravityTestPlanetProps) {
+  const planetMu = GRAVITATIONAL_CONSTANT * planetMass;
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const planetPos = useMemo(
@@ -84,7 +85,7 @@ export default function GravityTestPlanet({
     };
   }, [planetId, planetPos, planetRadius, planetMu, planetSoi, planetOrbitAlt]);
 
-  useSyncPhysicalBody(planetId, groupRef);
+  useSyncPhysicalBody({ id: planetId, ref: groupRef, isAffectedByGravity });
 
   useFrame((_, delta) => {
     if (meshRef.current) {

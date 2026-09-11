@@ -1,15 +1,11 @@
 import * as THREE from 'three';
 
-/**
- * When a {@link FloatingOrigin} is active, this holds its group.position each frame
- * (typically `-focus`). Add to a simulation-space world point to get render-space coords.
- */
 export const floatingOriginOffsetRef = { current: new THREE.Vector3() };
 
-/** True while a FloatingOrigin component is mounted and updating. */
 export const floatingOriginActiveRef = { current: false };
 
-/** Simulation-space world position → render-space (for camera/post FX). */
+// Convert simulation-space position to render-space position
+
 export function simulationToRenderSpace(
   simulation: THREE.Vector3,
   target = new THREE.Vector3()
@@ -17,7 +13,7 @@ export function simulationToRenderSpace(
   return target.copy(simulation).add(floatingOriginOffsetRef.current);
 }
 
-/** Render-space world position → simulation-space (inverse of {@link simulationToRenderSpace}). */
+// Convert render-space position to simulation-space position - reverse of simulationToRenderSpace
 export function renderToSimulationSpace(
   render: THREE.Vector3,
   target = new THREE.Vector3()

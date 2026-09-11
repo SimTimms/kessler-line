@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { gravityBodies } from '../../../context/GravityRegistry';
 import { deployedSatelliteRef } from '../../../context/DeployedSatelliteState';
 import { NARRATIVE_CONFIG } from '../../../scenes/NarrativeConfig/narrativeSceneConfig';
-import { stepOrbit } from '../../../physics';
+import { stepGravity } from '../../../physics';
 import type { OrbitState } from '../../../physics';
 
 const CONTAINER_URL = '/satellite.glb';
@@ -62,7 +62,7 @@ export default function DeployedSatellite() {
     if (!orbitLockedRef.current) {
       timerRef.current += delta;
 
-      stepOrbit(state, delta);
+      stepGravity(state, delta);
       state.position.addScaledVector(state.velocity, delta);
 
       // Keep on the orbital plane

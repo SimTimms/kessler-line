@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { getPhysicals } from '../../context/PhysicalRegistry';
 import { GRAVITATIONAL_CONSTANT, SOFTENING } from '../../config/bodyPhysicsConfig';
 
-const deltaMultiplier = 3;
+const deltaMultiplier = 1;
 export default function BodyPhysics() {
   const snapshotPositions = useRef(new Map<string, THREE.Vector3>());
   useFrame((_, delta) => {

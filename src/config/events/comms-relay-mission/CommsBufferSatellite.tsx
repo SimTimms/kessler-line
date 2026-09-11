@@ -29,7 +29,7 @@ import {
   BUFFER_ORBIT_INCLINATION_Z,
   BUFFER_ORBIT_INCLINATION_X,
 } from './comms-relay-config';
-import { initCircularOrbit, stepOrbit } from '../../../physics';
+import { initCircularOrbit, stepGravity } from '../../../physics';
 import type { OrbitState } from '../../../physics';
 
 const SATELLITE_URL = '/satellite.glb';
@@ -129,7 +129,7 @@ export default function CommsBufferSatellite() {
     const state = orbitStateRef.current;
 
     // ── Gravity integration ────────────────────────────────────────────
-    stepOrbit(state, delta);
+    stepGravity(state, delta);
     state.position.addScaledVector(state.velocity, delta);
 
     // ── Sync scene + exports ───────────────────────────────────────────

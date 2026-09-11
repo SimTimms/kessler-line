@@ -6,15 +6,7 @@ import type { OrbitState, StepResult } from './types';
 const _gravDir = new THREE.Vector3();
 const _deltaV = new THREE.Vector3();
 
-/**
- * Core gravity integrator shared by all orbiting objects.
- *
- * Applies gravitational acceleration and reference-frame tracking to the
- * given `OrbitState`. Does NOT integrate position — callers do
- * `state.position.addScaledVector(state.velocity, dt)` after, allowing
- * thrust injection between the gravity step and position integration.
- */
-export function stepOrbit(state: OrbitState, dt: number): StepResult {
+export function stepGravity(state: OrbitState, dt: number): StepResult {
   const primary = findPrimaryBody(state.position);
 
   const result: StepResult = {
