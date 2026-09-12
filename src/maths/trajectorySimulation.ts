@@ -9,6 +9,7 @@ import {
   ORBIT_AWAY_DIST,
 } from '../config/trajectoryConfig';
 import { keplerianTrajectory } from './keplerianOrbit';
+import { distanceSquaredXZ, isInsideSOI, gravityAccel } from './gravity';
 
 /**
  * Pure-math trajectory simulation — no Three.js imports.
@@ -35,13 +36,9 @@ export function simulateTrajectory(
   let primaryAccel = 0;
   for (let b = 0; b < bodies.length; b++) {
     const body = bodies[b];
-    const dx = body.posX - startX;
-    const dz = body.posZ - startZ;
-    const dist2 = dx * dx + dz * dz;
-    const srSq = body.surfaceRadius * body.surfaceRadius;
-    const soiSq = body.soiRadius * body.soiRadius;
-    if (dist2 > srSq && dist2 < soiSq) {
-      const accel = body.mu / dist2;
+    const dist2 = distanceSquaredXZ(body.posX, body.posZ, startX, startZ);
+    if (isInsideSOI(dist2, body.surfaceRadius, body.soiRadius)) {
+      const accel = gravityAccel(body.mu, dist2);
       if (accel > primaryAccel) {
         primaryAccel = accel;
         primary = body;

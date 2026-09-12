@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { gravityBodies } from '../context/GravityRegistry';
+import { distanceSquaredXZ, isInsideSOI, gravityAccel } from '../maths/gravity';
 import type { PrimaryBodyResult } from './types';
 
 /**
@@ -15,13 +16,9 @@ export function findPrimaryBody(pos: THREE.Vector3): PrimaryBodyResult | null {
   for (const [id, body] of gravityBodies) {
     // XZ-plane distance — game is 2D; ignore y so off-plane body positions
     // don't weaken gravity or leak energy via the y-clamp.
-    const dx = pos.x - body.position.x;
-    const dz = pos.z - body.position.z;
-    const distSq = dx * dx + dz * dz;
-    const srSq = body.surfaceRadius * body.surfaceRadius;
-    const soiSq = body.soiRadius * body.soiRadius;
-    if (distSq > srSq && distSq < soiSq) {
-      const accel = body.mu / distSq;
+    const distSq = distanceSquaredXZ(pos.x, pos.z, body.position.x, body.position.z);
+    if (isInsideSOI(distSq, body.surfaceRadius, body.soiRadius)) {
+      const accel = gravityAccel(body.mu, distSq);
       if (accel > primaryAccel) {
         primaryAccel = accel;
         result = { body, id, distSq };
