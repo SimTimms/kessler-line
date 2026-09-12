@@ -28,7 +28,7 @@ export function simulateTrajectory(
   bodies: GravityBodySnapshot[],
   config: TrajectorySimConfig,
 ): TrajectorySimResult {
-  const { steps, detectOrbitClosure, trackApsides, adaptiveDt } = config;
+  const { steps, detectOrbitClosure } = config;
 
   // ── Primary body detection (strongest gravitational acceleration) ────────
   let primary: GravityBodySnapshot | null = null;
@@ -68,26 +68,9 @@ export function simulateTrajectory(
     return keplerianTrajectory(simX, simZ, simVx, simVz, primary, config);
   }
 
-  // ── Adaptive timestep for bound orbits ───────────────────────────────────
-  let simDt = config.dt;
-  let orbitCloseDist = ORBIT_CLOSE_DIST;
-  if (adaptiveDt && primary) {
-    const r0 = Math.sqrt(simX * simX + simZ * simZ);
-    const v2 = simVx * simVx + simVz * simVz;
-    const energy = 0.5 * v2 - primary.mu / Math.max(r0, 1);
-    if (energy < 0) {
-      const a = -primary.mu / (2 * energy);
-      const period = 2 * Math.PI * Math.sqrt((a * a * a) / primary.mu);
-      const neededDt = period / (steps * 0.9);
-      if (neededDt > simDt) {
-        simDt = neededDt;
-        orbitCloseDist = Math.max(
-          ORBIT_CLOSE_DIST,
-          Math.sqrt(simVx * simVx + simVz * simVz) * simDt * 2.0,
-        );
-      }
-    }
-  }
+  // ── Multi-body fallback (no dominant primary) ──────────────────────────
+  const simDt = config.dt;
+  const orbitCloseDist = ORBIT_CLOSE_DIST;
 
   // ── Output buffer: interleaved XZ ────────────────────────────────────────
   const positions = new Float32Array(steps * 2);
@@ -96,55 +79,28 @@ export function simulateTrajectory(
   let maxDistFromStart = 0;
   const originX = simX;
   const originZ = simZ;
-  let periStep = -1, apoStep = -1;
-  let periDist = Infinity, apoDist = -Infinity;
   let activeSteps = steps;
 
   // ── Integration loop ────────────────────────────────────────────────────
   for (let i = 0; i < steps; i++) {
-    const worldX = primary ? simX + primary.posX : simX;
-    const worldZ = primary ? simZ + primary.posZ : simZ;
-    positions[i * 2] = worldX;
-    positions[i * 2 + 1] = worldZ;
+    positions[i * 2] = simX;
+    positions[i * 2 + 1] = simZ;
 
-    // Apsis tracking (radial distance from primary center)
-    if (trackApsides && primary) {
-      const pd = Math.sqrt(simX * simX + simZ * simZ);
-      if (pd < periDist) { periDist = pd; periStep = i; }
-      if (pd > apoDist) { apoDist = pd; apoStep = i; }
-    }
-
-    // ── Gravity acceleration ──────────────────────────────────────────────
+    // ── Gravity acceleration (multi-body, world-space) ──────────────────
     let ax = 0, az = 0;
     let hitSurface = false;
 
-    if (primary) {
-      // Single-body (body-relative frame: primary is at origin)
-      const dx = -simX;
-      const dz = -simZ;
+    for (let b = 0; b < bodies.length; b++) {
+      const body = bodies[b];
+      const dx = body.posX - simX;
+      const dz = body.posZ - simZ;
       const dist2 = dx * dx + dz * dz;
       const dist = Math.sqrt(dist2);
-      if (dist < primary.surfaceRadius) {
-        hitSurface = true;
-      } else {
-        const accel = primary.mu / dist2;
+      if (dist < body.surfaceRadius) { hitSurface = true; break; }
+      if (dist < body.soiRadius) {
+        const accel = body.mu / dist2;
         ax += (dx / dist) * accel;
         az += (dz / dist) * accel;
-      }
-    } else {
-      // Multi-body (world-space)
-      for (let b = 0; b < bodies.length; b++) {
-        const body = bodies[b];
-        const dx = body.posX - simX;
-        const dz = body.posZ - simZ;
-        const dist2 = dx * dx + dz * dz;
-        const dist = Math.sqrt(dist2);
-        if (dist < body.surfaceRadius) { hitSurface = true; break; }
-        if (dist < body.soiRadius) {
-          const accel = body.mu / dist2;
-          ax += (dx / dist) * accel;
-          az += (dz / dist) * accel;
-        }
       }
     }
 
@@ -178,9 +134,9 @@ export function simulateTrajectory(
         maxDistFromStart > ORBIT_AWAY_DIST &&
         distFromStart < orbitCloseDist
       ) {
-        // Snap the closure point back to start (world-space)
-        positions[i * 2] = primary ? originX + primary.posX : originX;
-        positions[i * 2 + 1] = primary ? originZ + primary.posZ : originZ;
+        // Snap the closure point back to start
+        positions[i * 2] = originX;
+        positions[i * 2 + 1] = originZ;
         orbitClosedAt = i;
         activeSteps = i + 1;
         break;
@@ -191,11 +147,11 @@ export function simulateTrajectory(
   return {
     positions,
     activeSteps,
-    periStep,
-    apoStep,
-    periDist,
-    apoDist,
+    periStep: -1,
+    apoStep: -1,
+    periDist: Infinity,
+    apoDist: -Infinity,
     orbitClosedAt,
-    primaryBodyId: primary?.id ?? null,
+    primaryBodyId: null,
   };
 }
