@@ -42,7 +42,7 @@ export default function ContainerBritish({
   position = [0, 0, 0],
   radioBroadcast,
 }: ContainerBritishProps) {
-  const gltf = useGLTF('/container-british.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/container-british.glb') as unknown as { scene: THREE.Group };
   const bodyRef = useRef<THREE.Group>(null);
   useRegisterRadioBroadcast(bodyRef, radioBroadcast);
 

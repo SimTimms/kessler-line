@@ -33,7 +33,7 @@ export const HUD_CONFIG = {
    * Tweak localPosition / localRotation / scale until the canopy frames correctly.
    */
   cameraCockpit: {
-    url: '/shuttle-low-british-cockpit.glb',
+    url: '/models/shuttle-low-british-cockpit.glb',
     localPosition: [0, -1.1, -1] as Vec3,
     localRotation: [0, Math.PI * 0.5, 0] as Vec3,
     scale: 1,

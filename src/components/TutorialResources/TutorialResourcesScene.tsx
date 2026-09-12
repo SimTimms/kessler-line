@@ -81,7 +81,7 @@ export default memo(function TutorialResourcesScene({ onStepAdvance }: LunarTuto
             collidableIdPrefix={TUTORIAL_RESOURCES_ASTEROID_COLLIDABLE_PREFIX}
           />
           <Spaceship
-            url="/shuttle-low-british.glb"
+            url="/models/shuttle-low-british.glb"
             shipGroupRef={spaceshipGroupRef}
             initialPosition={[0, 0, 0]}
             scale={1}

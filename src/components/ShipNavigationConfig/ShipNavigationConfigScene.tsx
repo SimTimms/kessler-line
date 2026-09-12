@@ -72,7 +72,7 @@ export default function ShipNavigationConfigScene({}: ShipNavigationConfigSceneP
 
       <Suspense fallback={null}>
         <Spaceship
-          url="/shuttle-low-british.glb"
+          url="/models/shuttle-low-british.glb"
           shipGroupRef={spaceshipGroupRef}
           initialPosition={[0, 0, 0]}
           initialRotation={[0, 0, 0]}

@@ -22,7 +22,7 @@ export default function Neptune({
   scale = 1,
   color = 0xffffff,
 }: NeptuneProps) {
-  const gltf = useGLTF('/neptune.glb') as unknown as GLTFWithParser;
+  const gltf = useGLTF('/models/neptune.glb') as unknown as GLTFWithParser;
   // Clone the scene so each instance has its own meshes and materials.
   const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
 

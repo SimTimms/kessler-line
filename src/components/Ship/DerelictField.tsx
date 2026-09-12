@@ -209,7 +209,7 @@ export default function DerelictField({
         registerDock({
           id: dockId,
           label: 'Derelict Ship',
-          backgroundImage: '/station.jpg',
+          backgroundImage: '/textures/station.jpg',
           fuel: { amount: record.fuel, capacity: 100 },
           o2: { amount: record.o2, capacity: 100 },
           power: { amount: record.power, capacity: 100 },

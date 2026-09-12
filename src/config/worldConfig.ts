@@ -262,8 +262,8 @@ export const RADIO_BEACON_DEFS: WorldObjectDef[] = [
 ];
 
 export const BEACON_AUDIO: Record<number, string> = {
-  0: '/beacon-001.mp3',
-  1: '/radio.mp3',
+  0: '/audio/beacon-001.mp3',
+  1: '/audio/radio.mp3',
 };
 
 export interface RadioBroadcastDef {

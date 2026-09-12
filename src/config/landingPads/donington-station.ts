@@ -12,7 +12,7 @@ export const DONINGTON_STATION_DOCK_CONFIG: DockConfig = {
   label: 'Donington Station',
   hailAcceptanceChance: 1,
   dockRequestAcceptanceChance: 1,
-  backgroundImage: '/donington-station.jpg',
+  backgroundImage: '/textures/donington-station.jpg',
   fuel: { amount: randBetween(50, 150), capacity: 500 },
   o2: { amount: randBetween(50, 150), capacity: 500 },
   power: { amount: randBetween(50, 150), capacity: 500 },

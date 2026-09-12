@@ -54,7 +54,7 @@ const _bayWorldPos = new THREE.Vector3();
 const _deltaSpinQuat = new THREE.Quaternion();
 
 export default function ScrapperCargoContainer() {
-  const { scene } = useGLTF('/container.glb') as { scene: THREE.Group };
+  const { scene } = useGLTF('/models/container.glb') as { scene: THREE.Group };
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
 
   const groupRef = useRef<THREE.Group>(null!);
@@ -265,4 +265,4 @@ export default function ScrapperCargoContainer() {
   );
 }
 
-useGLTF.preload('/container.glb');
+useGLTF.preload('/models/container.glb');

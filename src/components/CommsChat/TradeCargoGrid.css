@@ -62,7 +62,7 @@
   aspect-ratio: 1;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--cargo-color, #00cfff) 35%, #1e2228);
-  background-image: url(/crate.jpg);
+  background-image: url(/textures/crate.jpg);
   background-size: cover;
   border-radius: 1px;
   padding: 0;

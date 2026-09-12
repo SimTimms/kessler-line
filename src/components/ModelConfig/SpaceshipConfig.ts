@@ -25,7 +25,7 @@ export const SpaceshipConfig = {
   gridDivisions: 24,
 
   /** Same GLB as Sandbox and Landing Pad Config scenes. */
-  url: '/shuttle-low-british.glb',
+  url: '/models/shuttle-low-british.glb',
   scale: 1,
   /** Applied to the loaded GLB primitive inside Spaceship. */
   modelRotation: [0, Math.PI / 2, 0] as Vec3,

@@ -63,9 +63,9 @@ import { RADIATION_ZONES } from '../config/radiationConfig';
 import CollisionDebug from './Debug/CollisionDebug';
 import CollisionPhysicsTestRig from './Debug/CollisionPhysicsTestRig';
 import PlanetSurfaceImpactDust from './Environment/PlanetSurfaceImpactDust';
-const STAGE_2_GLB_URLS = ['/space_station.glb', '/fuel-station.glb', '/container.glb'] as const;
-const STAGE_3_GLB_URLS = ['/untitled.gltf', '/large_ship.glb', '/supportDrone.glb'] as const;
-const STAGE_4_GLB_URLS = ['/shuttle.glb'] as const;
+const STAGE_2_GLB_URLS = ['/models/space_station.glb', '/models/fuel-station.glb', '/models/container.glb'] as const;
+const STAGE_3_GLB_URLS = ['/models/untitled.gltf', '/models/large_ship.glb', '/models/supportDrone.glb'] as const;
+const STAGE_4_GLB_URLS = ['/models/shuttle.glb'] as const;
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -194,7 +194,7 @@ export default function Scene() {
           <Suspense fallback={null}>
             <group position={SPACE_STATION_DEF.position}>
               <SpaceStation
-                url="/space_station.glb"
+                url="/models/space_station.glb"
                 scale={0.004}
                 collisionRadius={25}
                 stationGroupRef={stationGroupRef}
@@ -225,8 +225,8 @@ export default function Scene() {
           <ScrapperExplosion />
 
           <Suspense fallback={null}>
-            <AIShip id="0" url="/untitled.gltf" scale={1} position={[-401000, 0, 0]} />
-            <AIScrapper url="/large_ship.glb" />
+            <AIShip id="0" url="/models/untitled.gltf" scale={1} position={[-401000, 0, 0]} />
+            <AIScrapper url="/models/large_ship.glb" />
             <ScrapperCargoContainer />
             <SupportDroneFleet />
             <StageAdvancer toStage={3} />
@@ -237,7 +237,7 @@ export default function Scene() {
       {loadStage >= 3 && (
         <Suspense fallback={null}>
           <Spaceship
-            url="/shuttle-low.glb"
+            url="/models/shuttle-low.glb"
             shipGroupRef={spaceshipGroupRef}
             initialPosition={shipInitPos}
             initialRotation={shipInitRot}

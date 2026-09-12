@@ -130,7 +130,7 @@ const StartOverlay = memo(function StartOverlay({
     <div className={`start-overlay${dismissing ? ' dismissing' : ''}`}>
       <div className="start-panel">
         <div className="start-title-group">
-          <img src="/supervivencia.png" alt="" className="start-hero-ship" aria-hidden="true" />
+          <img src="/textures/supervivencia.png" alt="" className="start-hero-ship" aria-hidden="true" />
           <div className="start-title">
             {'supervivencia'.split('').map((letter, i) => (
               <span key={i} className="kessler-letter">

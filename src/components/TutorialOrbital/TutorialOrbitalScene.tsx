@@ -88,7 +88,7 @@ export default function TutorialOrbitalScene({ onStepAdvance }: TutorialOrbitalS
           <Suspense fallback={null}>
             <Spaceship
               key={`${TUTORIAL_ORBITAL_SHIP_ORBIT_RADIUS}-${TUTORIAL_ORBITAL_SHIP_SURFACE_CLEARANCE}`}
-              url="/shuttle-low-british.glb"
+              url="/models/shuttle-low-british.glb"
               shipGroupRef={spaceshipGroupRef}
               initialPosition={TUTORIAL_ORBITAL_SHIP_INITIAL_POSITION}
               scale={1}

@@ -7,7 +7,7 @@ interface MarsColonyProps {
 }
 
 export default function MarsColony({ radius, scale = 0.5 }: MarsColonyProps) {
-  const { scene } = useGLTF('/colony.glb');
+  const { scene } = useGLTF('/models/colony.glb');
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
 
   return <primitive object={clonedScene} position={[0, 40.8, -20]} scale={0.01} />;

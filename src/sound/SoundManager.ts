@@ -62,11 +62,11 @@ export const DOCK_ALIGN_SFX_SRC =
 export const UI_BUTTON_CLICK_SFX_SRC = '/audio/dragon-studio-button-press-382713.mp3';
 
 /** Labored breathing loop when oxygen is at a dangerous level. */
-export const LOW_O2_BREATHING_SFX_SRC = '/freesound_community-sickly-breathing-83152.mp3';
+export const LOW_O2_BREATHING_SFX_SRC = '/audio/freesound_community-sickly-breathing-83152.mp3';
 /** Looping critical warning tone used when hull integrity is critically low. */
-export const HULL_CRITICAL_ALARM_SFX_SRC = '/emir3427-alarm-478339.mp3';
+export const HULL_CRITICAL_ALARM_SFX_SRC = '/audio/emir3427-alarm-478339.mp3';
 /** Continuous air-leak hiss while hull integrity is in breach range. */
-export const HULL_BREACH_HISS_SFX_SRC = '/freesound_community-air_hiss_tubes_loop-96446.mp3';
+export const HULL_BREACH_HISS_SFX_SRC = '/audio/freesound_community-air_hiss_tubes_loop-96446.mp3';
 
 const DEFAULT_AMBIENT_BED_VOLUME = 0.05;
 const DEFAULT_PAD_SCAN_VOLUME = 0.35;
@@ -178,7 +178,7 @@ export function getAudioContext(): AudioContext {
 
 function getImpactAudio(): HTMLAudioElement {
   if (!impactAudio) {
-    impactAudio = new Audio('/impact.mp3');
+    impactAudio = new Audio('/audio/impact.mp3');
     impactAudio.preload = 'auto';
   }
   return impactAudio;
@@ -190,7 +190,7 @@ function getImpactFromPool(): HTMLAudioElement {
   }
 
   if (impactPool.length < IMPACT_POOL_MAX) {
-    const audio = new Audio('/impact.mp3');
+    const audio = new Audio('/audio/impact.mp3');
     audio.preload = 'auto';
     impactPool.push(audio);
     return audio;
@@ -246,7 +246,7 @@ function getPlayerBulletHitFromPool(): HTMLAudioElement {
 
 function getImpactAnalysisAudio(): HTMLAudioElement {
   if (!impactAnalysisAudio) {
-    impactAnalysisAudio = new Audio('/impact.mp3');
+    impactAnalysisAudio = new Audio('/audio/impact.mp3');
     impactAnalysisAudio.preload = 'auto';
   }
   return impactAnalysisAudio;
@@ -501,7 +501,7 @@ export function playBatterySwitch(volume = 0.15): void {
   try {
     resumeAudioContext();
     if (!batterySwitchAudio) {
-      batterySwitchAudio = new Audio('/switch.mp3');
+      batterySwitchAudio = new Audio('/audio/switch.mp3');
       batterySwitchAudio.preload = 'auto';
     }
     batterySwitchAudio.pause();
@@ -634,7 +634,7 @@ export function setEngineRumble(enabled: boolean, volume = 0.06, pitch = 1.0): v
     }
 
     if (!engineRumbleAudioEl) {
-      const audio = new Audio('/jerryblessed-space-rocket-launch-rumble-544846.mp3');
+      const audio = new Audio('/audio/jerryblessed-space-rocket-launch-rumble-544846.mp3');
       audio.loop = true;
       audio.preservesPitch = false;
       engineRumbleAudioEl = audio;

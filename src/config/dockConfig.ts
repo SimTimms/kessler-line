@@ -141,7 +141,7 @@ export interface DockDialogueTurn {
   trade?: DockTradeTurnConfig;
   /**
    * Recorded voice clip for this NPC line. Bare filenames resolve against
-   * `public/npc/`. Never autoplays — the comms panel shows a play button, and
+   * `public/audio/npc/`. Never autoplays — the comms panel shows a play button, and
    * TTS is suppressed for turns that carry a clip.
    */
   audio?: string;
@@ -197,8 +197,8 @@ export interface DockConfig {
   /** Chance a dock permission request is granted after comms are established (0..1). */
   dockRequestAcceptanceChance?: number;
   /**
-   * Public URL for the dock transfer HUD background (e.g. `/station.jpg`).
-   * Falls back to `/station.jpg` when omitted.
+   * Public URL for the dock transfer HUD background (e.g. `/textures/station.jpg`).
+   * Falls back to `/textures/station.jpg` when omitted.
    */
   backgroundImage?: string;
   /**
@@ -220,7 +220,7 @@ export interface DockConfig {
 }
 
 /** Default dock transfer HUD backdrop when a dock omits `backgroundImage`. */
-export const DEFAULT_DOCK_BACKGROUND_IMAGE = '/station.jpg';
+export const DEFAULT_DOCK_BACKGROUND_IMAGE = '/textures/station.jpg';
 
 /** Runtime registration — `id` matches the bay's `stationId`. */
 export type RegisteredDockConfig = DockConfig & { id: string };

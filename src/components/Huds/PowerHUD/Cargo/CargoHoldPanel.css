@@ -298,7 +298,7 @@
 }
 
 .cargo-hold-panel__cell--filled {
-  background-image: url(/crate.jpg);
+  background-image: url(/textures/crate.jpg);
   background-size: cover;
   color: var(--cargo-color, #00cfff);
   cursor: pointer;

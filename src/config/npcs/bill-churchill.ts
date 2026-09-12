@@ -38,7 +38,7 @@ export const BILL_CHURCHILL: DockContact = {
   missionId: 'bill-churchill-parcel-run',
   age: 58,
   company: 'Entente Cordiale Government',
-  portrait: '/profiles/bill-churchill.jpg',
+  portrait: '/textures/profiles/bill-churchill.jpg',
   bio: 'Entente Cordiale liaison to Donington Station. Born in Maidstone in British Territory, Earth. ',
   platform: 'REACH',
   inventory: {

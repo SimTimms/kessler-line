@@ -84,7 +84,7 @@ export default function LandingPad({
   radioDockingBay,
   driveSignatureEnabled = false,
 }: LandingPadProps) {
-  const gltf = useGLTF('/landing-pad.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/landing-pad.glb') as unknown as { scene: THREE.Group };
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const landPad = useMemo(() => {
     return (

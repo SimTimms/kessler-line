@@ -47,4 +47,4 @@ export default function CameraAttachedCockpit({
   return null;
 }
 
-useGLTF.preload('/shuttle-low-british-cockpit.glb');
+useGLTF.preload('/models/shuttle-low-british-cockpit.glb');

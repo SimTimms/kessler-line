@@ -167,7 +167,7 @@ export const DOCKMASTER_KORR: DockContact = {
   birthplace: 'Ceres, Belt',
   company: 'Helix Port Authority',
   role: 'dockmaster',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   bio: 'Thirty years running approach control out of the Belt. Seen every kind of hauler limp into a cradle.',
   platform: 'HERALD',
   dialogue: DOCKMASTER_DIALOGUE,

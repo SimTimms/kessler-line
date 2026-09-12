@@ -30,7 +30,7 @@ import { shipQuaternion, shipVelocity } from '../../context/ShipState';
 import { renderToSimulationSpace, simulationToRenderSpace } from '../../context/FloatingOrigin';
 import type { ShipUndockedDetail } from '../../hooks/shipPhysics/docking';
 
-const DEFAULT_URL = '/container.glb';
+const DEFAULT_URL = '/models/container.glb';
 const DEFAULT_ID = 'cargo-container';
 
 const _shipPortWorld = new THREE.Vector3();

@@ -164,7 +164,7 @@
 }
 
 .dc-patch-slot--filled {
-  background-image: url(/crate.jpg);
+  background-image: url(/textures/crate.jpg);
   background-size: cover;
   color: #ff6a4d;
   border-color: color-mix(in srgb, #ff6a4d 35%, #1e2228);
@@ -282,7 +282,7 @@
 }
 
 .co2-filter-slot--filled {
-  background-image: url(/crate.jpg);
+  background-image: url(/textures/crate.jpg);
   background-size: cover;
   color: #00cfff;
   border-color: color-mix(in srgb, #00cfff 35%, #1e2228);
@@ -400,7 +400,7 @@
 }
 
 .comms-buffer-slot--filled {
-  background-image: url(/crate.jpg);
+  background-image: url(/textures/crate.jpg);
   background-size: cover;
   color: #a0e0ff;
   border-color: color-mix(in srgb, #a0e0ff 35%, #1e2228);
@@ -496,7 +496,7 @@
 }
 
 .emrg-battery-slot--filled {
-  background-image: url(/crate.jpg);
+  background-image: url(/textures/crate.jpg);
   background-size: cover;
   color: #ff9d00;
   border-color: color-mix(in srgb, #ff9d00 35%, #1e2228);

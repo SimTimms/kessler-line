@@ -3,7 +3,7 @@ import type { DockConfig } from '../dockConfig';
 /** Default dock payload for a clonable cargo container instance. */
 export const CARGO_CONTAINER_DOCK: DockConfig = {
   label: 'Cargo Container',
-  backgroundImage: '/crate.jpg',
+  backgroundImage: '/textures/crate.jpg',
   fuel: { amount: 20, capacity: 100 },
   o2: { amount: 40, capacity: 100 },
   power: { amount: 50, capacity: 100 },

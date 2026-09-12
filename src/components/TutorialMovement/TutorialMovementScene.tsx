@@ -58,7 +58,7 @@ export default memo(function TutorialMovementScene({ onStepAdvance }: LunarTutor
           <LunarLandscape />
           <LunarSettlement />
           <Spaceship
-            url="/shuttle-low.glb"
+            url="/models/shuttle-low.glb"
             shipGroupRef={spaceshipGroupRef}
             initialPosition={[0, 0, 0]}
             scale={1}

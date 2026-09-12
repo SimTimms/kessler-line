@@ -34,7 +34,7 @@ export function Asteroid({
   dock,
 }: AsteroidProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const gltf = useGLTF('/asteroid_with_minerals.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/asteroid_with_minerals.glb') as unknown as { scene: THREE.Group };
 
   useRegisterRadioBroadcast(groupRef, radioBroadcast);
   useRegisterSettlement(id);

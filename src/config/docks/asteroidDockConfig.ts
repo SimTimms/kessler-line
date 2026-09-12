@@ -209,7 +209,7 @@ const SYNDICATE_RUNNER: DockContact = {
   name: 'Dex Vex',
   age: 33,
   role: 'gangster',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   bio: 'Nobody asks how he got a berth on a mining rock. He asks how fast you can leave.',
   platform: 'OPENLINE',
   inventory: {
@@ -301,7 +301,7 @@ const TRADER: DockContact = {
   name: 'Iris Sol',
   age: 28,
   role: 'trader',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   company: 'Sol Freight Exchange',
   bio: 'Independent broker — buys low from mining ops, sells to relay stations.',
   platform: 'HERALD',
@@ -366,7 +366,7 @@ const TRADER: DockContact = {
 /** Sandbox mineral asteroid dock — resources + interior comms contacts. */
 export const ASTEROID_DOCK_CONFIG: DockConfig = {
   label: 'Asteroid Dock',
-  backgroundImage: '/station.jpg',
+  backgroundImage: '/textures/station.jpg',
   fuel: { amount: 100, capacity: 100 },
   o2: { amount: 100, capacity: 100 },
   power: { amount: 100, capacity: 100 },

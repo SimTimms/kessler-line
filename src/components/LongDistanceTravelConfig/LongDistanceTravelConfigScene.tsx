@@ -85,7 +85,7 @@ export default function LongDistanceTravelConfigScene() {
       <SpaceParticles />
       <Suspense fallback={null}>
         <Spaceship
-          url="/shuttle-low-british.glb"
+          url="/models/shuttle-low-british.glb"
           shipGroupRef={spaceshipGroupRef}
           initialPosition={shipSpawn.position}
           initialRotation={shipSpawn.rotation}

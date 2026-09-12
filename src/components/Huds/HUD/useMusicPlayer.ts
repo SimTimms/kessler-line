@@ -9,9 +9,9 @@ export function useMusicPlayer() {
   const musicActiveRef = useRef(false);
 
   useEffect(() => {
-    const a1 = new Audio('/piano.mp3');
-    const a2 = new Audio('/piano-2.mp3');
-    const a3 = new Audio('/piano-3.mp3');
+    const a1 = new Audio('/audio/piano.mp3');
+    const a2 = new Audio('/audio/piano-2.mp3');
+    const a3 = new Audio('/audio/piano-3.mp3');
     const a4 = new Audio('/cello-piano.mp3');
     a1.volume = 0.15;
     a2.volume = 0.15;

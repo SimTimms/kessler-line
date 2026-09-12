@@ -30,7 +30,7 @@ export default function DustCloud({
   const groupRef = useRef<THREE.Group>(null!);
   const haloGroupRef = useRef<THREE.Group>(null!);
   const haloMaterialRef = useRef<THREE.PointsMaterial>(null!);
-  const texture = useTexture('/cloud.png');
+  const texture = useTexture('/textures/cloud.png');
   const paletteKey = colors.map((color) => color.getHexString()).join('|');
   // Default ~12% of cloud radius — tuned for world-space size attenuation.
   const resolvedParticleSize = particleSize ?? radius * 0.12;

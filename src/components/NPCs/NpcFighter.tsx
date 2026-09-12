@@ -508,4 +508,4 @@ export default function NpcFighter({
   );
 }
 
-useGLTF.preload('/shuttle-low-british.glb');
+useGLTF.preload('/models/shuttle-low-british.glb');

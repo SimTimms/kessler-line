@@ -79,7 +79,7 @@ function generatePilotDossier(shipName: string): DossierData {
 }
 
 /** Player ship model used for derelict rendering. */
-export const PLAYER_SHIP_MODEL_URL = '/shuttle-low-british.glb';
+export const PLAYER_SHIP_MODEL_URL = '/models/shuttle-low-british.glb';
 
 /** Set by Canvas-side DerelictField; processed on the next physics frame. */
 export const pendingRespawnCause: { current: string | null } = { current: null };

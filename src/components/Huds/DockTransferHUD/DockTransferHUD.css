@@ -427,7 +427,7 @@
 }
 
 .dock-cargo-summary__cell--filled {
-  background-image: url(/crate.jpg);
+  background-image: url(/textures/crate.jpg);
   background-size: cover;
   color: var(--cargo-color, #00cfff);
   border: 1px solid #444;

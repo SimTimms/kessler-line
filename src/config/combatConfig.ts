@@ -137,9 +137,9 @@ export const CANNON_TARGET_HIT_DAMAGE = 8;
 // ── Scow breakup debris ───────────────────────────────────────────────────
 /** Authored wreck pieces spawned when a scavenger scow is destroyed. */
 export const SCOW_DEBRIS_URLS = [
-  '/space_garbage_truck_debris/debris-1.glb',
-  '/space_garbage_truck_debris/debris-2.glb',
-  '/space_garbage_truck_debris/debris-3.glb',
+  '/models/debris/debris-1.glb',
+  '/models/debris/debris-2.glb',
+  '/models/debris/debris-3.glb',
 ] as const;
 /** Visual scale for debris (matches the intact scow primitive scale). */
 export const SCOW_DEBRIS_SCALE = 10;

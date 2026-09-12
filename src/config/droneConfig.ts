@@ -10,7 +10,7 @@ export const MINING_DRONE_LABEL = 'Mining Drone';
  * Note: `/supportDrone.glb` is preloaded by SupportDroneFleet but not rendered
  * there — that Sketchfab mesh has been unreliable in-scene; prefer this glTF.
  */
-export const MINING_DRONE_MODEL_URL = '/drone/untitled.gltf';
+export const MINING_DRONE_MODEL_URL = '/models/drone/untitled.gltf';
 
 export const MINING_DRONE_SCALE = 1;
 

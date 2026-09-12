@@ -51,7 +51,7 @@ export function OrbitingFuelStation({
   return (
     <group ref={groupRef}>
       <FuelStation
-        url="/fuel-station.glb"
+        url="/models/fuel-station.glb"
         scale={1}
         collisionRadius={25}
         stationGroupRef={stationGroupRef}

@@ -497,8 +497,8 @@ export default function OrbitingPlanet({
     if (planetName === 'Neptune') return buildNeptuneBumpMap();
     return buildMarsBumpMap();
   }, [useBumpMap, planetName]);
-  const marsNormalTexture = useTexture('/mars-normal.jpg');
-  const marsEmissiveTexture = useTexture('/mars-emissive.jpg');
+  const marsNormalTexture = useTexture('/textures/mars-normal.jpg');
+  const marsEmissiveTexture = useTexture('/textures/mars-emissive.jpg');
   marsEmissiveTexture.colorSpace = THREE.SRGBColorSpace;
   const coloniesTexture = showColonies ? marsEmissiveTexture : null;
 

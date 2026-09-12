@@ -22,7 +22,7 @@ import {
   SCOW_DEBRIS_URLS,
 } from '../../config/combatConfig';
 
-const DEFAULT_URL = '/space_garbage_truck-low.glb';
+const DEFAULT_URL = '/models/space_garbage_truck-low.glb';
 const DEFAULT_COUNT = 8;
 const DEFAULT_SCALE = 0.35;
 const DEFAULT_SPAWN_RADIUS = 180;

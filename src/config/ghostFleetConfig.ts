@@ -100,7 +100,7 @@ export const GHOST_FLEET_NEPTUNE_ORBIT_BAND_MAX = 1.1;
 export const GHOST_FLEET_NEPTUNE_SCATTER_BAND_MIN = 0.55;
 export const GHOST_FLEET_NEPTUNE_SCATTER_BAND_MAX = 1.7;
 export const GHOST_FLEET_NEAR_RENDER_DISTANCE = 30_000;
-export const GHOST_FLEET_NEAR_MODEL_URL = '/uboat.glb';
+export const GHOST_FLEET_NEAR_MODEL_URL = '/models/uboat.glb';
 /** Target world-space size (longest axis) for rendered rendezvous ships. */
 export const GHOST_FLEET_NEAR_MODEL_TARGET_SIZE = 120;
 /** Extra artist-tuning multiplier applied after auto-normalizing GLB size. */

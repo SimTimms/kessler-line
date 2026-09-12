@@ -219,7 +219,7 @@
   width: 20px;
   height: 20px;
   border-radius: 0;
-  background: url('/ship-nav-icon.png') no-repeat center center;
+  background: url('/textures/ship-nav-icon.png') no-repeat center center;
   background-size: contain;
   box-shadow: none;
 }
@@ -228,7 +228,7 @@
   width: 35px;
   height: 35px;
   border-radius: 0;
-  background: url('/ship-nav-icon.png') no-repeat center center;
+  background: url('/textures/ship-nav-icon.png') no-repeat center center;
   background-size: contain;
   box-shadow: none;
 }

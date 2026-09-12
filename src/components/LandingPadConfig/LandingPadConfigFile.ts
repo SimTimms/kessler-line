@@ -10,7 +10,7 @@ export const LandingPadConfig = {
   followCameraOffset: [-40, 50, 50] as Vec3,
   gridSize: 1200,
   gridDivisions: 24,
-  playerShipUrl: '/shuttle-low.glb',
+  playerShipUrl: '/models/shuttle-low.glb',
   playerShipScale: 1,
   landingPadOffsetFromSpawn: [0, -20, -76] as Vec3,
   landingPadScale: 2,

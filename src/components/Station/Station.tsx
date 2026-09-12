@@ -32,7 +32,7 @@ export function Station({
 }: StationProps) {
   const groupRef = useRef<THREE.Group>(null);
   const spotLightRef = useRef<THREE.SpotLight>(null);
-  const gltf = useGLTF('/station-two.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/station-two.glb') as unknown as { scene: THREE.Group };
 
   useHelper(spotLightRef as RefObject<THREE.Object3D>, THREE.SpotLightHelper, '#ffff00');
 

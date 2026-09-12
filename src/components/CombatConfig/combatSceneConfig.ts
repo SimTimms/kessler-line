@@ -39,7 +39,7 @@ export const COMBAT_CONFIG = {
   tutorialCameraZoomMax: 820,
   planetImpactCameraHoldMaxAltitude: 80_000,
   shipParticleCount: 100,
-  playerShipUrl: '/shuttle-low-british.glb',
+  playerShipUrl: '/models/shuttle-low-british.glb',
   /** Red dust cloud around the asteroid / drone pocket. */
   dustCloud: {
     radius: 2200,
@@ -85,7 +85,7 @@ export const COMBAT_CONFIG = {
   ],
   /** Patrol drones used as moving target practice. */
   targetDroneFleet: {
-    url: '/space_garbage_truck-low.glb',
+    url: '/models/space_garbage_truck-low.glb',
     count: 2,
     scale: 0.25,
     spawnCenter: [0, 0, -200] as Vec3,
@@ -108,7 +108,7 @@ export const COMBAT_CONFIG = {
    */
   hostileFighter: {
     id: 'hostile-fighter',
-    url: '/shuttle-low-british.glb',
+    url: '/models/shuttle-low-british.glb',
     /** 500 units ahead of player spawn at origin (flight forward −Z). */
     position: [0, 0, -500] as Vec3,
     /** Face +Z toward the player (flight/guns use −Z). */

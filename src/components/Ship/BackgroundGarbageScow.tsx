@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import type * as THREE from 'three';
 
-const DEFAULT_URL = '/space_garbage_truck-low.glb';
+const DEFAULT_URL = '/models/space_garbage_truck-low.glb';
 
 export interface BackgroundGarbageScowProps {
   url?: string;

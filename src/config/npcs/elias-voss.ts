@@ -7,7 +7,7 @@ export const ELIAS_VOSS: DockContact = {
   missionId: 'elias-voss-satellite-deployment',
   age: 44,
   company: 'Donington Station Communications Chief',
-  portrait: '/profiles/elias-voss.jpg',
+  portrait: '/textures/profiles/elias-voss.jpg',
   bio: 'Comms officer assigned to Donington traffic control and orbital deployment clearances.',
   platform: 'REACH',
   dialogue: {

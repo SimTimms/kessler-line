@@ -17,7 +17,7 @@ const _dummy = new THREE.Object3D();
  * InstancedMesh — one draw call regardless of count.
  */
 export default function DecorativeAsteroidField({
-  url = '/asteroid-low.glb',
+  url = '/models/asteroid-low.glb',
   asteroids,
   normalScale = 0.6,
 }: {
@@ -80,4 +80,4 @@ export default function DecorativeAsteroidField({
   return <instancedMesh ref={meshRef} args={[geometry, material, asteroids.length]} />;
 }
 
-useGLTF.preload('/asteroid-low.glb');
+useGLTF.preload('/models/asteroid-low.glb');

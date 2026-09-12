@@ -90,7 +90,7 @@ export default function SalvageDropOffPad({
   maxCaptureSpeed = SALVAGE_DROPOFF_MAX_SPEED,
   radioBroadcast,
 }: SalvageDropOffPadProps) {
-  const gltf = useGLTF('/salvage-bay.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/salvage-bay.glb') as unknown as { scene: THREE.Group };
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const groupRef = useRef<THREE.Group>(null!);
   const anchorRef = useRef<THREE.Group>(null!);
@@ -268,4 +268,4 @@ export default function SalvageDropOffPad({
   );
 }
 
-useGLTF.preload('/landing-pad.glb');
+useGLTF.preload('/models/landing-pad.glb');

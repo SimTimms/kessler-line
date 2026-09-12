@@ -6,7 +6,7 @@ import { ASTEROID_CLAMP_CAPTURE_PROFILE } from '../../config/dockCaptureConfig';
 import { selectTarget } from '../../context/TargetSelection';
 import type { AsteroidProps } from './Asteroid';
 
-const DEFAULT_URL = '/asteroid-low.glb';
+const DEFAULT_URL = '/models/asteroid-low.glb';
 
 /** Asteroid mesh — optionally mineable (clamp-on-impact + physical collision). */
 export default function ColliderAsteroid({

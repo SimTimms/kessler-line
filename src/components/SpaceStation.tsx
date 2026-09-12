@@ -63,7 +63,7 @@ export function SpaceStation({
   enableTrackingSpotlight = false,
   dockingBayWorldY = null,
 }: SpaceStationProps) {
-  const gltf = useGLTF('/capital-station.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/capital-station.glb') as unknown as { scene: THREE.Group };
   const stationRef = useRef<THREE.Group>(null);
   const spotRef = useRef<THREE.SpotLight>(null);
   const spotTargetRef = useRef<THREE.Object3D>(null);

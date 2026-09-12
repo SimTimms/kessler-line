@@ -229,7 +229,7 @@ function ContainerInstance({ entry, scene, halfExtents }: ContainerInstanceProps
 // ── Field component ───────────────────────────────────────────────────────────
 
 export default function CargoContainerField() {
-  const { scene } = useGLTF('/container.glb') as { scene: THREE.Group };
+  const { scene } = useGLTF('/models/container.glb') as { scene: THREE.Group };
 
   // Derive collision half-extents from the loaded model's actual bounding box.
   const halfExtents = useMemo(() => {
@@ -249,4 +249,4 @@ export default function CargoContainerField() {
   );
 }
 
-useGLTF.preload('/container.glb');
+useGLTF.preload('/models/container.glb');

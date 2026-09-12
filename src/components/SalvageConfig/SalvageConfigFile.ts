@@ -32,7 +32,7 @@ export const SalvageConfigData = {
   cameraTarget: [0, 0, 0] as Vec3,
   gridSize: 1200,
   gridDivisions: 1,
-  playerShipUrl: '/shuttle-low-british.glb',
+  playerShipUrl: '/models/shuttle-low-british.glb',
   playerShipScale: 1,
   landingPadScale: 3,
   salvageBayScale: 2,
@@ -113,14 +113,14 @@ export const SalvageConfigData = {
   ],
   /** Non-player mothership (low-res garbage scow). */
   backgroundScow: {
-    url: '/space_garbage_truck-low.glb',
+    url: '/models/space_garbage_truck-low.glb',
     position: [120, 0, 140] as Vec3,
     rotation: [0, -0.8, 0] as Vec3,
     scale: 6,
   },
   /** Scavenger drones that patrol the field using the low-res scow mesh. */
   scowDroneFleet: {
-    url: '/space_garbage_truck-low.glb',
+    url: '/models/space_garbage_truck-low.glb',
     count: 8,
     scale: 0.45,
     spawnCenter: [120, -600, 140] as Vec3,

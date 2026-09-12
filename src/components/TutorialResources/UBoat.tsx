@@ -24,7 +24,7 @@ export function UBoat({
   physicsOptions,
 }: UBoatProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const gltf = useGLTF('/uboat-ruin.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/uboat-ruin.glb') as unknown as { scene: THREE.Group };
 
   const proximityShape = useMemo(() => ({ type: 'sphere' as const, radius: 120 }), []);
 

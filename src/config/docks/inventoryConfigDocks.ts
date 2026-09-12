@@ -117,7 +117,7 @@ const PAD_A_WRENCH: DockContact = {
   age: 34,
   role: 'merchant',
   company: 'Independent',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   bio: 'Pad mechanic. Always short on spare parts; sits on power cells from the last salvage.',
   platform: 'HERALD',
   inventory: {
@@ -150,7 +150,7 @@ const PAD_A_DEPOT: InventoryBlueprint = {
 /** Pad A — ore-rich mining cradle, short on life support. */
 export const INVENTORY_PAD_A_DOCK: DockConfig = {
   label: 'Mining Cradle A',
-  backgroundImage: '/station.jpg',
+  backgroundImage: '/textures/station.jpg',
   fuel: { amount: 42, capacity: 100 },
   o2: { amount: 18, capacity: 100 },
   power: { amount: 55, capacity: 100 },
@@ -166,7 +166,7 @@ const PAD_B_RUNNER: DockContact = {
   name: 'Nox Pell',
   age: 29,
   role: 'gangster',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   bio: 'Quiet berth runner. Moves unmarked canisters; burns reaction mass like water.',
   platform: 'OPENLINE',
   inventory: {
@@ -195,7 +195,7 @@ const PAD_B_FIXER: DockContact = {
   name: 'Juno Rhee',
   age: 38,
   role: 'drifter',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   bio: 'Cuts deals for crews stuck on fumes. Wants power cells; sits on spare parts.',
   platform: 'OPENLINE',
   inventory: {
@@ -228,7 +228,7 @@ const PAD_B_DEPOT: InventoryBlueprint = {
 /** Pad B — shadow berth, low fuel, contraband-heavy. */
 export const INVENTORY_PAD_B_DOCK: DockConfig = {
   label: 'Shadow Berth B',
-  backgroundImage: '/station-2.jpg',
+  backgroundImage: '/textures/station-2.jpg',
   fuel: { amount: 12, capacity: 100 },
   o2: { amount: 48, capacity: 100 },
   power: { amount: 28, capacity: 100 },
@@ -245,7 +245,7 @@ const PAD_C_BROKER: DockContact = {
   age: 31,
   role: 'trader',
   company: 'Sol Freight Exchange',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   bio: 'Buys slag for inner relays; sells O2 and power at a premium to mining boats.',
   platform: 'HERALD',
   inventory: {
@@ -312,7 +312,7 @@ const PAD_C_DEPOT: InventoryBlueprint = {
 /** Pad C — freight exchange, life-support rich, ore-hungry. */
 export const INVENTORY_PAD_C_DOCK: DockConfig = {
   label: 'Freight Exchange C',
-  backgroundImage: '/station-3.jpg',
+  backgroundImage: '/textures/station-3.jpg',
   fuel: { amount: 68, capacity: 100 },
   o2: { amount: 88, capacity: 100 },
   power: { amount: 74, capacity: 100 },

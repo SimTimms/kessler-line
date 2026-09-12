@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-const DEFAULT_URL = '/asteroid-low.glb';
+const DEFAULT_URL = '/models/asteroid-low.glb';
 
 export interface AsteroidProps {
   url?: string;
@@ -40,3 +40,4 @@ export default function Asteroid({
 }
 
 useGLTF.preload(DEFAULT_URL);
+

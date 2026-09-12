@@ -7,7 +7,7 @@ import { DRONE_CARGO_CAPACITY, MINING_DRONE_LABEL } from '../droneConfig';
  */
 export const MINING_DRONE_DOCK_CONFIG: DockConfig = {
   label: MINING_DRONE_LABEL,
-  backgroundImage: '/station.jpg',
+  backgroundImage: '/textures/station.jpg',
   fuel: { amount: 60, capacity: 100 },
   o2: { amount: 40, capacity: 100 },
   power: { amount: 70, capacity: 100 },

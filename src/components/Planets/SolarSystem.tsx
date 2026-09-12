@@ -61,11 +61,11 @@ export default function SolarSystem({
           glowTextureUrl={p.glowTextureUrl ?? PLANET_GLOW_TEXTURE_URL ?? undefined}
           textureUrl={
             p.name === 'Earth'
-              ? '/earth.jpg'
+              ? '/textures/earth.jpg'
               : p.name === 'Mars'
-                ? '/mars.jpg'
+                ? '/textures/mars.jpg'
                 : p.name === 'Neptune'
-                  ? '/neptune.jpg'
+                  ? '/textures/neptune.jpg'
                   : p.name === 'Venus'
                     ? '/assets/venus.jpeg'
                     : undefined

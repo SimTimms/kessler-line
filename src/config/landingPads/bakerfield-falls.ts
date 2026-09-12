@@ -5,7 +5,7 @@ export const BAKERFIELD_FALLS_DOCK_CONFIG: DockConfig = {
   label: 'Bakerfield Falls',
   hailAcceptanceChance: 1,
   dockRequestAcceptanceChance: 1,
-  backgroundImage: '/station.jpg',
+  backgroundImage: '/textures/station.jpg',
   fuel: { amount: 45, capacity: 100 },
   o2: { amount: 50, capacity: 100 },
   power: { amount: 72, capacity: 100 },

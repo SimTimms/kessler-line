@@ -35,7 +35,7 @@ const WAYPOINT_DRONE_SCALE = 1.45;
 const WAYPOINT_DRONE_ROTATION: [number, number, number] = [-Math.PI * 0.5, Math.PI, 0];
 
 function WaypointDrone({ waypointRef }: { waypointRef: RefObject<THREE.Group | null> }) {
-  const gltf = useGLTF('/drone/untitled.gltf') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/drone/untitled.gltf') as unknown as { scene: THREE.Group };
   const groupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props
       <Suspense fallback={null}>
         <OrbitingDockingStationCluster waypointRef={waypointRef} />
         <Spaceship
-          url="/shuttle-low.glb"
+          url="/models/shuttle-low.glb"
           shipGroupRef={spaceshipGroupRef}
           initialPosition={[0, 0, 0]}
           initialDockedTo="docking-bay-tutorial-space-station"
@@ -151,4 +151,4 @@ export default function TutorialDockingScene({ onStepAdvance, onStepSet }: Props
   );
 }
 
-useGLTF.preload('/drone/untitled.gltf');
+useGLTF.preload('/models/drone/untitled.gltf');

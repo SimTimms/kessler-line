@@ -32,7 +32,7 @@ import {
 import { initCircularOrbit, stepGravity } from '../../../physics';
 import type { OrbitState } from '../../../physics';
 
-const SATELLITE_URL = '/satellite.glb';
+const SATELLITE_URL = '/models/satellite.glb';
 const COLLISION_ID = `docking-bay-${COMMS_BUFFER_SATELLITE_ID}`;
 
 /** Docking profile — higher max speed to account for orbital velocity matching. */

@@ -8,7 +8,7 @@ import { NARRATIVE_CONFIG } from '../../../scenes/NarrativeConfig/narrativeScene
 import { stepGravity } from '../../../physics';
 import type { OrbitState } from '../../../physics';
 
-const CONTAINER_URL = '/satellite.glb';
+const CONTAINER_URL = '/models/satellite.glb';
 
 /** How long the satellite keeps real physics after release (seconds). */
 const PHYSICS_DURATION = 30;

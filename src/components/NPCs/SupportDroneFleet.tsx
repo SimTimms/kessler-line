@@ -131,7 +131,7 @@ const SPAWN_POSITIONS = buildSpawnPositions();
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function SupportDroneFleet() {
-  const gltf = useGLTF('/drone/untitled.gltf') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/drone/untitled.gltf') as unknown as { scene: THREE.Group };
 
   // SkeletonUtils.clone handles SkinnedMesh skeleton rebinding correctly,
   // unlike scene.clone(true) which leaves broken skeleton references.
@@ -261,4 +261,4 @@ export default function SupportDroneFleet() {
   );
 }
 
-useGLTF.preload('/drone/untitled.gltf');
+useGLTF.preload('/models/drone/untitled.gltf');

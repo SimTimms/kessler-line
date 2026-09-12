@@ -49,7 +49,7 @@ export default function OrbitalSatellite({
       scale={satelliteMissionConfig.scale}
       dock={satelliteContainerDock}
       showCaptureMesh
-      url="/satellite.glb"
+      url="/models/satellite.glb"
       portLocalOffset={[0, 0, 1]}
     />
   );

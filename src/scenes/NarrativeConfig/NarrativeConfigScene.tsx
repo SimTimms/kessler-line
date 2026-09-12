@@ -148,7 +148,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
       <SpaceParticles />
       <Suspense fallback={null}>
         <Spaceship
-          url="/shuttle-low-british.glb"
+          url="/models/shuttle-low-british.glb"
           shipGroupRef={spaceshipGroupRef}
           initialPosition={effectiveSpawn.position}
           initialRotation={effectiveSpawn.rotation}

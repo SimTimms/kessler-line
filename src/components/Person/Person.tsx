@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-export const PERSON_MODEL_URL = '/person.glb';
+export const PERSON_MODEL_URL = '/models/person.glb';
 
 export default function Person() {
   const gltf = useGLTF(PERSON_MODEL_URL) as unknown as { scene: THREE.Group };

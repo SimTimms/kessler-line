@@ -8,7 +8,7 @@ import { useRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-const MODEL_URL = '/type-004_aircraft_carrier.glb';
+const MODEL_URL = '/models/type-004_aircraft_carrier.glb';
 
 interface CarrierGRBProps {
   position?: [number, number, number];

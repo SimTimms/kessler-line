@@ -92,7 +92,7 @@ export default function UBoat({
   shipPhysicsOptions,
   children,
 }: UBoatProps) {
-  const gltf = useGLTF('/uboat.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/uboat.glb') as unknown as { scene: THREE.Group };
   // Clone the GLTF root per-instance so HMR/remounts do not reuse mutated transforms.
   const modelScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const rootRef = useRef<THREE.Group>(null!);
@@ -180,4 +180,4 @@ export default function UBoat({
   );
 }
 
-useGLTF.preload('/uboat.glb');
+useGLTF.preload('/models/uboat.glb');

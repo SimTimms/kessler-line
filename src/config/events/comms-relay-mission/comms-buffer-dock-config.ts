@@ -13,7 +13,7 @@ const completeMissionEffect: DialogueEffect = {
 
 export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
   label: COMMS_BUFFER_SATELLITE_LABEL,
-  backgroundImage: '/satellite-interior.jpg',
+  backgroundImage: '/textures/satellite-interior.jpg',
   power: { amount: 12, capacity: 20 },
   inventory: {
     label: 'Object Inventory',
@@ -26,7 +26,7 @@ export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
       id: 'buffer-system',
       name: 'Communications Buffer',
       role: 'system',
-      portrait: '/satellite-interior.jpg',
+      portrait: '/textures/satellite-interior.jpg',
       bio: 'Automated relay buffer — caches incoming transmissions for retrieval.',
       dialogue: {
         id: 'buffer-system-dialogue',

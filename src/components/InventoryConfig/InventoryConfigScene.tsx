@@ -74,7 +74,7 @@ export default function InventoryConfigScene() {
 
       <Suspense fallback={null}>
         <Spaceship
-          url="/shuttle-low-british.glb"
+          url="/models/shuttle-low-british.glb"
           initialPosition={[0, 1.2, 0]}
           initialRotation={[0, 0, 0]}
           scale={1}

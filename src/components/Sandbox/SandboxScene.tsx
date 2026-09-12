@@ -79,7 +79,7 @@ export default function SandboxScene() {
         <MinimapExclude>
           <Spaceship
             key={sandboxSpawn.presetId}
-            url="/shuttle-low-british.glb"
+            url="/models/shuttle-low-british.glb"
             shipGroupRef={spaceshipGroupRef}
             initialPosition={sandboxSpawn.position}
             initialRotation={sandboxSpawn.rotation}

@@ -52,7 +52,7 @@ export default function BattleshipBritish({
   orbit,
   radioBroadcast,
 }: BattleshipBritishProps) {
-  const gltf = useGLTF('/battleship-british.glb') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/battleship-british.glb') as unknown as { scene: THREE.Group };
   const rootRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
   useRegisterRadioBroadcast(bodyRef, radioBroadcast);
@@ -93,4 +93,4 @@ export default function BattleshipBritish({
   );
 }
 
-useGLTF.preload('/battleship-british.glb');
+useGLTF.preload('/models/battleship-british.glb');

@@ -38,7 +38,7 @@ export default function GravityTestPlanet({
   planetColor = '#ffffff',
   planetMass = NAV_PLANET_MASS,
   planetInitialVelocity = new THREE.Vector3(0, 0, 0),
-  planetTextureUrl = '/mars.jpg',
+  planetTextureUrl = '/textures/mars.jpg',
   planetSpin = 0.1,
   isAffectedByGravity = false,
 }: GravityTestPlanetProps) {

@@ -144,7 +144,7 @@ export default function StationDrones({
   center = [26, 44, -7],
   movementNodes = PATROL_POINT_OFFSETS,
 }: StationDronesProps) {
-  const gltf = useGLTF('/drone/untitled.gltf') as unknown as { scene: THREE.Group };
+  const gltf = useGLTF('/models/drone/untitled.gltf') as unknown as { scene: THREE.Group };
   const droneScenes = useMemo(
     () => Array.from({ length: DRONE_COUNT }, () => SkeletonUtils.clone(gltf.scene)),
     [gltf.scene]
@@ -445,4 +445,4 @@ export default function StationDrones({
   );
 }
 
-useGLTF.preload('/drone/untitled.gltf');
+useGLTF.preload('/models/drone/untitled.gltf');

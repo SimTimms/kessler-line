@@ -7,7 +7,7 @@ export const CHEIA_DOOLHARDY: DockContact = {
   role: 'quartermaster',
   age: 27,
   company: 'Entente Cordiale',
-  portrait: '/profiles/cheia-doolhardy.jpg',
+  portrait: '/textures/profiles/cheia-doolhardy.jpg',
   bio: 'Quartermaster at Donington Station.',
   platform: 'REACH',
   inventory: {

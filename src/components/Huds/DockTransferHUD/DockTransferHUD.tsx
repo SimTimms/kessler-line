@@ -257,7 +257,7 @@ const DockTransferHUD = memo(function DockTransferHUD() {
           id: parsed.jobId,
           name: job.title,
           role: 'official',
-          portrait: '/Image_0.jpg',
+          portrait: '/textures/Image_0.jpg',
           bio: job.summary,
           platform: 'HERALD',
           dialogue: job.dialogue,

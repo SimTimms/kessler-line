@@ -106,7 +106,7 @@ const SALVAGE_CLERK_UNSCRUPULOUS: DockContact = {
   age: 39,
   role: 'gangster',
   company: 'Independent',
-  portrait: '/Image_0.jpg',
+  portrait: '/textures/Image_0.jpg',
   bio: 'Depot clerk. Will "misplace" tagged salvage and refuse release when it suits him.',
   platform: 'OPENLINE',
   unscrupulous: true,
@@ -183,7 +183,7 @@ const SALVAGE_CLERK_UNSCRUPULOUS: DockContact = {
 /** Ship berth — shared depot inventory + salvage contacts. */
 export const SALVAGE_DOCK_CONFIG: DockConfig = {
   label: 'Salvage Berth',
-  backgroundImage: '/station.jpg',
+  backgroundImage: '/textures/station.jpg',
   inventoryOwnerId: SALVAGE_DEPOT_INVENTORY_ID,
   fuel: { amount: 40, capacity: 100 },
   o2: { amount: 55, capacity: 100 },
@@ -205,7 +205,7 @@ export const SALVAGE_DOCK_CONFIG: DockConfig = {
 /** Crate intake pad — same depot bag, no ship dock / no contacts. */
 export const SALVAGE_DROPOFF_DOCK_CONFIG: DockConfig = {
   label: 'Salvage Intake',
-  backgroundImage: '/station.jpg',
+  backgroundImage: '/textures/station.jpg',
   inventoryOwnerId: SALVAGE_DEPOT_INVENTORY_ID,
   inventory: {
     label: 'Salvage Depot',

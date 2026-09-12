@@ -10,7 +10,7 @@ interface EarthPlanetProps {
 
 export default function EarthPlanet({ position = [0, 0, 0], scale = 55 }: EarthPlanetProps) {
   const meshRef = useRef<THREE.Mesh>(null!);
-  const texture = useTexture('/earth.jpg');
+  const texture = useTexture('/textures/earth.jpg');
 
   useFrame((_, delta) => {
     meshRef.current.rotation.y += delta * 0.04;
