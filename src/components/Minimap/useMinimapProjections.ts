@@ -154,6 +154,12 @@ export function useMinimapProjections({
     for (const p of orbitAssist.predictedPath) {
       extent = Math.max(extent, Math.hypot(p.x - orbitAssist.bodyX, p.z - orbitAssist.bodyZ));
     }
+    // Include Bezier control points in extent calculation
+    if (orbitAssist.hyperBezier) {
+      for (const p of orbitAssist.hyperBezier) {
+        extent = Math.max(extent, Math.hypot(p.x - orbitAssist.bodyX, p.z - orbitAssist.bodyZ));
+      }
+    }
     // Keep framing inside SOI so the ideal ring stays readable.
     extent = Math.min(extent, orbitAssist.soiRadius * 0.98);
     const halfSpan = Math.max(extent * ORBIT_ASSIST_FRAME, orbitAssist.surfaceRadius * 1.2);
@@ -223,6 +229,24 @@ export function useMinimapProjections({
       ellipseCy = bodySy - cPx * Math.sin(argPe);
     }
 
+    // Project hyperbolic Bezier control points to screen space
+    let hyperBezierPath: string | null = null;
+    if (orbitAssist.hyperBezier && orbitAssist.hyperBezier.length >= 4) {
+      const pts = orbitAssist.hyperBezier.map((p) => toPanel(p.x, p.z));
+      if (pts.length === 4) {
+        // One segment: M P0 C P1 P2 P3
+        hyperBezierPath =
+          `M ${pts[0].sx},${pts[0].sy} ` +
+          `C ${pts[1].sx},${pts[1].sy} ${pts[2].sx},${pts[2].sy} ${pts[3].sx},${pts[3].sy}`;
+      } else if (pts.length === 7) {
+        // Two segments: M P0 C P1 P2 P3 C P4 P5 P6
+        hyperBezierPath =
+          `M ${pts[0].sx},${pts[0].sy} ` +
+          `C ${pts[1].sx},${pts[1].sy} ${pts[2].sx},${pts[2].sy} ${pts[3].sx},${pts[3].sy} ` +
+          `C ${pts[4].sx},${pts[4].sy} ${pts[5].sx},${pts[5].sy} ${pts[6].sx},${pts[6].sy}`;
+      }
+    }
+
     return {
       bodySx,
       bodySy,
@@ -244,6 +268,7 @@ export function useMinimapProjections({
       ellipseRx,
       ellipseRy,
       ellipseRotDeg,
+      hyperBezierPath,
     };
   }, [containerRef, orbitAssist]);
 

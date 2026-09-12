@@ -11,8 +11,7 @@ import type { Marker, MarkerKind, PanCenter, UnifiedMarker } from './minimapType
 export const MAX_MARKERS_PER_GROUP = 160;
 export const ZOOM_MIN_HALF_SPAN = 100;
 
-const MAX_PLANET_ORBIT_WORLD =
-  Math.max(...PLANETS.map((p) => p.orbitRadius)) * SOLAR_SYSTEM_SCALE;
+const MAX_PLANET_ORBIT_WORLD = Math.max(...PLANETS.map((p) => p.orbitRadius)) * SOLAR_SYSTEM_SCALE;
 // Add outer-system margin so zoom/pan still covers Neptune and beyond (Pluto-like distances).
 const OUTER_SYSTEM_COVERAGE_WORLD = MAX_PLANET_ORBIT_WORLD * 1.7;
 export const ZOOM_DEFAULT_HALF_SPAN = OUTER_SYSTEM_COVERAGE_WORLD;
@@ -57,6 +56,8 @@ export function idealOrbitRadiusForBody(body: {
 export function formatOrbitDistance(value: number): string {
   if (!Number.isFinite(value)) return '—';
   const abs = Math.abs(value);
+  const step = abs >= 1_000 ? 10 ** (Math.floor(Math.log10(abs)) - 1) : 1;
+  value = Math.round(value / step) * step;
   if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
   if (abs >= 10_000) return `${(value / 1_000).toFixed(0)}k`;
   if (abs >= 1_000) return `${(value / 1_000).toFixed(1)}k`;

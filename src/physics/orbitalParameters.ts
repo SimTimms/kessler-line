@@ -39,6 +39,9 @@ export function computeOrbitalParameters(
   let semiMajorAxis = 0;
   let semiMinorAxis = 0;
   let argumentOfPeriapsis = 0;
+  let eccentricity = 0;
+  const semiLatusRectum = h2 / Math.max(mu, 1e-12);
+  let trueAnomaly = 0;
 
   // Eccentricity vector: points from body centre toward periapsis
   // e_vec = ((v² - μ/r) * relPos - (relPos · relVel) * relVel) / μ
@@ -61,6 +64,7 @@ export function computeOrbitalParameters(
     //if the eccentricity is 1, the orbit is a parabola
     //if the eccentricity is greater than 1, the orbit is a hyperbola
     const e = Math.sqrt(Math.max(0, 1 + (2 * orbitalEnergy * h2) / (mu * mu)));
+    eccentricity = e;
     if (e < 1) {
       periapsis = h2 / (mu * (1 + e));
       apoapsis = a * (1 + e);
@@ -68,10 +72,24 @@ export function computeOrbitalParameters(
       semiMinorAxis = a * Math.sqrt(1 - e * e);
       argumentOfPeriapsis = Math.atan2(_eVec.z, _eVec.x);
       if (periapsis > body.surfaceRadius) isOrbiting = true;
+      // True anomaly: cos(ν) = ((p/r) - 1) / e, sign from radial velocity
+      if (e > 1e-6) {
+        const cosNu = Math.min(1, Math.max(-1, (semiLatusRectum / Math.max(r, 1e-6) - 1) / e));
+        trueAnomaly = Math.acos(cosNu);
+        if (radialVelocity < 0) trueAnomaly = -trueAnomaly;
+      }
     }
   } else {
     const e = Math.sqrt(Math.max(0, 1 + (2 * orbitalEnergy * h2) / (mu * mu)));
+    eccentricity = e;
     if (e > 0) hyperbolicPeriapsis = h2 / (mu * (1 + e));
+    argumentOfPeriapsis = Math.atan2(_eVec.z, _eVec.x);
+    // True anomaly for hyperbolic orbit
+    if (e > 1e-6) {
+      const cosNu = Math.min(1, Math.max(-1, (semiLatusRectum / Math.max(r, 1e-6) - 1) / e));
+      trueAnomaly = Math.acos(cosNu);
+      if (radialVelocity < 0) trueAnomaly = -trueAnomaly;
+    }
   }
 
   return {
@@ -85,5 +103,8 @@ export function computeOrbitalParameters(
     semiMajorAxis,
     semiMinorAxis,
     argumentOfPeriapsis,
+    eccentricity,
+    semiLatusRectum,
+    trueAnomaly,
   };
 }

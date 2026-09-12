@@ -113,6 +113,9 @@ export type OrbitAssistData = {
   semiMajorAxis: number;
   semiMinorAxis: number;
   argumentOfPeriapsis: number;
+  /** Cubic Bezier control points in world XZ for hyperbolic trajectory.
+   *  4 points = one segment (outbound); 7 points = two segments (inbound through periapsis). */
+  hyperBezier: Array<{ x: number; z: number }> | null;
 };
 
 export type OrbitAssistReadouts = {
@@ -147,6 +150,8 @@ export type OrbitAssistProjection = {
   ellipseRx: number;
   ellipseRy: number;
   ellipseRotDeg: number;
+  /** SVG `d` attribute for the hyperbolic Bezier trajectory, or null. */
+  hyperBezierPath: string | null;
 };
 
 export type VisibleMarker = Marker & { sx: number; sy: number; pxSize: number };

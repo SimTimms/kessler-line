@@ -66,6 +66,148 @@ type NearestDock = {
 };
 
 type PathPoint = { x: number; z: number };
+type BezierPoint = { x: number; z: number };
+
+/**
+ * Convert a true anomaly on the conic to world XZ coordinates relative to the body.
+ * Uses the perifocal frame rotated by argumentOfPeriapsis.
+ */
+function conicToWorld(
+  nu: number,
+  p: number,
+  e: number,
+  argPe: number
+): { x: number; z: number } {
+  const r = p / (1 + e * Math.cos(nu));
+  // Perifocal coords (P toward periapsis, Q perpendicular)
+  const px = r * Math.cos(nu);
+  const pz = r * Math.sin(nu);
+  // Rotate by argumentOfPeriapsis into world XZ
+  const cosW = Math.cos(argPe);
+  const sinW = Math.sin(argPe);
+  return {
+    x: cosW * px - sinW * pz,
+    z: sinW * px + cosW * pz,
+  };
+}
+
+/**
+ * Velocity direction on the conic at a given true anomaly (unit tangent in world XZ).
+ * In perifocal: v ∝ (-sin(ν), e + cos(ν)), then rotate by argPe.
+ * `hSign` flips the tangent for retrograde (clockwise) orbits.
+ */
+function conicTangent(
+  nu: number,
+  e: number,
+  argPe: number,
+  hSign: number
+): { x: number; z: number } {
+  const vp = -Math.sin(nu) * hSign;
+  const vq = (e + Math.cos(nu)) * hSign;
+  const cosW = Math.cos(argPe);
+  const sinW = Math.sin(argPe);
+  const wx = cosW * vp - sinW * vq;
+  const wz = sinW * vp + cosW * vq;
+  const len = Math.hypot(wx, wz);
+  return len > 1e-12 ? { x: wx / len, z: wz / len } : { x: 0, z: 1 };
+}
+
+/**
+ * Fit a cubic Bezier P0..P3 through two endpoints and a midpoint on the conic.
+ * P1 = P0 + (α/3)*t0, P2 = P3 − (β/3)*t3.
+ * Solve α, β from B(0.5) = mid.
+ */
+function fitBezierSegment(
+  p0: BezierPoint,
+  t0: BezierPoint,
+  p3: BezierPoint,
+  t3: BezierPoint,
+  mid: BezierPoint
+): [BezierPoint, BezierPoint, BezierPoint, BezierPoint] {
+  // B(0.5) = (1/8)P0 + (3/8)P1 + (3/8)P2 + (1/8)P3 = mid
+  // P1 = P0 + (α/3)*t0  =>  substitute
+  // P2 = P3 - (β/3)*t3
+  // (3/8)(α/3)*t0 + (3/8)(−β/3)*t3 = mid − (1/8)P0 − (3/8)P0 − (3/8)P3 − (1/8)P3
+  // (1/8)(α)*t0 − (1/8)(β)*t3 = mid − 0.5*P0 − 0.5*P3
+  // α*t0 − β*t3 = 8*(mid − 0.5*P0 − 0.5*P3)
+  const rx = 8 * (mid.x - 0.5 * p0.x - 0.5 * p3.x);
+  const rz = 8 * (mid.z - 0.5 * p0.z - 0.5 * p3.z);
+  // Solve 2x2: α*t0x − β*t3x = rx,  α*t0z − β*t3z = rz
+  const det = t0.x * (-t3.z) - (-t3.x) * t0.z;
+  let alpha: number;
+  let beta: number;
+  if (Math.abs(det) > 1e-12) {
+    alpha = (rx * (-t3.z) - (-t3.x) * rz) / det;
+    beta = (t0.x * rz - rx * t0.z) / det;
+  } else {
+    // Degenerate — fall back to chord-length heuristic
+    const chordLen = Math.hypot(p3.x - p0.x, p3.z - p0.z);
+    alpha = chordLen;
+    beta = chordLen;
+  }
+  // Clamp to avoid wild control points
+  const maxArm = Math.hypot(p3.x - p0.x, p3.z - p0.z) * 2;
+  alpha = Math.min(Math.max(alpha, 0), maxArm);
+  beta = Math.min(Math.max(beta, 0), maxArm);
+  return [
+    p0,
+    { x: p0.x + (alpha / 3) * t0.x, z: p0.z + (alpha / 3) * t0.z },
+    { x: p3.x - (beta / 3) * t3.x, z: p3.z - (beta / 3) * t3.z },
+    p3,
+  ];
+}
+
+/**
+ * Compute world-space Bezier control points for a hyperbolic trajectory.
+ * Returns 4 points (1 segment, outbound) or 7 points (2 segments, inbound through periapsis).
+ * Uses the ship's actual world position as P0 to avoid floating-point mismatch.
+ * `hSign` is +1 for prograde (counter-clockwise) or -1 for retrograde (clockwise).
+ * Controls which side of the orbit the SOI exit falls on.
+ */
+function computeHyperBezier(
+  e: number,
+  p: number,
+  argPe: number,
+  trueAnomaly: number,
+  soiRadius: number,
+  bodyX: number,
+  bodyZ: number,
+  shipX: number,
+  shipZ: number,
+  hSign: number
+): BezierPoint[] | null {
+  if (e <= 1 || p < 1e-6) return null;
+
+  // SOI exit true anomaly: r(ν_soi) = soiRadius => cos(ν_soi) = ((p/soiR) − 1) / e
+  const cosNuSoi = (p / soiRadius - 1) / e;
+  if (cosNuSoi <= -1 || cosNuSoi >= 1) return null;
+  // For prograde (hSign +1), exit is at +nuSoi; for retrograde (hSign -1), exit is at -nuSoi
+  const nuSoi = Math.acos(cosNuSoi) * hSign;
+
+  const toWorld = (rel: { x: number; z: number }): BezierPoint => ({
+    x: bodyX + rel.x,
+    z: bodyZ + rel.z,
+  });
+
+  // Use ship's actual world position as start point to avoid precision mismatch
+  const shipPos: BezierPoint = { x: shipX, z: shipZ };
+
+  // Single segment: ship → SOI exit
+  const nuShip = trueAnomaly;
+  const nuExit = nuSoi;
+
+  if (Math.abs(nuShip) >= Math.abs(nuExit)) return null; // already past SOI exit angle
+
+  const p0 = shipPos;
+  const t0 = conicTangent(nuShip, e, argPe, hSign);
+  const p3 = toWorld(conicToWorld(nuExit, p, e, argPe));
+  const t3 = conicTangent(nuExit, e, argPe, hSign);
+  const nuMid = (nuShip + nuExit) * 0.5;
+  const mid = toWorld(conicToWorld(nuMid, p, e, argPe));
+  const seg = fitBezierSegment(p0, t0, p3, t3, mid);
+
+  return [seg[0], seg[1], seg[2], seg[3]];
+}
 
 const _tmpA = new THREE.Vector3();
 const _orbRelPos = new THREE.Vector3();
@@ -401,6 +543,25 @@ function buildOrbitAssist(
   const semiMinorAxis = orbParams.semiMinorAxis;
   const argumentOfPeriapsis = orbParams.argumentOfPeriapsis;
 
+  // Compute hyperbolic Bezier if eccentricity > 1
+  let hyperBezier: Array<{ x: number; z: number }> | null = null;
+  if (orbParams.eccentricity > 1) {
+    // Angular momentum Y: positive = counter-clockwise (prograde), negative = clockwise (retrograde)
+    const hY = _orbRelPos.x * _orbRelVel.z - _orbRelPos.z * _orbRelVel.x;
+    hyperBezier = computeHyperBezier(
+      orbParams.eccentricity,
+      orbParams.semiLatusRectum,
+      orbParams.argumentOfPeriapsis,
+      orbParams.trueAnomaly,
+      primaryBody.soiRadius,
+      primaryBody.position.x,
+      primaryBody.position.z,
+      ship.x,
+      ship.z,
+      hY >= 0 ? 1 : -1
+    );
+  }
+
   return {
     bodyId: primaryId,
     bodyLabel: primaryId.toUpperCase(),
@@ -427,6 +588,7 @@ function buildOrbitAssist(
     semiMajorAxis,
     semiMinorAxis,
     argumentOfPeriapsis,
+    hyperBezier,
   };
 }
 

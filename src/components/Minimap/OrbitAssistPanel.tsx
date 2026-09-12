@@ -82,6 +82,13 @@ export default function OrbitAssistPanel({
                 transform={`rotate(${orbitAssistProjection.ellipseRotDeg}, ${orbitAssistProjection.ellipseCx}, ${orbitAssistProjection.ellipseCy})`}
               />
             )}
+            {orbitAssistProjection.hyperBezierPath && (
+              <path
+                className="sandbox-map-orbit-assist-path"
+                d={orbitAssistProjection.hyperBezierPath}
+                fill="none"
+              />
+            )}
             {orbitAssistProjection.targetSx != null && orbitAssistProjection.targetSy != null && (
               <line
                 className="sandbox-map-orbit-assist-target"
@@ -98,17 +105,11 @@ export default function OrbitAssistPanel({
               x2={orbitAssistProjection.bodySx}
               y2={orbitAssistProjection.bodySy}
             />
-            <line
-              className="sandbox-map-orbit-assist-prograde"
-              x1={orbitAssistProjection.shipSx}
-              y1={orbitAssistProjection.shipSy}
-              x2={orbitAssistProjection.progradeTipSx}
-              y2={orbitAssistProjection.progradeTipSy}
-            />
+
             <g
               transform={`translate(${orbitAssistProjection.shipSx}, ${orbitAssistProjection.shipSy}) rotate(${orbitAssistProjection.shipFacingDeg})`}
             >
-              <polygon className="sandbox-map-orbit-assist-ship-arrow" points="0,-11 7,8 -7,8" />
+              <polygon className="sandbox-map-orbit-assist-ship-arrow" points="0,-5 5,8 -5,8" />
             </g>
           </svg>
           {orbitAssistReadouts && (
@@ -126,7 +127,6 @@ export default function OrbitAssistPanel({
       )}
       {orbitAssistReadouts && (
         <>
-          <div className="sandbox-map-orbit-assist-body">{orbitAssist.bodyLabel}</div>
           <div className="sandbox-map-orbit-assist-readouts">
             <span>ALT {orbitAssistReadouts.altText}</span>
             <span>
@@ -137,9 +137,7 @@ export default function OrbitAssistPanel({
             </span>
             <span>ΔV {orbitAssistReadouts.dvText}</span>
           </div>
-          <div
-            className={`sandbox-map-orbit-assist-status${orbitAssist.isOrbiting ? ' sandbox-map-orbit-assist-status--ok' : ''}`}
-          >
+          <div className={`sandbox-map-orbit-assist-status${orbitAssist.isOrbiting ? '' : ''}`}>
             {orbitAssistReadouts.statusText}
           </div>
         </>

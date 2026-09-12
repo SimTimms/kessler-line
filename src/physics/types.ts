@@ -29,6 +29,12 @@ export interface OrbitalParameters {
   semiMajorAxis: number;
   semiMinorAxis: number;
   argumentOfPeriapsis: number;
+  /** 0 = circle, <1 = ellipse, >1 = hyperbola */
+  eccentricity: number;
+  /** p = h²/μ — defines the conic shape */
+  semiLatusRectum: number;
+  /** Ship's angular position on the conic (radians) */
+  trueAnomaly: number;
 }
 
 /** Result of `findPrimaryBody` — the gravity body with greatest acceleration. */

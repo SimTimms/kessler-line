@@ -19,6 +19,9 @@ export function clearOrbitalStatus(): void {
   orbitStatusRef.current.semiMajorAxis = 0;
   orbitStatusRef.current.semiMinorAxis = 0;
   orbitStatusRef.current.argumentOfPeriapsis = 0;
+  orbitStatusRef.current.eccentricity = 0;
+  orbitStatusRef.current.semiLatusRectum = 0;
+  orbitStatusRef.current.trueAnomaly = 0;
 }
 
 /**
@@ -56,4 +59,7 @@ export function updateOrbitalStatus({
   orbitStatusRef.current.semiMajorAxis = params.semiMajorAxis;
   orbitStatusRef.current.semiMinorAxis = params.semiMinorAxis;
   orbitStatusRef.current.argumentOfPeriapsis = params.argumentOfPeriapsis;
+  orbitStatusRef.current.eccentricity = params.eccentricity;
+  orbitStatusRef.current.semiLatusRectum = params.semiLatusRectum;
+  orbitStatusRef.current.trueAnomaly = params.trueAnomaly;
 }

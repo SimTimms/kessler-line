@@ -10,7 +10,7 @@ import { clearOrbitalStatus, updateOrbitalStatus } from './helpers/orbitalStatus
 const _shipWorldPos = new THREE.Vector3();
 
 // Orbital status throttle - update orbital status every n frames
-const ORBITAL_STATUS_INTERVAL = 6;
+const ORBITAL_STATUS_INTERVAL = 1;
 let _orbitalStatusTick = 0;
 
 export interface ApplyGravityStepParams {

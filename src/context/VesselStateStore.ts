@@ -24,6 +24,9 @@ export interface VesselRuntimeState {
       semiMajorAxis: number;
       semiMinorAxis: number;
       argumentOfPeriapsis: number;
+      eccentricity: number;
+      semiLatusRectum: number;
+      trueAnomaly: number;
     };
   };
   trajectoryApsisRef: {
@@ -94,6 +97,9 @@ function createDefaultVesselRuntimeState(): VesselRuntimeState {
         semiMajorAxis: 0,
         semiMinorAxis: 0,
         argumentOfPeriapsis: 0,
+        eccentricity: 0,
+        semiLatusRectum: 0,
+        trueAnomaly: 0,
       },
     },
     trajectoryApsisRef: {
