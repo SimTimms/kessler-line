@@ -22,5 +22,5 @@ self.onmessage = (e: MessageEvent<TrajectoryRequest>) => {
   };
 
   // Transfer the positions buffer (zero-copy)
-  self.postMessage(response, [result.positions.buffer] as unknown as Transferable[]);
+  self.postMessage(response, { transfer: [result.positions.buffer] });
 };
