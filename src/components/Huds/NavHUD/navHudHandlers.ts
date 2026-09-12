@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { NAV_TARGET_DEFS } from '../../../config/worldConfig';
 import { EVENT_REQUEST_UNDOCK } from '../../../config/keybindings';
-import { isDockingTutorialUndockAllowed } from '../../../tutorial/tutorialDockingInputGate';
 import { gravityBodies } from '../../../context/GravityRegistry';
 import { navTargetIdRef, navTargetPosRef, clearNavTarget } from '../../../context/NavTarget';
 import {
@@ -52,7 +51,7 @@ export function handleNavTargetSelect(
   allScanContacts: NavScanContact[],
   velVec: THREE.Vector3,
   customGeneralTargets?: TutorialTargetDef[],
-  customPlanetaryTargets?: TutorialTargetDef[],
+  customPlanetaryTargets?: TutorialTargetDef[]
 ): void {
   // Custom general target (tutorial)
   const customGeneralDef = customGeneralTargets?.find((t) => t.id === id);
@@ -173,6 +172,5 @@ export function clearAllNavTargets(dispatch: ClearNavTargetDispatch): void {
 
 /** Request undock, respecting tutorial gating. */
 export function requestUndock(): void {
-  if (!isDockingTutorialUndockAllowed()) return;
   window.dispatchEvent(new CustomEvent(EVENT_REQUEST_UNDOCK));
 }

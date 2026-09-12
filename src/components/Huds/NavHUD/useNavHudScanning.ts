@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { NAV_TARGET_DEFS } from '../../../config/worldConfig';
-import { dockingTutorialActiveRef, tutorialStepRef } from '../../../context/TutorialState';
-import { TUTORIAL_DOCKING_STEPS } from '../../../tutorial/tutorialDockingSteps';
 import type { NavScanContact } from './navScanPickerContacts';
-import { updateHudDisplayRefs, type HudDisplayRefs } from './navHudDisplayUpdater';
+import { type HudDisplayRefs } from './navHudDisplayUpdater';
 import { scanAllContacts, type ScanPrevSigs, type ScanScratchVecs } from './navHudContactScanner';
 import type { NavTargetItem } from './NavTargetDialog';
 import type { TutorialTargetDef } from './NavHUD';
@@ -123,15 +121,6 @@ export function useNavHudScanning(opts: UseNavHudScanningOptions): NavHudScanSta
           customGeneralTargets,
           customPlanetaryTargets
         );
-      }
-
-      // Tutorial undock pulse
-      if (undockBtnRef.current) {
-        const undockTutorialStep =
-          dockingTutorialActiveRef.current &&
-          TUTORIAL_DOCKING_STEPS[tutorialStepRef.current]?.id === 'docking-undock';
-        const pulse = undockTutorialStep && isDockedRef.current;
-        undockBtnRef.current.classList.toggle('nav-undock-btn--tutorial-pulse', pulse);
       }
 
       raf = requestAnimationFrame(tick);

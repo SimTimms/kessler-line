@@ -26,12 +26,6 @@ import {
 } from '../../config/keybindings';
 import { getActiveThrustMultiplierCap } from '../../context/FastTravelZones';
 import {
-  DOCKING_TUTORIAL_ALL_FLIGHT_KEYS,
-  EVENT_DOCKING_TUTORIAL_INPUT_RESET,
-  isDockingTutorialShipKeyAllowed,
-  isDockingTutorialUndockAllowed,
-} from '../../tutorial/tutorialDockingInputGate';
-import {
   computeUndockReleaseDirection,
   detachShipFromDock,
   type ShipUndockedDetail,
@@ -53,7 +47,7 @@ const _undockReleaseDir = new THREE.Vector3();
 function stationIdFromDockEntryId(dockEntryId: string | null): string | null {
   if (!dockEntryId) return null;
   const match = /^docking-bay-(.+)$/.exec(dockEntryId);
-  return match ? match[1] ?? null : null;
+  return match ? (match[1] ?? null) : null;
 }
 
 export interface InputListenersResult {
@@ -218,13 +212,7 @@ export function useInputListeners({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (inputEnabledRef && !inputEnabledRef.current) return;
-      if (
-        DOCKING_TUTORIAL_ALL_FLIGHT_KEYS.has(e.code) &&
-        !isDockingTutorialShipKeyAllowed(e.code)
-      ) {
-        e.preventDefault();
-        return;
-      }
+
       if (e.code === KEY_THRUST_BOOST) {
         if (e.repeat) return;
         e.preventDefault();
@@ -252,7 +240,6 @@ export function useInputListeners({
     };
 
     const onRequestUndock = () => {
-      if (!isDockingTutorialUndockAllowed()) return;
       performShipUndock();
     };
 
@@ -281,7 +268,6 @@ export function useInputListeners({
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onWindowBlur);
     window.addEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
-    window.addEventListener(EVENT_DOCKING_TUTORIAL_INPUT_RESET, onDockingTutorialInputReset);
 
     const onRailgunHit = (event: Event) => {
       const detail = (event as CustomEvent<{ targetEngine?: 'reverseA' | 'reverseB' | null }>)
@@ -340,7 +326,7 @@ export function useInputListeners({
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onWindowBlur);
       window.removeEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
-      window.removeEventListener(EVENT_DOCKING_TUTORIAL_INPUT_RESET, onDockingTutorialInputReset);
+
       window.removeEventListener('RailgunHit', onRailgunHit);
       window.removeEventListener('RailgunDamagePoints', onDamagePoints);
       endThrustBoost();
