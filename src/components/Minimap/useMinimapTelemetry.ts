@@ -391,11 +391,12 @@ function buildOrbitAssist(
       ? Math.max(0, status.apoapsis - surfaceR)
       : Math.max(0, r - surfaceR);
 
-  // Compute ellipse parameters using full 3D state so inclined orbits are correct.
+  // Compute ellipse parameters on the XZ plane (game is 2D; y is always clamped to 0).
   _orbRelPos.subVectors(ship, primaryBody.position);
-  _orbRelVel.set(relVx, shipVelocity.y - primaryBody.velocity.y, relVz);
-  const r3d = _orbRelPos.length();
-  const orbParams = computeOrbitalParameters(primaryBody, primaryId, _orbRelPos, _orbRelVel, r3d);
+  _orbRelPos.y = 0;
+  _orbRelVel.set(relVx, 0, relVz);
+  const rXZ = _orbRelPos.length();
+  const orbParams = computeOrbitalParameters(primaryBody, primaryId, _orbRelPos, _orbRelVel, rXZ);
   const semiMajorAxis = orbParams.semiMajorAxis;
   const semiMinorAxis = orbParams.semiMinorAxis;
   const argumentOfPeriapsis = orbParams.argumentOfPeriapsis;

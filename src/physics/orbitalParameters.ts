@@ -29,7 +29,6 @@ export function computeOrbitalParameters(
   const v2 = relVel.lengthSq();
   const orbitalEnergy = 0.5 * v2 - mu / Math.max(r, 1e-6);
   const radialVelocity = relVel.dot(relPos) / Math.max(r, 1e-6);
-
   _hVec.copy(relPos).cross(relVel);
   const h2 = _hVec.lengthSq();
 

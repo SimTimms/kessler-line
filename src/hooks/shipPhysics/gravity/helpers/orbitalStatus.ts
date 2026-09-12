@@ -40,11 +40,10 @@ export function updateOrbitalStatus({
   //This function is used to update the orbital status of the ship
   const primaryBody = gravityBodies.get(primaryBodyId);
   if (!primaryBody) return;
-
   _relPos.subVectors(shipWorldPos, primaryBody.position);
+  _relPos.y = 0;
   _relVel.subVectors(velocity, primaryBody.velocity);
   const r = Math.sqrt(distSq);
-
   const params = computeOrbitalParameters(primaryBody, primaryBodyId, _relPos, _relVel, r);
 
   orbitStatusRef.current.bodyId = params.bodyId;

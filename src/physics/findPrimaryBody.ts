@@ -13,7 +13,11 @@ export function findPrimaryBody(pos: THREE.Vector3): PrimaryBodyResult | null {
   let result: PrimaryBodyResult | null = null;
 
   for (const [id, body] of gravityBodies) {
-    const distSq = pos.distanceToSquared(body.position);
+    // XZ-plane distance — game is 2D; ignore y so off-plane body positions
+    // don't weaken gravity or leak energy via the y-clamp.
+    const dx = pos.x - body.position.x;
+    const dz = pos.z - body.position.z;
+    const distSq = dx * dx + dz * dz;
     const srSq = body.surfaceRadius * body.surfaceRadius;
     const soiSq = body.soiRadius * body.soiRadius;
     if (distSq > srSq && distSq < soiSq) {

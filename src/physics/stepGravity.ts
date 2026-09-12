@@ -18,8 +18,10 @@ export function stepGravity(state: OrbitState, dt: number): StepResult {
   if (primary) {
     const { body, id: bodyId, distSq } = primary;
 
-    // Gravity acceleration: a = mu/r² toward body centre
-    _gravDir.subVectors(body.position, state.position).normalize();
+    // Gravity acceleration: a = mu/r² toward body centre (XZ plane only)
+    _gravDir.subVectors(body.position, state.position);
+    _gravDir.y = 0;
+    _gravDir.normalize();
     state.velocity.addScaledVector(_gravDir, (body.mu / distSq) * dt);
 
     const bodyChanged = state.primaryBodyId !== bodyId;
