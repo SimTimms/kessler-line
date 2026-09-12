@@ -204,6 +204,25 @@ export function useMinimapProjections({
       targetSx = targetPanel.sx;
       targetSy = targetPanel.sy;
     }
+    const a = orbitAssist.semiMajorAxis;
+    const b = orbitAssist.semiMinorAxis;
+    let ellipseCx = 0;
+    let ellipseCy = 0;
+    let ellipseRx = 0;
+    let ellipseRy = 0;
+    let ellipseRotDeg = 0;
+    if (a > 0) {
+      ellipseRx = a * scale;
+      ellipseRy = b * scale;
+      ellipseRotDeg = (orbitAssist.argumentOfPeriapsis * 180) / Math.PI;
+      const c = Math.sqrt(Math.max(a * a - b * b, 0));
+      const cPx = c * scale;
+      const argPe = orbitAssist.argumentOfPeriapsis;
+      // Body is at one focus; ellipse centre is offset toward apoapsis (opposite periapsis).
+      ellipseCx = bodySx - cPx * Math.cos(argPe);
+      ellipseCy = bodySy - cPx * Math.sin(argPe);
+    }
+
     return {
       bodySx,
       bodySy,
@@ -220,6 +239,11 @@ export function useMinimapProjections({
       progradeTipSy,
       shipFacingDeg,
       shipRingPx,
+      ellipseCx,
+      ellipseCy,
+      ellipseRx,
+      ellipseRy,
+      ellipseRotDeg,
     };
   }, [containerRef, orbitAssist]);
 

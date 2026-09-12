@@ -20,8 +20,8 @@ import {
 
 const NAV_SCENE_FOG = '#000000';
 
-const PLANET_1_POS: [number, number, number] = [0, -1000, 0];
-const PLANET_1_MASS = 100000;
+const PLANET_1_POS: [number, number, number] = [-2000, -1000, 0];
+const PLANET_1_MASS = 10000;
 const PLANET_2_POS: [number, number, number] = [300, -1000, -6600];
 const PLANET_2_MASS = 10;
 const PLANET_2_VELOCITY = calcOrbitalVelocity(PLANET_1_MASS, PLANET_2_POS, PLANET_1_POS);
@@ -96,20 +96,6 @@ export default function ShipNavigationConfigScene({}: ShipNavigationConfigSceneP
           planetId="nav-config-planet"
           planetPosition={PLANET_1_POS}
           planetMass={PLANET_1_MASS}
-        />
-        <GravityTestPlanet
-          planetId="nav-config-planet-2"
-          planetPosition={PLANET_2_POS}
-          planetRadius={300}
-          planetInitialVelocity={
-            new THREE.Vector3(PLANET_2_VELOCITY[0], PLANET_2_VELOCITY[1], PLANET_2_VELOCITY[2])
-          }
-          planetSoi={9000}
-          planetOrbitAlt={1600}
-          planetColor="#77ffaa"
-          planetMass={PLANET_2_MASS}
-          planetTextureUrl="/neptune.jpg"
-          isAffectedByGravity={true}
         />
       </Suspense>
       <BodyPhysics />

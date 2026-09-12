@@ -21,7 +21,7 @@ import { syncShipWorldRefs } from './helpers/syncShipWorldRefs';
 import { runPrimaryPhysicsFrame } from './helpers/runPrimaryPhysicsFrame';
 import { EVENT_DEBUG_JUMP_DOCK } from '../../config/keybindings';
 import { shipVelocity } from '../../context/ShipState';
-import { shipPoxsRef } from '../../context/ShipPos';
+import { shipPosRef } from '../../context/ShipPos';
 import { EVENT_SHIP_RESPAWNED } from '../../context/respawnAsNewShip';
 import { playDockAlignSound } from '../../sound/SoundManager';
 import { SHIP_UNDOCK_DOCKING_COOLDOWN_MS } from '../../config/shipConfig';

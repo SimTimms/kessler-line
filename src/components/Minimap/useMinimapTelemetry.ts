@@ -4,6 +4,7 @@ import { PLANETS } from '../Planets/SolarSystemConfig';
 import { SOLAR_SYSTEM_SCALE, SUN_WORLD_RADIUS } from '../../config/solarConfig';
 import { shipPosRef } from '../../context/ShipPos';
 import { orbitStatusRef, shipQuaternion, shipVelocity } from '../../context/ShipState';
+import { computeOrbitalParameters } from '../../physics';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { getPlanetPosition } from '../../config/planetPosition';
 import { hasNavTarget, navTargetPosRef, navTargetIdRef } from '../../context/NavTarget';
@@ -67,6 +68,8 @@ type NearestDock = {
 type PathPoint = { x: number; z: number };
 
 const _tmpA = new THREE.Vector3();
+const _orbRelPos = new THREE.Vector3();
+const _orbRelVel = new THREE.Vector3();
 const _shipForward = new THREE.Vector3();
 const _dockForward = new THREE.Vector3();
 const _dockWorldPos = new THREE.Vector3();
@@ -388,6 +391,15 @@ function buildOrbitAssist(
       ? Math.max(0, status.apoapsis - surfaceR)
       : Math.max(0, r - surfaceR);
 
+  // Compute ellipse parameters using full 3D state so inclined orbits are correct.
+  _orbRelPos.subVectors(ship, primaryBody.position);
+  _orbRelVel.set(relVx, shipVelocity.y - primaryBody.velocity.y, relVz);
+  const r3d = _orbRelPos.length();
+  const orbParams = computeOrbitalParameters(primaryBody, primaryId, _orbRelPos, _orbRelVel, r3d);
+  const semiMajorAxis = orbParams.semiMajorAxis;
+  const semiMinorAxis = orbParams.semiMinorAxis;
+  const argumentOfPeriapsis = orbParams.argumentOfPeriapsis;
+
   return {
     bodyId: primaryId,
     bodyLabel: primaryId.toUpperCase(),
@@ -408,9 +420,12 @@ function buildOrbitAssist(
     requiredDirZ: tz * tangentSign,
     targetX: target?.x ?? null,
     targetZ: target?.z ?? null,
-    isOrbiting: status.bodyId === primaryId && status.isOrbiting,
+    isOrbiting: (status.bodyId === primaryId && status.isOrbiting) || orbParams.isOrbiting,
     shipHeadingDeg: shipHeadingDegFromQuaternion(),
     predictedPath,
+    semiMajorAxis,
+    semiMinorAxis,
+    argumentOfPeriapsis,
   };
 }
 

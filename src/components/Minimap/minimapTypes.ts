@@ -110,6 +110,9 @@ export type OrbitAssistData = {
   shipHeadingDeg: number;
   /** Predicted path in world XZ (includes gravity). */
   predictedPath: Array<{ x: number; z: number }>;
+  semiMajorAxis: number;
+  semiMinorAxis: number;
+  argumentOfPeriapsis: number;
 };
 
 export type OrbitAssistReadouts = {
@@ -139,6 +142,11 @@ export type OrbitAssistProjection = {
   progradeTipSy: number;
   shipFacingDeg: number;
   shipRingPx: number;
+  ellipseCx: number;
+  ellipseCy: number;
+  ellipseRx: number;
+  ellipseRy: number;
+  ellipseRotDeg: number;
 };
 
 export type VisibleMarker = Marker & { sx: number; sy: number; pxSize: number };

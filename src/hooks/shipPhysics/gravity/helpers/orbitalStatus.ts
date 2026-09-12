@@ -16,18 +16,28 @@ export function clearOrbitalStatus(): void {
   orbitStatusRef.current.surfaceRadius = 0;
   orbitStatusRef.current.radialVelocity = 0;
   orbitStatusRef.current.hyperbolicPeriapsis = 0;
+  orbitStatusRef.current.semiMajorAxis = 0;
+  orbitStatusRef.current.semiMinorAxis = 0;
+  orbitStatusRef.current.argumentOfPeriapsis = 0;
 }
 
 /**
  * Compute orbital parameters for the current primary body and write them
  * to `orbitStatusRef.current`.
  */
-export function updateOrbitalStatus(
-  shipWorldPos: THREE.Vector3,
-  velocity: THREE.Vector3,
-  primaryBodyId: string,
-  distSq: number
-): void {
+interface UpdateOrbitalStatusParams {
+  shipWorldPos: THREE.Vector3;
+  velocity: THREE.Vector3;
+  primaryBodyId: string;
+  distSq: number;
+}
+export function updateOrbitalStatus({
+  shipWorldPos,
+  velocity,
+  primaryBodyId,
+  distSq,
+}: UpdateOrbitalStatusParams): void {
+  //This function is used to update the orbital status of the ship
   const primaryBody = gravityBodies.get(primaryBodyId);
   if (!primaryBody) return;
 
@@ -35,13 +45,7 @@ export function updateOrbitalStatus(
   _relVel.subVectors(velocity, primaryBody.velocity);
   const r = Math.sqrt(distSq);
 
-  const params = computeOrbitalParameters(
-    primaryBody,
-    primaryBodyId,
-    _relPos,
-    _relVel,
-    r
-  );
+  const params = computeOrbitalParameters(primaryBody, primaryBodyId, _relPos, _relVel, r);
 
   orbitStatusRef.current.bodyId = params.bodyId;
   orbitStatusRef.current.isOrbiting = params.isOrbiting;
@@ -50,4 +54,7 @@ export function updateOrbitalStatus(
   orbitStatusRef.current.hyperbolicPeriapsis = params.hyperbolicPeriapsis;
   orbitStatusRef.current.periapsis = params.periapsis;
   orbitStatusRef.current.apoapsis = params.apoapsis;
+  orbitStatusRef.current.semiMajorAxis = params.semiMajorAxis;
+  orbitStatusRef.current.semiMinorAxis = params.semiMinorAxis;
+  orbitStatusRef.current.argumentOfPeriapsis = params.argumentOfPeriapsis;
 }

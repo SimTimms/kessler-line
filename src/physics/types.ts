@@ -26,6 +26,9 @@ export interface OrbitalParameters {
   surfaceRadius: number;
   radialVelocity: number;
   hyperbolicPeriapsis: number;
+  semiMajorAxis: number;
+  semiMinorAxis: number;
+  argumentOfPeriapsis: number;
 }
 
 /** Result of `findPrimaryBody` — the gravity body with greatest acceleration. */

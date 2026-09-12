@@ -78,7 +78,12 @@ export function applyGravityStep({
     _orbitalStatusTick++;
     if (bodyChanged || _orbitalStatusTick >= ORBITAL_STATUS_INTERVAL) {
       _orbitalStatusTick = 0;
-      updateOrbitalStatus(_shipWorldPos, velocity, result.primaryBodyId!, result.distSq);
+      updateOrbitalStatus({
+        shipWorldPos: _shipWorldPos,
+        velocity,
+        primaryBodyId: result.primaryBodyId!,
+        distSq: result.distSq,
+      });
     }
   } else {
     // Outside all SOIs — clear orbital status

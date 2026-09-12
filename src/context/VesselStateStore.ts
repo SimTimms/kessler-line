@@ -21,6 +21,9 @@ export interface VesselRuntimeState {
       surfaceRadius: number;
       radialVelocity: number;
       hyperbolicPeriapsis: number;
+      semiMajorAxis: number;
+      semiMinorAxis: number;
+      argumentOfPeriapsis: number;
     };
   };
   trajectoryApsisRef: {
@@ -88,6 +91,9 @@ function createDefaultVesselRuntimeState(): VesselRuntimeState {
         surfaceRadius: 0,
         radialVelocity: 0,
         hyperbolicPeriapsis: 0,
+        semiMajorAxis: 0,
+        semiMinorAxis: 0,
+        argumentOfPeriapsis: 0,
       },
     },
     trajectoryApsisRef: {

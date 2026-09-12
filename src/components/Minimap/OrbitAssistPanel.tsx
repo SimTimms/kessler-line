@@ -72,20 +72,15 @@ export default function OrbitAssistPanel({
               cy={orbitAssistProjection.bodySy}
               r={Math.max(3, orbitAssistProjection.idealPx)}
             />
-            {orbitAssistProjection.predictedPoints.length > 0 && (
+            {orbitAssistProjection.ellipseRx > 0 && (
               <ellipse
                 className="sandbox-map-orbit-assist-path"
-                cx={orbitAssistProjection.shipSx}
-                cy={orbitAssistProjection.shipSy}
-                rx={10}
-                ry={10}
+                cx={orbitAssistProjection.ellipseCx}
+                cy={orbitAssistProjection.ellipseCy}
+                rx={orbitAssistProjection.ellipseRx}
+                ry={orbitAssistProjection.ellipseRy}
+                transform={`rotate(${orbitAssistProjection.ellipseRotDeg}, ${orbitAssistProjection.ellipseCx}, ${orbitAssistProjection.ellipseCy})`}
               />
-              /*
-              <polyline
-                className="sandbox-map-orbit-assist-path"
-                points={orbitAssistProjection.predictedPoints}
-              />
-              */
             )}
             {orbitAssistProjection.targetSx != null && orbitAssistProjection.targetSy != null && (
               <line
