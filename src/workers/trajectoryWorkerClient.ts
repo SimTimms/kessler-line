@@ -1,4 +1,4 @@
-import { simulateTrajectory } from './trajectorySimulation';
+import { simulateTrajectory } from '../maths/trajectorySimulation';
 import type {
   GravityBodySnapshot,
   TrajectoryRequest,
@@ -6,7 +6,7 @@ import type {
   TrajectoryResponse,
   TrajectorySimConfig,
   TrajectorySimResult,
-} from './trajectoryTypes';
+} from '../maths/trajectoryTypes';
 import { gravityBodies } from '../context/GravityRegistry';
 
 // ── Singleton worker ──────────────────────────────────────────────────────────

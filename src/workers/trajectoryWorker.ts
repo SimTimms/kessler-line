@@ -1,5 +1,5 @@
-import { simulateTrajectory } from './trajectorySimulation';
-import type { TrajectoryRequest, TrajectoryResponse } from './trajectoryTypes';
+import { simulateTrajectory } from '../maths/trajectorySimulation';
+import type { TrajectoryRequest, TrajectoryResponse } from '../maths/trajectoryTypes';
 
 self.onmessage = (e: MessageEvent<TrajectoryRequest>) => {
   const req = e.data;
