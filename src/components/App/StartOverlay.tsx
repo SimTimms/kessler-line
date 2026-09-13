@@ -9,7 +9,6 @@ interface StartOverlayProps {
   onNarrativeLoad: () => void;
 }
 
-// Deterministic pseudo-random (sin-hash) so the field is stable across renders.
 const pseudo = (n: number) => (((Math.sin(n) * 43758.5453123) % 1) + 1) % 1;
 
 // Delays skewed heavily toward the end: x^0.3 pushes pseudo-random values near 1,

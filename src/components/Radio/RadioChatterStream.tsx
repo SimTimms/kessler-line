@@ -2,9 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { chatterState } from '../../context/CinematicState';
 import { RADIO_CHATTER_LINES } from '../../narrative';
 import { SPOTLIGHT_SETTLEMENT_LINES } from '../../narrative/radioChatter';
-import { preloadPiperVoice, speakRadioLine } from '../../sound/PiperTTS';
 import './RadioChatterStream.css';
-import { SHIP_NAMES, STATION_NAMES, BEACON_NAMES, DISPATCHNAME } from '../../config/ghostFleetConfig';
+import {
+  SHIP_NAMES,
+  STATION_NAMES,
+  BEACON_NAMES,
+  DISPATCHNAME,
+} from '../../config/ghostFleetConfig';
 interface ChatterEntry {
   shipId: string;
   text: string;
@@ -64,7 +68,6 @@ export default function RadioChatterStream() {
   };
 
   const addLine = (entry: ChatterEntry) => {
-    // speakRadioLine(entry.text);
     const key = _key++;
     setLines((prev) => {
       const next = [...prev, { key, ...entry }];
@@ -76,7 +79,6 @@ export default function RadioChatterStream() {
   };
 
   useEffect(() => {
-    preloadPiperVoice();
     let timer: number;
 
     const schedule = (delay: number) => {
@@ -94,7 +96,8 @@ export default function RadioChatterStream() {
   // Inject an immediate reactive line when the spotlight hits the lunar settlement.
   useEffect(() => {
     const onSettlementHit = () => {
-      const raw = SPOTLIGHT_SETTLEMENT_LINES[Math.floor(Math.random() * SPOTLIGHT_SETTLEMENT_LINES.length)];
+      const raw =
+        SPOTLIGHT_SETTLEMENT_LINES[Math.floor(Math.random() * SPOTLIGHT_SETTLEMENT_LINES.length)];
       addLine(parseLine(raw));
     };
     window.addEventListener('SpotlightSettlementHit', onSettlementHit);

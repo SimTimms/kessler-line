@@ -21,7 +21,6 @@ import { clearSelectedTarget } from './context/TargetSelection';
 import { disableAutopilot } from './context/AutopilotState';
 import StartOverlay from './components/App/StartOverlay';
 import { GAME_MODES, type GameMode, type TutorialMenuSelection } from './config/gameModes';
-import Sandbox from './components/Sandbox/Sandbox';
 import ModelConfig from './components/ModelConfig/ModelConfig';
 import LandingPadConfig from './components/LandingPadConfig/LandingPadConfig';
 import InventoryConfig from './components/InventoryConfig/InventoryConfig';
@@ -32,7 +31,6 @@ import CombatConfig from './components/CombatConfig/CombatConfig';
 import HudConfig from './components/HudConfig/HudConfig';
 import NarrativeConfig from './scenes/NarrativeConfig/NarrativeConfig';
 import ShipNavigationConfig from './components/ShipNavigationConfig/ShipNavigationConfig';
-import EmptyScene from './components/EmptyScene/EmptyScene';
 
 function resetShipState(forTutorial = false) {
   shipVelocity.set(0, 0, 0);
@@ -107,8 +105,6 @@ function App() {
       return <CombatConfig />;
     case GAME_MODES.hudConfig:
       return <HudConfig />;
-    case GAME_MODES.sandbox:
-      return <Sandbox />;
   }
 }
 

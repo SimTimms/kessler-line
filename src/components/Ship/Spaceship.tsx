@@ -1,5 +1,4 @@
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
-import { useTutorialThrustersHighlighted } from '../TutorialMovement/useTutorialThrustersHighlighted';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { cloneGltfScene } from '../../utils/cloneGltfScene';
@@ -190,8 +189,6 @@ export default function Spaceship({
     return () => window.removeEventListener(EVENT_SHIP_RESPAWNED, onRespawn);
   }, [vesselId]);
 
-  const thrustersHighlighted = useTutorialThrustersHighlighted();
-
   return (
     <>
       <group ref={setGroupRef} rotation={initialRotation ?? [0, 0, 0]} position={initialPosition}>
@@ -247,7 +244,6 @@ export default function Spaceship({
             thrustRight={thrustRight}
             thrustStrafeLeft={thrustStrafeLeft}
             thrustStrafeRight={thrustStrafeRight}
-            thrustersHighlighted={thrustersHighlighted}
           />
         </group>
         {/* Docking port at ship nose — aligns to target bay origin when docked */}

@@ -7,7 +7,6 @@ import AllHuds from '../../components/Huds/AllHuds';
 import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
 import { disableAutopilot } from '../../context/AutopilotState';
-import { tutorialNavViewModeRef } from '../../components/TutorialShared/TutorialFollowCamera';
 import { resetCameraMode } from '../../context/CameraMode';
 import { getScannerRange } from '../../config/scanRanges';
 import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
@@ -63,7 +62,6 @@ export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
     clearNavTarget();
     clearSelectedTarget();
     disableAutopilot();
-    tutorialNavViewModeRef.current = false;
     resetCameraMode('free');
     setNavHudEnabled(true);
     if (loadSave) {

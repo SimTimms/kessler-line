@@ -35,7 +35,6 @@ import {
   type InventoryOwnerRef,
 } from '../../context/InventoryStore';
 import { SHIP_MIN_CREW_ONBOARD } from '../../config/dockTransferConfig';
-import { speakNpcLine } from '../../sound/PiperTTS';
 import { resolveNpcVoiceClipSrc } from '../../sound/npcVoiceClips';
 import DialogueThread from '../CommsChat/DialogueThread';
 import '../CommsChat/CommsChat.css';
@@ -296,7 +295,7 @@ export default function DockInteriorDialogue({
         audioSrc: openingClipSrc,
       });
       setChatTurn(threadId, dialogue.openingTurnId, false);
-      if (!openingClipSrc) speakNpcLine(firstTurn.npcText, dialogue.id);
+
       if (firstTurn.trade) {
         setTradeOpen(true);
         setTradeStatus(firstTurn.trade.panelStatusOpen);
@@ -767,7 +766,6 @@ export default function DockInteriorDialogue({
           setTradeOpen(false);
           setTradeStatus('');
         }
-        if (!clipSrc) speakNpcLine(nextTurn.npcText, dialogue.id);
       } else {
         setChatTurn(threadId, null, false);
         setTradeOpen(false);

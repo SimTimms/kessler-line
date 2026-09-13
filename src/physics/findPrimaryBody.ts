@@ -14,8 +14,7 @@ export function findPrimaryBody(pos: THREE.Vector3): PrimaryBodyResult | null {
   let result: PrimaryBodyResult | null = null;
 
   for (const [id, body] of gravityBodies) {
-    // XZ-plane distance — game is 2D; ignore y so off-plane body positions
-    // don't weaken gravity or leak energy via the y-clamp.
+    // XZ-plane distance — game is 2D; ignore y so off-plane body positions don't weaken gravity or leak energy via the y-clamp.
     const distSq = distanceSquaredXZ(pos.x, pos.z, body.position.x, body.position.z);
     if (isInsideSOI(distSq, body.surfaceRadius, body.soiRadius)) {
       const accel = gravityAccel(body.mu, distSq);
