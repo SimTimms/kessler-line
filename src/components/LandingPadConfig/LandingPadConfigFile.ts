@@ -26,7 +26,7 @@ export const LandingPadConfig = {
     proximity: false,
     physicalCollision: true,
   } as const,
-  /** Approximate main engine nozzle in UBoat body-local space (scale 3). */
+
   mainThrusterPosition: [0, -100.15, -2.6] as Vec3,
   mainThrusterScale: 1,
   forwardRcsPosition: [0, 0, 2.8] as Vec3,

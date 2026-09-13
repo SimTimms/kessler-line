@@ -5,18 +5,16 @@ import { clearNavTarget } from '../context/NavTarget';
 import { clearSelectedTarget } from '../context/TargetSelection';
 import { disableAutopilot } from '../context/AutopilotState';
 import { tutorialStepRef } from '../context/TutorialState';
-import { applyTutorialOrbitalSpawn } from '../config/tutorialOrbitalConfig';
 import { GAME_MODES, type GameMode, type TutorialMenuSelection } from '../config/gameModes';
 
 export function useGameModeHandlers() {
   const [mode, setMode] = useState<GameMode>(GAME_MODES.menu);
-  const [tutorialMode, setTutorialMode] = useState<TutorialMenuSelection>(GAME_MODES.tutorial);
   const [showShipTitle, setShowShipTitle] = useState(false);
   const [narrativeLoadSave, setNarrativeLoadSave] = useState(false);
 
   const handleStart = useCallback(() => {
     resumeAudioContext();
-    setMode(GAME_MODES.game);
+    setMode(GAME_MODES.menu);
     setShowShipTitle(true);
   }, []);
 
@@ -28,10 +26,6 @@ export function useGameModeHandlers() {
     disableAutopilot();
     tutorialStepRef.current = 0;
     setNarrativeLoadSave(false);
-    if (selection === GAME_MODES.orbitalManagement) {
-      applyTutorialOrbitalSpawn();
-    }
-    setTutorialMode(selection);
     setMode(selection);
   }, []);
 
@@ -45,26 +39,17 @@ export function useGameModeHandlers() {
     setMode(GAME_MODES.narrativeConfig);
   }, []);
 
-  const handleTutorialComplete = useCallback(() => {
-    resetShipState(false);
-    tutorialStepRef.current = 0;
-    setMode(GAME_MODES.game);
-    setShowShipTitle(true);
-  }, []);
-
   const handleShipTitleDone = useCallback(() => {
     setShowShipTitle(false);
   }, []);
 
   return {
     mode,
-    tutorialMode,
     showShipTitle,
     narrativeLoadSave,
     handleStart,
     handleTutorialSelect,
     handleNarrativeLoad,
-    handleTutorialComplete,
     handleShipTitleDone,
   };
 }
