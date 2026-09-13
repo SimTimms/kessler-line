@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { orbitalEnergy, eccentricityFromEnergy } from '../maths/gravity';
 import type { GravityBody, OrbitalParameters } from './types';
 
 // Scratch vectors — allocated once.
@@ -27,7 +28,7 @@ export function computeOrbitalParameters(
 ): OrbitalParameters {
   const mu = body.mu;
   const v2 = relVel.lengthSq();
-  const orbitalEnergy = 0.5 * v2 - mu / Math.max(r, 1e-6);
+  const energy = orbitalEnergy(v2, mu, Math.max(r, 1e-6));
   const radialVelocity = relVel.dot(relPos) / Math.max(r, 1e-6);
   _hVec.copy(relPos).cross(relVel);
   const h2 = _hVec.lengthSq();
@@ -52,18 +53,17 @@ export function computeOrbitalParameters(
     .addScaledVector(relVel, -rDotV)
     .divideScalar(mu);
 
-  // console.log('orbitalEnergy', orbitalEnergy);
-  if (orbitalEnergy < 0) {
+  if (energy < 0) {
     // the ship does not have enough velocity to escape the gravity of the body
     //a = the semi-major axis of the orbit
     //the semi-major axis is the halfway distance between the ship and the body
-    const a = -mu / (2 * orbitalEnergy);
+    const a = -mu / (2 * energy);
     //e = the eccentricity of the orbit
     //the eccentricity is a measure of how much the orbit is elliptical
     //if the eccentricity is 0, the orbit is a circle
     //if the eccentricity is 1, the orbit is a parabola
     //if the eccentricity is greater than 1, the orbit is a hyperbola
-    const e = Math.sqrt(Math.max(0, 1 + (2 * orbitalEnergy * h2) / (mu * mu)));
+    const e = eccentricityFromEnergy(energy, h2, mu);
     eccentricity = e;
     if (e < 1) {
       periapsis = h2 / (mu * (1 + e));
@@ -80,7 +80,7 @@ export function computeOrbitalParameters(
       }
     }
   } else {
-    const e = Math.sqrt(Math.max(0, 1 + (2 * orbitalEnergy * h2) / (mu * mu)));
+    const e = eccentricityFromEnergy(energy, h2, mu);
     eccentricity = e;
     if (e > 0) hyperbolicPeriapsis = h2 / (mu * (1 + e));
     argumentOfPeriapsis = Math.atan2(_eVec.z, _eVec.x);

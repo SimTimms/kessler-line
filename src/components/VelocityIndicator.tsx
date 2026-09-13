@@ -27,6 +27,7 @@ import {
 } from './ShipDirectionScreenLabel';
 import { TRAJ_UPDATE_INTERVAL } from '../config/trajectoryConfig';
 import { requestTrajectory, snapshotGravityBodies } from '../workers/trajectoryWorkerClient';
+import { circularSpeed } from '../maths/gravity';
 
 /** Local +Z offset past the arrow tip — label projects from this anchor. */
 const SPEED_LABEL_LOCAL_Z = 22;
@@ -500,7 +501,7 @@ export default function VelocityIndicator({
 
     const vx = rdx / rLen;
     const vz = rdz / rLen;
-    const vCircNow = Math.sqrt(_cachedPrimaryBody.mu / Math.max(rLen, 1));
+    const vCircNow = circularSpeed(_cachedPrimaryBody.mu, Math.max(rLen, 1));
     const tx = -vz;
     const tz = vx;
     const relVelX = shipVelocity.x - _cachedPrimaryBody.velocity.x;
@@ -547,9 +548,9 @@ export default function VelocityIndicator({
     _orbitDir.set(vx, 0, vz).multiplyScalar(idealOrbitRadius);
     _orbitPos.copy(_cachedPrimaryBody.position).add(_orbitDir);
     _orbitVel.set(
-      tx * Math.sqrt(_cachedPrimaryBody.mu / idealOrbitRadius) * tangentSign,
+      tx * circularSpeed(_cachedPrimaryBody.mu, idealOrbitRadius) * tangentSign,
       0,
-      tz * Math.sqrt(_cachedPrimaryBody.mu / idealOrbitRadius) * tangentSign
+      tz * circularSpeed(_cachedPrimaryBody.mu, idealOrbitRadius) * tangentSign
     );
     _orbitVel.x += _cachedPrimaryBody.velocity.x;
     _orbitVel.z += _cachedPrimaryBody.velocity.z;

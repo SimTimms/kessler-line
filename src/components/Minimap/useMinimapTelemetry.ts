@@ -21,6 +21,7 @@ import { beginPadScan } from '../../context/PadScanState';
 import { selectedTargetName, selectedTargetPosition } from '../../context/TargetSelection';
 import { SHIP_DIRECTION_MIN_SPEED } from '../../config/shipDirectionIndicatorConfig';
 import { requestTrajectory, snapshotGravityBodies } from '../../workers/trajectoryWorkerClient';
+import { circularSpeed } from '../../maths/gravity';
 import { getDockCaptureProfile } from '../../utils/dockingCapture';
 import type { DockCaptureMode } from '../../config/dockCaptureConfig';
 import { SHIP_DOCKING_PORT_LOCAL } from '../../config/shipConfig';
@@ -512,8 +513,8 @@ function buildOrbitAssist(
   const relVx = shipVelocity.x - primaryBody.velocity.x;
   const relVz = shipVelocity.z - primaryBody.velocity.z;
   const tangSpeed = Math.abs(-rz * relVx + rx * relVz);
-  const circSpeed = Math.sqrt(primaryBody.mu / Math.max(idealR, 1));
-  const requiredSpeed = Math.sqrt(primaryBody.mu / Math.max(r, 1));
+  const circSpeed = circularSpeed(primaryBody.mu, Math.max(idealR, 1));
+  const requiredSpeed = circularSpeed(primaryBody.mu, Math.max(r, 1));
   const tx = -rz;
   const tz = rx;
   const tangentSign = relVx * tx + relVz * tz >= 0 ? 1 : -1;

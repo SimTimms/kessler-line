@@ -3,6 +3,7 @@ import type {
   TrajectorySimConfig,
   TrajectorySimResult,
 } from './trajectoryTypes';
+import { orbitalEnergy } from './gravity';
 
 const TWO_PI = 2 * Math.PI;
 
@@ -37,7 +38,7 @@ export function keplerianTrajectory(
   const h2 = h * h;
 
   // Specific orbital energy
-  const energy = 0.5 * v2 - mu / Math.max(r, 1e-12);
+  const energy = orbitalEnergy(v2, mu, Math.max(r, 1e-12));
 
   // Semi-latus rectum
   const p = h2 / mu;

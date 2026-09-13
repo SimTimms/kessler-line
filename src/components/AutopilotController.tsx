@@ -22,6 +22,7 @@ import {
 } from '../context/ShipState';
 import { gravityBodies } from '../context/GravityRegistry';
 import { getMagneticTargets } from '../context/MagneticRegistry';
+import { circularSpeed } from '../maths/gravity';
 
 import { clearThrusts } from '../autopilot/clearThrusts';
 import { autopilotThrust } from '../autopilot/autopilotThrust';
@@ -216,7 +217,7 @@ export default function AutopilotController() {
     // velocity at the arrival radius so circularize can burn mostly tangentially.
     // Cap at PLANET_RETRO_ARRIVAL_SPEED for large planets; falls to ~0 for small ones.
     const retroTargetSpeed = gravBody
-      ? Math.min(PLANET_RETRO_ARRIVAL_SPEED, Math.sqrt(gravBody.mu / arrivalRadius) * 0.2)
+      ? Math.min(PLANET_RETRO_ARRIVAL_SPEED, circularSpeed(gravBody.mu, arrivalRadius) * 0.2)
       : 0;
 
     const vToward = _velFlat.dot(_toTarget); // + = closing on target

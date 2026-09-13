@@ -5,6 +5,7 @@ import {
   PLANET_SOI_MULTIPLIER,
   SOLAR_SYSTEM_SCALE,
 } from './solarConfig';
+import { circularSpeed } from '../maths/gravity';
 
 /** World-space surface radius for a planet (local radius × SOLAR_SYSTEM_SCALE). */
 export function getPlanetWorldRadius(planetName: string): number {
@@ -108,7 +109,7 @@ export function getShipSpawnInPlanetOrbit(
   const tangent = new THREE.Vector3(-radial.z, 0, radial.x).normalize();
 
   const mu = surfaceGravity * worldRadius * worldRadius;
-  const circularOrbitSpeed = Math.sqrt(mu / distanceFromCenter);
+  const circularOrbitSpeed = circularSpeed(mu, distanceFromCenter);
 
   return {
     position: [shipPos.x, shipPos.y, shipPos.z],
