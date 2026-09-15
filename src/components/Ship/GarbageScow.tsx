@@ -17,7 +17,7 @@ import ShipBreakApart from './ShipBreakApart';
 import { registerCollidable, unregisterCollidable } from '../../context/CollisionRegistry';
 import { useShipPhysics, type ShipPhysicsOptions } from '../../hooks/shipPhysics';
 import TargetIndicatorLine from '../TargetIndicatorLine';
-import VelocityIndicator from '../VelocityIndicator';
+import VelocityIndicator from '../VelocityIndicator/VelocityIndicator';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { setVesselModules } from '../../context/VesselStateStore';

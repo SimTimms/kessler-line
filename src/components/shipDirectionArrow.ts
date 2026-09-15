@@ -30,8 +30,7 @@ export function createShipDirectionArrow(color: string | number, opacity = 0.88)
     depthTest: false,
     depthWrite: false,
   });
-  // Shared tip/shaft material — keep a direct ref so callers can recolor without
-  // walking children (R3F may also attach Html/label groups under the arrow).
+
   group.userData.arrowMaterial = mat;
 
   const tip = new THREE.Mesh(

@@ -20,7 +20,7 @@ import { useShipPhysics, type ShipPhysicsOptions } from '../../hooks/shipPhysics
 import { shipPosRef } from '../../context/ShipPos';
 import { EVENT_SHIP_RESPAWNED } from '../../context/respawnAsNewShip';
 import TargetIndicatorLine from '../TargetIndicatorLine';
-import VelocityIndicator from '../VelocityIndicator';
+import VelocityIndicator from '../VelocityIndicator/VelocityIndicator';
 import { SHIP_COLLISION_ID, DOCKING_PORT_LOCAL_Z } from '../../context/ShipState';
 import { PLAYER_VESSEL_ID } from '../../context/PlayerShipState';
 import { setVesselModules } from '../../context/VesselStateStore';
