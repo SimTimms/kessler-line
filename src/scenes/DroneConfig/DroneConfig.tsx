@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
-import AppContainer from '../App/AppContainer';
-import CombatConfigScene from './CombatConfigScene';
+import AppContainer from '../../components/App/AppContainer';
+import DroneConfigScene from './DroneConfigScene';
+import DroneHUD from '../../components/Huds/DroneHUD/DroneHUD';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
-import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
-import AllHuds from '../Huds/AllHuds';
+import { ScannerHUDElements } from '../../components/Huds/HUD/ScannerHUD';
+import AllHuds from '../../components/Huds/AllHuds';
 import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
 import { disableAutopilot } from '../../context/AutopilotState';
-import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
-import { resetCameraMode } from '../../context/CameraMode';
 import { getScannerRange } from '../../config/scanRanges';
 import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
 import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
@@ -17,11 +16,14 @@ import { radioOnRef, radioRangeRef } from '../../context/RadioState';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { setNavHudEnabled } from '../../context/NavHud';
 import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
-import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
-import { clearAllIncomingHails } from '../../context/IncomingHailState';
-import { DeathOverlay } from '../Ship/DeathOverlay';
+import SandboxHtmlMiniMap from '../../components/Minimap/SandboxHtmlMiniMap';
+import {
+  ensureMiningDroneDockRegistered,
+  resetDroneState,
+  unregisterMiningDroneDock,
+} from '../../context/DroneStore';
 
-const COMBAT_SCANNER_INITIAL_POWERS = {
+const DRONE_CONFIG_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.DRIVE]: 2,
   [ScannerHUDElements.PROXIMITY]: 2,
   [ScannerHUDElements.MAGNET]: 2,
@@ -30,28 +32,30 @@ const COMBAT_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.SPOTLIGHT]: 1,
 } as const;
 
-const COMBAT_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
+const DRONE_CONFIG_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
 
-function applyCombatScannerDefaults(): void {
+function applyDroneConfigScannerDefaults(): void {
   spotlightOnRef.current = false;
   magneticOnRef.current = true;
-  magneticScanRangeRef.current = getScannerRange('magnet', COMBAT_SCANNER_INITIAL_POWERS.magnet);
+  magneticScanRangeRef.current = getScannerRange(
+    'magnet',
+    DRONE_CONFIG_SCANNER_INITIAL_POWERS.magnet
+  );
   driveSignatureOnRef.current = true;
-  driveSignatureRangeRef.current = getScannerRange('drive', COMBAT_SCANNER_INITIAL_POWERS.drive);
+  driveSignatureRangeRef.current = getScannerRange(
+    'drive',
+    DRONE_CONFIG_SCANNER_INITIAL_POWERS.drive
+  );
   proximityScanOnRef.current = true;
   proximityScanRangeRef.current = getScannerRange(
     'proximity',
-    COMBAT_SCANNER_INITIAL_POWERS.proximity
+    DRONE_CONFIG_SCANNER_INITIAL_POWERS.proximity
   );
   radioOnRef.current = true;
-  radioRangeRef.current = getScannerRange('radio', COMBAT_SCANNER_INITIAL_POWERS.radio);
+  radioRangeRef.current = getScannerRange('radio', DRONE_CONFIG_SCANNER_INITIAL_POWERS.radio);
 }
 
-/**
- * Combat authoring scene: mineable rocks for clamp-on-impact tuning
- * plus a drone fleet for combat target practice. No solar system or salvage field.
- */
-export default function CombatConfig() {
+export default function DroneConfig() {
   const [spotlightOn, setSpotlightOn] = useState(false);
   const [magneticOn, setMagneticOn] = useState(true);
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
@@ -63,12 +67,14 @@ export default function CombatConfig() {
     clearNavTarget();
     clearSelectedTarget();
     disableAutopilot();
-    tutorialNavViewModeRef.current = false;
-    resetCameraMode('free');
     setNavHudEnabled(true);
     resetScannerRefs();
-    applyCombatScannerDefaults();
-    clearAllIncomingHails();
+    applyDroneConfigScannerDefaults();
+    ensureMiningDroneDockRegistered();
+    resetDroneState();
+    return () => {
+      unregisterMiningDroneDock();
+    };
   }, []);
 
   useEffect(() => {
@@ -88,7 +94,7 @@ export default function CombatConfig() {
 
   return (
     <AppContainer>
-      <CombatConfigScene />
+      <DroneConfigScene />
       <AllHuds
         spotlightOn={spotlightOn}
         setSpotlightOn={setSpotlightOn}
@@ -100,13 +106,11 @@ export default function CombatConfig() {
         setProximity={setProximity}
         radioOn={radioOn}
         setRadioOn={setRadioOn}
-        disabledHudElementsState={[...COMBAT_DISABLED_HUD_ELEMENTS]}
-        scannerInitialPowers={COMBAT_SCANNER_INITIAL_POWERS}
+        disabledHudElementsState={[...DRONE_CONFIG_DISABLED_HUD_ELEMENTS]}
+        scannerInitialPowers={DRONE_CONFIG_SCANNER_INITIAL_POWERS}
       />
-      {showMinimap && (
-        <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem={false} />
-      )}
-      <DeathOverlay respawnEnabled />
+      <DroneHUD />
+      <SandboxHtmlMiniMap showSolarSystem={false} />
     </AppContainer>
   );
 }

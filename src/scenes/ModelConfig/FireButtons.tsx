@@ -2,7 +2,7 @@ import {
   EVENT_COLLISION_TEST_BURST,
   EVENT_COLLISION_TEST_FIRE,
   EVENT_COLLISION_TEST_SET_MODE,
-} from '../Debug/CollisionPhysicsTestRig';
+} from '../../components/Debug/CollisionPhysicsTestRig';
 import { useState } from 'react';
 
 interface FireButtonsProps {

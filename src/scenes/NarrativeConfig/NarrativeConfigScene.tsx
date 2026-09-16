@@ -25,7 +25,7 @@ import SkySphere from '../../components/Environment/SkySphere';
 import { FloatingOrigin } from '../../components/Environment/FloatingOrigin';
 import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
-import SalvageField from '../../components/SalvageConfig/SalvageField';
+import SalvageField from '../SalvageConfig/SalvageField';
 import NormalTravelZoneRing from '../../components/FastTravel/NormalTravelZoneRing';
 import { NarrativeSatelliteMissionController } from '../../config/events/satellite-mission/deploy-satellite';
 import OrbitalSatellite from '../../config/events/satellite-mission/OrbitalSatellite';
@@ -154,7 +154,9 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           shipGroupRef={spaceshipGroupRef}
           initialPosition={effectiveSpawn.position}
           initialRotation={effectiveSpawn.rotation}
-          initialDockedTo={savedSpawn || shipSpawn.skipDock ? undefined : NARRATIVE_DONINGTON_DOCK_ID}
+          initialDockedTo={
+            savedSpawn || shipSpawn.skipDock ? undefined : NARRATIVE_DONINGTON_DOCK_ID
+          }
           scale={1}
           initialVelocity={savedSpawn?.velocity ?? [0, 0, 0]}
           modulesInstalled={GARBAGE_SCOW_MODULES}

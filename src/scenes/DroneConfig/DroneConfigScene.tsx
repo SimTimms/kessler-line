@@ -2,16 +2,16 @@ import { Suspense, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { Perf } from 'r3f-perf';
-import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
+import SharedInteractionSceneTools from '../../components/SharedInteractionSceneTools';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
-import DustCloud from '../DustCloud/DustCloud';
-import LandingPad from '../WorldObjects/LandingPad';
-import { InventoryConfig } from './InventoryConfigFile';
-import Spaceship from '../Ship/Spaceship';
+import { DroneConfigData } from './DroneConfigFile';
+import SalvageField from '../SalvageConfig/SalvageField';
+import Spaceship from '../../components/Ship/Spaceship';
+import MiningDrone from '../../components/Drone/MiningDrone';
+import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
 import { CANVAS_FOV } from '../../config/visualConfig';
 
 function CameraCapture() {
@@ -25,7 +25,7 @@ function CameraCapture() {
   return null;
 }
 
-export default function InventoryConfigScene() {
+export default function DroneConfigScene() {
   useEffect(() => {
     const onRequestUndock = () => {
       window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -41,44 +41,54 @@ export default function InventoryConfigScene() {
     minimapShipPosition.set(0, 0, 0);
   }, []);
 
+  const { scene } = DroneConfigData;
+
   return (
     <Canvas
       style={{
         width: '100vw',
         height: '100vh',
-        background: InventoryConfig.scene.fogColor,
+        background: scene.fogColor,
         touchAction: 'none',
       }}
       camera={{
         fov: CANVAS_FOV,
-        position: [...InventoryConfig.cameraPosition],
-        near: InventoryConfig.scene.canvasNear,
-        far: InventoryConfig.scene.canvasFar,
+        position: [...DroneConfigData.cameraPosition],
+        near: scene.canvasNear,
+        far: scene.canvasFar,
       }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: InventoryConfig.scene.toneMappingExposure,
+        toneMappingExposure: scene.toneMappingExposure,
       }}
       shadows={true}
     >
       <CameraCapture />
-      <Perf position="top-left" />
-      <fogExp2 attach="fog" args={[InventoryConfig.scene.fogColor, 0.000001]} />
-      <ambientLight intensity={0.01} />
-      <directionalLight position={[-120, 10, -80]} intensity={7} color="#ffaaff" />
-      <gridHelper
-        args={[InventoryConfig.gridSize, InventoryConfig.gridDivisions, '#00aaaa', '#005555']}
+      <fogExp2 attach="fog" args={[scene.fogColor, 0.000001]} />
+      <ambientLight intensity={scene.ambientIntensity} />
+      <directionalLight
+        position={scene.keyLight.position}
+        intensity={scene.keyLight.intensity}
+        color={scene.keyLight.color}
       />
-      <axesHelper args={[180]} />
+      <directionalLight
+        position={scene.fillLight.position}
+        intensity={scene.fillLight.intensity}
+        color={scene.fillLight.color}
+      />
+      <gridHelper
+        args={[DroneConfigData.gridSize, DroneConfigData.gridDivisions, '#4477aa', '#223344']}
+      />
 
       <Suspense fallback={null}>
         <Spaceship
-          url="/models/shuttle-low-british.glb"
+          url={DroneConfigData.playerShipUrl}
           initialPosition={[0, 1.2, 0]}
           initialRotation={[0, 0, 0]}
           scale={1}
           initialVelocity={[0, 0, 0]}
+          modulesInstalled={GARBAGE_SCOW_MODULES}
           shipParticleCloudProps={{
             count: 100,
             enableSpeedGate: true,
@@ -93,35 +103,25 @@ export default function InventoryConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        {InventoryConfig.landingPads.map((pad) => (
-          <group key={pad.id} position={pad.position}>
-            <LandingPad
-              id={pad.id}
-              label={pad.label}
-              scale={InventoryConfig.landingPadScale}
-              dock={pad.dock}
-              landingPadThreshold={InventoryConfig.landingPadThreshold}
-            />
-          </group>
-        ))}
+        <MiningDrone />
+        <SalvageField origin={[0, 0, 0]} idPrefix="drone-" showDroneAtmosphere />
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
         makeDefault
         target={[
-          InventoryConfig.cameraTarget[0],
-          InventoryConfig.cameraTarget[1],
-          InventoryConfig.cameraTarget[2],
+          DroneConfigData.cameraTarget[0],
+          DroneConfigData.cameraTarget[1],
+          DroneConfigData.cameraTarget[2],
         ]}
         enablePan
         enableZoom
         enableRotate
-      />
-      <DustCloud
-        radius={2200}
-        particleSize={2080}
-        radialSpread={InventoryConfig.dustCloud.radialSpread}
-        yInitial={-160}
+        // Fixed elevation: orbit yaw only (no pitch up/down).
+        minPolarAngle={DroneConfigData.cameraPolarAngle}
+        maxPolarAngle={DroneConfigData.cameraPolarAngle}
+        // Pan in the world XZ plane instead of screen-space up/down.
+        screenSpacePanning={false}
       />
     </Canvas>
   );

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import AppContainer from '../App/AppContainer';
+import AppContainer from '../../components/App/AppContainer';
 import SalvageConfigScene from './SalvageConfigScene';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
-import { ScannerHUDElements } from '../Huds/HUD/ScannerHUD';
-import AllHuds from '../Huds/AllHuds';
+import { ScannerHUDElements } from '../../components/Huds/HUD/ScannerHUD';
+import AllHuds from '../../components/Huds/AllHuds';
 import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
 import { disableAutopilot } from '../../context/AutopilotState';
@@ -15,7 +15,7 @@ import { radioOnRef, radioRangeRef } from '../../context/RadioState';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { setNavHudEnabled } from '../../context/NavHud';
 import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
-import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
+import SandboxHtmlMiniMap from '../../components/Minimap/SandboxHtmlMiniMap';
 
 const SALVAGE_CONFIG_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.DRIVE]: 2,
@@ -26,9 +26,7 @@ const SALVAGE_CONFIG_SCANNER_INITIAL_POWERS = {
   [ScannerHUDElements.SPOTLIGHT]: 1,
 } as const;
 
-const SALVAGE_CONFIG_DISABLED_HUD_ELEMENTS = [
-  ScannerHUDElements.RADIATION,
-] as const;
+const SALVAGE_CONFIG_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
 
 function applySalvageConfigScannerDefaults(): void {
   spotlightOnRef.current = false;
@@ -100,9 +98,7 @@ export default function SalvageConfig() {
         disabledHudElementsState={[...SALVAGE_CONFIG_DISABLED_HUD_ELEMENTS]}
         scannerInitialPowers={SALVAGE_CONFIG_SCANNER_INITIAL_POWERS}
       />
-      {showMinimap && (
-        <SandboxHtmlMiniMap onClose={() => setShowMinimap(false)} showSolarSystem={false} />
-      )}
+      <SandboxHtmlMiniMap showSolarSystem={false} />
     </AppContainer>
   );
 }

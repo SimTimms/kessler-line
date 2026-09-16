@@ -4,16 +4,15 @@ import { resumeAudioContext } from './sound/SoundManager';
 import { useCallback, useState } from 'react';
 import StartOverlay from './components/App/StartOverlay/StartOverlay';
 import { GAME_MODES, type GameMode, type TutorialMenuSelection } from './config/gameModes';
-import ModelConfig from './components/ModelConfig/ModelConfig';
-import LandingPadConfig from './components/LandingPadConfig/LandingPadConfig';
-import InventoryConfig from './components/InventoryConfig/InventoryConfig';
-import SalvageConfig from './components/SalvageConfig/SalvageConfig';
-import DroneConfig from './components/DroneConfig/DroneConfig';
-import LongDistanceTravelConfig from './components/LongDistanceTravelConfig/LongDistanceTravelConfig';
-import CombatConfig from './components/CombatConfig/CombatConfig';
-import HudConfig from './components/HudConfig/HudConfig';
+import ModelConfig from './scenes/ModelConfig/ModelConfig';
+import LandingPadConfig from './scenes/LandingPadConfig/LandingPadConfig';
+import InventoryConfig from './scenes/InventoryConfig/InventoryConfig';
+import SalvageConfig from './scenes/SalvageConfig/SalvageConfig';
+import DroneConfig from './scenes/DroneConfig/DroneConfig';
+import CombatConfig from './scenes/CombatConfig/CombatConfig';
+import HudConfig from './scenes/HudConfig/HudConfig';
 import NarrativeConfig from './scenes/NarrativeConfig/NarrativeConfig';
-import ShipNavigationConfig from './components/ShipNavigationConfig/ShipNavigationConfig';
+import ShipNavigationConfig from './scenes/ShipNavigationConfig/ShipNavigationConfig';
 import { handleTutorialSelect } from './helpers/handleTutorialSelect';
 import { handleNarrativeLoad } from './helpers/handleNarrativeLoad';
 
@@ -57,8 +56,6 @@ function App() {
       return <SalvageConfig />;
     case GAME_MODES.droneConfig:
       return <DroneConfig />;
-    case GAME_MODES.longDistanceTravelConfig:
-      return <LongDistanceTravelConfig />;
     case GAME_MODES.combatConfig:
       return <CombatConfig />;
     case GAME_MODES.hudConfig:

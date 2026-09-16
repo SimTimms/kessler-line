@@ -2,15 +2,17 @@ import { Suspense, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
+import { Perf } from 'r3f-perf';
+import SharedInteractionSceneTools from '../../components/SharedInteractionSceneTools';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
+import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
-import { SalvageConfigData } from './SalvageConfigFile';
-import SalvageField from './SalvageField';
-import Spaceship from '../Ship/Spaceship';
-import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
+import DustCloud from '../../components/DustCloud/DustCloud';
+import LandingPad from '../../components/WorldObjects/LandingPad';
+import { LandingPadConfig } from './LandingPadConfigFile';
+import Spaceship from '../../components/Ship/Spaceship';
 import { CANVAS_FOV } from '../../config/visualConfig';
 
 function CameraCapture() {
@@ -24,7 +26,7 @@ function CameraCapture() {
   return null;
 }
 
-export default function SalvageConfigScene() {
+export default function LandingPadConfigScene() {
   useEffect(() => {
     const onRequestUndock = () => {
       window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -40,55 +42,45 @@ export default function SalvageConfigScene() {
     minimapShipPosition.set(0, 0, 0);
   }, []);
 
-  const { scene } = SalvageConfigData;
-
   return (
     <Canvas
-      dpr={[1, 2]}
       style={{
         width: '100vw',
         height: '100vh',
-        background: scene.fogColor,
+        background: LandingPadConfig.scene.fogColor,
         touchAction: 'none',
       }}
       camera={{
         fov: CANVAS_FOV,
-        position: [...SalvageConfigData.cameraPosition],
-        near: scene.canvasNear,
-        far: scene.canvasFar,
+        position: [...LandingPadConfig.cameraPosition],
+        near: LandingPadConfig.scene.canvasNear,
+        far: LandingPadConfig.scene.canvasFar,
       }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: scene.toneMappingExposure,
+        toneMappingExposure: LandingPadConfig.scene.toneMappingExposure,
       }}
       shadows={true}
     >
       <CameraCapture />
-      <fogExp2 attach="fog" args={[scene.fogColor, 0.000001]} />
-      <ambientLight intensity={scene.ambientIntensity} />
-      <directionalLight
-        position={scene.keyLight.position}
-        intensity={scene.keyLight.intensity}
-        color={scene.keyLight.color}
-      />
-      <directionalLight
-        position={scene.fillLight.position}
-        intensity={scene.fillLight.intensity}
-        color={scene.fillLight.color}
-      />
+      <Perf position="top-left" />
+      <fogExp2 attach="fog" args={[LandingPadConfig.scene.fogColor, 0.000001]} />
+      <ambientLight intensity={1.1} />
+      <directionalLight position={[180, 120, 120]} intensity={16} color="#ffd8ff" />
+      <directionalLight position={[-120, 80, -80]} intensity={6} color="#88bbff" />
       <gridHelper
-        args={[SalvageConfigData.gridSize, SalvageConfigData.gridDivisions, '#aa7744', '#553311']}
+        args={[LandingPadConfig.gridSize, LandingPadConfig.gridDivisions, '#00aaaa', '#005555']}
       />
+      <axesHelper args={[180]} />
 
       <Suspense fallback={null}>
         <Spaceship
-          url={'/models/shuttle-low-british.glb'}
+          url="/models/shuttle-low-british.glb"
           initialPosition={[0, 1.2, 0]}
           initialRotation={[0, 0, 0]}
           scale={1}
           initialVelocity={[0, 0, 0]}
-          modulesInstalled={GARBAGE_SCOW_MODULES}
           shipParticleCloudProps={{
             count: 100,
             enableSpeedGate: true,
@@ -103,19 +95,31 @@ export default function SalvageConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <SalvageField origin={[0, 0, 0]} />
+        <group position={LandingPadConfig.landingPadOffsetFromSpawn}>
+          <LandingPad
+            scale={LandingPadConfig.landingPadScale}
+            dock={ASTEROID_DOCK_CONFIG}
+            landingPadThreshold={LandingPadConfig.landingPadThreshold}
+          />
+        </group>
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
         makeDefault
         target={[
-          SalvageConfigData.cameraTarget[0],
-          SalvageConfigData.cameraTarget[1],
-          SalvageConfigData.cameraTarget[2],
+          LandingPadConfig.cameraTarget[0],
+          LandingPadConfig.cameraTarget[1],
+          LandingPadConfig.cameraTarget[2],
         ]}
         enablePan
         enableZoom
         enableRotate
+      />
+      <DustCloud
+        radius={2200}
+        particleSize={280}
+        radialSpread={LandingPadConfig.dustCloud.radialSpread}
+        yInitial={-160}
       />
     </Canvas>
   );

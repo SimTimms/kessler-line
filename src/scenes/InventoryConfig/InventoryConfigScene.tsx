@@ -3,16 +3,15 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Perf } from 'r3f-perf';
-import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
+import SharedInteractionSceneTools from '../../components/SharedInteractionSceneTools';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
-import { ASTEROID_DOCK_CONFIG } from '../../config/docks/asteroidDockConfig';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
-import DustCloud from '../DustCloud/DustCloud';
-import LandingPad from '../WorldObjects/LandingPad';
-import { LandingPadConfig } from './LandingPadConfigFile';
-import Spaceship from '../Ship/Spaceship';
+import DustCloud from '../../components/DustCloud/DustCloud';
+import LandingPad from '../../components/WorldObjects/LandingPad';
+import { InventoryConfig } from './InventoryConfigFile';
+import Spaceship from '../../components/Ship/Spaceship';
 import { CANVAS_FOV } from '../../config/visualConfig';
 
 function CameraCapture() {
@@ -26,7 +25,7 @@ function CameraCapture() {
   return null;
 }
 
-export default function LandingPadConfigScene() {
+export default function InventoryConfigScene() {
   useEffect(() => {
     const onRequestUndock = () => {
       window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -47,30 +46,29 @@ export default function LandingPadConfigScene() {
       style={{
         width: '100vw',
         height: '100vh',
-        background: LandingPadConfig.scene.fogColor,
+        background: InventoryConfig.scene.fogColor,
         touchAction: 'none',
       }}
       camera={{
         fov: CANVAS_FOV,
-        position: [...LandingPadConfig.cameraPosition],
-        near: LandingPadConfig.scene.canvasNear,
-        far: LandingPadConfig.scene.canvasFar,
+        position: [...InventoryConfig.cameraPosition],
+        near: InventoryConfig.scene.canvasNear,
+        far: InventoryConfig.scene.canvasFar,
       }}
       gl={{
         logarithmicDepthBuffer: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: LandingPadConfig.scene.toneMappingExposure,
+        toneMappingExposure: InventoryConfig.scene.toneMappingExposure,
       }}
       shadows={true}
     >
       <CameraCapture />
       <Perf position="top-left" />
-      <fogExp2 attach="fog" args={[LandingPadConfig.scene.fogColor, 0.000001]} />
-      <ambientLight intensity={1.1} />
-      <directionalLight position={[180, 120, 120]} intensity={16} color="#ffd8ff" />
-      <directionalLight position={[-120, 80, -80]} intensity={6} color="#88bbff" />
+      <fogExp2 attach="fog" args={[InventoryConfig.scene.fogColor, 0.000001]} />
+      <ambientLight intensity={0.01} />
+      <directionalLight position={[-120, 10, -80]} intensity={7} color="#ffaaff" />
       <gridHelper
-        args={[LandingPadConfig.gridSize, LandingPadConfig.gridDivisions, '#00aaaa', '#005555']}
+        args={[InventoryConfig.gridSize, InventoryConfig.gridDivisions, '#00aaaa', '#005555']}
       />
       <axesHelper args={[180]} />
 
@@ -95,21 +93,25 @@ export default function LandingPadConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <group position={LandingPadConfig.landingPadOffsetFromSpawn}>
-          <LandingPad
-            scale={LandingPadConfig.landingPadScale}
-            dock={ASTEROID_DOCK_CONFIG}
-            landingPadThreshold={LandingPadConfig.landingPadThreshold}
-          />
-        </group>
+        {InventoryConfig.landingPads.map((pad) => (
+          <group key={pad.id} position={pad.position}>
+            <LandingPad
+              id={pad.id}
+              label={pad.label}
+              scale={InventoryConfig.landingPadScale}
+              dock={pad.dock}
+              landingPadThreshold={InventoryConfig.landingPadThreshold}
+            />
+          </group>
+        ))}
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
         makeDefault
         target={[
-          LandingPadConfig.cameraTarget[0],
-          LandingPadConfig.cameraTarget[1],
-          LandingPadConfig.cameraTarget[2],
+          InventoryConfig.cameraTarget[0],
+          InventoryConfig.cameraTarget[1],
+          InventoryConfig.cameraTarget[2],
         ]}
         enablePan
         enableZoom
@@ -117,8 +119,8 @@ export default function LandingPadConfigScene() {
       />
       <DustCloud
         radius={2200}
-        particleSize={280}
-        radialSpread={LandingPadConfig.dustCloud.radialSpread}
+        particleSize={2080}
+        radialSpread={InventoryConfig.dustCloud.radialSpread}
         yInitial={-160}
       />
     </Canvas>

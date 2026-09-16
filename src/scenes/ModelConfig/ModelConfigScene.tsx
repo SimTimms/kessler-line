@@ -5,10 +5,10 @@ import * as THREE from 'three';
 import { Perf } from 'r3f-perf';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
-import DustCloud from '../DustCloud/DustCloud';
-import CollisionPhysicsTestRig from '../Debug/CollisionPhysicsTestRig';
-import CollisionDebug from '../Debug/CollisionDebug';
-import Spaceship from '../Ship/Spaceship';
+import DustCloud from '../../components/DustCloud/DustCloud';
+import CollisionPhysicsTestRig from '../../components/Debug/CollisionPhysicsTestRig';
+import CollisionDebug from '../../components/Debug/CollisionDebug';
+import Spaceship from '../../components/Ship/Spaceship';
 import { SpaceshipConfig } from './SpaceshipConfig';
 import { CANVAS_FOV } from '../../config/visualConfig';
 

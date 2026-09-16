@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AppContainer from '../App/AppContainer';
+import AppContainer from '../../components/App/AppContainer';
 import ModelConfigScene from './ModelConfigScene';
 import './modelConfig.css';
 

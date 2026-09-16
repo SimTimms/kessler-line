@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
-import AppContainer from '../App/AppContainer';
-import SandboxHtmlMiniMap from '../Minimap/SandboxHtmlMiniMap';
+import AppContainer from '../../components/App/AppContainer';
+import SandboxHtmlMiniMap from '../../components/Minimap/SandboxHtmlMiniMap';
 import ShipNavigationConfigScene from './ShipNavigationConfigScene';
 import { resetScannerRefs } from '../../context/resetScannerRefs';
 import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
 import { disableAutopilot } from '../../context/AutopilotState';
 import { setNavHudEnabled } from '../../context/NavHud';
-import { tutorialNavViewModeRef } from '../TutorialShared/TutorialFollowCamera';
+import { tutorialNavViewModeRef } from '../../components/TutorialShared/TutorialFollowCamera';
 import { resetCameraMode } from '../../context/CameraMode';
 import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
 
 export default function ShipNavigationConfig() {
-  const [showMinimap, setShowMinimap] = useState(true);
   const [gravityEnabled, setGravityEnabled] = useState(true);
 
   useEffect(() => {
@@ -23,21 +22,6 @@ export default function ShipNavigationConfig() {
     resetCameraMode('free');
     setNavHudEnabled(true);
     resetScannerRefs();
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== KEY_TOGGLE_MINIMAP || e.repeat) return;
-      e.preventDefault();
-      setShowMinimap((v) => !v);
-    };
-    const onOpenMinimap = () => setShowMinimap(true);
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('open-minimap', onOpenMinimap);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('open-minimap', onOpenMinimap);
-    };
   }, []);
 
   return (

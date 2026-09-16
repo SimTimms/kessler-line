@@ -1,11 +1,10 @@
 import { Suspense } from 'react';
-import DustCloud from '../DustCloud/DustCloud';
-import LandingPad from '../WorldObjects/LandingPad';
-import SalvageDropOffPad from '../WorldObjects/SalvageDropOffPad';
-import CargoContainer from '../CargoContainer/CargoContainer';
-import DecorativeAsteroidField from '../Asteroid/DecorativeAsteroidField';
-import Asteroid from '../Asteroid/Asteroid';
-import GarbageScowDroneFleet from '../NPCs/GarbageScowDroneFleet';
+import DustCloud from '../../components/DustCloud/DustCloud';
+import LandingPad from '../../components/WorldObjects/LandingPad';
+import SalvageDropOffPad from '../../components/WorldObjects/SalvageDropOffPad';
+import DecorativeAsteroidField from '../../components/Asteroid/DecorativeAsteroidField';
+import Asteroid from '../../components/Asteroid/Asteroid';
+import GarbageScowDroneFleet from '../../components/NPCs/GarbageScowDroneFleet';
 import { DRONE_ATMOSPHERE_COLORS, SalvageConfigData } from './SalvageConfigFile';
 import type { DockConfig } from '../../config/dockConfig';
 

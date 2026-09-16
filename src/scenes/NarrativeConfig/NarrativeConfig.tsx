@@ -20,32 +20,10 @@ import { setCargo } from '../../context/Inventory';
 import { NARRATIVE_STARTER_CARGO } from './narrativeSceneConfig';
 import { DeathOverlay } from '../../components/Ship/DeathOverlay';
 import AutosaveIndicator from '../../components/Huds/AutosaveIndicator';
-
-const NARRATIVE_SCANNER_INITIAL_POWERS = {
-  [ScannerHUDElements.DRIVE]: 2,
-  [ScannerHUDElements.PROXIMITY]: 2,
-  [ScannerHUDElements.MAGNET]: 2,
-  [ScannerHUDElements.RADIO]: 2,
-  [ScannerHUDElements.RADIATION]: 1,
-  [ScannerHUDElements.SPOTLIGHT]: 1,
-} as const;
+import { NARRATIVE_SCANNER_INITIAL_POWERS } from './narrativeSceneConfig';
+import { applyNarrativeScannerDefaults } from './helpers/applyNarrativeScannerDefaults';
 
 const NARRATIVE_DISABLED_HUD_ELEMENTS = [ScannerHUDElements.RADIATION] as const;
-
-function applyNarrativeScannerDefaults(): void {
-  spotlightOnRef.current = false;
-  magneticOnRef.current = true;
-  magneticScanRangeRef.current = getScannerRange('magnet', NARRATIVE_SCANNER_INITIAL_POWERS.magnet);
-  driveSignatureOnRef.current = true;
-  driveSignatureRangeRef.current = getScannerRange('drive', NARRATIVE_SCANNER_INITIAL_POWERS.drive);
-  proximityScanOnRef.current = true;
-  proximityScanRangeRef.current = getScannerRange(
-    'proximity',
-    NARRATIVE_SCANNER_INITIAL_POWERS.proximity
-  );
-  radioOnRef.current = true;
-  radioRangeRef.current = getScannerRange('radio', NARRATIVE_SCANNER_INITIAL_POWERS.radio);
-}
 
 interface NarrativeConfigProps {
   loadSave?: boolean;

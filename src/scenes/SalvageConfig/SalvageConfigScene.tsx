@@ -2,15 +2,14 @@ import { Suspense, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import SharedInteractionSceneTools from '../SharedInteractionSceneTools';
+import SharedInteractionSceneTools from '../../components/SharedInteractionSceneTools';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
 import { EVENT_REQUEST_UNDOCK } from '../../config/keybindings';
-import { DroneConfigData } from './DroneConfigFile';
-import SalvageField from '../SalvageConfig/SalvageField';
-import Spaceship from '../Ship/Spaceship';
-import MiningDrone from '../Drone/MiningDrone';
+import { SalvageConfigData } from './SalvageConfigFile';
+import SalvageField from './SalvageField';
+import Spaceship from '../../components/Ship/Spaceship';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
 import { CANVAS_FOV } from '../../config/visualConfig';
 
@@ -25,7 +24,7 @@ function CameraCapture() {
   return null;
 }
 
-export default function DroneConfigScene() {
+export default function SalvageConfigScene() {
   useEffect(() => {
     const onRequestUndock = () => {
       window.dispatchEvent(new CustomEvent('ShipUndocked'));
@@ -41,10 +40,11 @@ export default function DroneConfigScene() {
     minimapShipPosition.set(0, 0, 0);
   }, []);
 
-  const { scene } = DroneConfigData;
+  const { scene } = SalvageConfigData;
 
   return (
     <Canvas
+      dpr={[1, 2]}
       style={{
         width: '100vw',
         height: '100vh',
@@ -53,7 +53,7 @@ export default function DroneConfigScene() {
       }}
       camera={{
         fov: CANVAS_FOV,
-        position: [...DroneConfigData.cameraPosition],
+        position: [...SalvageConfigData.cameraPosition],
         near: scene.canvasNear,
         far: scene.canvasFar,
       }}
@@ -78,12 +78,12 @@ export default function DroneConfigScene() {
         color={scene.fillLight.color}
       />
       <gridHelper
-        args={[DroneConfigData.gridSize, DroneConfigData.gridDivisions, '#4477aa', '#223344']}
+        args={[SalvageConfigData.gridSize, SalvageConfigData.gridDivisions, '#aa7744', '#553311']}
       />
 
       <Suspense fallback={null}>
         <Spaceship
-          url={DroneConfigData.playerShipUrl}
+          url={'/models/shuttle-low-british.glb'}
           initialPosition={[0, 1.2, 0]}
           initialRotation={[0, 0, 0]}
           scale={1}
@@ -103,29 +103,19 @@ export default function DroneConfigScene() {
             dockingPhysicsEnabled: true,
           }}
         />
-        <MiningDrone />
-        <SalvageField
-          origin={[0, 0, 0]}
-          idPrefix="drone-"
-          showDroneAtmosphere
-        />
+        <SalvageField origin={[0, 0, 0]} />
       </Suspense>
       <SharedInteractionSceneTools />
       <OrbitControls
         makeDefault
         target={[
-          DroneConfigData.cameraTarget[0],
-          DroneConfigData.cameraTarget[1],
-          DroneConfigData.cameraTarget[2],
+          SalvageConfigData.cameraTarget[0],
+          SalvageConfigData.cameraTarget[1],
+          SalvageConfigData.cameraTarget[2],
         ]}
         enablePan
         enableZoom
         enableRotate
-        // Fixed elevation: orbit yaw only (no pitch up/down).
-        minPolarAngle={DroneConfigData.cameraPolarAngle}
-        maxPolarAngle={DroneConfigData.cameraPolarAngle}
-        // Pan in the world XZ plane instead of screen-space up/down.
-        screenSpacePanning={false}
       />
     </Canvas>
   );

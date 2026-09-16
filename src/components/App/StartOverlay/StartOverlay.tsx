@@ -4,10 +4,12 @@ import {
   NARRATIVE_AUTOSAVE_SLOT,
   NARRATIVE_MANUAL_SLOT,
 } from '../../../context/SaveStore';
-import { GAME_MODES, type TutorialMenuSelection } from '../../../config/gameModes';
+import { type TutorialMenuSelection } from '../../../config/gameModes';
 import { startSpaceAtmosphereAmbient } from '../../../sound/SoundManager';
-import { TUTORIAL_MENU_ITEMS } from './tutorialMenuItems';
-import { ASTEROID_DATA } from './asteroidData';
+import { TUTORIAL_MENU_ITEMS } from './const/tutorialMenuItems';
+import { ASTEROID_DATA } from './const/asteroidData';
+import { AMBIENT_ON_SELECT } from './const/gameModes';
+import { type TutorialMenuItem } from './const/tutorialMenuItems';
 
 interface StartOverlayProps {
   onStart: () => void;
@@ -16,19 +18,6 @@ interface StartOverlayProps {
 }
 
 const DISMISS_DELAY_MS = 1500;
-
-const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
-  GAME_MODES.modelConfig,
-  GAME_MODES.shipNavigationConfig,
-  GAME_MODES.shipConfig,
-  GAME_MODES.inventoryConfig,
-  GAME_MODES.salvageConfig,
-  GAME_MODES.droneConfig,
-  GAME_MODES.longDistanceTravelConfig,
-  GAME_MODES.combatConfig,
-  GAME_MODES.hudConfig,
-  GAME_MODES.narrativeConfig,
-]);
 
 const StartOverlay = memo(function StartOverlay({
   onTutorialSelect,
@@ -66,7 +55,7 @@ const StartOverlay = memo(function StartOverlay({
 
         <div className="start-menu-slider">
           <div className="start-menu-page start-menu-page--root">
-            {TUTORIAL_MENU_ITEMS.map((item) => {
+            {TUTORIAL_MENU_ITEMS.map((item: TutorialMenuItem) => {
               const handleClick = () => {
                 const selection = item.selection;
                 if (!selection) return;

@@ -8,6 +8,7 @@ import {
   BUFFER_ORBIT_RADIUS,
   BUFFER_ORBIT_PHASE,
 } from '../../config/events/comms-relay-mission/comms-relay-config';
+import { ScannerHUDElements } from '../../components/Huds/HUD/ScannerHUD';
 
 type Vec3 = [number, number, number];
 
@@ -24,6 +25,15 @@ const SECONDARY_FIELD_ARC_RADIANS = 0.09;
 const SECONDARY_FIELD_INSET_BELOW_SOI = 20_000;
 /** Slow zone around each asteroid hub. */
 export const NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS = 2_800;
+
+export const NARRATIVE_SCANNER_INITIAL_POWERS = {
+  [ScannerHUDElements.DRIVE]: 2,
+  [ScannerHUDElements.PROXIMITY]: 2,
+  [ScannerHUDElements.MAGNET]: 2,
+  [ScannerHUDElements.RADIO]: 2,
+  [ScannerHUDElements.RADIATION]: 1,
+  [ScannerHUDElements.SPOTLIGHT]: 1,
+} as const;
 
 const EXTRA_CONTAINERS_LOCAL_TO_PRIMARY_FIELD: Array<{
   id: string;
