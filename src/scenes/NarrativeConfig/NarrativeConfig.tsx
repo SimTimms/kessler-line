@@ -8,11 +8,10 @@ import { clearNavTarget } from '../../context/NavTarget';
 import { clearSelectedTarget } from '../../context/TargetSelection';
 import { disableAutopilot } from '../../context/AutopilotState';
 import { resetCameraMode } from '../../context/CameraMode';
-import { getScannerRange } from '../../config/scanRanges';
-import { magneticOnRef, magneticScanRangeRef } from '../../context/MagneticScan';
-import { driveSignatureOnRef, driveSignatureRangeRef } from '../../context/DriveSignatureScan';
-import { proximityScanOnRef, proximityScanRangeRef } from '../../context/ProximityScan';
-import { radioOnRef, radioRangeRef } from '../../context/RadioState';
+import { magneticOnRef } from '../../context/MagneticScan';
+import { driveSignatureOnRef } from '../../context/DriveSignatureScan';
+import { proximityScanOnRef } from '../../context/ProximityScan';
+import { radioOnRef } from '../../context/RadioState';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { setNavHudEnabled } from '../../context/NavHud';
 import { clearAllIncomingHails } from '../../context/IncomingHailState';
@@ -43,7 +42,6 @@ export default function NarrativeConfig({ loadSave }: NarrativeConfigProps) {
     resetCameraMode('free');
     setNavHudEnabled(true);
     if (loadSave) {
-      // apply() already restored scanner refs — sync React state from them
       setSpotlightOn(spotlightOnRef.current);
       setMagneticOn(magneticOnRef.current);
       setDriveSignatureOn(driveSignatureOnRef.current);

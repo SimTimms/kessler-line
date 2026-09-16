@@ -211,7 +211,8 @@ export default function HullBreachEffects({ shipGroupRef }: HullBreachEffectsPro
         _jitterVec.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
         _spawnDir.addScaledVector(_jitterVec, 0.65).normalize();
 
-        const speed = THREE.MathUtils.lerp(LEAK_SPEED_MIN, LEAK_SPEED_MAX, severity) * (0.7 + Math.random());
+        const speed =
+          THREE.MathUtils.lerp(LEAK_SPEED_MIN, LEAK_SPEED_MAX, severity) * (0.7 + Math.random());
         const idx = leakWriteIndex.current;
         leakWriteIndex.current = (idx + 1) % LEAK_PARTICLE_POOL;
         const p = leakPool.current[idx];
@@ -257,12 +258,27 @@ export default function HullBreachEffects({ shipGroupRef }: HullBreachEffectsPro
           p.vz = _spawnDir.z * speed;
         }
 
-        sparkTimer.current = THREE.MathUtils.lerp(2.3, 0.3, sparkSeverity) * (0.85 + Math.random() * 0.4);
+        sparkTimer.current =
+          THREE.MathUtils.lerp(2.3, 0.3, sparkSeverity) * (0.85 + Math.random() * 0.4);
       }
     }
 
-    updateParticleBuffer(leakPool.current, leakPositions, leakColors, delta, 1.25, [0.7, 0.92, 1.0]);
-    updateParticleBuffer(sparkPool.current, sparkPositions, sparkColors, delta, 0.7, [0.28, 0.66, 1.0]);
+    updateParticleBuffer(
+      leakPool.current,
+      leakPositions,
+      leakColors,
+      delta,
+      1.25,
+      [0.7, 0.92, 1.0]
+    );
+    updateParticleBuffer(
+      sparkPool.current,
+      sparkPositions,
+      sparkColors,
+      delta,
+      0.7,
+      [0.28, 0.66, 1.0]
+    );
 
     (leakGeoRef.current.attributes.position as THREE.BufferAttribute).needsUpdate = true;
     (leakGeoRef.current.attributes.color as THREE.BufferAttribute).needsUpdate = true;

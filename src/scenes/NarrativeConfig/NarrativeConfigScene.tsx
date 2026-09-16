@@ -4,7 +4,6 @@ import Spaceship from '../../components/Ship/Spaceship';
 import TutorialFollowCamera from '../../components/TutorialShared/TutorialFollowCamera';
 import TutorialNavShipIndicator from '../../components/TutorialShared/TutorialNavShipIndicator';
 import { shipPosRef } from '../../context/ShipPos';
-import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import DeployedSatellite from '../../config/events/satellite-mission/DeployedSatellite';
 import LaserRay from '../../components/Combat/LaserRay';
 import PlayerBullets from '../../components/Combat/PlayerBullets';
@@ -33,6 +32,7 @@ import CommsRelayMissionController from '../../config/events/comms-relay-mission
 import CommsBufferSatellite from '../../config/events/comms-relay-mission/CommsBufferSatellite';
 import CarrierGRB from '../../components/Ships/CarrierGRB';
 import DerelictField from '../../components/Ship/DerelictField';
+import { spawnShip } from './helpers/spawnShip';
 
 import {
   getNarrativeMarsNormalTravelRadius,
@@ -83,8 +83,6 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
     satelliteMissionConfig,
   } = NARRATIVE_CONFIG;
 
-  // Load saved state before first render if requested.
-  // apply() is idempotent so the StrictMode double-invocation of useMemo is harmless.
   const savedSpawn = useMemo(() => {
     if (!loadSave) return null;
     const data = loadSlot(NARRATIVE_MANUAL_SLOT) ?? loadSlot(NARRATIVE_AUTOSAVE_SLOT);
@@ -108,14 +106,17 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
     const o = getNarrativePrimaryFieldOrigin();
     return [o.x, o.y, o.z];
   }, []);
+
   const secondaryFieldOrigin = useMemo((): [number, number, number] => {
     const o = getNarrativeSecondaryFieldOrigin();
     return [o.x, o.y, o.z];
   }, []);
+
   const marsZoneCenter = useMemo((): [number, number, number] => {
     const o = getNarrativeMarsZoneCenter();
     return [o.x, o.y, o.z];
   }, []);
+
   const marsZoneRadius = useMemo(() => getNarrativeMarsNormalTravelRadius(), []);
 
   useLayoutEffect(() => {
@@ -124,16 +125,9 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   }, [savedSpawn, shipSpawn.skipDock]);
 
   useLayoutEffect(() => {
-    // Skip spawn override when a save was loaded — apply() already set shipPosRef
     if (savedSpawn) return;
-    shipPosRef.current.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
-    minimapShipPosition.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
-    const group = spaceshipGroupRef.current;
-    if (group) {
-      group.position.set(shipSpawn.position[0], shipSpawn.position[1], shipSpawn.position[2]);
-      group.rotation.set(shipSpawn.rotation[0], shipSpawn.rotation[1], shipSpawn.rotation[2]);
-    }
-  }, [shipSpawn, savedSpawn]);
+    spawnShip({ spaceshipGroupRef: spaceshipGroupRef as unknown as React.RefObject<THREE.Group> });
+  }, [shipSpawn, savedSpawn, spaceshipGroupRef]);
 
   const worldContent = (
     <>

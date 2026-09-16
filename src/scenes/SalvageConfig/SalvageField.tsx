@@ -7,6 +7,7 @@ import Asteroid from '../../components/Asteroid/Asteroid';
 import GarbageScowDroneFleet from '../../components/NPCs/GarbageScowDroneFleet';
 import { DRONE_ATMOSPHERE_COLORS, SalvageConfigData } from './SalvageConfigFile';
 import type { DockConfig } from '../../config/dockConfig';
+import VolumetricFog from '../../components/VolumetricFog/VolumetricFog';
 
 export type SalvageFieldOrigin = [number, number, number];
 
@@ -150,6 +151,14 @@ export default function SalvageField({
       </Suspense>
 
       <Suspense fallback={null}>
+        <VolumetricFog
+          position={origin}
+          radius={10000}
+          color="#5a6b9c"
+          density={1.6}
+          steps={24}
+          octaves={3}
+        />
         <DustCloud
           radius={dustCloud.radius}
           particleSize={10500}

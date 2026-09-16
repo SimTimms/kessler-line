@@ -14,7 +14,6 @@ import { proximityScanOnRef, proximityScanRangeRef } from '../../context/Proximi
 import { radioOnRef, radioRangeRef } from '../../context/RadioState';
 import { spotlightOnRef } from '../../context/SpotlightState';
 import { setNavHudEnabled } from '../../context/NavHud';
-import { KEY_TOGGLE_MINIMAP } from '../../config/keybindings';
 import SandboxHtmlMiniMap from '../../components/Minimap/SandboxHtmlMiniMap';
 
 const SALVAGE_CONFIG_SCANNER_INITIAL_POWERS = {
@@ -55,7 +54,6 @@ export default function SalvageConfig() {
   const [driveSignatureOn, setDriveSignatureOn] = useState(true);
   const [proximity, setProximity] = useState(true);
   const [radioOn, setRadioOn] = useState(true);
-  const [showMinimap, setShowMinimap] = useState(true);
 
   useEffect(() => {
     clearNavTarget();
@@ -64,21 +62,6 @@ export default function SalvageConfig() {
     setNavHudEnabled(true);
     resetScannerRefs();
     applySalvageConfigScannerDefaults();
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== KEY_TOGGLE_MINIMAP || e.repeat) return;
-      e.preventDefault();
-      setShowMinimap((v) => !v);
-    };
-    const onOpenMinimap = () => setShowMinimap(true);
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('open-minimap', onOpenMinimap);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('open-minimap', onOpenMinimap);
-    };
   }, []);
 
   return (

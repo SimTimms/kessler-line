@@ -11,7 +11,7 @@ import CollisionDebug from '../../components/Debug/CollisionDebug';
 import Spaceship from '../../components/Ship/Spaceship';
 import { SpaceshipConfig } from './SpaceshipConfig';
 import { CANVAS_FOV } from '../../config/visualConfig';
-
+import VolumetricFog from '../../components/VolumetricFog/VolumetricFog';
 //this is a hack to get the camera reference into the context
 //it is used to get the camera position for the HUD
 function CameraCapture() {
@@ -54,15 +54,23 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: SpaceshipConfig.scene.toneMappingExposure,
       }}
+      dpr={[0.5, 1]}
       shadows={true}
     >
-      <CameraCapture />
       <Perf position="top-left" />
+      <CameraCapture />
       <fogExp2 attach="fog" args={[SpaceshipConfig.scene.fogColor, 0.000001]} />
       <ambientLight intensity={0.7} />
       <directionalLight position={[140, 100, 240]} intensity={14.4} color="#ff6600" />
       <directionalLight position={[-140, 10, 240]} intensity={4.4} color="#ffffff" />
-
+      <VolumetricFog
+        position={[0, 0, 0]}
+        radius={100}
+        color="#ff00ff"
+        density={10.6}
+        steps={24}
+        octaves={3}
+      />
       <gridHelper
         args={[SpaceshipConfig.gridSize, SpaceshipConfig.gridDivisions, '#006666', '#003333']}
       />
