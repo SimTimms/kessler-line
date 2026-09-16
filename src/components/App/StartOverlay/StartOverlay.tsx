@@ -1,5 +1,9 @@
 import { memo, useCallback, useRef, useState } from 'react';
-import { hasSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../../context/SaveStore';
+import {
+  hasSlot,
+  NARRATIVE_AUTOSAVE_SLOT,
+  NARRATIVE_MANUAL_SLOT,
+} from '../../../context/SaveStore';
 import { GAME_MODES, type TutorialMenuSelection } from '../../../config/gameModes';
 import { startSpaceAtmosphereAmbient } from '../../../sound/SoundManager';
 import { TUTORIAL_MENU_ITEMS } from './tutorialMenuItems';
