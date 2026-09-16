@@ -162,6 +162,12 @@ export default function ThrusterParticles({
   thrustMultiplierRef,
 }: ThrusterParticlesProps) {
   // ── Material refs (for per-frame size updates) ───────────────────────────
+  const mainPointsRef = useRef<THREE.Points>(null);
+  const rcsPointsRef = useRef<THREE.Points>(null);
+  const hoverPointsRef = useRef<THREE.Points>(null);
+  const mainLive = useRef(0);
+  const rcsLive = useRef(0);
+  const hoverLive = useRef(0);
   const mainMatRef = useRef<THREE.PointsMaterial>(null!);
   const rcsMatRef = useRef<THREE.PointsMaterial>(null!);
   const hoverMatRef = useRef<THREE.PointsMaterial>(null!);
@@ -270,7 +276,8 @@ export default function ThrusterParticles({
     colors: Float32Array,
     delta: number,
     geoRef: { current: THREE.BufferGeometry }
-  ) {
+  ): number {
+    let live = 0;
     for (let i = 0; i < maxCount; i++) {
       const p = pool[i];
 
@@ -287,6 +294,8 @@ export default function ThrusterParticles({
         positions[i * 3] = positions[i * 3 + 1] = positions[i * 3 + 2] = 0;
         continue;
       }
+
+      live++;
 
       // All physics in local ship space
       p.px += p.vx * delta;
@@ -331,15 +340,44 @@ export default function ThrusterParticles({
       colors[i * 3 + 2] = b;
     }
 
-    if (!geoRef.current) return;
-    (geoRef.current.attributes.position as THREE.BufferAttribute).needsUpdate = true;
-    (geoRef.current.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+    if (geoRef.current) {
+      (geoRef.current.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+      (geoRef.current.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+    }
+
+    return live;
+  }
+
+  /**
+   * Skip a pool entirely while it is emitting nothing and holds nothing alive.
+   * Dead particles are parked at the ship origin, and `sizeAttenuation` makes those
+   * invisible sprites cover most of the screen up close — so drawing an idle pool
+   * costs a full screen of blending per particle for no visible result.
+   */
+  function tickPoolIfNeeded(
+    pointsRef: { current: THREE.Points | null },
+    liveRef: { current: number },
+    spawning: boolean,
+    pool: Particle[],
+    maxCount: number,
+    positions: Float32Array,
+    colors: Float32Array,
+    delta: number,
+    geoRef: { current: THREE.BufferGeometry }
+  ) {
+    const points = pointsRef.current;
+
+    if (!spawning && liveRef.current === 0) {
+      if (points) points.visible = false;
+      return;
+    }
+
+    if (points) points.visible = true;
+    liveRef.current = tickPool(pool, maxCount, positions, colors, delta, geoRef);
   }
 
   useFrame((_, delta) => {
-    const dial = driveFromProps
-      ? (thrustMultiplierRef?.current ?? 1)
-      : thrustMultiplier.current;
+    const dial = driveFromProps ? (thrustMultiplierRef?.current ?? 1) : thrustMultiplier.current;
     const m = Math.min(dial, THRUSTER_VISUAL_MAX_MULTIPLIER);
     const mainEmitRate = THRUSTER_MAIN_EMIT_RATE * Math.sqrt(m);
     const rcsEmitRate = THRUSTER_RCS_EMIT_RATE * Math.sqrt(THRUSTER_RCS_VISUAL_MULTIPLIER);
@@ -416,8 +454,10 @@ export default function ThrusterParticles({
             },
           ],
         ];
+    let rcsSpawning = false;
     for (const [key, ref] of rcsInputs) {
       if (ref.current) {
+        rcsSpawning = true;
         rcsAccum.current[key] += rcsEmitRate * delta;
         const count = Math.floor(rcsAccum.current[key]);
         rcsAccum.current[key] -= count;
@@ -485,9 +525,39 @@ export default function ThrusterParticles({
     if (rcsMatRef.current) rcsMatRef.current.size = THRUSTER_RCS_PARTICLE_SIZE;
     if (hoverMatRef.current) hoverMatRef.current.size = THRUSTER_HOVER_PARTICLE_SIZE;
 
-    tickPool(mainPool.current, MAIN_MAX, mainPos, mainCol, delta, mainGeoRef);
-    tickPool(rcsPool.current, RCS_MAX, rcsPos, rcsCol, delta, rcsGeoRef);
-    tickPool(hoverPool.current, HOVER_MAX, hoverPos, hoverCol, delta, hoverGeoRef);
+    tickPoolIfNeeded(
+      mainPointsRef,
+      mainLive,
+      reverseActive,
+      mainPool.current,
+      MAIN_MAX,
+      mainPos,
+      mainCol,
+      delta,
+      mainGeoRef
+    );
+    tickPoolIfNeeded(
+      rcsPointsRef,
+      rcsLive,
+      rcsSpawning,
+      rcsPool.current,
+      RCS_MAX,
+      rcsPos,
+      rcsCol,
+      delta,
+      rcsGeoRef
+    );
+    tickPoolIfNeeded(
+      hoverPointsRef,
+      hoverLive,
+      hoverActive,
+      hoverPool.current,
+      HOVER_MAX,
+      hoverPos,
+      hoverCol,
+      delta,
+      hoverGeoRef
+    );
   });
 
   const sharedMatProps = {
@@ -551,7 +621,7 @@ export default function ThrusterParticles({
   return (
     <group rotation={new THREE.Euler(0, Math.PI, 0)}>
       {/* Main engines — two larger nozzles */}
-      <points frustumCulled={false}>
+      <points ref={mainPointsRef} frustumCulled={false}>
         <bufferGeometry ref={mainGeoRef}>
           <bufferAttribute attach="attributes-position" args={[mainPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[mainCol, 3]} />
@@ -559,7 +629,7 @@ export default function ThrusterParticles({
         <pointsMaterial ref={mainMatRef} size={THRUSTER_MAIN_PARTICLE_SIZE} {...sharedMatProps} />
       </points>
       {/* RCS maneuvering thrusters — smaller */}
-      <points frustumCulled={false}>
+      <points ref={rcsPointsRef} frustumCulled={false}>
         <bufferGeometry ref={rcsGeoRef}>
           <bufferAttribute attach="attributes-position" args={[rcsPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[rcsCol, 3]} />
@@ -568,7 +638,7 @@ export default function ThrusterParticles({
       </points>
       {/* Hover thrusters — underside, always on (spawn disabled above) */}
       {highlightThruster(thrustersHighlighted[0])}
-      <points frustumCulled={false}>
+      <points ref={hoverPointsRef} frustumCulled={false}>
         <bufferGeometry ref={hoverGeoRef}>
           <bufferAttribute attach="attributes-position" args={[hoverPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[hoverCol, 3]} />

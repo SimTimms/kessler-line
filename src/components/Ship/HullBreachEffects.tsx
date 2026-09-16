@@ -84,7 +84,8 @@ function updateParticleBuffer(
   delta: number,
   decayPower: number,
   tint: readonly [number, number, number]
-): void {
+): number {
+  let live = 0;
   for (let i = 0; i < pool.length; i++) {
     const p = pool[i];
     const base = i * 3;
@@ -102,6 +103,8 @@ function updateParticleBuffer(
       continue;
     }
 
+    live++;
+
     p.px += p.vx * delta;
     p.py += p.vy * delta;
     p.pz += p.vz * delta;
@@ -116,6 +119,8 @@ function updateParticleBuffer(
     colors[base + 1] = tint[1] * brightness;
     colors[base + 2] = tint[2] * brightness;
   }
+
+  return live;
 }
 
 export default function HullBreachEffects({ shipGroupRef }: HullBreachEffectsProps) {
@@ -159,6 +164,7 @@ export default function HullBreachEffects({ shipGroupRef }: HullBreachEffectsPro
   const sparkWriteIndex = useRef(0);
   const leakSpawnAccum = useRef(0);
   const sparkTimer = useRef(1.4);
+  const liveParticles = useRef(0);
   const wasBreachWarning = useRef(false);
   const wasCritical = useRef(false);
 
@@ -263,7 +269,18 @@ export default function HullBreachEffects({ shipGroupRef }: HullBreachEffectsPro
       }
     }
 
-    updateParticleBuffer(
+    // With the hull intact and nothing still in flight, skip the pools entirely:
+    // no per-particle loop, no buffer upload, and no draw. Dead particles sit at the
+    // ship origin, and `sizeAttenuation` makes those invisible sprites cover most of
+    // the screen up close, so an idle pool is expensive for no visible result.
+    if (!warning && liveParticles.current === 0) {
+      if (parentRef.current) parentRef.current.visible = false;
+      return;
+    }
+
+    if (parentRef.current) parentRef.current.visible = true;
+
+    const liveLeak = updateParticleBuffer(
       leakPool.current,
       leakPositions,
       leakColors,
@@ -271,7 +288,7 @@ export default function HullBreachEffects({ shipGroupRef }: HullBreachEffectsPro
       1.25,
       [0.7, 0.92, 1.0]
     );
-    updateParticleBuffer(
+    const liveSpark = updateParticleBuffer(
       sparkPool.current,
       sparkPositions,
       sparkColors,
@@ -279,6 +296,7 @@ export default function HullBreachEffects({ shipGroupRef }: HullBreachEffectsPro
       0.7,
       [0.28, 0.66, 1.0]
     );
+    liveParticles.current = liveLeak + liveSpark;
 
     (leakGeoRef.current.attributes.position as THREE.BufferAttribute).needsUpdate = true;
     (leakGeoRef.current.attributes.color as THREE.BufferAttribute).needsUpdate = true;
