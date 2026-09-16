@@ -137,7 +137,6 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
   const worldContent = (
     <>
-      <Perf position="top-right" />
       <ambientLight intensity={lighting.ambientIntensity} />
       <directionalLight
         position={[0, 300, -1000]}
