@@ -1,7 +1,9 @@
 import { memo, useCallback, useRef, useState } from 'react';
-import { hasSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../context/SaveStore';
-import { GAME_MODES, type TutorialMenuSelection } from '../../config/gameModes';
-import { startSpaceAtmosphereAmbient } from '../../sound/SoundManager';
+import { hasSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../../context/SaveStore';
+import { GAME_MODES, type TutorialMenuSelection } from '../../../config/gameModes';
+import { startSpaceAtmosphereAmbient } from '../../../sound/SoundManager';
+import { TUTORIAL_MENU_ITEMS } from './tutorialMenuItems';
+import { ASTEROID_DATA } from './asteroidData';
 
 interface StartOverlayProps {
   onStart: () => void;
@@ -9,74 +11,7 @@ interface StartOverlayProps {
   onNarrativeLoad: () => void;
 }
 
-const pseudo = (n: number) => (((Math.sin(n) * 43758.5453123) % 1) + 1) % 1;
-
-// Delays skewed heavily toward the end: x^0.3 pushes pseudo-random values near 1,
-// so most asteroids appear late — sparse at first, dense as the animation progresses.
-const ASTEROID_DATA = Array.from({ length: 500 }, (_, i) => {
-  const s = i * 17.3;
-  const w = Math.round(3 + pseudo(s) * 16); // 3–19 px wide
-  const h = Math.round(w * (0.35 + pseudo(s + 1) * 0.55));
-  // Extreme asymmetric border-radius for jagged silhouettes
-  const a = Math.round(8 + pseudo(s + 2) * 72);
-  const b = Math.round(8 + pseudo(s + 3) * 72);
-  const c = Math.round(8 + pseudo(s + 4) * 72);
-  const d = Math.round(8 + pseudo(s + 5) * 72);
-  return {
-    width: `${w}px`,
-    height: `${h}px`,
-    borderRadius: `${a}% ${100 - a}% ${b}% ${100 - b}% / ${c}% ${d}% ${100 - d}% ${100 - c}%`,
-    top: `${(pseudo(s + 6) * 96).toFixed(1)}%`,
-    animationDuration: `${(2.5 + pseudo(s + 7) * 9).toFixed(2)}s`,
-    animationDelay: `${(Math.pow(pseudo(s + 8), 0.4) * 5).toFixed(2)}s`,
-  };
-});
-
-// Total dismiss animation: last letter fades at 0.48s + 0.7s = 1.18s,
-// overlay fades at 0.9s delay + 0.5s = 1.4s. Navigate after 1.5s.
 const DISMISS_DELAY_MS = 1500;
-
-const TUTORIAL_MENU_ITEMS: Array<{
-  id: string;
-  label: string;
-  selection?: TutorialMenuSelection;
-  placeholder?: boolean;
-}> = [
-  {
-    id: 'narrative-config',
-    label: 'Start',
-    selection: GAME_MODES.narrativeConfig,
-  },
-  { id: 'model-config', label: 'Model Config', selection: GAME_MODES.modelConfig },
-  {
-    id: 'combat-config',
-    label: 'Combat Config',
-    selection: GAME_MODES.combatConfig,
-  },
-  {
-    id: 'ship-navigation-config',
-    label: 'Gravity Config',
-    selection: GAME_MODES.shipNavigationConfig,
-  },
-  { id: 'ship-config', label: 'Landing Pad Config', selection: GAME_MODES.shipConfig },
-  { id: 'inventory-config', label: 'Inventory Config', selection: GAME_MODES.inventoryConfig },
-  { id: 'salvage-config', label: 'Salvage Config', selection: GAME_MODES.salvageConfig },
-  { id: 'drone-config', label: 'Drone Config', selection: GAME_MODES.droneConfig },
-  {
-    id: 'long-distance-travel-config',
-    label: 'Long Distance Travel Config',
-    selection: GAME_MODES.longDistanceTravelConfig,
-  },
-
-  {
-    id: 'hud-config',
-    label: 'HUD Config',
-    selection: GAME_MODES.hudConfig,
-  },
-
-  { id: 'sandbox', label: 'Sandbox', selection: GAME_MODES.sandbox },
-  { id: 'empty-scene', label: 'Empty Scene', selection: GAME_MODES.emptyScene },
-];
 
 const AMBIENT_ON_SELECT: ReadonlySet<TutorialMenuSelection> = new Set([
   GAME_MODES.modelConfig,
