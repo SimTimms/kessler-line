@@ -27,7 +27,7 @@ export function applyEngineAsymmetryTorque({
   rev: boolean;
   activeMainEngines: number;
   group: THREE.Group;
-  angularVelocity: React.MutableRefObject<number>;
+  angularVelocity: React.RefObject<number>;
   cappedDelta: number;
 }): void {
   if (rev && activeMainEngines === 1) {

@@ -25,12 +25,6 @@ import { updateVelocityArrow } from './velocityArrow';
 
 const _shipWorld = new THREE.Vector3();
 
-/**
- * Navigation overlay around the player's ship:
- * - velocity arrow and ring (every frame)
- * - orbit direction arrow with circular speed label, when orbiting a planet (every frame)
- * - Pe/Ap markers and the ideal orbit guide circle, fed by a throttled worker trajectory request
- */
 export default function VelocityIndicator({
   shipGroupRef,
 }: {
@@ -62,7 +56,8 @@ export default function VelocityIndicator({
 
     const shipGroup = shipGroupRef.current;
     if (!shipGroup) return;
-    shipGroup.updateWorldMatrix(true, false);
+    // Update the ship group's world matrix as it's updated every frame with physics
+    // recalculate the ship's world position to get the latest position
     shipGroup.getWorldPosition(_shipWorld);
     const ship = shipPosRef.current;
 

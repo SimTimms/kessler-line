@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei';
-import { useEffect, useRef, type MutableRefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import DockingBay from './WorldObjects/DockingBay';
@@ -49,7 +49,7 @@ const SHOW_STATION_TOP_COLLISION_DEBUG = true;
 
 interface SpaceStationProps {
   /** Optional ship position ref; when provided, spotlight tracks this world-space point. */
-  followTargetRef?: MutableRefObject<THREE.Vector3>;
+  followTargetRef?: RefObject<THREE.Vector3>;
   /** Spotlight emitter origin in station-local space (tune this to your tower tip). */
   spotlightLocalOrigin?: [number, number, number];
   enableTrackingSpotlight?: boolean;

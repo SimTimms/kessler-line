@@ -18,7 +18,7 @@ export interface ThrusterProps {
   /** KeyboardEvent.code binding; null for NPC/scripted thrusters via `activeRef`. */
   keyCode?: string | null;
   /** When `keyCode` is null, this ref drives firing state. */
-  activeRef?: React.MutableRefObject<boolean>;
+  activeRef?: React.RefObject<boolean>;
   /** Multiplier on base fuel burn while firing. */
   fuelConsumptionMultiplier?: number;
   /** Multiplier on thrust acceleration. */

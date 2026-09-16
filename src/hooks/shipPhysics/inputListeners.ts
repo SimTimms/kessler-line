@@ -51,16 +51,16 @@ function stationIdFromDockEntryId(dockEntryId: string | null): string | null {
 }
 
 export interface InputListenersResult {
-  thrustForward: React.MutableRefObject<boolean>;
-  thrustReverse: React.MutableRefObject<boolean>;
-  thrustLeft: React.MutableRefObject<boolean>;
-  thrustRight: React.MutableRefObject<boolean>;
-  thrustStrafeLeft: React.MutableRefObject<boolean>;
-  thrustStrafeRight: React.MutableRefObject<boolean>;
-  thrustRadialOut: React.MutableRefObject<boolean>;
-  thrustRadialIn: React.MutableRefObject<boolean>;
-  releaseParticleTrigger: React.MutableRefObject<boolean>;
-  stabilizerActive: React.MutableRefObject<boolean>;
+  thrustForward: React.RefObject<boolean>;
+  thrustReverse: React.RefObject<boolean>;
+  thrustLeft: React.RefObject<boolean>;
+  thrustRight: React.RefObject<boolean>;
+  thrustStrafeLeft: React.RefObject<boolean>;
+  thrustStrafeRight: React.RefObject<boolean>;
+  thrustRadialOut: React.RefObject<boolean>;
+  thrustRadialIn: React.RefObject<boolean>;
+  releaseParticleTrigger: React.RefObject<boolean>;
+  stabilizerActive: React.RefObject<boolean>;
   resetInputs: () => void;
 }
 
@@ -80,18 +80,18 @@ export function useInputListeners({
 }: {
   vesselId: string;
   vesselState: VesselRuntimeState;
-  dockedTo: React.MutableRefObject<string | null>;
-  velocity: React.MutableRefObject<THREE.Vector3>;
+  dockedTo: React.RefObject<string | null>;
+  velocity: React.RefObject<THREE.Vector3>;
   groupRef: React.RefObject<THREE.Group>;
   scene: THREE.Object3D;
-  physicsPosition: React.MutableRefObject<THREE.Vector3>;
-  inputEnabledRef?: React.MutableRefObject<boolean>;
+  physicsPosition: React.RefObject<THREE.Vector3>;
+  inputEnabledRef?: React.RefObject<boolean>;
   listenersEnabled?: boolean;
-  undockHandlersRef?: React.MutableRefObject<{
+  undockHandlersRef?: React.RefObject<{
     tryBeginHoverUndock: (dockId: string) => boolean;
   }>;
-  dockReentryBlock?: React.MutableRefObject<string | null>;
-  dockingPortDisabledUntil?: React.MutableRefObject<number>;
+  dockReentryBlock?: React.RefObject<string | null>;
+  dockingPortDisabledUntil?: React.RefObject<number>;
 }): InputListenersResult {
   const thrustForward = useRef(false);
   const thrustReverse = useRef(false);

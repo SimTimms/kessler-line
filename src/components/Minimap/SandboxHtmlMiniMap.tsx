@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { hasDockPermission } from '../../context/DockPermissionState';
-import {
-  minimapViewportEnabled,
-  minimapViewportBounds,
-  minimapViewportZoomHalfSpan,
-  minimapViewportPanCenter,
-} from '../../context/MinimapViewportState';
 import DockingAssistPanel from './DockingAssistPanel';
 import OrbitAssistPanel from './OrbitAssistPanel';
 import StarChartPanel from './StarChartPanel';
@@ -85,42 +79,8 @@ export default function SandboxHtmlMiniMap({ showSolarSystem = true }: SandboxHt
     (panelMode === 'pad' && hasPad) ||
     (panelMode === 'orbit' && hasOrbit);
 
-  // ── 3D minimap viewport sync ──────────────────────────────────────────
+  // In chart view the CRT background is transparent (.mech-chart-crt--3d).
   const chartActive = panelMode === 'chart' && !displayingAssist;
-
-  // Write zoom/pan to shared refs every render so the Canvas renderer stays in sync.
-  minimapViewportZoomHalfSpan.current = zoomHalfSpan;
-  minimapViewportPanCenter.current = panCenter;
-
-  // Drive the enabled flag and continuously update screen-space bounds via RAF.
-  useEffect(() => {
-    if (!chartActive) {
-      minimapViewportEnabled.current = false;
-      return;
-    }
-
-    minimapViewportEnabled.current = true;
-
-    let rafId = 0;
-    const syncBounds = () => {
-      const el = containerRef.current;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        const b = minimapViewportBounds.current;
-        b.left = rect.left;
-        b.top = rect.top;
-        b.width = rect.width;
-        b.height = rect.height;
-      }
-      rafId = requestAnimationFrame(syncBounds);
-    };
-    rafId = requestAnimationFrame(syncBounds);
-
-    return () => {
-      minimapViewportEnabled.current = false;
-      cancelAnimationFrame(rafId);
-    };
-  }, [chartActive, fullscreen, containerRef]);
 
   const dockingCaptureActive = useDockingCaptureActive();
   useDockPermissionVersion();
