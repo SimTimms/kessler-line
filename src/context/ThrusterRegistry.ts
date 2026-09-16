@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react';
+import type { RefObject } from 'react';
 import type * as THREE from 'three';
 
 export type ThrusterKind = 'main' | 'rcs';
@@ -6,9 +6,9 @@ export type ThrusterKind = 'main' | 'rcs';
 export type RegisteredThruster = {
   id: string;
   vesselId: string;
-  objectRef: MutableRefObject<THREE.Object3D | null>;
+  objectRef: RefObject<THREE.Object3D | null>;
   keyCode: string | null;
-  activeRef?: MutableRefObject<boolean>;
+  activeRef?: RefObject<boolean>;
   fuelConsumptionMultiplier: number;
   thrustMultiplier: number;
   kind: ThrusterKind;

@@ -54,18 +54,18 @@ export function checkShipDestruction({
 }: {
   vesselId: string;
   vesselState: VesselRuntimeState;
-  destroyedFired: React.MutableRefObject<boolean>;
-  destroyedSpinSet: React.MutableRefObject<boolean>;
-  angularVelocity: React.MutableRefObject<number>;
-  angularVelocity3: React.MutableRefObject<THREE.Vector3>;
-  thrustForward: React.MutableRefObject<boolean>;
-  thrustReverse: React.MutableRefObject<boolean>;
-  thrustLeft: React.MutableRefObject<boolean>;
-  thrustRight: React.MutableRefObject<boolean>;
-  thrustStrafeLeft: React.MutableRefObject<boolean>;
-  thrustStrafeRight: React.MutableRefObject<boolean>;
-  thrustRadialOut: React.MutableRefObject<boolean>;
-  thrustRadialIn: React.MutableRefObject<boolean>;
+  destroyedFired: React.RefObject<boolean>;
+  destroyedSpinSet: React.RefObject<boolean>;
+  angularVelocity: React.RefObject<number>;
+  angularVelocity3: React.RefObject<THREE.Vector3>;
+  thrustForward: React.RefObject<boolean>;
+  thrustReverse: React.RefObject<boolean>;
+  thrustLeft: React.RefObject<boolean>;
+  thrustRight: React.RefObject<boolean>;
+  thrustStrafeLeft: React.RefObject<boolean>;
+  thrustStrafeRight: React.RefObject<boolean>;
+  thrustRadialOut: React.RefObject<boolean>;
+  thrustRadialIn: React.RefObject<boolean>;
   cinematicThrustForwardRef?: { current: boolean };
   cinematicThrustReverseRef?: { current: boolean };
 }): void {

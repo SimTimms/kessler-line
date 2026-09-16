@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react';
+import type { RefObject } from 'react';
 import {
   cinematicThrustForward,
   cinematicThrustReverse,
@@ -24,14 +24,14 @@ import {
 } from '../../context/AutopilotState';
 
 export interface ThrustInputRefs {
-  thrustForward: MutableRefObject<boolean>;
-  thrustReverse: MutableRefObject<boolean>;
-  thrustLeft: MutableRefObject<boolean>;
-  thrustRight: MutableRefObject<boolean>;
-  thrustStrafeLeft: MutableRefObject<boolean>;
-  thrustStrafeRight: MutableRefObject<boolean>;
-  thrustRadialOut: MutableRefObject<boolean>;
-  thrustRadialIn: MutableRefObject<boolean>;
+  thrustForward: RefObject<boolean>;
+  thrustReverse: RefObject<boolean>;
+  thrustLeft: RefObject<boolean>;
+  thrustRight: RefObject<boolean>;
+  thrustStrafeLeft: RefObject<boolean>;
+  thrustStrafeRight: RefObject<boolean>;
+  thrustRadialOut: RefObject<boolean>;
+  thrustRadialIn: RefObject<boolean>;
 }
 
 export function getManualInput(refs: ThrustInputRefs): boolean {

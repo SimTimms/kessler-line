@@ -6,7 +6,7 @@ import type { OrbitingBeaconDef } from './OrbitingRadioBeacon';
 import * as THREE from 'three';
 
 interface RadioBeaconsProps {
-  beaconGroupRef: React.MutableRefObject<THREE.Group | null>;
+  beaconGroupRef: React.RefObject<THREE.Group | null>;
 }
 
 export const RadioBeacons = ({ beaconGroupRef }: RadioBeaconsProps) => {

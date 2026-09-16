@@ -11,7 +11,7 @@ import { clearAllDockPermissions, setDockPermissionCandidate } from '../../../co
 export interface DockingState {
   isDocked: boolean;
   dockedStationId: string | null;
-  isDockedRef: React.MutableRefObject<boolean>;
+  isDockedRef: React.RefObject<boolean>;
 }
 
 /** Tracks ship docking state via ShipDocked / ShipUndocked window events. */
@@ -49,7 +49,7 @@ export function useDockingState(): DockingState {
 
 export interface SelectedTargetState {
   selectedObjName: string | null;
-  selectedObjNameRef: React.MutableRefObject<string | null>;
+  selectedObjNameRef: React.RefObject<string | null>;
   setSelectedObjName: (name: string | null) => void;
 }
 

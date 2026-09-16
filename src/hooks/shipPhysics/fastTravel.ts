@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react';
+import type { RefObject } from 'react';
 import * as THREE from 'three';
 import {
   FAST_TRAVEL_CREW_RISK_SPEED,
@@ -39,7 +39,7 @@ export function applyFastTravelZoneUpdate(shipPos: THREE.Vector3): number {
  * on the same frame.
  */
 export function applyNormalTravelEntryBrake(
-  velocity: MutableRefObject<THREE.Vector3>,
+  velocity: RefObject<THREE.Vector3>,
   dt: number
 ): void {
   const target = normalTravelEntryBrakeTargetRef.current;
@@ -101,7 +101,7 @@ export function gateLongitudinalThrustForOverspeed(
  * ship destruction at the fatal threshold (triggers DeathOverlay).
  */
 export function applyFastTravelSpeedHazards(
-  velocity: MutableRefObject<THREE.Vector3>,
+  velocity: RefObject<THREE.Vector3>,
   vesselId: string,
   vesselState: VesselRuntimeState,
   publishToPlayerRefs: boolean

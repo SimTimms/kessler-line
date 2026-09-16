@@ -1,12 +1,12 @@
 import { memo } from 'react';
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 import BeaconButton from './BeaconButton';
 
 interface AudioLayerProps {
   beaconActivated: boolean;
   listeningToMessage: boolean;
   setListeningToMessage: Dispatch<SetStateAction<boolean>>;
-  activeAudioRef: MutableRefObject<HTMLAudioElement | null>;
+  activeAudioRef: RefObject<HTMLAudioElement | null>;
 }
 
 const AudioLayer = memo(function AudioLayer({

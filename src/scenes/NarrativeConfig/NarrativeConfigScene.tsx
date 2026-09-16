@@ -54,6 +54,7 @@ import { DONINGTON_STATION_DOCK_CONFIG } from '../../config/landingPads/doningto
 import { BAKERFIELD_FALLS_DOCK_CONFIG } from '../../config/landingPads/bakerfield-falls';
 import { registerDock } from '../../context/DockablePartnerStore';
 import NarrativeConfigCanvas from './NarrativeConfigCanvas';
+import { Perf } from 'r3f-perf';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
@@ -136,6 +137,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
   const worldContent = (
     <>
+      <Perf position="top-right" />
       <ambientLight intensity={lighting.ambientIntensity} />
       <directionalLight
         position={[0, 300, -1000]}

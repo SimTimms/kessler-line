@@ -118,16 +118,16 @@ export interface ShipPhysicsOptions {
 }
 
 export interface UseShipPhysicsResult {
-  thrustForward: React.MutableRefObject<boolean>;
-  thrustReverse: React.MutableRefObject<boolean>;
-  thrustLeft: React.MutableRefObject<boolean>;
-  thrustRight: React.MutableRefObject<boolean>;
-  thrustStrafeLeft: React.MutableRefObject<boolean>;
-  thrustStrafeRight: React.MutableRefObject<boolean>;
-  thrustRadialOut: React.MutableRefObject<boolean>;
-  thrustRadialIn: React.MutableRefObject<boolean>;
-  releaseParticleTrigger: React.MutableRefObject<boolean>;
-  thrusterLightRefs: React.MutableRefObject<(THREE.PointLight | null)[]>;
+  thrustForward: React.RefObject<boolean>;
+  thrustReverse: React.RefObject<boolean>;
+  thrustLeft: React.RefObject<boolean>;
+  thrustRight: React.RefObject<boolean>;
+  thrustStrafeLeft: React.RefObject<boolean>;
+  thrustStrafeRight: React.RefObject<boolean>;
+  thrustRadialOut: React.RefObject<boolean>;
+  thrustRadialIn: React.RefObject<boolean>;
+  releaseParticleTrigger: React.RefObject<boolean>;
+  thrusterLightRefs: React.RefObject<(THREE.PointLight | null)[]>;
 }
 
 export function useShipPhysics({

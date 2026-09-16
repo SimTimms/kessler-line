@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { MutableRefObject, RefObject } from 'react';
+import type { RefObject } from 'react';
 import { thrustMultiplier } from '../../context/ShipState';
 import {
   THRUSTER_LIGHT_INTENSITY_MAIN,
@@ -26,7 +26,7 @@ export function updateThrusterLights({
   actives,
   dt,
 }: {
-  thrusterLightIntensities: MutableRefObject<number[]>;
+  thrusterLightIntensities: RefObject<number[]>;
   thrusterLightRefs: RefObject<(THREE.PointLight | null)[]>;
   actives: ThrusterLightActives;
   dt: number;
@@ -56,7 +56,7 @@ export function updateThrusterLights({
 }
 
 export function zeroThrusterLights(
-  thrusterLightIntensities: MutableRefObject<number[]>,
+  thrusterLightIntensities: RefObject<number[]>,
   thrusterLightRefs: RefObject<(THREE.PointLight | null)[]>
 ) {
   const intens = thrusterLightIntensities.current;

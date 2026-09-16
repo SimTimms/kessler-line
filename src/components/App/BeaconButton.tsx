@@ -1,8 +1,8 @@
 import { memo } from 'react';
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 interface BeaconButtonProps {
-  activeAudioRef: MutableRefObject<HTMLAudioElement | null>;
+  activeAudioRef: RefObject<HTMLAudioElement | null>;
   listeningToMessage: boolean;
   setListeningToMessage: Dispatch<SetStateAction<boolean>>;
 }
