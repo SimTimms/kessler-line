@@ -31,8 +31,12 @@ export const ORBIT_ASSIST_FRAME = 1.22;
 export const EVENT_DOCKING_CAPTURE_STARTED = 'DockingCaptureStarted';
 export const EVENT_DOCKING_CAPTURE_ENDED = 'DockingCaptureEnded';
 
-/** Recompute minimap trajectory every N animation frames. */
-export const MINIMAP_TRAJECTORY_UPDATE_FRAMES = 10;
+/**
+ * Recompute minimap trajectory every N shared-HUD ticks (see HudFrameRunner).
+ * Ticks run at HUD_HZ, so 2 is ~7.5Hz — close to the ~6Hz this had back when
+ * the minimap drove its own 60Hz loop and recomputed every 10th frame.
+ */
+export const MINIMAP_TRAJECTORY_UPDATE_FRAMES = 2;
 /** Use fewer trajectory points for performance while preserving total look-ahead time. */
 export const MINIMAP_TRAJECTORY_RESAMPLED_STEPS = 40;
 export const MINIMAP_TRAJECTORY_RESAMPLED_DT =

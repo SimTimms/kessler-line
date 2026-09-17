@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useState, type DragEvent } from 'react';
+import { useFrameUpdate } from '../../../hooks/useFrameUpdate';
 import {
   getFractures,
   subscribeDamageControl,
@@ -134,32 +135,18 @@ export default function DamageControlHUD() {
   const [batteryDropTarget, setBatteryDropTarget] = useState(false);
   const [patchDropTarget, setPatchDropTarget] = useState<number | null>(null);
   const [now, setNow] = useState(() => performance.now());
-  const rafRef = useRef(0);
-  const lastTimeRef = useRef(performance.now());
 
   // Per-frame polling: tick damage control + patch jobs + CO2 filter + sync patch count
-  useEffect(() => {
-    let running = true;
-    lastTimeRef.current = performance.now();
-    const loop = () => {
-      if (!running) return;
-      const now = performance.now();
-      const delta = (now - lastTimeRef.current) / 1000;
-      lastTimeRef.current = now;
-      tickDamageControl();
-      tickPatchJobs();
-      tickCO2Filter(delta);
-      tickEmergencyBattery(delta);
-      setPatchCount(getPatchCount());
-      setNow(now);
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => {
-      running = false;
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
+  // dtMs comes from the shared runner, so no local clock or cancellation guard.
+  useFrameUpdate((dtMs) => {
+    const delta = dtMs / 1000;
+    tickDamageControl();
+    tickPatchJobs();
+    tickCO2Filter(delta);
+    tickEmergencyBattery(delta);
+    setPatchCount(getPatchCount());
+    setNow(performance.now());
+  });
 
   const handleCancel = useCallback((fractureId: number) => {
     cancelPatch(fractureId);

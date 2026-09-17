@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
+import { useFrameUpdate } from '../hooks/useFrameUpdate';
 
 interface TimeContextValue {
   time: number; // 0 → 24 (hours)
@@ -23,19 +24,15 @@ export function TimeProvider({
 }) {
   const [time, setTime] = useState(6); // start at 6 AM
 
-  useEffect(() => {
-    const start = performance.now();
+  // Seeded on the first tick rather than during render, which must stay pure.
+  const startRef = useRef(0);
 
-    const tick = () => {
-      const elapsed = (performance.now() - start) / 1000;
-      const t = (elapsed % cycleDuration) / cycleDuration; // 0 → 1
-      const hours = t * 24; // convert to 24h clock
-      setTime(hours);
-      requestAnimationFrame(tick);
-    };
-
-    tick();
-  }, [cycleDuration]);
+  useFrameUpdate(() => {
+    if (startRef.current === 0) startRef.current = performance.now();
+    const elapsed = (performance.now() - startRef.current) / 1000;
+    const t = (elapsed % cycleDuration) / cycleDuration; // 0 → 1
+    setTime(t * 24); // convert to 24h clock
+  });
 
   const t = time / 24;
 

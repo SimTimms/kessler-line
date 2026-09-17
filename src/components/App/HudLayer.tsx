@@ -1,4 +1,6 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useRef } from 'react';
+import { useFrameUpdate } from '../../hooks/useFrameUpdate';
+import { EVERY_FRAME } from '../../context/HudFrameRunner';
 import type { Dispatch, SetStateAction } from 'react';
 import { hudShakeOffset } from '../../context/HudShake';
 import MagneticHUD from '../Huds/MagneticHUD';
@@ -43,25 +45,30 @@ const HudLayer = memo(function HudLayer({
   thrustLevel,
   setThrustLevel,
 }: HudLayerProps) {
-  useEffect(() => {
-    let raf: number;
-    let prevX = 0, prevY = 0;
-    const tick = () => {
+  const prevShakeRef = useRef({ x: 0, y: 0 });
+
+  // Screen shake needs every frame to read smoothly, so this opts out of the HUD
+  // throttle — it still shares the single runner loop rather than owning an rAF.
+  useFrameUpdate(
+    () => {
       const { x, y } = hudShakeOffset;
-      if (x !== prevX || y !== prevY) {
-        prevX = x;
-        prevY = y;
-        document.body.style.transform =
-          x === 0 && y === 0 ? '' : `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
+      const prev = prevShakeRef.current;
+      if (x === prev.x && y === prev.y) return;
+      prev.x = x;
+      prev.y = y;
+      document.body.style.transform =
+        x === 0 && y === 0 ? '' : `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+    },
+    { hz: EVERY_FRAME }
+  );
+
+  // Leave the page untransformed if this layer unmounts mid-shake.
+  useEffect(
+    () => () => {
       document.body.style.transform = '';
-    };
-  }, []);
+    },
+    []
+  );
 
   return (
     <>

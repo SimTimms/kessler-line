@@ -31,7 +31,6 @@ import {
   THRUSTER_LIGHT_DECAY,
   THRUSTER_LIGHT_DISTANCE,
 } from '../../config/thrusterConfig';
-import PlanetSurfaceImpactDust from '../Environment/PlanetSurfaceImpactDust';
 import ShipManeuverLean from './ShipManeuverLean';
 
 /** Order must match `thrusterLight.ts` slot indices and `useShipPhysics` actives. */
@@ -195,8 +194,6 @@ export default function Spaceship({
         <ShipManeuverLean leanRef={leanRef} />
         {/* Visual lean only — docking port + physics stay on the level root. */}
         <group ref={leanRef}>
-          <PlanetSurfaceImpactDust />
-
           <primitive
             object={clonedScene}
             scale={scale}
@@ -207,20 +204,6 @@ export default function Spaceship({
             <ThrusterHitboxDebug enabled={DEBUG_THRUSTER_HITBOXES} />
           </group>
 
-          <spotLight
-            position={[0, 500, 100]}
-            target={shadowLightTarget.current}
-            angle={Math.PI / 5}
-            penumbra={0.4}
-            intensity={50000}
-            distance={1000}
-            castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
-            shadow-radius={8}
-            shadow-camera-near={1}
-            shadow-camera-far={400}
-          />
           <primitive object={shadowLightTarget.current} position={[0, 0, 0]} />
           {/* Thruster point lights — one per main nozzle and RCS emitter (see ThrusterParticles). */}
           {THRUSTER_LIGHT_SLOTS.map(({ key, position }, index) => (
@@ -250,14 +233,7 @@ export default function Spaceship({
         <group ref={dockingPortRef} position={[0, -0.025, DOCKING_PORT_LOCAL_Z - 0.1]}>
           <mesh>
             <boxGeometry args={[1, 0.05, 0.4]} />
-            <meshStandardMaterial
-              color="#ffffff"
-              emissive="#ffffff"
-              emissiveIntensity={2.4}
-              metalness={0.15}
-              roughness={0.35}
-              depthWrite={false}
-            />
+            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
           </mesh>
         </group>
       </group>

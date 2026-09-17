@@ -13,6 +13,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { registerCollidable, unregisterCollidable } from '../../../context/CollisionRegistry';
+import { gravityBodies } from '../../../context/GravityRegistry';
 import {
   registerRadioBroadcast,
   unregisterRadioBroadcast,
@@ -110,6 +111,11 @@ export default function CommsBufferSatellite() {
 
     // ── Initialise on first frame ──────────────────────────────────────
     if (!orbitStateRef.current) {
+      // Mars is registered by OrbitingPlanet's mount effect. This satellite sits
+      // behind a different Suspense boundary, so its first frame can land before
+      // the planet exists — wait for it rather than throwing.
+      if (!gravityBodies.has('Mars')) return;
+
       const init = initCircularOrbit({
         bodyId: 'Mars',
         radius: BUFFER_ORBIT_RADIUS,

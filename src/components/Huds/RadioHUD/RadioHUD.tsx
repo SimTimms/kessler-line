@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { useFrameUpdate } from '../../../hooks/useFrameUpdate';
 import * as THREE from 'three';
 import { radioOnRef, radioRangeRef } from '../../../context/RadioState';
 import { shipPosRef } from '../../../context/ShipPos';
@@ -12,6 +13,9 @@ import { BroadcastDialog } from '../../BroadcastDialog/BroadcastDialog';
 import { getCollidables } from '../../../context/CollisionRegistry';
 import './RadioHUD.css';
 
+/** Scratch vector reused by the frame tick, so a tick allocates nothing. */
+const broadcastPos = new THREE.Vector3();
+
 export const RadioHUD = () => {
   const [radioIsOn, setRadioIsOn] = useState(false);
   const [inRangeBroadcasts, setInRangeBroadcasts] = useState<RadioBroadcastDef[]>([]);
@@ -21,98 +25,90 @@ export const RadioHUD = () => {
   const prevOnRef = useRef(false);
   const prevSignatureRef = useRef('');
 
-  useEffect(() => {
-    let raf: number;
-    const broadcastPos = new THREE.Vector3();
-    const tick = () => {
-      const on = radioOnRef.current;
-      const elapsed = performance.now() / 1000;
+  useFrameUpdate(() => {
+    const on = radioOnRef.current;
+    const elapsed = performance.now() / 1000;
 
-      if (on !== prevOnRef.current) {
-        prevOnRef.current = on;
-        setRadioIsOn(on);
-        if (!on) {
-          prevSignatureRef.current = '';
-          setInRangeBroadcasts([]);
-        }
+    if (on !== prevOnRef.current) {
+      prevOnRef.current = on;
+      setRadioIsOn(on);
+      if (!on) {
+        prevSignatureRef.current = '';
+        setInRangeBroadcasts([]);
       }
+    }
 
-      if (on) {
-        const range = radioRangeRef.current;
-        const { x, y, z } = shipPosRef.current;
-        const stationCollidable = getCollidables().find((c) => c.id === 'space-station');
-        if (stationCollidable) stationCollidable.getWorldPosition(broadcastPos);
-        const stationBeacon: RadioBroadcastDef = {
-          id: 'beacon-station',
-          label: 'Station Beacon',
-          position: stationCollidable
-            ? [broadcastPos.x, broadcastPos.y, broadcastPos.z]
-            : SPACE_STATION_DEF.position,
-          dialogue: ['STATION BEACON ONLINE.'],
-        };
+    if (on) {
+      const range = radioRangeRef.current;
+      const { x, y, z } = shipPosRef.current;
+      const stationCollidable = getCollidables().find((c) => c.id === 'space-station');
+      if (stationCollidable) stationCollidable.getWorldPosition(broadcastPos);
+      const stationBeacon: RadioBroadcastDef = {
+        id: 'beacon-station',
+        label: 'Station Beacon',
+        position: stationCollidable
+          ? [broadcastPos.x, broadcastPos.y, broadcastPos.z]
+          : SPACE_STATION_DEF.position,
+        dialogue: ['STATION BEACON ONLINE.'],
+      };
 
-        const beaconBroadcasts: RadioBroadcastDef[] = RADIO_BEACON_DEFS.map((def) => {
-          if (def.orbit) {
-            const planetPos = solarPlanetPositions[def.orbit.planetName];
-            if (planetPos) {
-              const angle = (def.orbit.phase ?? 0) + elapsed * def.orbit.speed;
-              const orbitX = Math.cos(angle) * def.orbit.radius;
-              const orbitZ = Math.sin(angle) * def.orbit.radius;
-              return {
-                id: def.id,
-                label: def.label,
-                position: [
-                  planetPos.x * SOLAR_SYSTEM_SCALE + orbitX,
-                  0,
-                  planetPos.z * SOLAR_SYSTEM_SCALE + orbitZ,
-                ],
-                dialogue: ['AUTOMATED BEACON SIGNAL DETECTED.'],
-              };
-            }
+      const beaconBroadcasts: RadioBroadcastDef[] = RADIO_BEACON_DEFS.map((def) => {
+        if (def.orbit) {
+          const planetPos = solarPlanetPositions[def.orbit.planetName];
+          if (planetPos) {
+            const angle = (def.orbit.phase ?? 0) + elapsed * def.orbit.speed;
+            const orbitX = Math.cos(angle) * def.orbit.radius;
+            const orbitZ = Math.sin(angle) * def.orbit.radius;
+            return {
+              id: def.id,
+              label: def.label,
+              position: [
+                planetPos.x * SOLAR_SYSTEM_SCALE + orbitX,
+                0,
+                planetPos.z * SOLAR_SYSTEM_SCALE + orbitZ,
+              ],
+              dialogue: ['AUTOMATED BEACON SIGNAL DETECTED.'],
+            };
           }
-          return {
-            id: def.id,
-            label: def.label,
-            position: def.position,
-            dialogue: ['AUTOMATED BEACON SIGNAL DETECTED.'],
-          };
-        });
-
-        const dynamicBroadcasts: RadioBroadcastDef[] = getRadioBroadcasts().map((entry) => {
-          entry.getPosition(broadcastPos);
-          return {
-            id: entry.id,
-            label: entry.label,
-            position: [broadcastPos.x, broadcastPos.y, broadcastPos.z],
-            dialogue: resolveRadioDialogue(entry),
-            dockable: entry.dockable,
-            dockingBay: entry.dockingBay,
-          };
-        });
-
-        const inRange = [...dynamicBroadcasts, stationBeacon, ...beaconBroadcasts].filter((def) => {
-          const [bx, by, bz] = def.position;
-          const dx = x - bx;
-          const dy = y - by;
-          const dz = z - bz;
-          return Math.sqrt(dx * dx + dy * dy + dz * dz) <= range;
-        });
-
-        const signature = inRange
-          .map((def) => def.id)
-          .sort()
-          .join('|');
-        if (signature !== prevSignatureRef.current) {
-          prevSignatureRef.current = signature;
-          setInRangeBroadcasts(inRange);
         }
-      }
+        return {
+          id: def.id,
+          label: def.label,
+          position: def.position,
+          dialogue: ['AUTOMATED BEACON SIGNAL DETECTED.'],
+        };
+      });
 
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+      const dynamicBroadcasts: RadioBroadcastDef[] = getRadioBroadcasts().map((entry) => {
+        entry.getPosition(broadcastPos);
+        return {
+          id: entry.id,
+          label: entry.label,
+          position: [broadcastPos.x, broadcastPos.y, broadcastPos.z],
+          dialogue: resolveRadioDialogue(entry),
+          dockable: entry.dockable,
+          dockingBay: entry.dockingBay,
+        };
+      });
+
+      const inRange = [...dynamicBroadcasts, stationBeacon, ...beaconBroadcasts].filter((def) => {
+        const [bx, by, bz] = def.position;
+        const dx = x - bx;
+        const dy = y - by;
+        const dz = z - bz;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz) <= range;
+      });
+
+      const signature = inRange
+        .map((def) => def.id)
+        .sort()
+        .join('|');
+      if (signature !== prevSignatureRef.current) {
+        prevSignatureRef.current = signature;
+        setInRangeBroadcasts(inRange);
+      }
+    }
+  });
 
   if (!radioIsOn) return null;
 

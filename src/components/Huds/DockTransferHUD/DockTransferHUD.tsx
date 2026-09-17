@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useFrameUpdate } from '../../../hooks/useFrameUpdate';
 import { Droplets, Wind, Zap, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { fuel, o2, power, shipCrew } from '../../../context/ShipState';
@@ -233,15 +234,10 @@ const DockTransferHUD = memo(function DockTransferHUD() {
     : undefined;
   const hasDockInventory = partnerId ? !!getDock(partnerId)?.inventory : false;
 
-  useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      bump((n) => n + 1);
-      raf = requestAnimationFrame(tick);
-    };
-    if (partnerId && panelOpen) raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [partnerId, panelOpen]);
+  // Re-render so the panel re-reads live store values, but only while it is open.
+  useFrameUpdate(() => bump((n) => n + 1), {
+    enabled: Boolean(partnerId && panelOpen),
+  });
 
   function resolveDockInteriorChat(
     threadId: string

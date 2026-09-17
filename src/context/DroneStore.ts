@@ -5,6 +5,7 @@ import {
   type DroneType,
 } from '../config/droneConfig';
 import { MINING_ORE_ITEM_ID } from '../config/miningConfig';
+import { HUD_HZ, registerFrameUpdate, unregisterFrameUpdate } from './HudFrameRunner';
 import { MINING_DRONE_DOCK_CONFIG } from '../config/docks/miningDroneDockConfig';
 import {
   getDock,
@@ -81,7 +82,6 @@ let internal: InternalState = {
   statusLine: 'Bayed — select a target and launch',
 };
 
-let miningRaf = 0;
 let miningStartedAt = 0;
 let dockRegistered = false;
 
@@ -156,10 +156,7 @@ function setInternal(partial: Partial<InternalState>) {
 }
 
 function stopMiningLoop() {
-  if (miningRaf) {
-    cancelAnimationFrame(miningRaf);
-    miningRaf = 0;
-  }
+  unregisterFrameUpdate(tickMining);
 }
 
 function tickMining() {
@@ -177,7 +174,6 @@ function tickMining() {
     miningStartedAt = performance.now();
     setInternal({ miningProgress: 0, statusLine: 'Ore extracted — continuing cycle' });
   }
-  miningRaf = requestAnimationFrame(tickMining);
 }
 
 export function beginDroneMining(): void {
@@ -192,7 +188,7 @@ export function beginDroneMining(): void {
     statusLine: 'Mining in progress',
   });
   stopMiningLoop();
-  miningRaf = requestAnimationFrame(tickMining);
+  registerFrameUpdate(tickMining, HUD_HZ);
 }
 
 export function stopDroneMining(): void {

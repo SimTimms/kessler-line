@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
+import { useFrameUpdate } from './useFrameUpdate';
 import * as THREE from 'three';
 import type { RadioBroadcastDef } from '../config/worldConfig';
 import { shipPosRef } from '../context/ShipPos';
@@ -16,6 +17,9 @@ import {
   unregisterRadioBroadcast,
   isRadioHailEnabled,
 } from '../context/RadioBroadcastRegistry';
+
+/** Scratch vector reused by the hail-range tick. */
+const worldPos = new THREE.Vector3();
 
 /** Registers a scene radio broadcast while mounted (unregisters on unmount). */
 export function useRegisterRadioBroadcast(
@@ -34,27 +38,16 @@ export function useRegisterRadioBroadcast(
     return () => unregisterRadioBroadcast(def.id);
   }, [def, groupRef]);
 
-  useEffect(() => {
-    if (!def?.hailRange) return;
-
-    let raf = 0;
-    const worldPos = new THREE.Vector3();
-
-    const tick = () => {
-      if (!groupRef.current) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-
-      const status = getHailStatus(def.id);
-      if (status === 'accepted') {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
+  useFrameUpdate(
+    () => {
+      // Re-checked inside the callback so TypeScript narrows def, and because
+      // enabled only gates subscription, not each tick.
+      if (!def?.hailRange || !groupRef.current) return;
+      if (getHailStatus(def.id) === 'accepted') return;
 
       groupRef.current.getWorldPosition(worldPos);
       const dist = shipPosRef.current.distanceTo(worldPos);
-      const inHailRange = dist <= def.hailRange!;
+      const inHailRange = dist <= def.hailRange;
       const inPassiveRange = isWithinPassiveRadioRange(dist);
       const broadcastEntry = getRadioBroadcasts().find((e) => e.id === def.id);
       const hailAllowed = broadcastEntry ? isRadioHailEnabled(broadcastEntry) : true;
@@ -66,11 +59,7 @@ export function useRegisterRadioBroadcast(
       } else if (hasIncomingHail(def.id)) {
         dismissIncomingHail(def.id);
       }
-
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [def, groupRef]);
+    },
+    { enabled: Boolean(def?.hailRange) }
+  );
 }

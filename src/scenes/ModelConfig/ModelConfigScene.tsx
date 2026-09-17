@@ -1,28 +1,15 @@
 import { Suspense, useEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Perf } from 'r3f-perf';
 import { shipPosRef } from '../../context/ShipPos';
-import { sceneCamera } from '../../context/CameraRef';
 import CollisionPhysicsTestRig from '../../components/Debug/CollisionPhysicsTestRig';
 import CollisionDebug from '../../components/Debug/CollisionDebug';
 import Spaceship from '../../components/Ship/Spaceship';
 import { SpaceshipConfig } from './SpaceshipConfig';
 import { CANVAS_FOV } from '../../config/visualConfig';
 import VolumetricFog from '../../components/VolumetricFog/VolumetricFog';
-//this is a hack to get the camera reference into the context
-//it is used to get the camera position for the HUD
-function CameraCapture() {
-  const { camera } = useThree();
-  useEffect(() => {
-    sceneCamera.current = camera;
-    return () => {
-      sceneCamera.current = null;
-    };
-  }, [camera]);
-  return null;
-}
 
 interface ModelConfigSceneProps {
   showCollisionDebug?: boolean;
@@ -56,11 +43,9 @@ export default function ModelConfigScene({
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: SpaceshipConfig.scene.toneMappingExposure,
       }}
-      dpr={[0.5, 1]}
       shadows={true}
     >
       <Perf position="top-left" />
-      <CameraCapture />
       <fogExp2 attach="fog" args={[SpaceshipConfig.scene.fogColor, 0.000001]} />
       <ambientLight intensity={0.7} />
       <directionalLight position={[140, 100, 240]} intensity={14.4} color="#ff6600" />
@@ -69,7 +54,7 @@ export default function ModelConfigScene({
         <VolumetricFog
           position={[0, 0, 0]}
           radius={100}
-          color="#ff00ff"
+          color="#ff4400"
           density={useVolumetricFog * 1}
           steps={2 * useVolumetricFog}
           octaves={3}

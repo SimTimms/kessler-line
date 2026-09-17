@@ -1,4 +1,5 @@
 import { addCargoItem } from './Inventory';
+import { HUD_HZ, registerFrameUpdate, unregisterFrameUpdate } from './HudFrameRunner';
 import {
   MINING_CYCLE_SECONDS,
   MINING_MODULE_ID,
@@ -30,7 +31,6 @@ let state: MiningUiState = {
 };
 
 let listenersBound = false;
-let rafId = 0;
 let cycleStartedAt = 0;
 
 function notify() {
@@ -47,10 +47,7 @@ function setState(partial: Partial<MiningUiState>) {
 }
 
 function stopMiningLoop() {
-  if (rafId) {
-    cancelAnimationFrame(rafId);
-    rafId = 0;
-  }
+  unregisterFrameUpdate(tickMining);
 }
 
 function tickMining() {
@@ -73,7 +70,6 @@ function tickMining() {
     cycleStartedAt = performance.now();
     setState({ progress: 0 });
   }
-  rafId = requestAnimationFrame(tickMining);
 }
 
 export function beginMining(): void {
@@ -82,7 +78,7 @@ export function beginMining(): void {
   cycleStartedAt = performance.now();
   setState({ mining: true, progress: 0 });
   stopMiningLoop();
-  rafId = requestAnimationFrame(tickMining);
+  registerFrameUpdate(tickMining, HUD_HZ);
 }
 
 export function stopMining(): void {

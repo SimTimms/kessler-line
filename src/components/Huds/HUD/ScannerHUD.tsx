@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useFrameUpdate } from '../../../hooks/useFrameUpdate';
 import { Flashlight, Magnet, HardDrive, Radar, Radiation } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { HudButton } from '../HudButton';
@@ -183,22 +184,15 @@ function contactCountsSignature(counts: ScannerContactCounts): string {
 
 function useScannerContactCounts(): ScannerContactCounts {
   const [counts, setCounts] = useState(readScannerContactCounts);
-  useEffect(() => {
-    let raf = 0;
-    let prevSig = contactCountsSignature(counts);
-    const tick = () => {
-      const next = readScannerContactCounts();
-      const sig = contactCountsSignature(next);
-      if (sig !== prevSig) {
-        prevSig = sig;
-        setCounts(next);
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- poll live refs; seed from initial read only
-  }, []);
+  // Seeded from the initial read, then only updated when the signature moves.
+  const prevSigRef = useRef(contactCountsSignature(counts));
+  useFrameUpdate(() => {
+    const next = readScannerContactCounts();
+    const sig = contactCountsSignature(next);
+    if (sig === prevSigRef.current) return;
+    prevSigRef.current = sig;
+    setCounts(next);
+  });
   return counts;
 }
 
@@ -278,18 +272,12 @@ export const ScannerHUD = ({
 
   // Coords display — mutated directly to avoid re-renders
   const coordsRef = useRef<HTMLDivElement>(null!);
-  useEffect(() => {
-    let raf: number;
-    const tick = () => {
-      if (coordsRef.current) {
-        const { x, z } = shipPosRef.current;
-        coordsRef.current.textContent = `${Math.round(x)}, ${Math.round(z)}`;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  useFrameUpdate(() => {
+    if (coordsRef.current) {
+      const { x, z } = shipPosRef.current;
+      coordsRef.current.textContent = `${Math.round(x)}, ${Math.round(z)}`;
+    }
+  });
 
   const initialPowerById: Record<string, number> = {
     [ScannerHUDElements.SPOTLIGHT]: clampScannerPowerLevel(

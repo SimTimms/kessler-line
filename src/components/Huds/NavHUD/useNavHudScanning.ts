@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { useFrameUpdate } from '../../../hooks/useFrameUpdate';
 import * as THREE from 'three';
 import { NAV_TARGET_DEFS } from '../../../config/worldConfig';
 import type { NavScanContact } from './navScanPickerContacts';
@@ -34,19 +35,14 @@ export interface NavHudScanState {
  * Owns contact scan state, display refs, and the rAF loop.
  *
  * Runs `updateHudDisplayRefs` every frame and `scanAllContacts` every
- * 15 frames (~4x/sec at 60 fps). Returns all contact arrays and the
+ * ~4x/sec via the shared HUD frame runner. Returns all contact arrays and the
  * display ref bundle for JSX binding.
  */
 export function useNavHudScanning(opts: UseNavHudScanningOptions): NavHudScanState {
-  const {
-    layout,
-    focusElements,
-    customGeneralTargets,
-    customPlanetaryTargets,
-    selectedObjNameRef,
-    isDockedRef,
-    undockBtnRef,
-  } = opts;
+  // layout, focusElements, selectedObjNameRef, isDockedRef and undockBtnRef stay on
+  // UseNavHudScanningOptions for callers, but nothing here reads them — the only
+  // consumer is the commented-out updateHudDisplayRefs call below.
+  const { customGeneralTargets, customPlanetaryTargets } = opts;
 
   // ── Contact state ───────────────────────────────────────────────────
   const [navItems, setNavItems] = useState<NavTargetItem[]>(() =>
@@ -97,37 +93,31 @@ export function useNavHudScanning(opts: UseNavHudScanningOptions): NavHudScanSta
 
   // ── rAF loop ────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    let raf: number;
-    const tick = () => {
-      // Per-frame DOM ref updates (coords, orbit, velocity, etc.)
-      // updateHudDisplayRefs(displayRefs, selectedObjNameRef.current, layout, focusElements);
-      // Throttle contact scanning — every 15 frames (~4x/sec at 60 fps)
-      scanFrameCounter.current += 1;
-      if (scanFrameCounter.current >= 15) {
-        scanFrameCounter.current = 0;
-        scanAllContacts(
-          scanPrevSigs,
-          scanVecs,
-          {
-            setNavItems,
-            setGeneralItems,
-            setMagneticContacts,
-            setDriveContacts,
-            setProximityContacts,
-            setRadioContacts,
-            setRadiationContacts,
-          },
-          customGeneralTargets,
-          customPlanetaryTargets
-        );
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [layout, focusElements]);
+  useFrameUpdate(() => {
+    // Per-frame DOM ref updates (coords, orbit, velocity, etc.)
+    // updateHudDisplayRefs(displayRefs, selectedObjNameRef.current, layout, focusElements);
+    // Throttle contact scanning to ~4x/sec. These are shared-runner ticks at
+    // HUD_HZ, not animation frames, so the divisor is 4 rather than 15.
+    scanFrameCounter.current += 1;
+    if (scanFrameCounter.current >= 4) {
+      scanFrameCounter.current = 0;
+      scanAllContacts(
+        scanPrevSigs,
+        scanVecs,
+        {
+          setNavItems,
+          setGeneralItems,
+          setMagneticContacts,
+          setDriveContacts,
+          setProximityContacts,
+          setRadioContacts,
+          setRadiationContacts,
+        },
+        customGeneralTargets,
+        customPlanetaryTargets
+      );
+    }
+  });
 
   return {
     displayRefs,

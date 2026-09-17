@@ -1,4 +1,5 @@
 import type { SettlementRuntime, SettlementStatus } from '../config/settlementConfig';
+import { HUD_HZ, registerFrameUpdate, unregisterFrameUpdate } from './HudFrameRunner';
 import { SETTLEMENT_BY_ID, SETTLEMENT_BY_OBJECT_ID } from '../config/settlementConfig';
 import {
   createSettlementRuntime,
@@ -15,8 +16,7 @@ import { dismissIncomingHail } from './IncomingHailState';
 const runtimes = new Map<string, SettlementRuntime>();
 const objectIdToSettlementId = new Map<string, string>();
 
-let tickRaf = 0;
-let lastTickTime = 0;
+let tickRunning = false;
 
 function bindSettlementToRadio(runtime: SettlementRuntime): void {
   patchRadioBroadcastSettlement(runtime.def.objectId, {
@@ -79,30 +79,21 @@ function tickAllSettlements(deltaSec: number): void {
   }
 }
 
+/** Consumption is delta-driven, so the shared runner's tick rate is immaterial. */
+function settlementStep(dtMs: number): void {
+  if (runtimes.size > 0) tickAllSettlements(dtMs / 1000);
+}
+
 function ensureTickLoop(): void {
-  if (tickRaf) return;
-  lastTickTime = performance.now();
-
-  const step = () => {
-    const now = performance.now();
-    const deltaSec = (now - lastTickTime) / 1000;
-    lastTickTime = now;
-
-    if (runtimes.size > 0) {
-      tickAllSettlements(deltaSec);
-    }
-
-    tickRaf = requestAnimationFrame(step);
-  };
-
-  tickRaf = requestAnimationFrame(step);
+  if (tickRunning) return;
+  tickRunning = true;
+  registerFrameUpdate(settlementStep, HUD_HZ);
 }
 
 function stopTickLoopIfEmpty(): void {
-  if (runtimes.size === 0 && tickRaf) {
-    cancelAnimationFrame(tickRaf);
-    tickRaf = 0;
-  }
+  if (runtimes.size > 0 || !tickRunning) return;
+  tickRunning = false;
+  unregisterFrameUpdate(settlementStep);
 }
 
 export function registerSettlement(settlementId: string): void {

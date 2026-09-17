@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useFrameUpdate } from '../../hooks/useFrameUpdate';
 import * as THREE from 'three';
 import { isWithinRadioRange, isWithinPassiveRadioRange } from '../../context/RadioState';
 import { shipPosRef } from '../../context/ShipPos';
@@ -189,74 +190,67 @@ export default function ContactsHUD({
   const bcastVec = useRef(new THREE.Vector3());
 
   // rAF loop: detect drive-signature ships and compute broadcast station distances
-  useEffect(() => {
-    let raf: number;
-    const tick = () => {
-      const ship = shipPosRef.current;
+  useFrameUpdate(() => {
+    const ship = shipPosRef.current;
 
-      // Drive signatures
-      setDriveSignaturesToRadio({ shipPos: ship, setInRangeDrives: setInRangeDrives });
+    // Drive signatures
+    setDriveSignaturesToRadio({ shipPos: ship, setInRangeDrives: setInRangeDrives });
 
-      // Broadcast stations — only objects that registered in the scene
-      {
-        const newBcasts: BroadcastContact[] = [];
-        for (const entry of getRadioBroadcasts()) {
-          entry.getPosition(bcastVec.current);
-          renderToSimulationSpace(bcastVec.current, bcastVec.current);
-          const dist = bcastVec.current.distanceTo(ship);
+    // Broadcast stations — only objects that registered in the scene
+    {
+      const newBcasts: BroadcastContact[] = [];
+      for (const entry of getRadioBroadcasts()) {
+        entry.getPosition(bcastVec.current);
+        renderToSimulationSpace(bcastVec.current, bcastVec.current);
+        const dist = bcastVec.current.distanceTo(ship);
 
-          if (
-            entry.id === 'fuel-station' &&
-            !fuelStationHailFiredRef.current &&
-            dist <= 10000 &&
-            isWithinPassiveRadioRange(dist)
-          ) {
-            fuelStationHailFiredRef.current = true;
-            setIncomingHail('fuel-station');
-            queueMessage(
-              {
-                id: 'n51744x-hail-incoming',
-                from: 'N51744X',
-                subject: 'INCOMING HAIL',
-                body: 'This is N51744X fuel depot. We have you on approach.\nIdentify your vessel and state your business.\n\n— N51744X COMMS',
-                platform: RADIO_COMMS_PLATFORM,
-              },
-              2500
-            );
-          }
-
-          const km = dist * KM_PER_UNIT;
-          const distLabel =
-            km >= 1_000_000
-              ? `${(km / 1_000_000).toFixed(2)} Gm`
-              : km >= 1_000
-                ? `${(km / 1_000).toFixed(1)} Mm`
-                : `${km.toFixed(0)} km`;
-          const inRadioRange = isWithinRadioRange(dist);
-          const inPassiveRange = isWithinPassiveRadioRange(dist);
-          newBcasts.push({
-            entry,
-            distanceLabel: distLabel,
-            distanceRaw: dist,
-            inRadioRange,
-            inPassiveRange,
-          });
+        if (
+          entry.id === 'fuel-station' &&
+          !fuelStationHailFiredRef.current &&
+          dist <= 10000 &&
+          isWithinPassiveRadioRange(dist)
+        ) {
+          fuelStationHailFiredRef.current = true;
+          setIncomingHail('fuel-station');
+          queueMessage(
+            {
+              id: 'n51744x-hail-incoming',
+              from: 'N51744X',
+              subject: 'INCOMING HAIL',
+              body: 'This is N51744X fuel depot. We have you on approach.\nIdentify your vessel and state your business.\n\n— N51744X COMMS',
+              platform: RADIO_COMMS_PLATFORM,
+            },
+            2500
+          );
         }
 
-        const bcastSig = newBcasts
-          .map((b) => `${b.entry.id}:${b.inRadioRange ? 1 : 0}:${b.inPassiveRange ? 1 : 0}`)
-          .join('|');
-        if (bcastSig !== prevBcastSigRef.current) {
-          prevBcastSigRef.current = bcastSig;
-          setBroadcastContacts(newBcasts);
-        }
+        const km = dist * KM_PER_UNIT;
+        const distLabel =
+          km >= 1_000_000
+            ? `${(km / 1_000_000).toFixed(2)} Gm`
+            : km >= 1_000
+              ? `${(km / 1_000).toFixed(1)} Mm`
+              : `${km.toFixed(0)} km`;
+        const inRadioRange = isWithinRadioRange(dist);
+        const inPassiveRange = isWithinPassiveRadioRange(dist);
+        newBcasts.push({
+          entry,
+          distanceLabel: distLabel,
+          distanceRaw: dist,
+          inRadioRange,
+          inPassiveRange,
+        });
       }
 
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+      const bcastSig = newBcasts
+        .map((b) => `${b.entry.id}:${b.inRadioRange ? 1 : 0}:${b.inPassiveRange ? 1 : 0}`)
+        .join('|');
+      if (bcastSig !== prevBcastSigRef.current) {
+        prevBcastSigRef.current = bcastSig;
+        setBroadcastContacts(newBcasts);
+      }
+    }
+  });
 
   useEffect(() => {
     const onOpenContactComms = (e: Event) => {

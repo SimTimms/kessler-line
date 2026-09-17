@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useFrameUpdate } from '../../../hooks/useFrameUpdate';
 import { Zap, Shield, Droplets, Wind, Activity, AlertTriangle, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -258,23 +259,16 @@ export function HelmetCargoHUD() {
   const [ejectState, setEjectState] = useState<EjectState | null>(null);
   const [dockTransferUi, setDockTransferUi] = useState(getDockTransferUi);
 
-  useEffect(() => {
-    let rafId: number;
-    let prevCargoFp = -1;
-    const update = () => {
-      rafId = requestAnimationFrame(update);
-      // Fingerprint covers both array length and total item quantities so we
-      // detect individual stack changes (e.g. using a hull repair patch).
-      let fp = cargo.length;
-      for (const c of cargo) fp = fp * 31 + c.quantity;
-      if (fp !== prevCargoFp) {
-        prevCargoFp = fp;
-        setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
-      }
-    };
-    rafId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafId);
-  }, []);
+  const prevCargoFpRef = useRef(-1);
+  useFrameUpdate(() => {
+    // Fingerprint covers both array length and total item quantities so we
+    // detect individual stack changes (e.g. using a hull repair patch).
+    let fp = cargo.length;
+    for (const c of cargo) fp = fp * 31 + c.quantity;
+    if (fp === prevCargoFpRef.current) return;
+    prevCargoFpRef.current = fp;
+    setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
+  });
 
   useEffect(() => {
     const onUi = () => setDockTransferUi(getDockTransferUi());
@@ -329,75 +323,72 @@ export default function PowerHUD({
   const [ventKind, setVentKind] = useState<VentResourceKind | null>(null);
   const [dockTransferUi, setDockTransferUi] = useState(getDockTransferUi);
 
-  useEffect(() => {
-    let rafId: number;
-    let prevPower = -1,
-      prevHull = -1,
-      prevFuel = -1,
-      prevO2 = -1;
-    let prevAmmo = -1,
-      prevAmmoCap = -1,
-      prevCrew = -1;
-    let prevVelocity = -1,
-      prevCargoFp = -1;
+  // Previous rendered values, so a tick only sets state for what actually moved.
+  const prevRef = useRef({
+    power: -1,
+    hull: -1,
+    fuel: -1,
+    o2: -1,
+    ammo: -1,
+    ammoCap: -1,
+    crew: -1,
+    velocity: -1,
+    cargoFp: -1,
+  });
 
-    const update = () => {
-      rafId = requestAnimationFrame(update);
+  useFrameUpdate(() => {
+    const prev = prevRef.current;
+    const p = Math.floor(power);
+    const h = Math.floor(hullIntegrity);
+    const f = Math.floor(fuel);
+    const o = Math.floor(o2);
+    const a = ammo;
+    const ac = ammoCapacity;
+    const v = getShipSpeedMps();
+    const cr = Math.floor(shipCrew);
+    // Fingerprint covers both array length and total item quantities so we
+    // detect individual stack changes (e.g. using a hull repair patch).
+    let cargoFp = cargo.length;
+    for (const c of cargo) cargoFp = cargoFp * 31 + c.quantity;
 
-      const p = Math.floor(power);
-      const h = Math.floor(hullIntegrity);
-      const f = Math.floor(fuel);
-      const o = Math.floor(o2);
-      const a = ammo;
-      const ac = ammoCapacity;
-      const v = getShipSpeedMps();
-      const cr = Math.floor(shipCrew);
-      // Fingerprint covers both array length and total item quantities so we
-      // detect individual stack changes (e.g. using a hull repair patch).
-      let cargoFp = cargo.length;
-      for (const c of cargo) cargoFp = cargoFp * 31 + c.quantity;
-
-      if (p !== prevPower) {
-        prevPower = p;
-        setDisplayPower(p);
-      }
-      if (h !== prevHull) {
-        prevHull = h;
-        setDisplayHull(h);
-      }
-      if (f !== prevFuel) {
-        prevFuel = f;
-        setDisplayFuel(f);
-      }
-      if (o !== prevO2) {
-        prevO2 = o;
-        setDisplayO2(o);
-      }
-      if (a !== prevAmmo) {
-        prevAmmo = a;
-        setDisplayAmmo(a);
-      }
-      if (ac !== prevAmmoCap) {
-        prevAmmoCap = ac;
-        setDisplayAmmoCapacity(ac);
-      }
-      if (cr !== prevCrew) {
-        prevCrew = cr;
-        setDisplayCrew(cr);
-      }
-      const vRounded = Math.round(v * 10);
-      if (vRounded !== prevVelocity) {
-        prevVelocity = vRounded;
-        setDisplayVelocity(v);
-      }
-      if (cargoFp !== prevCargoFp) {
-        prevCargoFp = cargoFp;
-        setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
-      }
-    };
-    rafId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafId);
-  }, []);
+    if (p !== prev.power) {
+      prev.power = p;
+      setDisplayPower(p);
+    }
+    if (h !== prev.hull) {
+      prev.hull = h;
+      setDisplayHull(h);
+    }
+    if (f !== prev.fuel) {
+      prev.fuel = f;
+      setDisplayFuel(f);
+    }
+    if (o !== prev.o2) {
+      prev.o2 = o;
+      setDisplayO2(o);
+    }
+    if (a !== prev.ammo) {
+      prev.ammo = a;
+      setDisplayAmmo(a);
+    }
+    if (ac !== prev.ammoCap) {
+      prev.ammoCap = ac;
+      setDisplayAmmoCapacity(ac);
+    }
+    if (cr !== prev.crew) {
+      prev.crew = cr;
+      setDisplayCrew(cr);
+    }
+    const vRounded = Math.round(v * 10);
+    if (vRounded !== prev.velocity) {
+      prev.velocity = vRounded;
+      setDisplayVelocity(v);
+    }
+    if (cargoFp !== prev.cargoFp) {
+      prev.cargoFp = cargoFp;
+      setDisplayCargo(cargo.length > 0 ? [...cargo] : []);
+    }
+  });
 
   useEffect(() => {
     const onUi = () => setDockTransferUi(getDockTransferUi());

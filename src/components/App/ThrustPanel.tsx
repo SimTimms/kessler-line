@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react';
+import { useFrameUpdate } from '../../hooks/useFrameUpdate';
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import {
   thrustMultiplier,
@@ -58,20 +59,14 @@ const ThrustPanel = memo(function ThrustPanel({
   const isDanger = thrustLevel >= 2;
 
   // Keep level in sync with zone selection cap while dial visual max stays fixed.
-  useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      const nextMax = getThrustSelectableMax();
-      setThrustLevel((prev) => {
-        if (prev <= nextMax) return prev;
-        syncPhysicsMultiplier(nextMax);
-        return nextMax;
-      });
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [setThrustLevel]);
+  useFrameUpdate(() => {
+    const nextMax = getThrustSelectableMax();
+    setThrustLevel((prev) => {
+      if (prev <= nextMax) return prev;
+      syncPhysicsMultiplier(nextMax);
+      return nextMax;
+    });
+  });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

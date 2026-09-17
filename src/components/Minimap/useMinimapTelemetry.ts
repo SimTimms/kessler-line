@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useFrameUpdate } from '../../hooks/useFrameUpdate';
 import * as THREE from 'three';
 import { PLANETS } from '../Planets/SolarSystemConfig';
 import { SOLAR_SYSTEM_SCALE, SUN_WORLD_RADIUS } from '../../config/solarConfig';
@@ -633,12 +634,10 @@ export function useMinimapTelemetry({
   showSolarSystem,
   followShip,
   setPanCenter,
-  zoomHalfSpan,
 }: {
   showSolarSystem: boolean;
   followShip: boolean;
   setPanCenter: (center: PanCenter) => void;
-  zoomHalfSpan: number;
 }) {
   const [markers, setMarkers] = useState<(Marker | UnifiedMarker)[]>([]);
   const [vectorWorld, setVectorWorld] = useState<VectorWorld>({
@@ -657,155 +656,148 @@ export function useMinimapTelemetry({
   const trajectoryFrameCounterRef = useRef(0);
   const trajectoryCacheRef = useRef<PathPoint[]>([]);
 
-  useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      const ship = shipPosRef.current;
-      if (followShip) {
-        setPanCenter({ x: ship.x, z: ship.z });
-      }
-      const heading = shipHeadingDegFromQuaternion();
-      setShipHeadingDeg(heading);
+  useFrameUpdate(() => {
+    const ship = shipPosRef.current;
+    if (followShip) {
+      setPanCenter({ x: ship.x, z: ship.z });
+    }
+    const heading = shipHeadingDegFromQuaternion();
+    setShipHeadingDeg(heading);
 
-      const next: Marker[] = [];
-      if (showSolarSystem) pushSolarSystemMarkers(next);
+    const next: Marker[] = [];
+    if (showSolarSystem) pushSolarSystemMarkers(next);
 
+    next.push({
+      id: 'ship',
+      label: 'Your Ship',
+      x: ship.x,
+      z: ship.z,
+      kind: 'ship',
+    });
+
+    if (hasNavTarget()) {
+      const navPos = resolveNavTargetPos();
       next.push({
-        id: 'ship',
-        label: 'Your Ship',
-        x: ship.x,
-        z: ship.z,
-        kind: 'ship',
+        id: 'nav-target',
+        label: `Nav Target (${navTargetIdRef.current})`,
+        x: navPos.x,
+        z: navPos.z,
+        kind: 'nav',
       });
+    }
 
-      if (hasNavTarget()) {
-        const navPos = resolveNavTargetPos();
-        next.push({
-          id: 'nav-target',
-          label: `Nav Target (${navTargetIdRef.current})`,
-          x: navPos.x,
-          z: navPos.z,
-          kind: 'nav',
-        });
-      }
-
-      // Gravity turns the predicted path into a curve, so only run the worker inside a planet SOI.
-      const velLen = Math.hypot(shipVelocity.x, shipVelocity.z);
-      const isShipMovingForTrajectory =
-        velLen > SHIP_DIRECTION_MIN_SPEED && isShipInsidePlanetSoi(ship);
-      trajectoryFrameCounterRef.current += 1;
-      if (isShipMovingForTrajectory) {
-        if (
-          trajectoryCacheRef.current.length === 0 ||
-          trajectoryFrameCounterRef.current % MINIMAP_TRAJECTORY_UPDATE_FRAMES === 0
-        ) {
-          requestTrajectory(
-            'minimap',
-            ship.x,
-            ship.z,
-            shipVelocity.x,
-            shipVelocity.z,
-            snapshotGravityBodies(),
-            {
-              steps: MINIMAP_TRAJECTORY_RESAMPLED_STEPS,
-              dt: MINIMAP_TRAJECTORY_RESAMPLED_DT,
-              detectOrbitClosure: true,
-              trackApsides: false,
-              adaptiveDt: true,
-            },
-            (result) => {
-              const { positions, activeSteps } = result;
-              const pts: PathPoint[] = new Array(activeSteps);
-              for (let i = 0; i < activeSteps; i++) {
-                pts[i] = { x: positions[i * 2], z: positions[i * 2 + 1] };
-              }
-              trajectoryCacheRef.current = pts;
+    // Gravity turns the predicted path into a curve, so only run the worker inside a planet SOI.
+    const velLen = Math.hypot(shipVelocity.x, shipVelocity.z);
+    const isShipMovingForTrajectory =
+      velLen > SHIP_DIRECTION_MIN_SPEED && isShipInsidePlanetSoi(ship);
+    trajectoryFrameCounterRef.current += 1;
+    if (isShipMovingForTrajectory) {
+      if (
+        trajectoryCacheRef.current.length === 0 ||
+        trajectoryFrameCounterRef.current % MINIMAP_TRAJECTORY_UPDATE_FRAMES === 0
+      ) {
+        requestTrajectory(
+          'minimap',
+          ship.x,
+          ship.z,
+          shipVelocity.x,
+          shipVelocity.z,
+          snapshotGravityBodies(),
+          {
+            steps: MINIMAP_TRAJECTORY_RESAMPLED_STEPS,
+            dt: MINIMAP_TRAJECTORY_RESAMPLED_DT,
+            detectOrbitClosure: true,
+            trackApsides: false,
+            adaptiveDt: true,
+          },
+          (result) => {
+            const { positions, activeSteps } = result;
+            const pts: PathPoint[] = new Array(activeSteps);
+            for (let i = 0; i < activeSteps; i++) {
+              pts[i] = { x: positions[i * 2], z: positions[i * 2 + 1] };
             }
-          );
-        }
-      } else {
-        trajectoryCacheRef.current = [];
+            trajectoryCacheRef.current = pts;
+          }
+        );
       }
+    } else {
+      trajectoryCacheRef.current = [];
+    }
 
-      setVectorWorld({
-        nav: resolveTargetPoint(),
-        velocityPath: isShipMovingForTrajectory ? trajectoryCacheRef.current : [],
-        shipX: ship.x,
-        shipZ: ship.z,
-      });
+    setVectorWorld({
+      nav: resolveTargetPoint(),
+      velocityPath: isShipMovingForTrajectory ? trajectoryCacheRef.current : [],
+      shipX: ship.x,
+      shipZ: ship.z,
+    });
 
-      pushScanGroup(
-        next,
-        getDriveSignatures(),
-        ship,
-        driveSignatureOnRef.current && driveSignatureRangeRef.current > 0,
-        driveSignatureRangeRef.current,
-        'drive',
-        'drive'
-      );
-      pushScanGroup(
-        next,
-        getMagneticTargets(),
-        ship,
-        magneticOnRef.current && magneticScanRangeRef.current > 0,
-        magneticScanRangeRef.current,
-        'mag',
-        'mag'
-      );
-      pushScanGroup(
-        next,
-        getRadioBroadcasts(),
-        ship,
-        radioOnRef.current && radioRangeRef.current > 0,
-        radioRangeRef.current,
-        'radio',
-        'radio'
-      );
+    pushScanGroup(
+      next,
+      getDriveSignatures(),
+      ship,
+      driveSignatureOnRef.current && driveSignatureRangeRef.current > 0,
+      driveSignatureRangeRef.current,
+      'drive',
+      'drive'
+    );
+    pushScanGroup(
+      next,
+      getMagneticTargets(),
+      ship,
+      magneticOnRef.current && magneticScanRangeRef.current > 0,
+      magneticScanRangeRef.current,
+      'mag',
+      'mag'
+    );
+    pushScanGroup(
+      next,
+      getRadioBroadcasts(),
+      ship,
+      radioOnRef.current && radioRangeRef.current > 0,
+      radioRangeRef.current,
+      'radio',
+      'radio'
+    );
 
-      const collidables = getCollidables().slice(0, MAX_MARKERS_PER_GROUP);
-      const hardOverlayIds = pushHardObjectMarkers(next, collidables);
-      const nearestDock = collectDockingBays(next, collidables, ship, nearestDockDistance);
-      pushProximityMarkers(
-        next,
-        collidables,
-        ship,
-        hardOverlayIds,
-        proximityScanOnRef.current && proximityScanRangeRef.current > 0
-      );
+    const collidables = getCollidables().slice(0, MAX_MARKERS_PER_GROUP);
+    const hardOverlayIds = pushHardObjectMarkers(next, collidables);
+    const nearestDock = collectDockingBays(next, collidables, ship, nearestDockDistance);
+    pushProximityMarkers(
+      next,
+      collidables,
+      ship,
+      hardOverlayIds,
+      proximityScanOnRef.current && proximityScanRangeRef.current > 0
+    );
 
-      setMarkers(mergeMarkersByEntity(next));
+    setMarkers(mergeMarkersByEntity(next));
 
-      if (nearestDock) {
-        if (
-          nearestDock.captureMode === 'hover' &&
-          lastPadScanDockIdRef.current !== nearestDock.id
-        ) {
-          lastPadScanDockIdRef.current = nearestDock.id;
-          beginPadScan(nearestDock.id);
-        } else if (nearestDock.captureMode !== 'hover') {
-          lastPadScanDockIdRef.current = null;
-        }
-        setDockingAssist(buildDockingAssist(nearestDock, ship, heading));
-        setOrbitAssist(null);
-      } else {
+    if (nearestDock) {
+      if (
+        nearestDock.captureMode === 'hover' &&
+        lastPadScanDockIdRef.current !== nearestDock.id
+      ) {
+        lastPadScanDockIdRef.current = nearestDock.id;
+        beginPadScan(nearestDock.id);
+      } else if (nearestDock.captureMode !== 'hover') {
         lastPadScanDockIdRef.current = null;
-        setDockingAssist(null);
-
-        const primary = findPrimaryGravityBody(ship);
-        if (primary) {
-          // Always anchor ORB path at current ship position.
-          const predictedPath = [{ x: ship.x, z: ship.z }, ...trajectoryCacheRef.current];
-          setOrbitAssist(buildOrbitAssist(primary.id, primary.body, ship, predictedPath));
-        } else {
-          setOrbitAssist(null);
-        }
       }
+      setDockingAssist(buildDockingAssist(nearestDock, ship, heading));
+      setOrbitAssist(null);
+    } else {
+      lastPadScanDockIdRef.current = null;
+      setDockingAssist(null);
 
-      raf = window.requestAnimationFrame(tick);
-    };
-    raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
-  }, [followShip, showSolarSystem, zoomHalfSpan, setPanCenter]);
+      const primary = findPrimaryGravityBody(ship);
+      if (primary) {
+        // Always anchor ORB path at current ship position.
+        const predictedPath = [{ x: ship.x, z: ship.z }, ...trajectoryCacheRef.current];
+        setOrbitAssist(buildOrbitAssist(primary.id, primary.body, ship, predictedPath));
+      } else {
+        setOrbitAssist(null);
+      }
+    }
+  });
 
   return { markers, vectorWorld, shipHeadingDeg, dockingAssist, orbitAssist };
 }

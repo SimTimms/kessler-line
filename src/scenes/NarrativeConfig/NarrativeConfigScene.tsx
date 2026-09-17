@@ -7,8 +7,6 @@ import { shipPosRef } from '../../context/ShipPos';
 import DeployedSatellite from '../../config/events/satellite-mission/DeployedSatellite';
 import LaserRay from '../../components/Combat/LaserRay';
 import PlayerBullets from '../../components/Combat/PlayerBullets';
-import TorpedoManager from '../../components/Combat/TorpedoManager';
-import DoningtonTorpedoLaunch from '../../components/Combat/DoningtonTorpedoLaunch';
 import PlayerCannonHitDamage from '../../components/Combat/PlayerCannonHitDamage';
 import BreakupVfx from '../../components/Combat/BreakupVfx';
 import SharedInteractionSceneTools from '../../components/SharedInteractionSceneTools';
@@ -55,6 +53,7 @@ import { BAKERFIELD_FALLS_DOCK_CONFIG } from '../../config/landingPads/bakerfiel
 import { registerDock } from '../../context/DockablePartnerStore';
 import NarrativeConfigCanvas from './NarrativeConfigCanvas';
 import SceneDrawCallBreakdown from '../../components/Debug/SceneDrawCallBreakdown';
+import { Perf } from 'r3f-perf';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
@@ -131,17 +130,6 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
   const worldContent = (
     <>
-      <SceneDrawCallBreakdown />
-      <ambientLight intensity={lighting.ambientIntensity} />
-      <directionalLight
-        position={[0, 300, -1000]}
-        intensity={3}
-        color="#ff8819"
-        castShadow
-        receiveShadow
-      />
-      <SkySphere />
-      <SpaceParticles />
       <Suspense fallback={null}>
         <Spaceship
           url="/models/shuttle-low-british.glb"
@@ -168,11 +156,11 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
             dockingPhysicsEnabled: true,
           }}
         />
+      </Suspense>
+      <Suspense fallback={null}>
         <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
         <PlayerBullets shipGroupRef={spaceshipGroupRef} />
         <PlayerCannonHitDamage />
-        <TorpedoManager />
-        <DoningtonTorpedoLaunch />
         <BreakupVfx />
         <SolarSystem scale={solarSystemScale} />
         <SalvageField
@@ -250,7 +238,8 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
   return (
     <NarrativeConfigCanvas>
-      <fogExp2 attach="fog" args={[fogColor, 0.0000005]} />
+      <Perf position="top-right" />
+      <fogExp2 attach="fog" args={[fogColor, 0.0005]} />
       <TutorialFollowCamera
         followTarget={shipPosRef}
         followOffset={tutorialFollowOffset}

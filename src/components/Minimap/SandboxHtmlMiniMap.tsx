@@ -49,7 +49,6 @@ export default function SandboxHtmlMiniMap({ showSolarSystem = true }: SandboxHt
     showSolarSystem,
     followShip,
     setPanCenter,
-    zoomHalfSpan,
   });
 
   // Panel toggle — lets the user switch between chart, dock, pad, and orbit views.

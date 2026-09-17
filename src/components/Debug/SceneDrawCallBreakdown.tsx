@@ -12,7 +12,9 @@ interface ChildSummary {
 }
 
 function countDrawables(obj: THREE.Object3D): { meshes: number; lines: number; points: number } {
-  let meshes = 0, lines = 0, points = 0;
+  let meshes = 0,
+    lines = 0,
+    points = 0;
   obj.traverse((child) => {
     if (!child.visible) return;
     if (child instanceof THREE.Mesh) meshes++;
@@ -66,7 +68,7 @@ function dumpBreakdown(state: RootState) {
           const tex = val as THREE.Texture;
           if (texMap.has(tex.uuid)) return;
 
-          const img = tex.image as (HTMLImageElement | null | undefined);
+          const img = tex.image as HTMLImageElement | null | undefined;
           const src = img?.src ?? img?.currentSrc ?? '';
           let textureName: string;
           if (src) {
@@ -129,7 +131,11 @@ export default function SceneDrawCallBreakdown() {
     function onKeyDown(e: KeyboardEvent) {
       if (e.code !== 'KeyB' || e.repeat) return;
       const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement | null)?.isContentEditable) {
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        (e.target as HTMLElement | null)?.isContentEditable
+      ) {
         return;
       }
       e.preventDefault();
@@ -143,7 +149,7 @@ export default function SceneDrawCallBreakdown() {
     btn.textContent = 'DUMP SCENE (B)';
     Object.assign(btn.style, {
       position: 'fixed',
-      top: '10px',
+      top: '140px',
       right: '10px',
       zIndex: '10000',
       padding: '6px 10px',
