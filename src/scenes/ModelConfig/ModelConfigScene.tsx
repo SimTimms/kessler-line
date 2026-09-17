@@ -100,6 +100,7 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
         enableZoom
         enableRotate
       />
+      {/*
       <DustCloud
         radius={SpaceshipConfig.dustCloud.radius}
         particleSize={10000}
@@ -112,6 +113,7 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
         ]}
         opacity={0.2}
       />
+      */}
       {/* used to fire collision objects at the ship */}
       <CollisionPhysicsTestRig
         enabled
