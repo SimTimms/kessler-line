@@ -6,7 +6,7 @@ import './modelConfig.css';
 import FireButtons from './FireButtons';
 export default function ModelConfig() {
   const [collisionMeshVisible, setCollisionMeshVisible] = useState(false);
-  const [useVolumetricFog, setUseVolumetricFog] = useState(true);
+  const [useVolumetricFog, setUseVolumetricFog] = useState(0);
 
   return (
     <AppContainer>

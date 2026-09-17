@@ -8,13 +8,13 @@ import { useState } from 'react';
 interface FireButtonsProps {
   collisionMeshVisible: boolean;
   setCollisionMeshVisible: (visible: boolean) => void;
-  useVolumetricFog: boolean;
-  setUseVolumetricFog: (use: boolean) => void;
+  useVolumetricFog: number;
+  setUseVolumetricFog: (use: number) => void;
 }
 export default function FireButtons({
   collisionMeshVisible = false,
   setCollisionMeshVisible = () => {},
-  useVolumetricFog = true,
+  useVolumetricFog = 0,
   setUseVolumetricFog = () => {},
 }: FireButtonsProps) {
   const [collisionTestActive, setCollisionTestActive] = useState(false);
@@ -76,7 +76,7 @@ export default function FireButtons({
           type="button"
           className="mc-collision-test-button"
           onClick={() => {
-            setUseVolumetricFog(!useVolumetricFog);
+            setUseVolumetricFog(useVolumetricFog < 10 ? useVolumetricFog + 1 : 0);
           }}
         >
           Volumetric Fog

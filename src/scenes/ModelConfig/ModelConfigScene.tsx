@@ -26,17 +26,16 @@ function CameraCapture() {
 
 interface ModelConfigSceneProps {
   showCollisionDebug?: boolean;
-  useVolumetricFog?: boolean;
+  useVolumetricFog?: number;
 }
 
 export default function ModelConfigScene({
   showCollisionDebug = false,
-  useVolumetricFog = true,
+  useVolumetricFog = 1,
 }: ModelConfigSceneProps) {
   useEffect(() => {
     shipPosRef.current.set(0, 0, 0);
   }, []);
-  console.log('useVolumetricFog', useVolumetricFog);
   return (
     <Canvas
       style={{
@@ -66,13 +65,13 @@ export default function ModelConfigScene({
       <ambientLight intensity={0.7} />
       <directionalLight position={[140, 100, 240]} intensity={14.4} color="#ff6600" />
       <directionalLight position={[-140, 10, 240]} intensity={4.4} color="#ffffff" />
-      {useVolumetricFog && (
+      {useVolumetricFog > 0 && (
         <VolumetricFog
           position={[0, 0, 0]}
           radius={100}
           color="#ff00ff"
-          density={10.6}
-          steps={24}
+          density={useVolumetricFog * 1}
+          steps={2 * useVolumetricFog}
           octaves={3}
         />
       )}
