@@ -5,7 +5,6 @@ import * as THREE from 'three';
 import { Perf } from 'r3f-perf';
 import { shipPosRef } from '../../context/ShipPos';
 import { sceneCamera } from '../../context/CameraRef';
-import DustCloud from '../../components/DustCloud/DustCloud';
 import CollisionPhysicsTestRig from '../../components/Debug/CollisionPhysicsTestRig';
 import CollisionDebug from '../../components/Debug/CollisionDebug';
 import Spaceship from '../../components/Ship/Spaceship';
@@ -27,13 +26,17 @@ function CameraCapture() {
 
 interface ModelConfigSceneProps {
   showCollisionDebug?: boolean;
+  useVolumetricFog?: boolean;
 }
 
-export default function ModelConfigScene({ showCollisionDebug = false }: ModelConfigSceneProps) {
+export default function ModelConfigScene({
+  showCollisionDebug = false,
+  useVolumetricFog = true,
+}: ModelConfigSceneProps) {
   useEffect(() => {
     shipPosRef.current.set(0, 0, 0);
   }, []);
-
+  console.log('useVolumetricFog', useVolumetricFog);
   return (
     <Canvas
       style={{
@@ -63,14 +66,16 @@ export default function ModelConfigScene({ showCollisionDebug = false }: ModelCo
       <ambientLight intensity={0.7} />
       <directionalLight position={[140, 100, 240]} intensity={14.4} color="#ff6600" />
       <directionalLight position={[-140, 10, 240]} intensity={4.4} color="#ffffff" />
-      <VolumetricFog
-        position={[0, 0, 0]}
-        radius={100}
-        color="#ff00ff"
-        density={10.6}
-        steps={24}
-        octaves={3}
-      />
+      {useVolumetricFog && (
+        <VolumetricFog
+          position={[0, 0, 0]}
+          radius={100}
+          color="#ff00ff"
+          density={10.6}
+          steps={24}
+          octaves={3}
+        />
+      )}
       <gridHelper
         args={[SpaceshipConfig.gridSize, SpaceshipConfig.gridDivisions, '#006666', '#003333']}
       />
