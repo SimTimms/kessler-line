@@ -44,6 +44,7 @@ import {
   dockContactThreadId,
   dockJobThreadId,
   DOCK_ROLE_LABELS,
+  DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE,
   parseDockThreadId,
   type DockContact,
   type DockDialogueTree,
@@ -692,7 +693,10 @@ export default function ContactsHUD({
               canRequestDockPermission={shouldEnableDockPermissionRequest(chatShipId)}
               isDockPermissionGranted={chatDockPermissionGranted}
               onRequestDockPermission={() => {
-                const chance = clampChance(getDock(chatShipId)?.dockRequestAcceptanceChance, 0.7);
+                const chance = clampChance(
+                  getDock(chatShipId)?.dockRequestAcceptanceChance,
+                  DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE
+                );
                 const accepted = Math.random() <= chance;
                 setHailStatus(chatShipId, 'accepted');
                 if (accepted) {

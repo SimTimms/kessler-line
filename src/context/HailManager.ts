@@ -11,6 +11,7 @@ import {
 } from './RadioBroadcastRegistry';
 import { addMessage, queueMessage, markRead } from './MessageStore';
 import { getDock } from './DockablePartnerStore';
+import { DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE } from '../config/dockConfig';
 import { assignDialogueTree, SATURN_STARTER_DIALOGUE_TREE_ID } from '../narrative/npcDialogues';
 import { getSettlementByObjectId } from './SettlementTracker';
 import { getSettlementHailPreview } from '../narrative/settlementRadio';
@@ -133,7 +134,7 @@ export function clampChance(value: number | undefined, fallback: number): number
 export function getHailAcceptanceChance(contactId: string): number {
   const dock = getDock(contactId);
   if (dock) {
-    return clampChance(dock.hailAcceptanceChance, 0.7);
+    return clampChance(dock.hailAcceptanceChance, DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE);
   }
   return 0.7;
 }

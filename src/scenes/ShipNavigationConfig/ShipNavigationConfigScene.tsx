@@ -8,7 +8,6 @@ import DustCloud from '../../components/DustCloud/DustCloud';
 import TutorialFollowCamera from '../../components/TutorialShared/TutorialFollowCamera';
 import GravityTestPlanet from './GravityTestPlanet';
 import BodyPhysics from '../../components/BodyPhysics/BodyPhysics';
-import { calcOrbitalVelocity } from '../../config/bodyPhysicsConfig';
 import { minimapShipPosition } from '../../context/MinimapShipPosition';
 import { shipPosRef } from '../../context/ShipPos';
 import {
@@ -22,9 +21,6 @@ const NAV_SCENE_FOG = '#000000';
 
 const PLANET_1_POS: [number, number, number] = [-2000, -1000, 0];
 const PLANET_1_MASS = 10000;
-const PLANET_2_POS: [number, number, number] = [300, -1000, -6600];
-const PLANET_2_MASS = 10;
-const PLANET_2_VELOCITY = calcOrbitalVelocity(PLANET_1_MASS, PLANET_2_POS, PLANET_1_POS);
 
 interface ShipNavigationConfigSceneProps {
   gravityEnabled?: boolean;

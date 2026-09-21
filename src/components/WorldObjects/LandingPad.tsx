@@ -14,7 +14,12 @@ import {
 } from '../../context/DriveSignatureRegistry';
 import { selectTarget } from '../../context/TargetSelection';
 import DockingBay from './DockingBay';
-import type { DockConfig } from '../../config/dockConfig';
+import {
+  DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE,
+  DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE,
+  type DockConfig,
+} from '../../config/dockConfig';
+import { useRegisterDock } from '../../hooks/useRegisterDockablePartner';
 import { LANDING_PAD_DOCK_CAPTURE_PROFILE } from '../../config/dockCaptureConfig';
 import {
   LANDING_PAD_DOCKING_BAY_ACTIVATION_RANGE,
@@ -61,7 +66,10 @@ interface LandingPadProps {
    * Multiplied by `scale` at runtime. Defaults to {@link LANDING_PAD_PLATFORM_MEET_OFFSET_Y}.
    */
   landPadMeetOffsetY?: number;
-  /** Register this pad as a radio contact/broadcast source. */
+  /**
+   * Register this pad as a radio contact (hail + dock request).
+   * Default true — every landing pad is hailable unless opted out.
+   */
   radioBroadcastEnabled?: boolean;
   /** Optional custom passive lines shown in radio contact UI. */
   radioDialogue?: string[];
@@ -79,7 +87,7 @@ export default function LandingPad({
   landingPadThreshold = LANDING_PAD_DOCK_CAPTURE_PROFILE.captureRadius,
   landingPadGroupRef,
   landPadMeetOffsetY = LANDING_PAD_PLATFORM_MEET_OFFSET_Y,
-  radioBroadcastEnabled = false,
+  radioBroadcastEnabled = true,
   radioDialogue,
   radioDockingBay,
   driveSignatureEnabled = false,
@@ -115,6 +123,17 @@ export default function LandingPad({
     }),
     [landingPadThreshold]
   );
+  const registeredDock = useMemo<DockConfig>(
+    () => ({
+      label,
+      ...dock,
+      hailAcceptanceChance: dock?.hailAcceptanceChance ?? DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE,
+      dockRequestAcceptanceChance:
+        dock?.dockRequestAcceptanceChance ?? DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE,
+    }),
+    [dock, label]
+  );
+  useRegisterDock(id, registeredDock);
 
   useEffect(() => {
     landPadRestLocalYRef.current = landPadAuthoringY;
@@ -284,21 +303,19 @@ export default function LandingPad({
           selectTarget(label);
         }}
       >
-        <PowerSource scale={1} />
-        {/* Scale on a wrapper + Y offset so rest world height stays authoring-Y at any scale. */}
         <group position={[0, modelRootOffsetY, 0]} scale={padScale}>
           <primitive object={modelScene} />
         </group>
-        {/* Keep the docking anchor at pad center so X/Z threshold checks match landing-pad position. */}
         {dockingBayActive ? (
           <group position={[0, 6, 0]}>
             <DockingBay
               stationId={id}
               dimensions={new THREE.Vector3(40, 2, 10)}
               rotation={[0, 0, 0]}
-              dock={dock}
+              dock={registeredDock}
               dockingProfile={dockingProfile}
               showCaptureMesh={false}
+              registerDockConfig={false}
             />
           </group>
         ) : null}

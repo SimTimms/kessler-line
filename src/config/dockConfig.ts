@@ -19,6 +19,8 @@ export type DockCharacterRole =
   | 'trader'
   | 'system'
   | 'quartermaster'
+  | 'capitaine-de-fregate'
+  | 'second-maitre'
   | 'police';
 
 export type DockTradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
@@ -36,6 +38,8 @@ export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   police: 'Security',
   system: 'System',
   quartermaster: 'Quartermaster',
+  'capitaine-de-fregate': 'Capitaine de fregate',
+  'second-maitre': 'Second-maître',
 };
 
 export interface DockTradeTurnConfig {
@@ -189,12 +193,22 @@ export interface DockJob {
  * Per-dock configuration passed as a prop on `DockingBay`. Each bay carries its
  * own name, resources, crew, and interior comms contacts — no central registry.
  */
+/** Landing pads hail and grant dock permission unless a dock overrides these. */
+export const DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE = 1;
+export const DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE = 1;
+
 export interface DockConfig {
   /** Display name for this dock / station. */
   label: string;
-  /** Chance an inbound hail is accepted on first response (0..1). */
+  /**
+   * Chance an inbound hail is accepted on first response (0..1).
+   * Landing pads default to {@link DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE}.
+   */
   hailAcceptanceChance?: number;
-  /** Chance a dock permission request is granted after comms are established (0..1). */
+  /**
+   * Chance a dock permission request is granted after comms are established (0..1).
+   * Landing pads default to {@link DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE}.
+   */
   dockRequestAcceptanceChance?: number;
   /**
    * Public URL for the dock transfer HUD background (e.g. `/textures/station.jpg`).

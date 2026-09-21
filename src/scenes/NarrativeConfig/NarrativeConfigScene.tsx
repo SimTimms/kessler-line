@@ -239,6 +239,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   return (
     <NarrativeConfigCanvas>
       <Perf position="top-right" />
+      <directionalLight position={[2, 1, 0]} intensity={4} color={0xdd7777} castShadow />
       <fogExp2 attach="fog" args={[fogColor, 0.0005]} />
       <TutorialFollowCamera
         followTarget={shipPosRef}

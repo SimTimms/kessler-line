@@ -22,6 +22,11 @@ interface DockingBayProps {
   dockingProfile?: DockCaptureProfile;
   /** Render the translucent capture box mesh (debug/authoring aid). */
   showCaptureMesh?: boolean;
+  /**
+   * When false, skip dock-config registration (LandingPad owns that for the
+   * pad lifetime so proximity unmount does not drop hail/dock chances).
+   */
+  registerDockConfig?: boolean;
 }
 
 export default function DockingBay({
@@ -34,11 +39,12 @@ export default function DockingBay({
   dock,
   dockingProfile,
   showCaptureMesh = true,
+  registerDockConfig = true,
 }: DockingBayProps) {
   const COLLISION_ID = stationId ? `docking-bay-${stationId}` : `docking-bay-${Math.random()}`;
 
   const dockConfig = useMemo(() => dock ?? null, [dock]);
-  useRegisterDock(stationId, dockConfig);
+  useRegisterDock(registerDockConfig ? stationId : undefined, registerDockConfig ? dockConfig : null);
 
   const groupRef = useRef<THREE.Group>(null!);
 

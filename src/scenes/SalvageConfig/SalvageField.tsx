@@ -37,7 +37,7 @@ export interface SalvageFieldProps {
   showCargoContainer?: boolean;
   /** Drone atmosphere. Default false. */
   showDroneAtmosphere?: boolean;
-  /** Register ship berth landing pad as a radio contact. Default false. */
+  /** Register ship berth landing pad as a radio contact. Default true. */
   dockRadioBroadcastEnabled?: boolean;
   /** Optional custom passive radio lines for the berth contact. */
   dockRadioDialogue?: string[];
@@ -65,7 +65,7 @@ export default function SalvageField({
   showDock = true,
   showDropOffPad = true,
   showDroneAtmosphere = false,
-  dockRadioBroadcastEnabled = false,
+  dockRadioBroadcastEnabled = true,
   dockRadioDialogue,
   dockRadioDockingBay,
   dockDriveSignatureEnabled = false,
