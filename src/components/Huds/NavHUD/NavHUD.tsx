@@ -304,114 +304,97 @@ export const NavHUD = ({
   if (layout === 'helmet') {
     return (
       <>
-        <div className="helmet-nav mech-nav">
-          <div className="mech-nav-bezel">
-            <div className="mech-nav-head">
-              <span className="hud-title">DESTINATION</span>
-            </div>
-            {isDocked ? (
-              <div className="helmet-nav-docked">
-                <span className="helmet-nav-tag">DOCK</span>
-                <span className="helmet-nav-name">
-                  {displayNameForDockedStation(dockedStationId)}
-                </span>
-                <span className="helmet-nav-tag">SPD</span>
-                <span ref={displayRefs.speed} className="helmet-nav-speed hud-value" />
-                <button
-                  ref={undockBtnRef}
-                  type="button"
-                  className="helmet-nav-btn"
-                  onClick={requestUndock}
-                >
-                  UNDOCK
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="helmet-nav-target-line">
-                  <div className="helmet-nav-scan-chip helmet-nav-scan-chip--tgt">
-                    <span className="hud-subtitle">Target</span>
-                    <div className="helmet-nav-target-line-inner">
-                      <button
-                        type="button"
-                        className={`helmet-nav-btn`}
-                        onClick={openNavTargetDialog}
-                        title={
-                          hasActiveNavTarget
-                            ? displayLabel || 'Nav target'
-                            : `Select nav target (${totalNavContactCount} contacts)`
-                        }
-                        aria-label={
-                          hasActiveNavTarget ? `Nav target: ${displayLabel}` : 'Open contacts'
-                        }
-                      >
-                        <span>{hasActiveNavTarget ? displayLabel || '\u2014' : 'TARGET'}</span>
-                      </button>
-                      {hasActiveNavTarget ? (
-                        <div style={{ width: '30px' }}>
-                          <button
-                            type="button"
-                            className="helmet-nav-btn"
-                            style={{ textAlign: 'center' }}
-                            onClick={handleClearNavTarget}
-                            title="Clear nav target"
-                            aria-label="Clear nav target"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ width: '30px' }}>
-                          <button
-                            type="button"
-                            className="helmet-nav-btn"
-                            style={{ textAlign: 'center' }}
-                            onClick={openNavTargetDialog}
-                            title="All contacts"
-                            aria-label={`${totalNavContactCount} contacts`}
-                          >
-                            {totalNavContactCount}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="hud-divider-line"></div>
-                <div className="helmet-nav-target-line-inner">
-                  <span className="hud-subtitle">RELATIVE</span>
-
-                  <div className="helmet-nav-row">
-                    <span className="hud-subtitle">SPD</span>
-                  </div>
-                  <span ref={displayRefs.speed} className="hud-value">
-                    100
-                  </span>
-                  <span className="helmet-nav-tag">Δv</span>
-                  <span ref={displayRefs.relativeVel} className="hud-value">
-                    100
-                  </span>
-                </div>
-                <div className="hud-divider-line"></div>
-                <div className="helmet-nav-row-inner">
-                  <span className="hud-subtitle">OPTIONS</span>
-                  <div className="helmet-nav-row">
-                    {hasDockPermissionRequestTarget ? (
-                      <button
-                        type="button"
-                        className="helmet-nav-btn"
-                        onClick={openDockPermissionComms}
-                        title={`Request dock permission from ${dockPermissionCandidate?.label ?? 'dock'}`}
-                      >
-                        REQUEST DOCK PERMISSION
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-                <span ref={displayRefs.orbitLine} className="helmet-nav-orbit" />
-              </>
-            )}
+        <div className="helmet-nav mech-nav" style={{ minWidth: '300px' }}>
+          <div className="event-log-header">
+            <span className="hud-title">DESTINATION</span>
           </div>
+          {isDocked ? (
+            <div className="helmet-nav-docked">
+              <span className="helmet-nav-tag">DOCK</span>
+              <span className="helmet-nav-name">
+                {displayNameForDockedStation(dockedStationId)}
+              </span>
+              <span className="helmet-nav-tag">SPD</span>
+              <span ref={displayRefs.speed} className="helmet-nav-speed hud-value" />
+              <button
+                ref={undockBtnRef}
+                type="button"
+                className="helmet-nav-btn"
+                onClick={requestUndock}
+              >
+                UNDOCK
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="helmet-nav-target-line">
+                <div className="helmet-nav-scan-chip helmet-nav-scan-chip--tgt">
+                  <div className="helmet-nav-target-line-inner">
+                    <button
+                      type="button"
+                      className={`helmet-nav-btn`}
+                      onClick={openNavTargetDialog}
+                      title={
+                        hasActiveNavTarget
+                          ? displayLabel || 'Nav target'
+                          : `Select nav target (${totalNavContactCount} contacts)`
+                      }
+                      aria-label={
+                        hasActiveNavTarget ? `Nav target: ${displayLabel}` : 'Open contacts'
+                      }
+                    >
+                      <span>{hasActiveNavTarget ? displayLabel || '\u2014' : 'TARGET'}</span>
+                    </button>
+                    {hasActiveNavTarget ? (
+                      <div style={{ width: '30px' }}>
+                        <button
+                          type="button"
+                          className="helmet-nav-btn"
+                          style={{ textAlign: 'center' }}
+                          onClick={handleClearNavTarget}
+                          title="Clear nav target"
+                          aria-label="Clear nav target"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ width: '30px' }}>
+                        <button
+                          type="button"
+                          className="helmet-nav-btn"
+                          style={{ textAlign: 'center' }}
+                          onClick={openNavTargetDialog}
+                          title="All contacts"
+                          aria-label={`${totalNavContactCount} contacts`}
+                        >
+                          {totalNavContactCount}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="hud-divider-line"></div>
+              <div className="hud-divider-line"></div>
+              <div className="helmet-nav-row-inner" style={{ padding: '4px' }}>
+                <span className="hud-subtitle">OPTIONS</span>
+                <div className="helmet-nav-row">
+                  {hasDockPermissionRequestTarget ? (
+                    <button
+                      type="button"
+                      className="helmet-nav-btn"
+                      onClick={openDockPermissionComms}
+                      title={`Request dock permission from ${dockPermissionCandidate?.label ?? 'dock'}`}
+                    >
+                      REQUEST DOCK PERMISSION
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <span ref={displayRefs.orbitLine} className="helmet-nav-orbit" />
+            </>
+          )}
         </div>
         {navTargetDialog}
         {scanPickerDialog}

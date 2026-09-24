@@ -45,11 +45,16 @@ function renderItem(
       tabIndex={0}
       title={title}
     >
-      {item.avatarSrc && <img className="comms-contact-avatar" src={item.avatarSrc} alt="" />}
-      <span className="event-log-text">{item.label}</span>
+      {item.avatarSrc ? (
+        <img className="comms-contact-avatar" src={item.avatarSrc} alt="" />
+      ) : (
+        <div className="comms-contact-avatar"></div>
+      )}
+      <span className="event-log-text" style={{ width: '100%' }}>
+        {item.label}
+      </span>
       {item.missionFlag && <span className="comms-contact-flag">{item.missionFlag}</span>}
       {item.statusIcon && <span className="comms-contact-unread">{item.statusIcon}</span>}
-      <span className="event-log-distance">{item.sublabel}</span>
       <RowHailSlot label={item.label} incoming={incoming} onAnswer={() => onSelect(item.id)} />
       {onSave && item.saveable && (
         <button

@@ -150,24 +150,17 @@ export default function SalvageField({
         ) : null}
       </Suspense>
 
-      <Suspense fallback={null}>
+      {/*     <Suspense fallback={null}>
         <VolumetricFog
-          position={origin}
-          radius={10000}
-          color="#5a6b9c"
+          position={[0, -400, 0]}
+          radius={1000}
+          color="#ffffff"
           density={1.6}
-          steps={24}
+          steps={10}
           octaves={3}
         />
-        <DustCloud
-          radius={dustCloud.radius}
-          particleSize={10500}
-          radialSpread={dustCloud.radialSpread}
-          yInitial={-700}
-          opacity={0.05}
-          colors={showDroneAtmosphere ? [...DRONE_ATMOSPHERE_COLORS] : [...dustCloud.colors]}
-        />
       </Suspense>
+      */}
     </group>
   );
 }

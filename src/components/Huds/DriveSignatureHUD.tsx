@@ -35,18 +35,15 @@ function createMarker(container: HTMLElement) {
   `;
 
   const box = document.createElement('div');
-  box.className = 'dshud-dot';
 
   const label = document.createElement('div');
-  label.className = 'dshud-label';
   label.style.cssText = `
     font-family: monospace;
     font-size: 10px;
-    color: ${DRIVE_MARKER_COLOR};
+    color: rgba(255,255,255,0.5);
     text-align: center;
     white-space: pre-line;
     line-height: 1.25;
-    text-shadow: 0 0 4px rgba(255,170,0,0.8);
     margin-top: 3px;
     max-width: min(220px, 40vw);
     pointer-events: none;
@@ -70,7 +67,7 @@ function styleDot(marker: Marker, size: number, color: string, selected: boolean
   marker.box.style.cssText = `
     width: ${size}px;
     height: ${size}px;
-    background: ${color};
+    background: #fff;
     border: none;
     border-radius: 50%;
     box-shadow: ${glow};

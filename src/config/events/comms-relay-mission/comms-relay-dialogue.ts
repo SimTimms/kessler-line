@@ -18,7 +18,7 @@ export const COMMS_RELAY_DIALOGUE_TREE: DialogueTree = {
       playerOptions: [
         {
           id: 'accept',
-          label: 'I\'LL DO IT',
+          label: "I'LL DO IT",
           text: "I'll find the satellite and get those logs.",
           nextTurnId: 'accepted',
         },
@@ -27,12 +27,6 @@ export const COMMS_RELAY_DIALOGUE_TREE: DialogueTree = {
           label: 'NOT NOW',
           text: "I can't take this on right now.",
           nextTurnId: 'declined',
-        },
-        {
-          id: 'restock',
-          label: 'RESTOCK FIRST',
-          text: "Top me up before I head out.",
-          nextTurnId: 'resupply',
         },
       ],
     },
@@ -47,25 +41,6 @@ export const COMMS_RELAY_DIALOGUE_TREE: DialogueTree = {
       npcText:
         "Understood. The satellite isn't going anywhere — the offer stands if you change your mind. Donington out.",
       playerOptions: [],
-    },
-    resupply: {
-      id: 'resupply',
-      npcText:
-        "Done — fuel, O2, and power reserves topped up. You're clear to proceed.\n\nThe comms buffer satellite is in Mars orbit. Increase your radio scanner range and sweep for it. Ready when you are.",
-      playerOptions: [
-        {
-          id: 'accept-after-restock',
-          label: 'HEADING OUT',
-          text: "Thanks. I'll find the satellite.",
-          nextTurnId: 'accepted',
-        },
-        {
-          id: 'decline-after-restock',
-          label: 'NOT NOW',
-          text: "Appreciate the restock, but I can't do this right now.",
-          nextTurnId: 'declined',
-        },
-      ],
     },
   },
 };

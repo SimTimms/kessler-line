@@ -177,146 +177,159 @@ export default function CommsHUD({
 
   return (
     <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly}>
-      {({ hasIncoming, incomingHailIds, savedItems, inRangeItems, incomingItems, historyItems, dockInteriorItems, dockInteriorLabel, onSave, onSelect }) => {
+      {({
+        hasIncoming,
+        incomingHailIds,
+        savedItems,
+        inRangeItems,
+        incomingItems,
+        historyItems,
+        dockInteriorItems,
+        dockInteriorLabel,
+        onSave,
+        onSelect,
+      }) => {
         // A hail from a contact that is not (yet) on the radio list has no row to
         // live on — surface it on the CONTACTS tab instead.
         const hailingOnRadio = radioContacts.some((c) => incomingHailIds.has(c.id));
         const hailingOffRadio = hasIncoming && !hailingOnRadio;
         return (
-        <div className="event-log" style={{ minWidth: '260px' }} aria-label="Communications">
-          <div className="event-log-header">
-            <button
-              type="button"
-              className={`event-log-tab${activeTab === 'radio' ? ' event-log-tab--active' : ''}${hailingOnRadio && activeTab !== 'radio' ? ' comms-tab--pulse' : ''}`}
-              onClick={() => setActiveTab('radio')}
-            >
-              RADIO
-            </button>
-            <button
-              type="button"
-              className={`event-log-tab${activeTab === 'journal' ? ' event-log-tab--active' : ''}`}
-              onClick={() => setActiveTab('journal')}
-            >
-              JOURNAL
-              {activeMissionRef.current.length > 0 && (
-                <span className="comms-tab-badge">{activeMissionRef.current.length}</span>
-              )}
-            </button>
-            <button
-              type="button"
-              className={`event-log-tab${activeTab === 'messages' ? ' event-log-tab--active' : ''}`}
-              onClick={() => setActiveTab('messages')}
-            >
-              MESSAGES
-            </button>
-            <button
-              type="button"
-              className={`event-log-tab${activeTab === 'contacts' ? ' event-log-tab--active' : ''}${hailingOffRadio && activeTab !== 'contacts' ? ' comms-tab--pulse' : ''}`}
-              onClick={() => setActiveTab('contacts')}
-            >
-              CONTACTS
-            </button>
-          </div>
-          {activeTab === 'radio' && (
-            <>
-              <div className="comms-layout">
-                {/* Left: power controls */}
-                <div className="comms-power">
-                  <div
-                    className={`scanner-col${disabled ? ' scanner-col--disabled' : ''}${highlight ? ' scanner-col--highlight' : ''}`}
-                    onMouseEnter={() => setScannerRingHovered('radio', true)}
-                    onMouseLeave={() => setScannerRingHovered('radio', false)}
-                  >
-                    <div className="scanner-col-icon" title="Radio">
-                      <AudioLines size={14} strokeWidth={2} aria-hidden />
-                    </div>
-                    <span
-                      className={`resource-bar-rate${drain > 0 ? ' resource-bar-rate--loss' : ''}`}
-                      title="Power drain"
-                    >
-                      {drainLabel}
-                    </span>
-                    <div className="scanner-power-btns" role="group" aria-label="Radio power">
-                      {SCANNER_POWER_LEVELS.map((level) => {
-                        const selected = power === level;
-                        return (
-                          <button
-                            key={level}
-                            type="button"
-                            className={`scanner-power-btn${selected ? ' scanner-power-btn--selected' : ''}`}
-                            disabled={disabled}
-                            aria-label={SCANNER_RANGE_MODE_ARIA[level]}
-                            aria-pressed={selected}
-                            onClick={() => applyPower(level)}
-                          >
-                            {SCANNER_RANGE_MODE_LABELS[level]}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {/*  <PadScanWaveform active={padScanActive} />*/}
-                  </div>
-                </div>
-
-                {/* Right: radio contacts list */}
-                <div className="comms-contacts">
-                  <div className="comms-contacts-scroll">
-                    {radioContacts.length === 0 ? (
-                      <div className="event-log-empty">No contacts</div>
-                    ) : (
-                      radioContacts.map((c) => (
-                        <div
-                          key={c.id}
-                          className={`event-log-line event-log-line--clickable${c.id === selectedContactId ? ' event-log-line--selected' : ''}`}
-                          onClick={() => handleContactClick(c.id)}
-                          role="button"
-                          tabIndex={0}
-                          title={`Select ${c.label}`}
-                        >
-                          <span className="event-log-text">{c.label}</span>
-                          <span className="event-log-distance">{c.distance}</span>
-                          <RowHailSlot
-                            label={c.label}
-                            incoming={incomingHailIds.has(c.id)}
-                            onAnswer={() => onSelect(c.id)}
-                          />
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div className="event-log" style={{ minWidth: '260px' }} aria-label="Communications">
+            <div className="event-log-header">
               <button
                 type="button"
-                className={`mech-comms-hail-btn ${selectedContact ? '' : 'mech-comms-hail-btn--inactive'}`}
-                onClick={handleHail}
-                title={selectedContact ? `Hail ${selectedContact.label}` : '-'}
-                aria-label={selectedContact ? `Hail ${selectedContact.label}` : 'No contact selected'}
+                className={`event-log-tab${activeTab === 'radio' ? ' event-log-tab--active' : ''}${hailingOnRadio && activeTab !== 'radio' ? ' comms-tab--pulse' : ''}`}
+                onClick={() => setActiveTab('radio')}
               >
-                <div className="mech-comms-hail-btn-icon" aria-hidden>
-                  <RadioTower size={15} strokeWidth={1.75} />
-                </div>
-                <span className="mech-comms-hail-btn-label">
-                  {selectedContact ? `HAIL ${selectedContact.label}` : 'No Contact Selected'}
-                </span>
+                RADIO
               </button>
-            </>
-          )}
-          {activeTab === 'journal' && <JournalPanel />}
-          {activeTab === 'messages' && <HistoryPanel />}
-          {activeTab === 'contacts' && (
-            <ContactsPanel
-              savedItems={savedItems}
-              inRangeItems={inRangeItems}
-              incomingItems={incomingItems}
-              historyItems={historyItems}
-              dockInteriorItems={dockInteriorItems}
-              dockInteriorLabel={dockInteriorLabel}
-              onSave={onSave}
-              onSelect={onSelect}
-            />
-          )}
-        </div>
+              <button
+                type="button"
+                className={`event-log-tab${activeTab === 'journal' ? ' event-log-tab--active' : ''}`}
+                onClick={() => setActiveTab('journal')}
+              >
+                JOURNAL
+                {activeMissionRef.current.length > 0 && (
+                  <span className="comms-tab-badge">{activeMissionRef.current.length}</span>
+                )}
+              </button>
+              <button
+                type="button"
+                className={`event-log-tab${activeTab === 'messages' ? ' event-log-tab--active' : ''}`}
+                onClick={() => setActiveTab('messages')}
+              >
+                MESSAGES
+              </button>
+              <button
+                type="button"
+                className={`event-log-tab${activeTab === 'contacts' ? ' event-log-tab--active' : ''}${hailingOffRadio && activeTab !== 'contacts' ? ' comms-tab--pulse' : ''}`}
+                onClick={() => setActiveTab('contacts')}
+              >
+                CONTACTS
+              </button>
+            </div>
+            {activeTab === 'radio' && (
+              <>
+                <div className="comms-layout">
+                  {/* Left: power controls */}
+                  <div className="comms-power">
+                    <div
+                      className={`scanner-col${disabled ? ' scanner-col--disabled' : ''}${highlight ? ' scanner-col--highlight' : ''}`}
+                      onMouseEnter={() => setScannerRingHovered('radio', true)}
+                      onMouseLeave={() => setScannerRingHovered('radio', false)}
+                    >
+                      <div className="scanner-col-icon" title="Radio">
+                        <AudioLines size={14} strokeWidth={2} aria-hidden />
+                      </div>
+                      <span
+                        className={`resource-bar-rate${drain > 0 ? ' resource-bar-rate--loss' : ''}`}
+                        title="Power drain"
+                      >
+                        {drainLabel}
+                      </span>
+                      <div className="scanner-power-btns" role="group" aria-label="Radio power">
+                        {SCANNER_POWER_LEVELS.map((level) => {
+                          const selected = power === level;
+                          return (
+                            <button
+                              key={level}
+                              type="button"
+                              className={`scanner-power-btn${selected ? ' scanner-power-btn--selected' : ''}`}
+                              disabled={disabled}
+                              aria-label={SCANNER_RANGE_MODE_ARIA[level]}
+                              aria-pressed={selected}
+                              onClick={() => applyPower(level)}
+                            >
+                              {SCANNER_RANGE_MODE_LABELS[level]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/*  <PadScanWaveform active={padScanActive} />*/}
+                    </div>
+                  </div>
+
+                  {/* Right: radio contacts list */}
+                  <div className="comms-contacts">
+                    <div className="comms-contacts-scroll">
+                      {radioContacts.length === 0 ? (
+                        <div className="event-log-empty">No contacts</div>
+                      ) : (
+                        radioContacts.map((c) => (
+                          <div
+                            key={c.id}
+                            className={`event-log-line event-log-line--clickable${c.id === selectedContactId ? ' event-log-line--selected' : ''}`}
+                            onClick={() => handleContactClick(c.id)}
+                            role="button"
+                            tabIndex={0}
+                            title={`Select ${c.label}`}
+                          >
+                            <span className="event-log-text">{c.label}</span>
+                            <span className="event-log-distance">{c.distance}</span>
+                            <RowHailSlot
+                              label={c.label}
+                              incoming={incomingHailIds.has(c.id)}
+                              onAnswer={() => onSelect(c.id)}
+                            />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={`mech-comms-hail-btn ${selectedContact ? '' : 'mech-comms-hail-btn--inactive'}`}
+                  onClick={handleHail}
+                  title={selectedContact ? `Hail ${selectedContact.label}` : '-'}
+                  aria-label={
+                    selectedContact ? `Hail ${selectedContact.label}` : 'No contact selected'
+                  }
+                >
+                  <div className="mech-comms-hail-btn-icon" aria-hidden>
+                    <RadioTower size={15} strokeWidth={1.75} />
+                  </div>
+                  <span className="mech-comms-hail-btn-label">
+                    {selectedContact ? `HAIL ${selectedContact.label}` : 'No Contact Selected'}
+                  </span>
+                </button>
+              </>
+            )}
+            {activeTab === 'journal' && <JournalPanel />}
+            {activeTab === 'messages' && <HistoryPanel />}
+            {activeTab === 'contacts' && (
+              <ContactsPanel
+                savedItems={savedItems}
+                inRangeItems={inRangeItems}
+                incomingItems={incomingItems}
+                historyItems={historyItems}
+                dockInteriorItems={dockInteriorItems}
+                dockInteriorLabel={dockInteriorLabel}
+                onSave={onSave}
+                onSelect={onSelect}
+              />
+            )}
+          </div>
         );
       }}
     </ContactsHUD>

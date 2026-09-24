@@ -3,7 +3,6 @@
 .mech-thrust {
   width: 56px;
   box-sizing: border-box;
-  border-left: 1px solid #444;
   font-family: 'Share Tech Mono', 'Courier New', monospace;
   text-transform: uppercase;
   letter-spacing: 0.1em;

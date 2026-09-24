@@ -3,7 +3,6 @@ import {
   getEventLog,
   subscribeEventLog,
   deleteEventLogEntry,
-  clearEventLog,
   isClickableScannerType,
   EVENT_LOG_TAG_LABEL,
   VISIBLE_ENTRIES,
@@ -23,7 +22,6 @@ const TAB_ORDER: { id: TabId; label: string }[] = [
   { id: 'magnet', label: 'MAG' },
   { id: 'proximity', label: 'PRX' },
   { id: 'drive', label: 'DRV' },
-  { id: 'radio', label: 'RAD' },
   { id: 'radiation', label: 'RDN' },
   { id: 'nav', label: 'NAV' },
 ];
@@ -76,10 +74,6 @@ export default function EventLogHUD() {
     deleteEventLogEntry(id);
   }, []);
 
-  const handlePurge = useCallback(() => {
-    clearEventLog();
-  }, []);
-
   const handleLineClick = useCallback((entry: EventLogEntry) => {
     if (isClickableScannerType(entry.type)) {
       requestOpenScanPicker(entry.type);
@@ -114,11 +108,6 @@ export default function EventLogHUD() {
             );
           })}
         </div>
-        {activeTab === 'log' && allItems.length > 0 && (
-          <button className="event-log-purge" onClick={handlePurge} title="Purge all logs">
-            Purge
-          </button>
-        )}
       </div>
       <div className="event-log-scroll">
         {activeTab === 'log' &&

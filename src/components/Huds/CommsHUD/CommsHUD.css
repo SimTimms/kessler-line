@@ -25,6 +25,8 @@
   display: flex;
   align-items: stretch;
   min-height: 0;
+  height: 100%;
+  border-bottom: 1px solid #444;
 }
 
 .comms-power {
@@ -264,7 +266,8 @@
   font: inherit;
   text-transform: inherit;
   letter-spacing: inherit;
-  width: 200px;
+  width: 100%;
+  margin: 0px 8px 8px;
 }
 
 .mech-comms-hail-btn:hover {
@@ -625,8 +628,6 @@
   align-items: center;
   justify-content: flex-end;
   align-self: center;
-  width: 112px;
-  min-width: 112px;
   height: 14px;
   margin-right: 4px;
 }
@@ -707,12 +708,13 @@
   flex-shrink: 0;
   align-self: center;
   padding: 0 3px;
+  margin-left: 4px;
   font: inherit;
   font-size: 9px;
   color: rgba(255, 255, 255, 0.55);
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
+  border-radius: 0;
 }
 
 .comms-contact-save:hover {

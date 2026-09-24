@@ -1,8 +1,4 @@
-import {
-  type HailStatus,
-  setHailStatus,
-  markHailDeclined,
-} from './HailState';
+import { type HailStatus, setHailStatus, markHailDeclined } from './HailState';
 import { dismissIncomingHail } from './IncomingHailState';
 import {
   getRadioBroadcasts,
@@ -139,7 +135,11 @@ export function getHailAcceptanceChance(contactId: string): number {
   return 0.7;
 }
 
-export function driveStatusLine(hs: HailStatus, radioActive: boolean, inPassiveRange = false): string {
+export function driveStatusLine(
+  hs: HailStatus,
+  radioActive: boolean,
+  inPassiveRange = false
+): string {
   if (hs === 'pending') return commsStatus.pending;
   if (hs === 'accepted') return commsStatus.accepted;
   if (hs === 'rejected') return commsStatus.rejected;
@@ -160,7 +160,7 @@ export function driveStatusPulse(hs: HailStatus, radioActive: boolean): boolean 
 
 export function isBroadcastHailEligible(
   shipId: string,
-  broadcastContacts: BroadcastContactSlim[],
+  broadcastContacts: BroadcastContactSlim[]
 ): boolean {
   const b = broadcastContacts.find((x) => x.id === shipId);
   if (!b?.hailRange) return false;
@@ -175,7 +175,7 @@ export function shouldShowHailPrompt(
   incomingHails: Set<string>,
   broadcastContacts: BroadcastContactSlim[],
   hailStates: Map<string, HailStatus>,
-  getThread: (id: string) => unknown,
+  getThread: (id: string) => unknown
 ): boolean {
   // Incoming hails ALWAYS show the prompt — this is the bug fix.
   // Previously, the thread check came first and blocked narrative hails
@@ -189,7 +189,7 @@ export function shouldShowHailPrompt(
 
 export function getChatOfferContent(
   chatShipId: string,
-  hailOffers: Map<string, HailOffer>,
+  hailOffers: Map<string, HailOffer>
 ): { header: string; body: string } | undefined {
   const offer = hailOffers.get(chatShipId);
   if (offer) {
@@ -249,7 +249,7 @@ export function sendHailContact(id: string, name: string): void {
 
 export function acceptHailOffer(
   shipId: string,
-  offer: HailOffer | undefined,
+  offer: HailOffer | undefined
 ): { clearOffer: boolean; closeChatPanel: boolean } {
   if (offer) {
     if (offer.dialogueTreeId) {

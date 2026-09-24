@@ -266,7 +266,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
       <SaveSystemBridge />
       <SharedInteractionSceneTools />
       <CollisionDebug />
-      <ShipDepthOfField saturation={0} />
+      <ShipDepthOfField saturation={-0.8} />
     </NarrativeConfigCanvas>
   );
 }

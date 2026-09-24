@@ -636,9 +636,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
   flex: 1;
-  padding: 32px 20px;
 }
 
 .comms-chat-status-line {
@@ -690,18 +688,16 @@
 }
 
 .comms-chat-offer {
-  background: var(--cc-npc-bg);
-  border: 1px solid var(--cc-npc-border);
   border-radius: 2px;
-  padding: 12px 16px;
   width: 100%;
   max-width: 360px;
+  text-align: center;
 }
 
 .comms-chat-offer-header {
   font-size: 11px;
   letter-spacing: 0.12em;
-  color: var(--cc-npc-text);
+  color: #fff;
   margin-bottom: 8px;
 }
 

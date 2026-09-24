@@ -34,7 +34,7 @@ export default function RowHailSlot({
               />
             ))}
           </span>
-          <span className="comms-row-hail-label">INCOMING HAIL</span>
+          <span className="comms-row-hail-label">INCOMING</span>
         </button>
       )}
     </span>

@@ -118,7 +118,7 @@ export default function CarrierGRB({
 
   return (
     <group ref={groupRef} position={position} rotation={rotation}>
-      <primitive object={modelScene} scale={scale} castShadow receiveShadow />
+      <primitive object={modelScene} scale={scale} />
       <group key={'grb-pad'} position={[150, 128, -130]}>
         <LandingPad
           id={GRB_PAD_ID}

@@ -105,7 +105,7 @@ const HelmetHUD = memo(function HelmetHUD({
             <span className="hud-title">ENG</span>
           </div>
           <div className="controls-panel-body">
-            <FlightControlsHUD />
+            {/*  <FlightControlsHUD /> */}
             <ShipControlsHUD thrustLevel={thrustLevel} setThrustLevel={setThrustLevel} />
           </div>
         </div>
