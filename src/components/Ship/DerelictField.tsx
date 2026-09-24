@@ -36,11 +36,7 @@ interface LiveWreck {
  * Spawns derelicts as plain THREE objects and runs respawn inside useFrame so
  * neither path mounts React children or setStates from the DOM overlay.
  */
-export default function DerelictField({
-  modelUrl = PLAYER_SHIP_MODEL_URL,
-}: {
-  modelUrl?: string;
-}) {
+export default function DerelictField({ modelUrl = PLAYER_SHIP_MODEL_URL }: { modelUrl?: string }) {
   const hostRef = useRef<THREE.Group>(null);
   const wrecksRef = useRef<LiveWreck[]>([]);
   const templateRef = useRef<THREE.Object3D | null>(null);
@@ -137,7 +133,7 @@ export default function DerelictField({
         dockPortGroup.position.set(
           SHIP_DOCKING_PORT_LOCAL[0],
           SHIP_DOCKING_PORT_LOCAL[1],
-          SHIP_DOCKING_PORT_LOCAL[2],
+          SHIP_DOCKING_PORT_LOCAL[2]
         );
         dockPortGroup.rotation.set(0, Math.PI, 0);
         mesh.add(dockPortGroup);
@@ -146,7 +142,7 @@ export default function DerelictField({
         const captureGeo = new THREE.BoxGeometry(
           DOCK_BAY_DIMENSIONS.x,
           DOCK_BAY_DIMENSIONS.y,
-          DOCK_BAY_DIMENSIONS.z,
+          DOCK_BAY_DIMENSIONS.z
         );
         const captureMat = new THREE.MeshStandardMaterial({
           color: 0xffffff,
@@ -196,7 +192,7 @@ export default function DerelictField({
             halfExtents: new THREE.Vector3(
               DOCK_BAY_DIMENSIONS.x * 0.5,
               DOCK_BAY_DIMENSIONS.y * 0.5,
-              DOCK_BAY_DIMENSIONS.z * 0.5,
+              DOCK_BAY_DIMENSIONS.z * 0.5
             ),
           },
           physicalCollision: false,
@@ -209,7 +205,7 @@ export default function DerelictField({
         registerDock({
           id: dockId,
           label: 'Derelict Ship',
-          backgroundImage: '/textures/station.jpg',
+          backgroundImage: '/textures/derelict.jpg',
           fuel: { amount: record.fuel, capacity: 100 },
           o2: { amount: record.o2, capacity: 100 },
           power: { amount: record.power, capacity: 100 },
