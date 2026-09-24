@@ -1,5 +1,6 @@
 import { MARS_DEF } from './worldConfig';
 import { COMMS_BUFFER_SATELLITE_ID } from './events/comms-relay-mission/comms-relay-config';
+import { NARRATIVE_DONINGTON_DOCK_ID } from '../scenes/NarrativeConfig/narrativeSceneConfig';
 
 export interface MissionDef {
   id: string;
@@ -20,11 +21,19 @@ export const MISSION_DEFS: Record<string, MissionDef> = {
     waypoint: [...MARS_DEF.position],
     waypointLabel: 'Bakerfield Falls',
   },
+  'bill-churchill-return': {
+    id: 'bill-churchill-return',
+    title: 'Collect Payment',
+    description:
+      'The parcel is delivered. Return to Donington Station and collect what Bill Churchill owes you.',
+    waypoint: [...MARS_DEF.position],
+    waypointLabel: 'Donington Station',
+    waypointCollidableId: NARRATIVE_DONINGTON_DOCK_ID,
+  },
   'elias-voss-satellite-deployment': {
     id: 'elias-voss-satellite-deployment',
     title: 'Satellite Deployment',
-    description:
-      'Tow the satellite container to a stable Mars orbit and release it.',
+    description: 'Tow the satellite container to a stable Mars orbit and release it.',
     waypoint: [...MARS_DEF.position],
     waypointLabel: 'Mars',
   },

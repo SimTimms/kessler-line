@@ -1,9 +1,11 @@
 import { type MessagePlatform } from '../../context/MessageStore';
+import CommsIdentityHeader from './CommsIdentityHeader';
 
 interface DialogHeaderProps {
   contact: {
     name: string;
     platform: string;
+    role?: string;
   };
 }
 
@@ -33,12 +35,9 @@ const PLATFORM_CONFIG: Record<
 export default function DialogHeader({ contact }: DialogHeaderProps) {
   const cfg = PLATFORM_CONFIG[contact.platform as MessagePlatform] ?? PLATFORM_CONFIG.REACH;
   return (
-    <div className="comms-chat-header">
-      <div className="comms-chat-vessel">{contact.name}</div>
-      <div className="comms-chat-captain">
-        {cfg.label} · {cfg.statusLine}
-      </div>
-      {cfg.subLine && <div className="comms-chat-profile">{cfg.subLine}</div>}
-    </div>
+    <CommsIdentityHeader
+      name={contact.name}
+      lines={[contact.role, `${cfg.label} · ${cfg.statusLine}`, cfg.subLine]}
+    />
   );
 }

@@ -614,3 +614,134 @@
   background: rgba(0, 200, 255, 0.2);
   border-radius: 2px;
 }
+
+/* ── Per-row incoming hail (radio contacts list) ───────────────────────────
+   Fixed-width slot so contact rows stay aligned whether or not that contact
+   is hailing; the button only renders when a hail is live. */
+
+.comms-row-hail {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: center;
+  width: 112px;
+  min-width: 112px;
+  height: 14px;
+  margin-right: 4px;
+}
+
+.comms-row-hail-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 14px;
+  padding: 0 4px;
+  color: var(--mech-amber);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid color-mix(in srgb, var(--mech-amber) 35%, transparent);
+  border-radius: 0;
+  cursor: pointer;
+  font: inherit;
+  animation: mech-comms-hail-pulse 1.6s ease-in-out infinite;
+}
+
+.comms-row-hail-btn:hover {
+  color: #000;
+  background: var(--mech-amber);
+  border-color: var(--mech-amber);
+  animation: none;
+}
+
+.comms-row-hail-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 9px;
+}
+
+.comms-row-hail-bar {
+  width: 2px;
+  height: 22%;
+  background: currentColor;
+  transform-origin: bottom center;
+  animation: helmet-pad-scan-wave 0.55s ease-in-out infinite alternate;
+}
+
+.comms-row-hail-label {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ── Contacts panel rows — same layout as the radio contacts list ────────── */
+
+.comms-contact-row {
+  gap: 6px;
+  padding: 1px 0;
+}
+
+.comms-contact-avatar {
+  width: 12px;
+  height: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.comms-contact-flag,
+.comms-contact-unread {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.comms-contact-flag {
+  color: var(--mech-amber);
+}
+
+.comms-contact-save {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 0 3px;
+  font: inherit;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.comms-contact-save:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Status colour — the text lives in the row tooltip */
+.comms-contact-row--out-of-range .event-log-distance,
+.comms-contact-row--rejected .event-log-distance {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.comms-contact-row--radio-active .event-log-distance,
+.comms-contact-row--accepted .event-log-distance {
+  color: var(--mech-cyan);
+}
+
+.comms-contact-row--receiving .event-log-distance,
+.comms-contact-row--pending .event-log-distance {
+  color: var(--mech-amber);
+}
+
+.comms-contact-row.event-log-line--clickable:hover .event-log-distance,
+.comms-contact-row.event-log-line--clickable:hover .comms-contact-flag {
+  color: inherit;
+}
+
+/* Keep the dock-interior separator the old .chd-item-row rule provided */
+.chd-section--dock-interior .comms-contact-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}

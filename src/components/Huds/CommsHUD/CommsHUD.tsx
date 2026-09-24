@@ -3,6 +3,7 @@ import { AudioLines, RadioTower } from 'lucide-react';
 import ContactsHUD from '../../ContactsHUD/ContactsHUD';
 import JournalPanel from './JournalPanel';
 import ContactsPanel from './ContactsPanel';
+import RowHailSlot from './RowHailSlot';
 import HistoryPanel from './HistoryPanel';
 import {
   clampScannerPowerLevel,
@@ -176,12 +177,17 @@ export default function CommsHUD({
 
   return (
     <ContactsHUD sceneRadioContactsOnly={sceneRadioContactsOnly}>
-      {({ open, hasIncoming, savedItems, inRangeItems, incomingItems, historyItems, dockInteriorItems, dockInteriorLabel, onSave, onSelect }) => (
+      {({ hasIncoming, incomingHailIds, savedItems, inRangeItems, incomingItems, historyItems, dockInteriorItems, dockInteriorLabel, onSave, onSelect }) => {
+        // A hail from a contact that is not (yet) on the radio list has no row to
+        // live on — surface it on the CONTACTS tab instead.
+        const hailingOnRadio = radioContacts.some((c) => incomingHailIds.has(c.id));
+        const hailingOffRadio = hasIncoming && !hailingOnRadio;
+        return (
         <div className="event-log" style={{ minWidth: '260px' }} aria-label="Communications">
           <div className="event-log-header">
             <button
               type="button"
-              className={`event-log-tab${activeTab === 'radio' ? ' event-log-tab--active' : ''}${hasIncoming && activeTab !== 'radio' ? ' comms-tab--pulse' : ''}`}
+              className={`event-log-tab${activeTab === 'radio' ? ' event-log-tab--active' : ''}${hailingOnRadio && activeTab !== 'radio' ? ' comms-tab--pulse' : ''}`}
               onClick={() => setActiveTab('radio')}
             >
               RADIO
@@ -205,7 +211,7 @@ export default function CommsHUD({
             </button>
             <button
               type="button"
-              className={`event-log-tab${activeTab === 'contacts' ? ' event-log-tab--active' : ''}`}
+              className={`event-log-tab${activeTab === 'contacts' ? ' event-log-tab--active' : ''}${hailingOffRadio && activeTab !== 'contacts' ? ' comms-tab--pulse' : ''}`}
               onClick={() => setActiveTab('contacts')}
             >
               CONTACTS
@@ -269,50 +275,31 @@ export default function CommsHUD({
                         >
                           <span className="event-log-text">{c.label}</span>
                           <span className="event-log-distance">{c.distance}</span>
+                          <RowHailSlot
+                            label={c.label}
+                            incoming={incomingHailIds.has(c.id)}
+                            onAnswer={() => onSelect(c.id)}
+                          />
                         </div>
                       ))
                     )}
                   </div>
                 </div>
               </div>
-              {!hasIncoming ? (
-                <button
-                  type="button"
-                  className={`mech-comms-hail-btn ${selectedContact ? '' : 'mech-comms-hail-btn--inactive'}`}
-                  onClick={handleHail}
-                  title={selectedContact ? `Hail ${selectedContact.label}` : '-'}
-                  aria-label={selectedContact ? `Hail ${selectedContact.label}` : 'No contact selected'}
-                >
-                  <div className="mech-comms-hail-btn-icon" aria-hidden>
-                    <RadioTower size={15} strokeWidth={1.75} />
-                  </div>
-                  <span className="mech-comms-hail-btn-label">
-                    {selectedContact ? `HAIL ${selectedContact.label}` : 'No Contact Selected'}
-                  </span>
-                </button>
-              ) : hasIncoming ? (
-                <button
-                  type="button"
-                  className="mech-comms-hail-btn mech-comms-hail-btn--incoming"
-                  onClick={open}
-                  title="Accept incoming hail"
-                  aria-label="Incoming hail — click to open"
-                >
-                  <div className="mech-comms-hail-btn-icon" aria-hidden>
-                    <RadioTower size={15} strokeWidth={1.75} />
-                  </div>
-                  <div className="mech-comms-hail-btn-wave" aria-hidden>
-                    {Array.from({ length: PAD_SCAN_WAVE_BARS }, (_, i) => (
-                      <span
-                        key={i}
-                        className="mech-comms-hail-btn-bar"
-                        style={{ animationDelay: `${i * 0.07}s` }}
-                      />
-                    ))}
-                  </div>
-                  <span className="mech-comms-hail-btn-label">INCOMING HAIL</span>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className={`mech-comms-hail-btn ${selectedContact ? '' : 'mech-comms-hail-btn--inactive'}`}
+                onClick={handleHail}
+                title={selectedContact ? `Hail ${selectedContact.label}` : '-'}
+                aria-label={selectedContact ? `Hail ${selectedContact.label}` : 'No contact selected'}
+              >
+                <div className="mech-comms-hail-btn-icon" aria-hidden>
+                  <RadioTower size={15} strokeWidth={1.75} />
+                </div>
+                <span className="mech-comms-hail-btn-label">
+                  {selectedContact ? `HAIL ${selectedContact.label}` : 'No Contact Selected'}
+                </span>
+              </button>
             </>
           )}
           {activeTab === 'journal' && <JournalPanel />}
@@ -330,7 +317,8 @@ export default function CommsHUD({
             />
           )}
         </div>
-      )}
+        );
+      }}
     </ContactsHUD>
   );
 }

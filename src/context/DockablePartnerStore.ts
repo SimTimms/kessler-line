@@ -130,6 +130,21 @@ export function getDockJob(dockId: string, jobId: string): DockJob | undefined {
   return getDockJobs(dockId).find((j) => j.id === jobId);
 }
 
+/**
+ * Find a contact by id across every registered dock. Contact ids are globally
+ * unique per person, so a narrative hail that reuses a dock contact's id
+ * resolves to the same portrait, role and dossier.
+ */
+export function findDockContactById(
+  contactId: string
+): { dockId: string; contact: DockContact } | undefined {
+  for (const [dockId, dock] of docks) {
+    const contact = dock.contacts?.find((c) => c.id === contactId);
+    if (contact) return { dockId, contact };
+  }
+  return undefined;
+}
+
 export function listPartnerResources(dockId: string): DockableResourceKind[] {
   const dock = docks.get(dockId);
   if (!dock) return [];
@@ -244,12 +259,7 @@ export function transferDockableHold(
   direction: 'toPartner' | 'toShip',
   deltaSec: number
 ): number {
-  return transferDockableResource(
-    partnerId,
-    kind,
-    direction,
-    DOCK_TRANSFER_HOLD_RATE * deltaSec
-  );
+  return transferDockableResource(partnerId, kind, direction, DOCK_TRANSFER_HOLD_RATE * deltaSec);
 }
 
 export function readPartnerAmount(partnerId: string, kind: DockableResourceKind): number {

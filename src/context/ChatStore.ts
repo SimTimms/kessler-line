@@ -15,6 +15,12 @@ export interface ChatThread {
   shipName: string;
   captainName: string;
   dialogueTreeId: string;
+  /**
+   * Who this thread is with, when one character is reachable on several
+   * channels (station directory, emergency broadcast, mission follow-up).
+   * Threads sharing a personId share an identity and a history.
+   */
+  personId?: string;
   messages: ChatMessage[];
   /** Which dialogue turn is currently active (null = conversation ended). */
   currentTurnId: string | null;
@@ -38,12 +44,14 @@ export function createThread(
   captainName: string,
   dialogueTreeId: string,
   openingTurnId: string,
+  personId?: string
 ): ChatThread {
   const thread: ChatThread = {
     shipId,
     shipName,
     captainName,
     dialogueTreeId,
+    personId,
     messages: [],
     currentTurnId: openingTurnId,
     awaitingNpc: true, // always waiting for the opening NPC message
@@ -61,11 +69,7 @@ export function addChatMessage(shipId: string, msg: ChatMessage): void {
 }
 
 /** Update the active turn and awaiting flag after a player choice or NPC delivery. */
-export function setChatTurn(
-  shipId: string,
-  turnId: string | null,
-  awaitingNpc: boolean,
-): void {
+export function setChatTurn(shipId: string, turnId: string | null, awaitingNpc: boolean): void {
   const thread = _threads.get(shipId);
   if (!thread) return;
   thread.currentTurnId = turnId;

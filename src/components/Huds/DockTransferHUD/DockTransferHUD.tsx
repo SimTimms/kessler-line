@@ -25,6 +25,7 @@ import {
   DOCK_ROLE_LABELS,
   dockContactThreadId,
   dockJobThreadId,
+  hasPendingDockDialogue,
   parseDockThreadId,
   type DockContact,
   type DockDialogueTree,
@@ -276,17 +277,19 @@ const DockTransferHUD = memo(function DockTransferHUD() {
   const kinds = listPartnerResources(partnerId);
   const contacts: DirectoryContactItem[] = getDockContacts(partnerId).map((c) => {
     const mid = c.missionId;
+    const threadId = dockContactThreadId(partnerId, c.id);
     const missionAvailable =
       mid != null &&
       !declinedMissionsRef.current.includes(mid) &&
       !completedMissionsRef.current.includes(mid) &&
       !activeMissionRef.current.includes(mid);
+    const hasFollowUp = hasPendingDockDialogue(threadId, c.dialogue);
     return {
-      threadId: dockContactThreadId(partnerId, c.id),
+      threadId,
       name: c.name,
       role: DOCK_ROLE_LABELS[c.role],
       portrait: c.portrait,
-      missionFlag: missionAvailable ? 'CALLING' : undefined,
+      missionFlag: missionAvailable || hasFollowUp ? 'CALLING' : undefined,
     };
   });
   const jobs: DirectoryContactItem[] = getDockJobs(partnerId)
@@ -371,19 +374,18 @@ const DockTransferHUD = memo(function DockTransferHUD() {
 
         {/* ── Right column: contacts directory / dialogue ── */}
         <div className="dock-station-panel__right">
-          <div className="dock-station-panel__right-header">
-            {dockThreadId && activeDockChat ? (
-              <>
-                <span className="hud-title">COMMS OPEN</span>
-              </>
-            ) : selectedLogEntry && isDerelict ? (
-              <span className="dock-station-panel__right-title">
-                {selectedLogEntry.kind === 'dossier' ? 'PILOT DOSSIER' : 'COMMS LOG'}
-              </span>
-            ) : (
-              <span className="hud-title">{isDerelict ? 'SHIP PERSONNEL' : 'DIRECTORY'}</span>
-            )}
-          </div>
+          {/* DialogueThread renders its own COMMS OPEN bar while a chat is open. */}
+          {dockThreadId && activeDockChat ? null : (
+            <div className="dock-station-panel__right-header">
+              {selectedLogEntry && isDerelict ? (
+                <span className="dock-station-panel__right-title">
+                  {selectedLogEntry.kind === 'dossier' ? 'PILOT DOSSIER' : 'COMMS LOG'}
+                </span>
+              ) : (
+                <span className="hud-title">{isDerelict ? 'SHIP PERSONNEL' : 'DIRECTORY'}</span>
+              )}
+            </div>
+          )}
 
           {dockThreadId && activeDockChat ? (
             <div className="dock-station-panel__dialogue-wrapper">

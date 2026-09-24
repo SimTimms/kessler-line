@@ -1,6 +1,5 @@
 import { assignDialogueTree, getDialogueTreeById } from './npcDialogues';
-import { getThread, createThread, addChatMessage, setChatTurn } from '../context/ChatStore';
-import { dockContactThreadId } from '../config/dockConfig';
+import { createThread, addChatMessage, setChatTurn } from '../context/ChatStore';
 import { setIncomingHail } from '../context/IncomingHailState';
 
 export interface NarrativeHailParams {
@@ -12,20 +11,23 @@ export interface NarrativeHailParams {
   shipName: string;
   /** Captain/NPC name (e.g. "Elias Voss"). */
   captainName: string;
-  /** Optional dock history to copy. If provided, copies messages from the dock thread. */
-  dockHistory?: {
-    dockId: string;
-    contactId: string;
-  };
+  /**
+   * Dock contact id of the person hailing, when they are someone the player can
+   * also meet aboard a station. Ties this thread to their identity and history.
+   */
+  personId?: string;
 }
 
 /**
  * Fire an incoming narrative hail from any character.
- * Pre-creates the chat thread seeded with optional dock conversation history
- * so the player sees continuity when they accept the hail.
+ *
+ * Pass `personId` when the caller is a character the player can also meet at a
+ * dock: the panel then resolves that person's portrait, role and dossier and
+ * merges their other conversations in as history — see
+ * `narrative/contactIdentity.ts` — so no copying is needed here.
  */
 export function fireNarrativeHail(params: NarrativeHailParams): void {
-  const { contactId, dialogueTreeId, shipName, captainName, dockHistory } = params;
+  const { contactId, dialogueTreeId, shipName, captainName, personId } = params;
 
   // Assign the narrative dialogue tree before the hail fires
   assignDialogueTree(contactId, dialogueTreeId);
@@ -39,18 +41,8 @@ export function fireNarrativeHail(params: NarrativeHailParams): void {
       tree.captainName || captainName,
       dialogueTreeId,
       tree.openingTurnId,
+      personId
     );
-
-    // Copy any previous dock conversation as history
-    if (dockHistory) {
-      const dockThreadId = dockContactThreadId(dockHistory.dockId, dockHistory.contactId);
-      const dockThread = getThread(dockThreadId);
-      if (dockThread) {
-        for (const msg of dockThread.messages) {
-          addChatMessage(contactId, { ...msg, id: `history-${msg.id}` });
-        }
-      }
-    }
 
     // Add the opening NPC message from the new dialogue
     const firstTurn = tree.turns[tree.openingTurnId];

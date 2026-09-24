@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { Fragment, useState, useEffect, type ReactNode } from 'react';
 import { formatTime } from './commsUtils';
 import type { ChatThread } from '../../context/ChatStore';
 import type { HailStatus } from '../../context/HailState';
@@ -13,6 +13,7 @@ type DisplayRow = {
   timestamp: number;
   timeLabel?: ReactNode;
   audioSrc?: string;
+  isHistory?: boolean;
 };
 
 interface DialogMessagesProps {
@@ -27,6 +28,10 @@ interface DialogMessagesProps {
   thread: ChatThread | null;
   shipName: string;
   bottomRef: React.RefObject<HTMLDivElement | null>;
+  /** Anchored on the first message of *this* conversation, below the history. */
+  dividerRef?: React.RefObject<HTMLDivElement | null>;
+  /** Caption for the divider, e.g. `EARLIER · DONINGTON STATION`. */
+  historyLabel?: string;
   onHail?: () => void;
   onAcceptHail?: () => void;
   onDeclineHail?: () => void;
@@ -43,6 +48,8 @@ export default function DialogMessages({
   thread,
   shipName,
   bottomRef,
+  dividerRef,
+  historyLabel,
   onHail,
   onAcceptHail,
   onDeclineHail,
@@ -174,17 +181,36 @@ export default function DialogMessages({
             </div>
           )}
 
-          {displayRows.map((row) => (
-            <div key={row.id} className={`comms-chat-row comms-chat-row--${row.role}`}>
-              {row.role === 'npc' && row.senderName && (
-                <div className="comms-chat-sender">{row.senderName}</div>
-              )}
-              <div className={`chat-log-text comms-chat-bubble--${row.role}`}>{row.content}</div>
-              <div className="comms-chat-row-footer">
-                {row.audioSrc && <MessageAudioButton src={row.audioSrc} />}
-              </div>
-            </div>
-          ))}
+          {displayRows.map((row, i) => {
+            // Mark where messages carried in from this contact's other channel
+            // end and the conversation in this panel begins.
+            const prev = displayRows[i - 1];
+            const startsThisChannel = !row.isHistory && (i === 0 ? false : !!prev?.isHistory);
+            return (
+              <Fragment key={row.id}>
+                {startsThisChannel && (
+                  <div className="comms-chat-history-divider" ref={dividerRef}>
+                    <span>{historyLabel ?? 'EARLIER'} ▲</span>
+                  </div>
+                )}
+                <div
+                  className={`comms-chat-row comms-chat-row--${row.role}${
+                    row.isHistory ? ' comms-chat-row--history' : ''
+                  }`}
+                >
+                  {row.role === 'npc' && row.senderName && (
+                    <div className="comms-chat-sender">{row.senderName}</div>
+                  )}
+                  <div className={`chat-log-text comms-chat-bubble--${row.role}`}>
+                    {row.content}
+                  </div>
+                  <div className="comms-chat-row-footer">
+                    {row.audioSrc && <MessageAudioButton src={row.audioSrc} />}
+                  </div>
+                </div>
+              </Fragment>
+            );
+          })}
 
           {!contact && displayRows.length > 0 && thread?.awaitingNpc && (
             <div className="comms-chat-row comms-chat-row--npc">

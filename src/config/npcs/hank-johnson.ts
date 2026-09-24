@@ -20,9 +20,13 @@ const HANK_PARCEL_DELIVERY_TRADE: DockTradeTurnConfig = {
   npcInsultText: 'No parcel, no handover.',
   npcAcceptText: 'That is the right transfer. Confirm it.',
   npcCounterText: 'Need this transfer: {offer}',
-  npcCompleteText: 'Received. Bill said you would come through. Thank you, pilot.',
+  npcCompleteText:
+    'Received. Bill said you would come through. Thank you, pilot. I believe Old Bill has some....renumerations for you. Maybe you should head back to Donington.  ',
   npcCounterDeclinedAckText: 'Then we are not done.',
-  onCompleteEffects: [{ type: 'completeMission', missionId: 'bill-churchill-parcel-run' }],
+  onCompleteEffects: [
+    { type: 'completeMission', missionId: 'bill-churchill-parcel-run' },
+    { type: 'acceptMission', missionId: 'bill-churchill-return' },
+  ],
   playerOfferText: 'Delivering: {offer}',
   playerAcceptText: 'Confirmed. Handing over: {offer}',
   playerCounterAcceptText: 'Counter accepted. Handing over: {offer}',
@@ -35,8 +39,8 @@ export const HANK_JOHNSON: DockContact = {
   role: 'dockmaster',
   age: 47,
   company: 'Bakerfield Falls Operations',
-  portrait: '/profiles/scab-captain.png',
-  bio: 'Dockmaster at Bakerfield Falls. Receiving lead for incoming station parcels.',
+  portrait: '/textures/profiles/hank-johnson.jpg',
+  bio: 'Dockmaster at Bakerfield Falls.',
   platform: 'REACH',
   inventory: {
     label: 'Hank Johnson',
@@ -49,7 +53,7 @@ export const HANK_JOHNSON: DockContact = {
       intro: {
         id: 'intro',
         npcText:
-          'Hank Johnson, Bakerfield Falls dockmaster. Bill Churchill said you were bringing a parcel from Donington Station.',
+          'Hank Johnson, Bakerfield Falls dockmaster. Old Bill said you were bringing a parcel from Donington Station.',
         playerOptions: [
           {
             id: 'deliver-parcel',

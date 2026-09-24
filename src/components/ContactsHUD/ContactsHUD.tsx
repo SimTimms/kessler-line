@@ -43,6 +43,7 @@ import './ContactsHUD.css';
 import {
   dockContactThreadId,
   dockJobThreadId,
+  hasPendingDockDialogue,
   DOCK_ROLE_LABELS,
   DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE,
   parseDockThreadId,
@@ -59,6 +60,7 @@ import {
 } from '../../context/DockablePartnerStore';
 import DockInteriorDialogue from '../Station/StationDialogue';
 import { getThread } from '../../context/ChatStore';
+import { resolvePersonContact } from '../../narrative/contactIdentity';
 import {
   activeMissionRef,
   completedMissionsRef,
@@ -115,6 +117,8 @@ export type ContactsTriggerApi = {
   open: () => void;
   contactCount: number;
   hasIncoming: boolean;
+  /** Ids of contacts currently hailing us (NPC-initiated). */
+  incomingHailIds: Set<string>;
   isActive: boolean;
   savedItems: SelectionItem[];
   inRangeItems: SelectionItem[];
@@ -157,6 +161,21 @@ function resolveDockInteriorChat(threadId: string): {
   }
 
   return null;
+}
+
+/**
+ * Narrative hails reuse a dock contact's id, so a hail row shows that person's
+ * name, role and portrait rather than a raw `VESSEL-ELIAS-VOSS` designation.
+ */
+function personItemFields(id: string): Partial<SelectionItem> {
+  const person = resolvePersonContact(id);
+  if (!person) return {};
+  return {
+    label: person.name,
+    sublabel: DOCK_ROLE_LABELS[person.role],
+    avatarSrc: person.portrait,
+    avatarAlt: person.name,
+  };
 }
 
 export default function ContactsHUD({
@@ -474,6 +493,7 @@ export default function ContactsHUD({
           label: thread?.shipName ?? SHIP_DESIGNATIONS[id] ?? `VESSEL-${id.toUpperCase()}`,
           sublabel: thread ? 'SAVED · LAST KNOWN CONTACT' : 'SAVED · KNOWN CONTACT',
           statusLine: commsStatus.none,
+          ...personItemFields(id),
         };
       }),
   ];
@@ -489,10 +509,11 @@ export default function ContactsHUD({
       )
       .map((id) => ({
         id,
-        label: SHIP_DESIGNATIONS[id] ?? `VESSEL-${id.toUpperCase()}`,
-        sublabel: 'UNKNOWN CONTACT · LONG-RANGE HAIL',
+        label: SHIP_DESIGNATIONS[id] ?? `${id.toUpperCase()}`,
+        sublabel: 'PERSONAL HAIL',
         statusLine: commsStatus.incoming,
         statusPulse: true,
+        ...personItemFields(id),
       })),
   ];
 
@@ -520,6 +541,7 @@ export default function ContactsHUD({
         label: thread?.shipName ?? SHIP_DESIGNATIONS[id] ?? `VESSEL-${id.toUpperCase()}`,
         sublabel: thread ? 'COMMS LOGGED' : 'CONTACT LOGGED',
         statusLine: thread && thread.currentTurnId === null ? 'LOGGED · CLOSED' : undefined,
+        ...personItemFields(id),
       };
     });
 
@@ -527,18 +549,20 @@ export default function ContactsHUD({
     ? [
         ...getDockContacts(dockedPartnerId).map((contact) => {
           const mid = contact.missionId;
+          const threadId = dockContactThreadId(dockedPartnerId, contact.id);
           const missionAvailable =
             mid != null &&
             !declinedMissionsRef.current.includes(mid) &&
             !completedMissionsRef.current.includes(mid) &&
             !activeMissionRef.current.includes(mid);
+          const hasFollowUp = hasPendingDockDialogue(threadId, contact.dialogue);
           return {
-            id: dockContactThreadId(dockedPartnerId, contact.id),
+            id: threadId,
             label: contact.name,
             sublabel: DOCK_ROLE_LABELS[contact.role],
             avatarSrc: contact.portrait,
             avatarAlt: contact.name,
-            missionFlag: missionAvailable ? 'CALLING' : undefined,
+            missionFlag: missionAvailable || hasFollowUp ? 'CALLING' : undefined,
           };
         }),
         ...getDockJobs(dockedPartnerId)
@@ -557,6 +581,7 @@ export default function ContactsHUD({
 
   const chatShipName = chatShipId
     ? (resolveDockInteriorChat(chatShipId)?.contact.name ??
+      resolvePersonContact(chatShipId)?.name ??
       inRangeDrives.find((d) => d.id === chatShipId)?.name ??
       getThread(chatShipId)?.shipName ??
       (hailOffers.has(chatShipId)
@@ -598,6 +623,7 @@ export default function ContactsHUD({
           open: () => setOpen(true),
           contactCount: rosterCount,
           hasIncoming,
+          incomingHailIds: incomingHails,
           isActive: contactsActive,
           savedItems,
           inRangeItems,

@@ -13,7 +13,7 @@ import type {
   DockTradeTurnConfig,
   DockTradeResourceKind,
 } from '../../config/dockConfig';
-import { parseDockThreadId } from '../../config/dockConfig';
+import { parseDockThreadId, resolveDockDialogueReentry } from '../../config/dockConfig';
 import { getInventoryItemDef } from '../../config/inventoryCatalog';
 import { PLAYER_SALVAGED_BY } from '../../config/inventoryTypes';
 import {
@@ -278,9 +278,47 @@ export default function DockInteriorDialogue({
   useEffect(() => {
     if (threadInitRef.current) return;
     threadInitRef.current = true;
-    if (getThread(threadId)) return;
 
-    createThread(threadId, contact.name, contact.name, dialogue.id, dialogue.openingTurnId);
+    const existing = getThread(threadId);
+    if (existing) {
+      // Conversation already ran. If the contact now has follow-up business —
+      // a mission another character handed out, say — reopen it there instead
+      // of leaving the player staring at a closed transcript.
+      if (existing.currentTurnId === null && !existing.awaitingNpc) {
+        const reentryTurnId = resolveDockDialogueReentry(dialogue);
+        const reentryTurn = reentryTurnId ? dialogue.turns[reentryTurnId] : null;
+        if (reentryTurnId && reentryTurn) {
+          setChatTurn(threadId, reentryTurnId, true);
+          setTimeout(
+            () => {
+              addChatMessage(threadId, {
+                id: `npc-${threadId}-${reentryTurnId}-${Date.now()}`,
+                role: 'npc',
+                text: reentryTurn.npcText,
+                timestamp: Date.now(),
+                audioSrc: resolveNpcVoiceClipSrc(reentryTurn.audio),
+              });
+              setChatTurn(threadId, reentryTurnId, false);
+              if (reentryTurn.trade) {
+                setTradeOpen(true);
+                setTradeStatus(reentryTurn.trade.panelStatusOpen);
+              }
+            },
+            700 + Math.random() * 900
+          );
+        }
+      }
+      return;
+    }
+
+    createThread(
+      threadId,
+      contact.name,
+      contact.name,
+      dialogue.id,
+      dialogue.openingTurnId,
+      contact.id
+    );
     const firstTurn = dialogue.turns[dialogue.openingTurnId];
     if (!firstTurn) return;
 

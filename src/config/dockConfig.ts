@@ -1,6 +1,8 @@
 import type { MessagePlatform } from '../context/MessageStore';
 import type { DialogueEffect } from '../narrative/dialogueEffects';
 import type { InventoryBlueprint } from './inventoryTypes';
+import { activeMissionRef, completedMissionsRef } from '../context/MissionState';
+import { getThread } from '../context/ChatStore';
 
 export type DockableResourceSlot = {
   amount: number;
@@ -151,11 +153,56 @@ export interface DockDialogueTurn {
   audio?: string;
 }
 
+/**
+ * An alternative opening for a conversation that already ended, so a contact can
+ * come back with follow-up business — typically work handed out by someone else.
+ * Gates are ANDed; give every entry at least one or it will reopen forever.
+ */
+export interface DockDialogueReentry {
+  /** Turn to reopen the conversation at. */
+  turnId: string;
+  /** Applies only while every one of these missions is active. */
+  whileMissionActive?: string[];
+  /** Applies only once every one of these missions is completed. */
+  afterMissionCompleted?: string[];
+}
+
 /** Branching dialogue tree — defined inline on each dock contact. */
 export interface DockDialogueTree {
   id: string;
   openingTurnId: string;
+  /** Checked in order when the player reopens a finished conversation. */
+  reentryTurns?: DockDialogueReentry[];
   turns: Record<string, DockDialogueTurn>;
+}
+
+/**
+ * Which turn a finished conversation should reopen at, or null to leave it
+ * closed. Evaluated against live mission state each time the panel opens.
+ */
+export function resolveDockDialogueReentry(tree: DockDialogueTree): string | null {
+  for (const entry of tree.reentryTurns ?? []) {
+    if (!tree.turns[entry.turnId]) continue;
+    const activeOk = (entry.whileMissionActive ?? []).every((id) =>
+      activeMissionRef.current.includes(id)
+    );
+    const completedOk = (entry.afterMissionCompleted ?? []).every((id) =>
+      completedMissionsRef.current.includes(id)
+    );
+    if (activeOk && completedOk) return entry.turnId;
+  }
+  return null;
+}
+
+/**
+ * True when this contact has something new to say — an unopened conversation or
+ * a re-entry the player has not seen yet. Drives the directory CALLING flag.
+ */
+export function hasPendingDockDialogue(threadId: string, tree: DockDialogueTree): boolean {
+  const thread = getThread(threadId);
+  if (!thread) return false;
+  if (thread.currentTurnId !== null) return false;
+  return resolveDockDialogueReentry(tree) !== null;
 }
 
 /** A person aboard the docked structure, reachable via interior comms. */

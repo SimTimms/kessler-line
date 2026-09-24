@@ -5,8 +5,8 @@ import { addCompletedMission, removeActiveMission } from '../../../context/Missi
 import { addMessage } from '../../../context/MessageStore';
 import { pushAlert } from '../../../context/AlertsStore';
 import { fireNarrativeHail } from '../../../narrative/narrativeHail';
+import { ELIAS_VOSS } from '../../npcs/elias-voss';
 import { useRef, useEffect } from 'react';
-import { NARRATIVE_DONINGTON_STATION_ID } from '../../../scenes/NarrativeConfig/narrativeSceneConfig';
 import { deployedSatelliteRef } from '../../../context/DeployedSatelliteState';
 import { shipVelocity } from '../../../context/ShipState';
 import { useFrame } from '@react-three/fiber';
@@ -24,10 +24,7 @@ function fireEliasVossHail() {
     dialogueTreeId: 'elias-voss-satellite-hail',
     shipName: 'Donington Station',
     captainName: 'Elias Voss',
-    dockHistory: {
-      dockId: NARRATIVE_DONINGTON_STATION_ID,
-      contactId: 'elias-voss',
-    },
+    personId: ELIAS_VOSS.id,
   });
 }
 

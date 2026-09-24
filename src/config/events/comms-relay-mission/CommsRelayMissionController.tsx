@@ -2,8 +2,11 @@
  * CommsRelayMissionController — renders null.
  *
  * 1. Listens for MissionStateChanged — when either prerequisite mission appears
- *    in completedMissionsRef, starts a 20-second timer.
- * 2. After 20s, fires a narrative hail from Elias Voss (emergency broadcast).
+ *    in completedMissionsRef, arms the hail (currently commented out; the scene
+ *    arms it directly instead).
+ * 2. The Elias Voss emergency-broadcast hail now lives in
+ *    src/eventTrigger/events/elias-voss-hail.ts and is armed by the scene via
+ *    registerTimedEvent(). This controller only reacts to its outcome.
  * 3. Monitors ChatUpdated on the hail contact to detect accept/decline.
  * 4. On accept → addActiveMission + push alert.
  * 5. On decline → addDeclinedMission.
@@ -13,22 +16,16 @@
 
 import { useRef, useEffect } from 'react';
 import { completedMissionsRef } from '../../../context/MissionState';
-import {
-  addActiveMission,
-  addDeclinedMission,
-} from '../../../context/MissionState';
+import { addActiveMission, addDeclinedMission } from '../../../context/MissionState';
 import { getThread, addChatMessage } from '../../../context/ChatStore';
 import { pushAlert } from '../../../context/AlertsStore';
 import { setFuel, setO2, setPower } from '../../../context/ShipState';
-import { fireNarrativeHail } from '../../../narrative/narrativeHail';
-import { NARRATIVE_DONINGTON_STATION_ID } from '../../../scenes/NarrativeConfig/narrativeSceneConfig';
 import { COMMS_BUFFER_LOGS } from './comms-buffer-logs';
 import { preloadBufferData } from '../../../context/CommsBufferStore';
 import { dockContactThreadId } from '../../dockConfig';
 import {
   COMMS_RELAY_MISSION_ID,
   COMMS_RELAY_HAIL_CONTACT_ID,
-  COMMS_RELAY_DIALOGUE_TREE_ID,
   COMMS_BUFFER_SATELLITE_ID,
   // COMMS_RELAY_HAIL_DELAY_MS,        // TODO: re-enable with prerequisite block
   // COMMS_RELAY_PREREQUISITE_MISSIONS, // TODO: re-enable with prerequisite block
@@ -38,16 +35,12 @@ import { EVENT_REQUEST_UNDOCK } from '../../keybindings';
 import { syncDockTransferOnDock, clearDockTransferUi } from '../../../context/DockTransferUi';
 
 export default function CommsRelayMissionController() {
-  /** True once the hail has been fired (fires at most once per session). */
-  const hailFiredRef = useRef(false);
   /** True once mission accept/decline has been processed. */
   const outcomeProcessedRef = useRef(false);
   /** True once the resupply effect has been applied. */
   const resupplyAppliedRef = useRef(false);
   /** True once mission completion logs have been delivered. */
   const logsDeliveredRef = useRef(false);
-  /** Timer handle for the 20-second delay. */
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── DEBUG: open comms buffer satellite panel after first undock ────────
   // TODO: remove this block before shipping
@@ -79,32 +72,12 @@ export default function CommsRelayMissionController() {
     return () => window.removeEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
   }, []);
 
-  // ── DEBUG: auto-fire hail 10s after mount (bypass prerequisites) ─────
-  // TODO: remove this block before shipping
-  useEffect(() => {
-    if (completedMissionsRef.current.includes(COMMS_RELAY_MISSION_ID)) return;
-
-    const handle = setTimeout(() => {
-      if (hailFiredRef.current) return;
-      hailFiredRef.current = true;
-      console.info('[comms-relay] DEBUG auto-fire hail');
-      fireNarrativeHail({
-        contactId: COMMS_RELAY_HAIL_CONTACT_ID,
-        dialogueTreeId: COMMS_RELAY_DIALOGUE_TREE_ID,
-        shipName: 'Donington Station',
-        captainName: 'Elias Voss',
-        dockHistory: {
-          dockId: NARRATIVE_DONINGTON_STATION_ID,
-          contactId: 'elias-voss',
-        },
-      });
-    }, 300_000);
-
-    return () => clearTimeout(handle);
-  }, []);
-
   // ── Listen for prerequisite mission completion → start hail timer ──────
-  // (currently bypassed by the DEBUG block above — re-enable when done testing)
+  // Superseded by the timed-event trigger: the scene arms ELIAS_VOSS_HAIL_EVENT_ID.
+  // To restore prerequisite-gating, call setTimedEventDelay(ELIAS_VOSS_HAIL_EVENT_ID,
+  // COMMS_RELAY_HAIL_DELAY_MS) from here instead of the setTimeout below.
+  // NOTE: to uncomment this, restore hailFiredRef / timerRef and the imports for
+  // fireNarrativeHail, NARRATIVE_DONINGTON_STATION_ID and COMMS_RELAY_DIALOGUE_TREE_ID.
   /*
   useEffect(() => {
     const onMissionChanged = () => {
@@ -127,10 +100,7 @@ export default function CommsRelayMissionController() {
           dialogueTreeId: COMMS_RELAY_DIALOGUE_TREE_ID,
           shipName: 'Donington Station',
           captainName: 'Elias Voss',
-          dockHistory: {
-            dockId: NARRATIVE_DONINGTON_STATION_ID,
-            contactId: 'elias-voss',
-          },
+          personId: 'elias-voss',
         });
       }, COMMS_RELAY_HAIL_DELAY_MS);
     };
@@ -192,15 +162,18 @@ export default function CommsRelayMissionController() {
       const baseDelay = 1200;
 
       COMMS_BUFFER_LOGS.forEach((log, i) => {
-        setTimeout(() => {
-          const header = `[${log.from}]\n${log.subject}\n\n`;
-          addChatMessage(threadId, {
-            id: `buffer-playback-${log.id}-${Date.now()}`,
-            role: 'npc',
-            text: header + log.body,
-            timestamp: Date.now(),
-          });
-        }, baseDelay + i * 1800);
+        setTimeout(
+          () => {
+            const header = `[${log.from}]\n${log.subject}\n\n`;
+            addChatMessage(threadId, {
+              id: `buffer-playback-${log.id}-${Date.now()}`,
+              role: 'npc',
+              text: header + log.body,
+              timestamp: Date.now(),
+            });
+          },
+          baseDelay + i * 1800
+        );
       });
 
       // Pre-load the satellite's comms buffer with the log messages so they're

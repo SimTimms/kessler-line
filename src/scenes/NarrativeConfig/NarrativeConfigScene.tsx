@@ -1,4 +1,4 @@
-import { Suspense, useLayoutEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import Spaceship from '../../components/Ship/Spaceship';
 import TutorialFollowCamera from '../../components/TutorialShared/TutorialFollowCamera';
@@ -31,6 +31,8 @@ import CommsBufferSatellite from '../../config/events/comms-relay-mission/CommsB
 import CarrierGRB from '../../components/Ships/CarrierGRB';
 import DerelictField from '../../components/Ship/DerelictField';
 import { spawnShip } from './helpers/spawnShip';
+import { registerTimedEvent, resetTimedEvents } from '../../eventTrigger/event-trigger';
+import { ELIAS_VOSS_HAIL_EVENT_ID } from '../../eventTrigger/events';
 
 import {
   getNarrativeMarsNormalTravelRadius,
@@ -117,6 +119,14 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   }, []);
 
   const marsZoneRadius = useMemo(() => getNarrativeMarsNormalTravelRadius(), []);
+
+  // ── Timed narrative events ───────────────────────────────────────────────
+  // Arm on scene start; resetTimedEvents() clears every pending timer on teardown
+  // so nothing fires into the next scene.
+  useEffect(() => {
+    registerTimedEvent(ELIAS_VOSS_HAIL_EVENT_ID, 30_000);
+    return () => resetTimedEvents();
+  }, []);
 
   useLayoutEffect(() => {
     if (savedSpawn || shipSpawn.skipDock) return;

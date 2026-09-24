@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useMemo, type ReactNode } from 'react';
 import type { ChatThread } from '../../context/ChatStore';
 import type { HailStatus } from '../../context/HailState';
 import type { StaticContact } from '../../narrative/contacts';
@@ -24,7 +24,13 @@ import { getOrCreateShipRecord, formatShipClass, formatAgenda } from '../../narr
 import { SETTLEMENT_BY_OBJECT_ID } from '../../config/settlementConfig';
 import { DOCK_ROLE_LABELS, type DockContact } from '../../config/dockConfig';
 import ContactDossier from './ContactDossier';
+import {
+  getLinkedHistory,
+  getLinkedHistoryLabel,
+  resolvePersonContact,
+} from '../../narrative/contactIdentity';
 import DialogHeader from './DialogHeader';
+import CommsIdentityHeader from './CommsIdentityHeader';
 import DialogFooter from './DialogFooter';
 import DialogMessages from './DialogMessages';
 import SettlementInfoPanel from './SettlementInfoPanel';
@@ -80,6 +86,8 @@ type DisplayRow = {
   timestamp: number;
   timeLabel?: ReactNode;
   audioSrc?: string;
+  /** Carried in from this person's other channel — shown above a divider. */
+  isHistory?: boolean;
 };
 
 interface DialogueThreadProps {
@@ -182,8 +190,26 @@ export default function DialogueThread({
   onBack,
 }: DialogueThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const dividerRef = useRef<HTMLDivElement>(null);
+  /** Cleared per thread so the first open lands on the divider, later ones don't. */
+  const settledRef = useRef(false);
   const hasSettlement = !contact && SETTLEMENT_BY_OBJECT_ID[shipId] !== undefined;
   const [viewMode, setViewMode] = useState<CommsViewMode>('messages');
+
+  // A narrative hail reuses the dock contact's id, so the same person keeps
+  // their portrait, role and dossier whichever channel they come in on.
+  const identityContact = character ?? (contact ? undefined : resolvePersonContact(shipId));
+  const identityName = identityContact?.name;
+
+  // Parents such as DockTransferHUD re-render every frame, so the cross-channel
+  // history is recomputed only when some thread actually changes.
+  const [linkedVersion, bumpLinked] = useState(0);
+  const linkedHistory = useMemo(
+    () => (contact ? [] : getLinkedHistory(shipId)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute on any thread change
+    [contact, shipId, thread?.messages.length, linkedVersion]
+  );
+  const linkedHistoryLabel = linkedHistory.length > 0 ? getLinkedHistoryLabel(shipId) : undefined;
 
   const [msgs, setMsgs] = useState<InboxMessage[]>(() =>
     contact ? getContactMessages(contact) : []
@@ -199,6 +225,16 @@ export default function DialogueThread({
 
   useEffect(() => {
     setViewMode('messages');
+    settledRef.current = false;
+  }, [shipId]);
+
+  useEffect(() => {
+    const onUpdate = (e: Event) => {
+      const sid = (e as CustomEvent<{ shipId: string }>).detail?.shipId;
+      if (sid && sid !== shipId) bumpLinked((n) => n + 1);
+    };
+    window.addEventListener('ChatUpdated', onUpdate);
+    return () => window.removeEventListener('ChatUpdated', onUpdate);
   }, [shipId]);
 
   useEffect(() => {
@@ -209,6 +245,19 @@ export default function DialogueThread({
   }, [contact]);
 
   useEffect(() => {
+    // First look at a conversation that carries history from another channel:
+    // park on the divider so the earlier messages are visibly above it. Threads
+    // with no history never have a divider and just pin to the newest message.
+    if (
+      !contact &&
+      effectiveHailStatus === 'accepted' &&
+      !settledRef.current &&
+      dividerRef.current
+    ) {
+      settledRef.current = true;
+      dividerRef.current.scrollIntoView({ block: 'start' });
+      return;
+    }
     if (contact) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     } else if (effectiveHailStatus === 'accepted') {
@@ -283,14 +332,22 @@ export default function DialogueThread({
 
         return rows;
       })
-    : (thread?.messages ?? []).map((msg) => ({
-        id: msg.id,
-        role: msg.role,
-        senderName: msg.role === 'npc' ? thread!.captainName : undefined,
-        content: msg.text,
-        timestamp: msg.timestamp,
-        audioSrc: msg.audioSrc,
-      }));
+    : // Same person reached on another channel — merge their history in by
+      // timestamp so a hail carries the station conversation and vice versa.
+      [
+        ...linkedHistory.map((msg) => ({ msg, isHistory: true })),
+        ...(thread?.messages ?? []).map((msg) => ({ msg, isHistory: false })),
+      ]
+        .sort((a, b) => a.msg.timestamp - b.msg.timestamp)
+        .map(({ msg, isHistory }) => ({
+          id: msg.id,
+          role: msg.role,
+          senderName: msg.role === 'npc' ? (identityName ?? thread?.captainName) : undefined,
+          content: msg.text,
+          timestamp: msg.timestamp,
+          audioSrc: msg.audioSrc,
+          isHistory,
+        }));
 
   // ── Footer options ─────────────────────────────────────────────────────────
   const isPreHail = !contact && effectiveHailStatus !== 'accepted';
@@ -308,7 +365,25 @@ export default function DialogueThread({
 
   // Skip the ship registry for station characters so their ids don't get
   // assigned ship profiles / radio dialogue trees.
-  const record = contact || character ? null : getOrCreateShipRecord(shipId, shipName);
+  const record = contact || identityContact ? null : getOrCreateShipRecord(shipId, shipName);
+
+  // Ship / broadcast contacts have no portrait or dossier, so their identity
+  // block carries the captain up top and the vessel details underneath.
+  const platformName = PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName;
+  const vesselIdentity = {
+    name: (thread?.captainName ?? shipName).toUpperCase(),
+    lines: [
+      thread && thread.captainName !== shipName
+        ? `${shipName.toUpperCase()} · ${platformName}`
+        : platformName,
+      thread && !hideShipProfile && record
+        ? `${formatShipClass(record.shipClass)} · ${formatAgenda(record.agenda)}${
+            record.destination !== 'none' ? ` → ${record.destination.toUpperCase()}` : ''
+          } · ${record.faction.toUpperCase()}`
+        : null,
+    ],
+  };
+
   const tradeMode = tradePanel?.mode ?? 'resources';
   const tradeRows: Array<{ key: TradeResourceKind; label: string; max: number; value: number }> = [
     {
@@ -350,84 +425,74 @@ export default function DialogueThread({
       className={`comms-chat${inline ? ' comms-chat--inline' : ''}`}
       data-platform={commsPlatform}
     >
+      {/* ── Channel title bar ── */}
+      <div className="comms-chat-titlebar">
+        <span className="hud-title">{isPreHail ? 'COMMS' : 'COMMS OPEN'}</span>
+      </div>
+
       {/* ── Header ── */}
-      {character ? (
-        <div className="comms-chat-header comms-chat-header--character">
-          <img
-            className="dock-station-panel__contact-portrait"
-            src={character.portrait}
-            alt={character.name}
-          />
-          <div className="comms-chat-character-id">
-            <div className="comms-chat-header-top">
-              <div className="hud-title">{character.name}</div>
-              <button
-                type="button"
-                className="comms-chat-header-toggle"
-                onClick={() => setViewMode((mode) => (mode === 'dossier' ? 'messages' : 'dossier'))}
-                title={viewMode === 'dossier' ? 'Conversation' : 'Dossier'}
-                aria-label={viewMode === 'dossier' ? 'Show conversation' : 'Show dossier'}
-              >
-                {viewMode === 'dossier' ? '✉' : 'ⓘ'}
-              </button>
-            </div>
-            <div className="hud-subtitle-grey">
-              {DOCK_ROLE_LABELS[character.role].toUpperCase()}
-              <br />
-              {character.company ? ` ${character.company.toUpperCase()}` : ' INDEPENDENT'}
-            </div>
-          </div>
-        </div>
+      {identityContact ? (
+        <CommsIdentityHeader
+          portrait={identityContact.portrait}
+          name={identityContact.name}
+          lines={[
+            DOCK_ROLE_LABELS[identityContact.role].toUpperCase(),
+            identityContact.company ? identityContact.company.toUpperCase() : 'INDEPENDENT',
+          ]}
+          actions={
+            <button
+              type="button"
+              className="comms-chat-header-toggle"
+              onClick={() => setViewMode((mode) => (mode === 'dossier' ? 'messages' : 'dossier'))}
+              title={viewMode === 'dossier' ? 'Conversation' : 'Dossier'}
+              aria-label={viewMode === 'dossier' ? 'Show conversation' : 'Show dossier'}
+            >
+              {viewMode === 'dossier' ? '✉' : 'ⓘ'}
+            </button>
+          }
+        />
       ) : contact ? (
         <DialogHeader contact={contact} />
       ) : (
-        <div className="comms-chat-header">
-          <div className="comms-chat-header-top">
-            <div className="comms-chat-vessel">{shipName}</div>
-            <div className="comms-chat-header-actions">
-              {onAddToContacts && (
-                <button
-                  type="button"
-                  className="comms-chat-header-action"
-                  onClick={onAddToContacts}
-                  title={isSavedContact ? 'Already in contacts' : 'Add to contacts'}
-                  aria-label={isSavedContact ? 'Already in contacts' : 'Add to contacts'}
-                  disabled={isSavedContact}
-                >
-                  {isSavedContact ? 'IN CONTACTS' : 'ADD TO CONTACTS'}
-                </button>
-              )}
-              {hasSettlement && (
-                <button
-                  type="button"
-                  className="comms-chat-header-toggle"
-                  onClick={() => setViewMode((mode) => (mode === 'messages' ? 'info' : 'messages'))}
-                  title={viewMode === 'messages' ? 'Station info' : 'Messages'}
-                  aria-label={viewMode === 'messages' ? 'Show station info' : 'Show messages'}
-                >
-                  {viewMode === 'messages' ? 'ⓘ' : '✉'}
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="comms-chat-captain">
-            {thread
-              ? `${thread.captainName.toUpperCase()} · ${PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName}`
-              : PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName}
-          </div>
-          {thread && !hideShipProfile && record && (
-            <div className="comms-chat-profile">
-              {formatShipClass(record.shipClass)} · {formatAgenda(record.agenda)}
-              {record.destination !== 'none' ? ` → ${record.destination.toUpperCase()}` : ''}
-              {' · '}
-              {record.faction.toUpperCase()}
-            </div>
-          )}
-        </div>
+        <CommsIdentityHeader
+          name={vesselIdentity.name}
+          lines={vesselIdentity.lines}
+          actions={
+            onAddToContacts || hasSettlement ? (
+              <>
+                {onAddToContacts && (
+                  <button
+                    type="button"
+                    className="comms-chat-header-action"
+                    onClick={onAddToContacts}
+                    title={isSavedContact ? 'Already in contacts' : 'Add to contacts'}
+                    aria-label={isSavedContact ? 'Already in contacts' : 'Add to contacts'}
+                    disabled={isSavedContact}
+                  >
+                    {isSavedContact ? 'IN CONTACTS' : 'ADD TO CONTACTS'}
+                  </button>
+                )}
+                {hasSettlement && (
+                  <button
+                    type="button"
+                    className="comms-chat-header-toggle"
+                    onClick={() =>
+                      setViewMode((mode) => (mode === 'messages' ? 'info' : 'messages'))
+                    }
+                    title={viewMode === 'messages' ? 'Station info' : 'Messages'}
+                    aria-label={viewMode === 'messages' ? 'Show station info' : 'Show messages'}
+                  >
+                    {viewMode === 'messages' ? 'ⓘ' : '✉'}
+                  </button>
+                )}
+              </>
+            ) : undefined
+          }
+        />
       )}
 
-      {viewMode === 'dossier' && character ? (
-        <ContactDossier data={character} />
+      {viewMode === 'dossier' && identityContact ? (
+        <ContactDossier data={identityContact} />
       ) : viewMode === 'info' && hasSettlement ? (
         <SettlementInfoPanel objectId={shipId} />
       ) : (
@@ -446,6 +511,8 @@ export default function DialogueThread({
           thread={thread}
           shipName={shipName}
           bottomRef={bottomRef}
+          dividerRef={dividerRef}
+          historyLabel={linkedHistoryLabel}
         />
       )}
       {tradePanel?.visible && (

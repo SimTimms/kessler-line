@@ -48,6 +48,9 @@ export const BILL_CHURCHILL: DockContact = {
   dialogue: {
     id: 'bill-churchill-parcel-run',
     openingTurnId: 'intro',
+    // Hank hands out `bill-churchill-return` on delivery; while it is active,
+    // reopening this closed conversation drops the player straight into payment.
+    reentryTurns: [{ turnId: 'reward', whileMissionActive: ['bill-churchill-return'] }],
     turns: {
       intro: {
         id: 'intro',
@@ -88,6 +91,33 @@ export const BILL_CHURCHILL: DockContact = {
           'Open the cargo transfer panel and take the Sealed Parcel. Fly it to Bakerfield Falls and hand it directly to Hank Johnson.',
         trade: BILL_PARCEL_HANDOFF_TRADE,
         playerOptions: [],
+      },
+      reward: {
+        id: 'reward',
+        npcText: `Ah, there you are. Hank signalled ahead — the parcel arrived intact and unopened, which is rather more than I had dared hope for. You have my thanks, and rather more usefully, my gratitude in a form you can burn. I have had your tanks seen to.`,
+        playerOptions: [
+          {
+            id: 'collect',
+            label: 'Accept payment',
+            text: 'Appreciated. Always happy to do business.',
+            nextTurnId: null,
+            effects: [
+              { type: 'completeMission', missionId: 'bill-churchill-return' },
+              {
+                type: 'transferResource',
+                resource: 'fuel',
+                amount: 40,
+                resultText: 'Fuel reserves topped up by Donington Station.',
+              },
+              {
+                type: 'transferResource',
+                resource: 'power',
+                amount: 25,
+                resultText: 'Power cells charged by Donington Station.',
+              },
+            ],
+          },
+        ],
       },
     },
   },
