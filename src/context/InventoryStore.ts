@@ -53,11 +53,7 @@ function normalizeSalvagedBy(tag: string | undefined): string | undefined {
   return tag && tag.length > 0 ? tag : undefined;
 }
 
-function slotsMatch(
-  slot: InventorySlot,
-  itemId: string,
-  salvagedBy: string | undefined
-): boolean {
+function slotsMatch(slot: InventorySlot, itemId: string, salvagedBy: string | undefined): boolean {
   return (
     slot.itemId === itemId &&
     normalizeSalvagedBy(slot.salvagedBy) === normalizeSalvagedBy(salvagedBy)
@@ -175,10 +171,6 @@ export function getOwnerUnitValue(owner: InventoryOwnerRef, itemIdOrLabel: strin
   return effectiveTradeValue(base, slot?.supply ?? 0, slot?.demand ?? 0);
 }
 
-/**
- * How strongly this owner wants to acquire the item (for barter scoring).
- * Combines demand pressure with remaining free capacity.
- */
 export function getAcquisitionDesire(owner: InventoryOwnerRef, itemIdOrLabel: string): number {
   const state = ensureInventory(owner);
   const itemId = resolveInventoryItemId(itemIdOrLabel);
@@ -294,7 +286,11 @@ export function transferInventoryItem(
   opts?: { salvagedBy?: string; setSalvagedBy?: string }
 ): number {
   const tag = opts && 'salvagedBy' in opts ? opts.salvagedBy : undefined;
-  const available = getItemQuantity(from, itemIdOrLabel, tag !== undefined ? { salvagedBy: tag } : undefined);
+  const available = getItemQuantity(
+    from,
+    itemIdOrLabel,
+    tag !== undefined ? { salvagedBy: tag } : undefined
+  );
   const moved = Math.min(quantity, available);
   if (moved <= 0) return 0;
 
@@ -307,7 +303,12 @@ export function transferInventoryItem(
     sourceTag = first?.salvagedBy;
   }
 
-  removeInventoryItem(from, itemIdOrLabel, moved, tag !== undefined ? { salvagedBy: tag } : undefined);
+  removeInventoryItem(
+    from,
+    itemIdOrLabel,
+    moved,
+    tag !== undefined ? { salvagedBy: tag } : undefined
+  );
   const destTag = opts?.setSalvagedBy !== undefined ? opts.setSalvagedBy : sourceTag;
   addInventoryItem(to, itemIdOrLabel, moved, { salvagedBy: destTag });
   return moved;

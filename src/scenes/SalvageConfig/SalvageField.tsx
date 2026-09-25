@@ -1,13 +1,10 @@
 import { Suspense } from 'react';
-import DustCloud from '../../components/DustCloud/DustCloud';
 import LandingPad from '../../components/WorldObjects/LandingPad';
 import SalvageDropOffPad from '../../components/WorldObjects/SalvageDropOffPad';
 import DecorativeAsteroidField from '../../components/Asteroid/DecorativeAsteroidField';
 import Asteroid from '../../components/Asteroid/Asteroid';
-import GarbageScowDroneFleet from '../../components/NPCs/GarbageScowDroneFleet';
-import { DRONE_ATMOSPHERE_COLORS, SalvageConfigData } from './SalvageConfigFile';
+import { SalvageConfigData } from './SalvageConfigFile';
 import type { DockConfig } from '../../config/dockConfig';
-import VolumetricFog from '../../components/VolumetricFog/VolumetricFog';
 
 export type SalvageFieldOrigin = [number, number, number];
 
@@ -60,11 +57,8 @@ export default function SalvageField({
   idPrefix = '',
   showFreeMineables = true,
   showDockMineable = true,
-  showDroneFleet = true,
-  showDustCloud = true,
   showDock = true,
   showDropOffPad = true,
-  showDroneAtmosphere = false,
   dockRadioBroadcastEnabled = true,
   dockRadioDialogue,
   dockRadioDockingBay,
@@ -72,8 +66,7 @@ export default function SalvageField({
   dockLabelOverride,
   dockConfigOverride,
 }: SalvageFieldProps) {
-  const { dustCloud, dock, dropOffPad, asteroids, scowDroneFleet, mineableAsteroids } =
-    SalvageConfigData;
+  const { dock, dropOffPad, asteroids, mineableAsteroids } = SalvageConfigData;
 
   const dockMineable = mineableAsteroids.find((a) => a.parent === 'dock');
   const freeMineables = mineableAsteroids.filter((a) => a.parent !== 'dock');
@@ -137,17 +130,6 @@ export default function SalvageField({
             normalScale={SalvageConfigData.asteroidNormalScale}
           />
         </group>
-
-        {showDroneFleet ? (
-          <GarbageScowDroneFleet
-            url={scowDroneFleet.url}
-            count={scowDroneFleet.count}
-            scale={scowDroneFleet.scale}
-            spawnCenter={scowDroneFleet.spawnCenter}
-            spawnRadius={scowDroneFleet.spawnRadius}
-            waypoints={scowDroneFleet.waypoints}
-          />
-        ) : null}
       </Suspense>
 
       {/*     <Suspense fallback={null}>

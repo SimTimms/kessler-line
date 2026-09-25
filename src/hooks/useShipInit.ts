@@ -14,6 +14,7 @@ import { DEV_JUPITER_TEST, DEV_MARS_TEST, DEV_NEPTUNE_TEST } from '../config/deb
 import { resetCO2Filter } from '../context/CO2FilterStore';
 import { resetCommsBuffer } from '../context/CommsBufferStore';
 import { resetEmergencyBattery } from '../context/EmergencyBatteryStore';
+import { resetAirCanister } from '../context/AirCanisterStore';
 
 export interface ShipInitResult {
   shipInitPos: [number, number, number];
@@ -56,6 +57,7 @@ export function useShipInit(): ShipInitResult {
       resetCO2Filter();
       resetCommsBuffer();
       resetEmergencyBattery();
+      resetAirCanister();
     }
     didInitRef.current = true;
   }

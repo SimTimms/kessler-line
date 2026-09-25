@@ -1,6 +1,7 @@
 import {
   AirVent,
   Battery,
+  Cylinder,
   Droplets,
   Hammer,
   Radio,
@@ -31,11 +32,13 @@ export const ITEM_ICONS: Record<string, LucideIcon> = {
   'iron-slag': Mountain,
   'o2-cells': Wind,
   'reaction-mass': Droplets,
+  'fuel-canister': Droplets,
   'power-cells': Zap,
   'unmarked-canister': Package,
   organics: Leaf,
   'spare-parts': Wrench,
   'co2-filter': AirVent,
+  'air-canister': Cylinder,
   'hull-repair-patch': Hammer,
   'comms-buffer': Radio,
   'emergency-battery': Battery,
@@ -61,7 +64,7 @@ export type CargoDragPayload = {
   itemId: string;
   quantity: number;
   from: InventoryOwnerRef;
-  salvagedBy?: string;
+  salvagedBy?: string | null | undefined;
 };
 
 export function provenanceLabelFor(salvagedBy: string | undefined): string | undefined {

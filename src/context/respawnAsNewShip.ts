@@ -20,6 +20,7 @@ import { addCargoItem, clearCargo, cargo } from './Inventory';
 import { resetCO2Filter } from './CO2FilterStore';
 import { resetCommsBuffer } from './CommsBufferStore';
 import { resetEmergencyBattery } from './EmergencyBatteryStore';
+import { resetAirCanister } from './AirCanisterStore';
 import { HULL_REPAIR_PATCH_ITEM_ID } from '../config/damageConfig';
 import { clearFractures } from './DamageControlStore';
 import {
@@ -152,6 +153,7 @@ export function respawnAsNewShip(_deathCause: string): void {
   resetCO2Filter();
   resetCommsBuffer();
   resetEmergencyBattery();
+  resetAirCanister();
   addCargoItem(HULL_REPAIR_PATCH_ITEM_ID, 2);
 
   // 7. Clear existing fractures (new ship has no prior damage)

@@ -117,6 +117,13 @@ export const INVENTORY_ITEMS = {
     baseValue: 30,
     defaultCapacity: 10,
   },
+  airCanister: {
+    id: 'air-canister',
+    label: 'Air Canister',
+    category: 'lifeSupport',
+    baseValue: 25,
+    defaultCapacity: 1,
+  },
 } as const satisfies Record<string, InventoryItemDef>;
 
 export type InventoryItemId = (typeof INVENTORY_ITEMS)[keyof typeof INVENTORY_ITEMS]['id'];
@@ -157,6 +164,7 @@ export const INVENTORY_ITEM_UI: Record<string, InventoryItemUi> = {
   'co2-filter': { color: '#7ec8e3', tag: 'CO2' },
   'comms-buffer': { color: '#a0e0ff', tag: 'COM' },
   'emergency-battery': { color: '#ff9d00', tag: 'BATT' },
+  'air-canister': { color: '#4fd1c5', tag: 'O2' },
 };
 
 export function getInventoryItemUi(itemIdOrLabel: string): InventoryItemUi {

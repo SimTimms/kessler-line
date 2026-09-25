@@ -83,3 +83,11 @@ export const EMERGENCY_BATTERY_ITEM_ID = 'emergency-battery';
 export const EMERGENCY_BATTERY_CAPACITY = 30;
 /** Power restored per second while battery is installed and power < 100. */
 export const EMERGENCY_BATTERY_RECHARGE_RATE = 2;
+
+// ── Air Canister ────────────────────────────────────────────────────────────
+/** Inventory item id for air canister spares. */
+export const AIR_CANISTER_ITEM_ID = 'air-canister';
+/** Units of air the canister can deliver before depletion. */
+export const AIR_CANISTER_CAPACITY = 30;
+/** Air restored per second while canister is installed and air < 100. */
+export const AIR_CANISTER_RECHARGE_RATE = 1;

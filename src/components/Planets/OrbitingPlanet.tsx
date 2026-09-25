@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState, Suspense } from 'react';
+import { useRef, useEffect, useMemo, Suspense } from 'react';
 import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -6,348 +6,9 @@ import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { useRegisterPlanetCollider } from '../../hooks/useRegisterPlanetCollider';
 
-// ── Procedural bump map (craters + terrain) ──────────────────────────────
-function buildMarsBumpMap(): THREE.CanvasTexture {
-  const W = 2048,
-    H = 1024;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-
-  // Neutral mid-gray base — 128 = flat
-  ctx.fillStyle = 'rgb(128,128,128)';
-  ctx.fillRect(0, 0, W, H);
-
-  // Deterministic LCG
-  let s = 98765;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0xffffffff;
-  };
-
-  // Large-scale terrain swells
-  for (let i = 0; i < 50; i++) {
-    const x = rand() * W,
-      y = rand() * H,
-      r = rand() * 240 + 100;
-    const v = Math.floor(128 + (rand() - 0.5) * 60);
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(${v},${v},${v},0.35)`);
-    g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
-  }
-
-  // Large craters
-  for (let i = 0; i < 80; i++) {
-    const x = rand() * W,
-      y = rand() * H,
-      r = rand() * 60 + 20;
-    const bowl = ctx.createRadialGradient(x, y, 0, x, y, r * 0.85);
-    bowl.addColorStop(0, 'rgba(70,70,70,0.85)');
-    bowl.addColorStop(0.7, 'rgba(100,100,100,0.4)');
-    bowl.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = bowl;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    // Raised rim
-    ctx.strokeStyle = 'rgba(195,195,195,0.55)';
-    ctx.lineWidth = r * 0.12 + 1;
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.92, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // Medium craters
-  for (let i = 0; i < 400; i++) {
-    const x = rand() * W,
-      y = rand() * H,
-      r = rand() * 18 + 4;
-    const bowl = ctx.createRadialGradient(x, y, 0, x, y, r);
-    bowl.addColorStop(0, 'rgba(75,75,75,0.80)');
-    bowl.addColorStop(0.75, 'rgba(110,110,110,0.25)');
-    bowl.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = bowl;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(185,185,185,0.45)';
-    ctx.lineWidth = r * 0.15 + 0.5;
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.88, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // Small pits
-  for (let i = 0; i < 1200; i++) {
-    const x = rand() * W,
-      y = rand() * H,
-      r = rand() * 5 + 1;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, 'rgba(85,85,85,0.75)');
-    g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
-}
-
-// ── Procedural bump map (atmospheric bands + storm features) ─────────────
-function buildNeptuneBumpMap(): THREE.CanvasTexture {
-  const W = 2048,
-    H = 1024;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-
-  // Neutral mid-gray base
-  ctx.fillStyle = 'rgb(128,128,128)';
-  ctx.fillRect(0, 0, W, H);
-
-  // Deterministic LCG
-  let s = 77531;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0xffffffff;
-  };
-
-  // Atmospheric bands — horizontal strips at different latitudes
-  const bands: [number, number, number, number][] = [
-    [90, 22, 108, 0.5], // north polar darkening
-    [68, 18, 142, 0.35], // bright polar band
-    [48, 22, 112, 0.4], // dark mid-lat band
-    [25, 18, 138, 0.28], // lighter band
-    [0, 28, 118, 0.42], // equatorial darker
-    [-22, 18, 136, 0.28], // lighter band south
-    [-46, 22, 112, 0.38], // dark south band
-    [-68, 18, 140, 0.3], // bright south polar
-    [-90, 22, 106, 0.5], // south polar darkening
-  ];
-
-  for (const [lat, width, v, op] of bands) {
-    const cy = ((90 - lat) / 180) * H;
-    const hy = (width / 180) * H * 0.5;
-    const g = ctx.createLinearGradient(0, cy - hy, 0, cy + hy);
-    g.addColorStop(0, 'rgba(128,128,128,0)');
-    g.addColorStop(0.5, `rgba(${v},${v},${v},${op})`);
-    g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, cy - hy, W, hy * 2);
-  }
-
-  // Wavy turbulence at band boundaries
-  for (let i = 0; i < 9; i++) {
-    const baseLat = -80 + i * 20;
-    const cy = ((90 - baseLat) / 180) * H;
-    ctx.beginPath();
-    ctx.moveTo(0, cy);
-    for (let x = 0; x < W; x += 8) {
-      const wave = Math.sin(x * 0.006 + rand() * 6) * 18 + Math.sin(x * 0.013 + rand() * 4) * 9;
-      ctx.lineTo(x, cy + wave);
-    }
-    const v = rand() > 0.5 ? 150 : 105;
-    ctx.strokeStyle = `rgba(${v},${v},${v},${rand() * 0.18 + 0.08})`;
-    ctx.lineWidth = rand() * 7 + 2;
-    ctx.stroke();
-  }
-
-  // Great Dark Spot — large oval depression ~20°S, 280°E longitude
-  {
-    const cx = (280 / 360) * W;
-    const cy = ((90 + 22) / 180) * H;
-    const rx = W * 0.055;
-    const ry = H * 0.065;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(1, ry / rx);
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
-    g.addColorStop(0, 'rgba(68,68,68,0.78)');
-    g.addColorStop(0.55, 'rgba(95,95,95,0.38)');
-    g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(0, 0, rx * 1.25, 0, Math.PI * 2);
-    ctx.fill();
-    // Bright rim
-    ctx.strokeStyle = 'rgba(158,158,158,0.38)';
-    ctx.lineWidth = rx * 0.06;
-    ctx.beginPath();
-    ctx.arc(0, 0, rx * 1.08, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // Scooter — bright cloud at ~42°S, 80°E
-  {
-    const cx = (80 / 360) * W;
-    const cy = ((90 + 42) / 180) * H;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(0.3);
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.028);
-    g.addColorStop(0, 'rgba(172,172,172,0.72)');
-    g.addColorStop(0.5, 'rgba(152,152,152,0.3)');
-    g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, W * 0.038, H * 0.022, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Small Dark Spot 2 — ~55°S, 197°E
-  {
-    const cx = (197 / 360) * W;
-    const cy = ((90 + 55) / 180) * H;
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.022);
-    g.addColorStop(0, 'rgba(78,78,78,0.62)');
-    g.addColorStop(0.6, 'rgba(105,105,105,0.22)');
-    g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(cx, cy, W * 0.028, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Wispy high-altitude cloud streaks
-  for (let i = 0; i < 28; i++) {
-    const lat = (rand() - 0.5) * 140;
-    const cy_streak = ((90 - lat) / 180) * H;
-    const x0 = rand() * W;
-    const len = rand() * W * 0.22 + W * 0.04;
-    const wv = rand() * 7 - 3.5;
-    ctx.beginPath();
-    ctx.moveTo(x0, cy_streak);
-    for (let x = x0; x < x0 + len; x += 12) {
-      const wave = Math.sin((x - x0) * 0.022) * wv;
-      ctx.lineTo(x % W, cy_streak + wave);
-    }
-    const v = rand() > 0.5 ? 158 : 100;
-    ctx.strokeStyle = `rgba(${v},${v},${v},${rand() * 0.22 + 0.08})`;
-    ctx.lineWidth = rand() * 2.5 + 0.8;
-    ctx.stroke();
-  }
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
-}
-
 const _planetWorldPos = new THREE.Vector3();
 const _camPos = new THREE.Vector3();
 const VISIBILITY_DIST = 15_000_000; // world-space units; ~15M covers cross-system visibility
-
-function buildProceduralGlowTexture(): THREE.CanvasTexture {
-  const size = 256;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.4, 'rgba(255,255,255,0.35)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-interface PlanetGlowSpriteProps {
-  glowTextureUrl?: string;
-  radius: number;
-  tint: string;
-  opacity: number;
-}
-
-function PlanetGlowSprite({ glowTextureUrl, radius, tint, opacity }: PlanetGlowSpriteProps) {
-  const fallbackMap = useMemo(() => buildProceduralGlowTexture(), []);
-  const loadedMapRef = useRef<THREE.Texture | null>(null);
-  const [map, setMap] = useState<THREE.Texture | null>(() => (glowTextureUrl ? null : fallbackMap));
-
-  useEffect(() => {
-    if (!glowTextureUrl) {
-      if (loadedMapRef.current) {
-        loadedMapRef.current.dispose();
-        loadedMapRef.current = null;
-      }
-      setMap(fallbackMap);
-      return;
-    }
-
-    let cancelled = false;
-    setMap(null);
-
-    const loader = new THREE.TextureLoader();
-    loader.load(
-      glowTextureUrl,
-      (tex) => {
-        if (cancelled) {
-          tex.dispose();
-          return;
-        }
-        const img = tex.image as HTMLImageElement;
-        if (!img?.width || !img?.height) {
-          tex.dispose();
-          console.warn(`[PlanetGlow] Invalid image for "${glowTextureUrl}"`);
-          setMap(fallbackMap);
-          return;
-        }
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        if (loadedMapRef.current) loadedMapRef.current.dispose();
-        loadedMapRef.current = tex;
-        setMap(tex);
-      },
-      undefined,
-      () => {
-        if (cancelled) return;
-        console.warn(`[PlanetGlow] Failed to load "${glowTextureUrl}", using procedural fallback.`);
-        setMap(fallbackMap);
-      }
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [glowTextureUrl, fallbackMap]);
-
-  useEffect(
-    () => () => {
-      loadedMapRef.current?.dispose();
-      loadedMapRef.current = null;
-    },
-    []
-  );
-
-  if (!map) return null;
-
-  return (
-    <sprite scale={[radius * 65, radius * 65, 1]} frustumCulled={false}>
-      <spriteMaterial
-        map={map}
-        color={tint}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-        transparent
-        opacity={opacity}
-        fog={false}
-      />
-    </sprite>
-  );
-}
 
 interface PlanetSurfaceMaterialProps {
   textureUrl: string;
@@ -374,9 +35,6 @@ function PlanetSurfaceMaterial({
   roughness,
   bumpMap,
   bumpScale,
-  displacementMap,
-  displacementScale,
-  displacementBias,
 }: PlanetSurfaceMaterialProps) {
   const [map, normalMap] = useTexture([textureUrl, normalMapUrl ?? textureUrl]);
   map.colorSpace = THREE.SRGBColorSpace;
@@ -437,8 +95,6 @@ export default function OrbitingPlanet({
   orbitY,
   radius,
   color,
-  glowColor,
-  glowTextureUrl,
   textureUrl,
   normalMapUrl,
   emissive = '#000000',
@@ -447,7 +103,6 @@ export default function OrbitingPlanet({
   axialTilt,
   initialAngle,
   rings = false,
-  showGlowSprite = true,
   showColonies = false,
   useBumpMap = false,
   gravityMu,
@@ -494,8 +149,7 @@ export default function OrbitingPlanet({
 
   const bumpTexture = useMemo(() => {
     if (!useBumpMap) return null;
-    if (planetName === 'Neptune') return buildNeptuneBumpMap();
-    return buildMarsBumpMap();
+    if (planetName === 'Mars') return '/textures/mars-bump-alpha.png';
   }, [useBumpMap, planetName]);
   const marsNormalTexture = useTexture('/textures/mars-normal.jpg');
   const marsEmissiveTexture = useTexture('/textures/mars-emissive.jpg');
@@ -506,15 +160,14 @@ export default function OrbitingPlanet({
   const materialColor = isNeptune ? '#84c8ff' : color;
   const materialEmissive = showColonies ? '#ffffff' : isNeptune ? '#123d8a' : emissive;
   const materialEmissiveIntensity = showColonies ? 1.5 : isNeptune ? 1.15 : 1.0;
-  const materialRoughness = isNeptune ? 0.62 : 0.8;
+  const materialRoughness = isNeptune ? 0.62 : 0.2;
   const materialBumpScale = useBumpMap ? (isNeptune ? -0.35 : -0.6) : 0;
   const resolvedBumpMap = planetName === 'Mars' ? marsNormalTexture : bumpTexture;
-  const resolvedBumpScale = planetName === 'Mars' ? 4.0 : materialBumpScale;
+  const resolvedBumpScale = planetName === 'Mars' ? 0.6 : materialBumpScale;
   const resolvedDisplacementMap = useBumpMap ? resolvedBumpMap : null;
   const resolvedDisplacementScale = useBumpMap ? 0.0 : 0;
   const resolvedDisplacementBias = useBumpMap ? 100.0 : 0;
-  const glowOpacity = glowTextureUrl ? 0.04 : isNeptune ? 0.028 : 0.005;
-  const glowTint = glowColor ?? color;
+
   const neptuneRimMaterial = useMemo(() => {
     if (!isNeptune) return null;
     return new THREE.ShaderMaterial({
@@ -630,16 +283,6 @@ export default function OrbitingPlanet({
       <group ref={planetCenterRef} position={[orbitRadius, 0, 0]}>
         <group ref={meshVisRef}>
           <group position={[0, orbitY, 0]}>
-            {showGlowSprite && (
-              <PlanetGlowSprite
-                glowTextureUrl={glowTextureUrl}
-                radius={radius}
-                tint={glowTint}
-                opacity={glowOpacity}
-              />
-            )}
-
-            {/* Axial tilt applied once; spin group rotates around the tilted axis */}
             <group rotation-x={axialTilt}>
               <group ref={spinRef}>
                 <mesh ref={planetMeshRef}>
@@ -649,13 +292,14 @@ export default function OrbitingPlanet({
                       fallback={
                         <meshStandardMaterial
                           color={materialColor}
-                          emissive={10000000}
+                          emissive={0}
                           emissiveMap={coloniesTexture}
                           emissiveIntensity={materialEmissiveIntensity}
                           roughness={materialRoughness}
-                          bumpMap={resolvedBumpMap}
+                          metalness={1.0}
+                          bumpMap={resolvedBumpMap as THREE.Texture | null}
                           bumpScale={resolvedBumpScale}
-                          displacementMap={resolvedDisplacementMap}
+                          displacementMap={resolvedDisplacementMap as THREE.Texture | null}
                           displacementScale={resolvedDisplacementScale}
                           displacementBias={resolvedDisplacementBias}
                           fog={false}
@@ -670,9 +314,9 @@ export default function OrbitingPlanet({
                         emissiveMap={coloniesTexture}
                         emissiveIntensity={materialEmissiveIntensity}
                         roughness={materialRoughness}
-                        bumpMap={resolvedBumpMap}
+                        bumpMap={resolvedBumpMap as THREE.Texture | null}
                         bumpScale={resolvedBumpScale}
-                        displacementMap={resolvedDisplacementMap}
+                        displacementMap={resolvedDisplacementMap as THREE.Texture | null}
                         displacementScale={resolvedDisplacementScale}
                         displacementBias={resolvedDisplacementBias}
                       />
@@ -684,9 +328,9 @@ export default function OrbitingPlanet({
                       emissiveMap={coloniesTexture}
                       emissiveIntensity={materialEmissiveIntensity}
                       roughness={materialRoughness}
-                      bumpMap={resolvedBumpMap}
+                      bumpMap={resolvedBumpMap as THREE.Texture | null}
                       bumpScale={resolvedBumpScale}
-                      displacementMap={resolvedDisplacementMap}
+                      displacementMap={resolvedDisplacementMap as THREE.Texture | null}
                       displacementScale={resolvedDisplacementScale}
                       displacementBias={resolvedDisplacementBias}
                       fog={false}

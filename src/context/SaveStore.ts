@@ -125,6 +125,9 @@ export interface SaveData {
   // Emergency battery state (optional — absent in older saves)
   emergencyBatteryLevel?: number | null;
   emergencyBatterySpares?: number[];
+  // Air canister state (optional — absent in older saves)
+  airCanisterLevel?: number | null;
+  airCanisterSpares?: number[];
 }
 
 // ── V1 migration ──────────────────────────────────────────────────────────────

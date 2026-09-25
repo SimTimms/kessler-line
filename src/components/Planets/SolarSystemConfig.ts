@@ -95,7 +95,7 @@ export const PLANETS: PlanetType[] = [
     name: 'Mars',
     radius: MARS_LOCAL_RADIUS, // ≈  71
     orbitRadius: orbit(1.524 * SUN_RADIUS_BASE), // ≈ 1672
-    orbitY: -46,
+    orbitY: -60,
     orbitalSpeed: ov(1.881 * ORBIT_SPEED),
     spinSpeed: sv(1.03) * 0.1,
     axialTilt: 25.2 * (Math.PI / 180),

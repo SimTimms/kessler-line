@@ -14,10 +14,12 @@ import {
   HULL_REPAIR_PATCH_ITEM_ID,
   COMMS_BUFFER_ITEM_ID,
   EMERGENCY_BATTERY_ITEM_ID,
+  AIR_CANISTER_ITEM_ID,
 } from '../../../../config/damageConfig';
 import { removeInstalledFilter } from '../../../../context/CO2FilterStore';
 import { removeInstalledBuffer } from '../../../../context/CommsBufferStore';
 import { removeInstalledBattery } from '../../../../context/EmergencyBatteryStore';
+import { removeInstalledAirCanister } from '../../../../context/AirCanisterStore';
 import {
   expandCargoToCells,
   isCargoDragEvent,
@@ -34,6 +36,8 @@ export const CO2_FILTER_SLOT_OWNER = '__co2-filter-slot__';
 export const COMMS_BUFFER_SLOT_OWNER = '__comms-buffer-slot__';
 /** Sentinel vesselId used when dragging a battery out of the emergency battery slot. */
 export const EMERGENCY_BATTERY_SLOT_OWNER = '__emergency-battery-slot__';
+/** Sentinel vesselId used when dragging a canister out of the air canister slot. */
+export const AIR_CANISTER_SLOT_OWNER = '__air-canister-slot__';
 
 export { CARGO_HOLD_SLOT_COUNT };
 
@@ -88,7 +92,8 @@ export default function CargoHoldPanel({
       itemId !== CO2_FILTER_ITEM_ID &&
       itemId !== HULL_REPAIR_PATCH_ITEM_ID &&
       itemId !== COMMS_BUFFER_ITEM_ID &&
-      itemId !== EMERGENCY_BATTERY_ITEM_ID
+      itemId !== EMERGENCY_BATTERY_ITEM_ID &&
+      itemId !== AIR_CANISTER_ITEM_ID
     )
       return;
     const payload: CargoDragPayload = { itemId, quantity, from: PLAYER_OWNER, salvagedBy };
@@ -137,11 +142,19 @@ export default function CargoHoldPanel({
 
     // Accept drops from the emergency battery slot sentinel
     const fromBatterySlot =
-      payload.from.kind === 'vessel' &&
-      payload.from.vesselId === EMERGENCY_BATTERY_SLOT_OWNER;
+      payload.from.kind === 'vessel' && payload.from.vesselId === EMERGENCY_BATTERY_SLOT_OWNER;
 
     if (fromBatterySlot && payload.itemId === EMERGENCY_BATTERY_ITEM_ID) {
       removeInstalledBattery();
+      return;
+    }
+
+    // Accept drops from the air canister slot sentinel
+    const fromAirCanisterSlot =
+      payload.from.kind === 'vessel' && payload.from.vesselId === AIR_CANISTER_SLOT_OWNER;
+
+    if (fromAirCanisterSlot && payload.itemId === AIR_CANISTER_ITEM_ID) {
+      removeInstalledAirCanister();
       return;
     }
 
@@ -229,7 +242,8 @@ export default function CargoHoldPanel({
                       itemId === CO2_FILTER_ITEM_ID ||
                       itemId === HULL_REPAIR_PATCH_ITEM_ID ||
                       itemId === COMMS_BUFFER_ITEM_ID ||
-                      itemId === EMERGENCY_BATTERY_ITEM_ID
+                      itemId === EMERGENCY_BATTERY_ITEM_ID ||
+                      itemId === AIR_CANISTER_ITEM_ID
                     }
                     onDragStart={(e) => onDragStart(e, itemId, 1, salvagedBy)}
                     onMouseEnter={() =>

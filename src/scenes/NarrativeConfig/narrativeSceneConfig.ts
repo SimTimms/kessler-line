@@ -200,8 +200,10 @@ export interface InventoryItemWithQuantity extends InventoryItem {
 
 /** Starter hold for the narrative scene (skipped when loading a save). */
 export const NARRATIVE_STARTER_CARGO: InventoryItemWithQuantity[] = [
-  { ...inventoryItems.hullRepairPatch, quantity: 8 },
-  { ...inventoryItems.emergencyBattery, quantity: 1 },
+  { ...inventoryItems.hullRepairPatch, quantity: 4 },
+  { ...inventoryItems.emergencyBattery, quantity: 4 },
+  { ...inventoryItems.airCanister, quantity: 4 },
+  { ...inventoryItems.co2Filter, quantity: 1 },
 ];
 
 export const NARRATIVE_CONFIG = {

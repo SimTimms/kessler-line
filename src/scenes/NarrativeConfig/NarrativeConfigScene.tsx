@@ -14,11 +14,8 @@ import CollisionDebug from '../../components/Debug/CollisionDebug';
 import { useSaveSystem } from '../../hooks/useSaveSystem';
 import { loadSlot, NARRATIVE_AUTOSAVE_SLOT, NARRATIVE_MANUAL_SLOT } from '../../context/SaveStore';
 import { apply, savedQuaternionToEuler } from '../../context/SaveManager';
-import { ShipDepthOfField } from '../../components/Ship/ShipDepthOfField';
 import SolarSystem from '../../components/Planets/SolarSystem';
 import SunGravity from '../../components/Environment/SunGravity';
-import SpaceParticles from '../../components/Environment/SpaceParticles';
-import SkySphere from '../../components/Environment/SkySphere';
 import { FloatingOrigin } from '../../components/Environment/FloatingOrigin';
 import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
 import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
@@ -54,7 +51,6 @@ import { DONINGTON_STATION_DOCK_CONFIG } from '../../config/landingPads/doningto
 import { BAKERFIELD_FALLS_DOCK_CONFIG } from '../../config/landingPads/bakerfield-falls';
 import { registerDock } from '../../context/DockablePartnerStore';
 import NarrativeConfigCanvas from './NarrativeConfigCanvas';
-import SceneDrawCallBreakdown from '../../components/Debug/SceneDrawCallBreakdown';
 import { Perf } from 'r3f-perf';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
@@ -249,7 +245,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   return (
     <NarrativeConfigCanvas>
       <Perf position="top-right" />
-      <directionalLight position={[2, 1, 0]} intensity={4} color={0xdd7777} castShadow />
+      <directionalLight position={[2, 3, -20]} intensity={2} color={0xffffff} castShadow />
       <fogExp2 attach="fog" args={[fogColor, 0.0005]} />
       <TutorialFollowCamera
         followTarget={shipPosRef}
@@ -266,7 +262,6 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
       <SaveSystemBridge />
       <SharedInteractionSceneTools />
       <CollisionDebug />
-      <ShipDepthOfField saturation={-0.8} />
     </NarrativeConfigCanvas>
   );
 }

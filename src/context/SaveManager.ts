@@ -68,6 +68,7 @@ import {
 import { captureCO2FilterState, applyCO2FilterState } from './CO2FilterStore';
 import { captureCommsBufferState, applyCommsBufferState } from './CommsBufferStore';
 import { captureEmergencyBatteryState, applyEmergencyBatteryState } from './EmergencyBatteryStore';
+import { captureAirCanisterState, applyAirCanisterState } from './AirCanisterStore';
 
 function parseOwnerKey(ownerKey: string): InventoryOwnerRef | null {
   // "dock:X:contact:Y" → { kind: 'contact', dockId: X, contactId: Y }
@@ -207,6 +208,8 @@ export function capture(): SaveData {
     commsBufferSnapshots: captureCommsBufferState().snapshots,
     emergencyBatteryLevel: captureEmergencyBatteryState().level,
     emergencyBatterySpares: captureEmergencyBatteryState().spares,
+    airCanisterLevel: captureAirCanisterState().level,
+    airCanisterSpares: captureAirCanisterState().spares,
   };
 }
 
@@ -358,6 +361,11 @@ export function apply(data: SaveData): void {
       data.emergencyBatteryLevel,
       data.emergencyBatterySpares ?? [],
     );
+  }
+
+  // Air canister
+  if (data.airCanisterLevel !== undefined) {
+    applyAirCanisterState(data.airCanisterLevel, data.airCanisterSpares ?? []);
   }
 }
 

@@ -5,6 +5,16 @@ export type InventoryItem = {
 };
 
 export const inventoryItems: Record<string, InventoryItem> = {
+  airCanister: {
+    id: 'air-canister',
+    name: 'Air Canister',
+    description: 'A portable air canister that recharges ship air',
+  },
+  co2Filter: {
+    id: 'co2-filter',
+    name: 'CO2 Filter',
+    description: 'A filter that removes CO2 from the air',
+  },
   ironSlag: {
     id: 'iron-slag',
     name: 'Iron Slag',
