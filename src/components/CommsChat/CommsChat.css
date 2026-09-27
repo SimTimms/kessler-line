@@ -412,12 +412,6 @@
   color: #fff;
 }
 
-.comms-chat-bubble--pending {
-  background: rgba(0, 200, 255, 0.03);
-  border: 1px solid rgba(0, 200, 255, 0.1);
-  color: rgba(0, 200, 255, 0.4);
-}
-
 .comms-chat-row-footer {
   display: flex;
   align-items: center;
@@ -444,15 +438,18 @@
 .comms-chat-ellipsis {
   display: inline-block;
   animation: comms-ellipsis-pulse 1.6s ease-in-out infinite;
+  color: rgba(255, 255, 255, 1);
+  font-size: 10px;
+  text-transform: none;
 }
 
 @keyframes comms-ellipsis-pulse {
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.4;
   }
   50% {
-    opacity: 0.75;
+    opacity: 1;
   }
 }
 

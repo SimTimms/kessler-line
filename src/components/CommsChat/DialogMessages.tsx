@@ -213,10 +213,7 @@ export default function DialogMessages({
 
           {!contact && displayRows.length > 0 && thread?.awaitingNpc && (
             <div className="comms-chat-row comms-chat-row--npc">
-              <div className="comms-chat-sender">{thread.captainName}</div>
-              <div className="comms-chat-bubble--pending">
-                <span className="comms-chat-ellipsis">◈ TRANSMITTING</span>
-              </div>
+              <span className="comms-chat-ellipsis">Responding...</span>
             </div>
           )}
         </>
