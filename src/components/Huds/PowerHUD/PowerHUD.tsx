@@ -338,51 +338,51 @@ export default function PowerHUD({
 
   useFrameUpdate(() => {
     const prev = prevRef.current;
-    const p = Math.floor(power);
-    const h = Math.floor(hullIntegrity);
-    const f = Math.floor(fuel);
-    const o = Math.floor(o2);
-    const a = ammo;
-    const ac = ammoCapacity;
-    const v = getShipSpeedMps();
-    const cr = Math.floor(shipCrew);
+    const powerValue = Math.floor(power);
+    const hullValue = Math.floor(hullIntegrity);
+    const fuelValue = Math.floor(fuel);
+    const o2Value = Math.floor(o2);
+    const ammoValue = ammo;
+    const ammoCapacityValue = ammoCapacity;
+    const velocityValue = getShipSpeedMps();
+    const crewValue = Math.floor(shipCrew);
     // Fingerprint covers both array length and total item quantities so we
     // detect individual stack changes (e.g. using a hull repair patch).
     let cargoFp = cargo.length;
     for (const c of cargo) cargoFp = cargoFp * 31 + c.quantity;
 
-    if (p !== prev.power) {
-      prev.power = p;
-      setDisplayPower(p);
+    if (powerValue !== prev.power) {
+      prev.power = powerValue;
+      setDisplayPower(powerValue);
     }
-    if (h !== prev.hull) {
-      prev.hull = h;
-      setDisplayHull(h);
+    if (hullValue !== prev.hull) {
+      prev.hull = hullValue;
+      setDisplayHull(hullValue);
     }
-    if (f !== prev.fuel) {
-      prev.fuel = f;
-      setDisplayFuel(f);
+    if (fuelValue !== prev.fuel) {
+      prev.fuel = fuelValue;
+      setDisplayFuel(fuelValue);
     }
-    if (o !== prev.o2) {
-      prev.o2 = o;
-      setDisplayO2(o);
+    if (o2Value !== prev.o2) {
+      prev.o2 = o2Value;
+      setDisplayO2(o2Value);
     }
-    if (a !== prev.ammo) {
-      prev.ammo = a;
-      setDisplayAmmo(a);
+    if (ammoValue !== prev.ammo) {
+      prev.ammo = ammoValue;
+      setDisplayAmmo(ammoValue);
     }
-    if (ac !== prev.ammoCap) {
-      prev.ammoCap = ac;
-      setDisplayAmmoCapacity(ac);
+    if (ammoCapacityValue !== prev.ammoCap) {
+      prev.ammoCap = ammoCapacityValue;
+      setDisplayAmmoCapacity(ammoCapacityValue);
     }
-    if (cr !== prev.crew) {
-      prev.crew = cr;
-      setDisplayCrew(cr);
+    if (crewValue !== prev.crew) {
+      prev.crew = crewValue;
+      setDisplayCrew(crewValue);
     }
-    const vRounded = Math.round(v * 10);
+    const vRounded = Math.round(velocityValue * 10);
     if (vRounded !== prev.velocity) {
       prev.velocity = vRounded;
-      setDisplayVelocity(v);
+      setDisplayVelocity(velocityValue);
     }
     if (cargoFp !== prev.cargoFp) {
       prev.cargoFp = cargoFp;

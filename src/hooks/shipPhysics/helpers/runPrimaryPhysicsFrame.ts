@@ -1,29 +1,26 @@
 import type { RefObject } from 'react';
 import * as THREE from 'three';
 import { THRUST } from '../../../context/ShipState';
-import { autopilotActive, disableAutopilot } from '../../../context/AutopilotState';
-import {
-  cinematicAutopilotActive,
-  scrapperIntroActive,
-  scrapperWorldPos,
-  scrapperWorldQuat,
-} from '../../../context/CinematicState';
-import {
-  SCRAPPER_PLAYER_OFFSET_X,
-  SCRAPPER_PLAYER_OFFSET_Y,
-  SCRAPPER_PLAYER_OFFSET_Z,
-} from '../../../config/scrapperConfig';
 import { DEBUG_DISABLE_GRAVITY, DEBUG_FREEZE_COLLISIONS } from '../../../config/debugConfig';
-import { cinematicThrustForward, cinematicThrustReverse, mobileStabilizerActive } from '../../../context/PlayerShipState';
+import {
+  cinematicThrustForward,
+  cinematicThrustReverse,
+  mobileStabilizerActive,
+} from '../../../context/PlayerShipState';
 import { canVesselUsePropulsion, type VesselRuntimeState } from '../../../context/VesselStateStore';
 import { updateAutopilotThrustOutputs } from '../simpleAutopilot';
-import { getCombinedInputs, getManualInput } from '../inputs';
+import { getCombinedInputs } from '../inputs';
 import { resetCombinedInputs } from './resetCombinedInputs';
 import { updateEngineAudio } from '../engineAudio';
 import { applyPhysicsStep } from '../step';
 import { applyResourceDrain } from '../resourceDrain';
 import { applyRadiationDamage } from '../radiation';
-import { applyFastTravelZoneUpdate, applyNormalTravelEntryBrake, applyFastTravelSpeedHazards, gateLongitudinalThrustForOverspeed } from '../fastTravel';
+import {
+  applyFastTravelZoneUpdate,
+  applyNormalTravelEntryBrake,
+  applyFastTravelSpeedHazards,
+  gateLongitudinalThrustForOverspeed,
+} from '../fastTravel';
 import {
   updateThrusterLights,
   zeroThrusterLights,
@@ -36,9 +33,14 @@ import { syncShipWorldRefs } from './syncShipWorldRefs';
 import { getCollidables } from '../../../context/CollisionRegistry';
 import { getDockCaptureProfile } from '../../../utils/dockingCapture';
 import { disablesShipPhysicsWhenDocked } from '../../../config/dockCaptureConfig';
+import { freezeShipFunction } from './freezeShip';
+import {
+  cancelLateralMovement,
+  cancelYawMovement,
+  cancelLongitudinalMovement,
+} from './cancelMovement';
 
 const _spinEuler = new THREE.Vector3();
-const _scrapperOffset = new THREE.Vector3();
 const _assistForward = new THREE.Vector3();
 const _assistRight = new THREE.Vector3();
 
@@ -131,7 +133,7 @@ export function runPrimaryPhysicsFrame({
     didApplyInitialVelocity.current = true;
     velocity.current.set(0, 0, 0);
     angularVelocity.current = 0;
-    updateEngineAudio({ mainThrust: false, rcsThrust: false });
+    updateEngineAudio({ mainThrust: false, rcsThrust: false, fwdThrust: false });
     zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
     vesselState.shipAcceleration.current = 0;
     vesselState.shipVelocity.set(0, 0, 0);
@@ -146,27 +148,21 @@ export function runPrimaryPhysicsFrame({
   }
 
   // Station/landing docks freeze ship physics; towable docks (cargo) keep flying.
-  // If the dock collider is temporarily unmounted (e.g. cargo helper hidden while towed),
-  // do NOT freeze as a fallback — that would incorrectly lock flight controls.
   if (dockingPhysicsEnabled && dockedTo.current) {
     const dockEntry = getCollidables().find((c) => c.id === dockedTo.current);
     const freezeShip =
       dockEntry != null && disablesShipPhysicsWhenDocked(getDockCaptureProfile(dockEntry));
     if (freezeShip) {
-      didApplyInitialVelocity.current = true;
-      velocity.current.set(0, 0, 0);
-      angularVelocity.current = 0;
-      updateEngineAudio({ mainThrust: false, rcsThrust: false });
-      zeroThrusterLights(thrusterLightIntensities, thrusterLightRefs);
-      vesselState.shipAcceleration.current = 0;
-      vesselState.shipVelocity.set(0, 0, 0);
-      vesselState.effectiveThrustFwd.current = false;
-      vesselState.effectiveThrustRev.current = false;
-      vesselState.effectiveYawLeft.current = false;
-      vesselState.effectiveYawRight.current = false;
-      vesselState.effectiveThrustStrL.current = false;
-      vesselState.effectiveThrustStrR.current = false;
-      vesselState.shipAngularVelocity.current = 0;
+      freezeShipFunction({
+        didApplyInitialVelocity,
+        velocity,
+        angularVelocity,
+        updateEngineAudio,
+        zeroThrusterLights,
+        vesselState,
+        thrusterLightIntensities,
+        thrusterLightRefs,
+      });
       return;
     }
   }
@@ -174,7 +170,7 @@ export function runPrimaryPhysicsFrame({
   // Ensure physics runs on the authoritative position, not a smoothed render pose.
   group.position.copy(physicsPosition.current);
   if (vesselState.shipDestroyed.current) {
-    updateEngineAudio({ mainThrust: false, rcsThrust: false });
+    updateEngineAudio({ mainThrust: false, rcsThrust: false, fwdThrust: false });
   }
 
   if (!didApplyInitialVelocity.current && initialVelocity) {
@@ -182,27 +178,9 @@ export function runPrimaryPhysicsFrame({
     velocity.current.set(initialVelocity[0], 0, initialVelocity[2]);
   }
 
-  // ── Scrapper intro: pin player ship inside the hold ───────────────────────
-  if (scrapperIntroActive.current) {
-    _scrapperOffset
-      .set(SCRAPPER_PLAYER_OFFSET_X, SCRAPPER_PLAYER_OFFSET_Y, SCRAPPER_PLAYER_OFFSET_Z)
-      .applyQuaternion(scrapperWorldQuat);
-    group.position.copy(scrapperWorldPos).add(_scrapperOffset);
-    physicsPosition.current.copy(group.position);
-    syncShipWorldRefs(group, publishToPlayerRefs);
-    velocity.current.set(0, 0, 0);
-    updateEngineAudio({ mainThrust: false, rcsThrust: false });
-    return;
-  }
-
   const controlsLocked = performance.now() < vesselState.shipControlDisabledUntil.current;
 
   const propulsionAvailable = canVesselUsePropulsion(vesselId);
-
-  if (publishToPlayerRefs && !propulsionAvailable && autopilotActive.current) {
-    disableAutopilot();
-    window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-  }
 
   if (publishToPlayerRefs) {
     updateAutopilotThrustOutputs(group, velocity.current, {
@@ -256,65 +234,33 @@ export function runPrimaryPhysicsFrame({
   // - W+S (fwd+rev): cancel longitudinal velocity
   // - A+D (yawLeft+yawRight): cancel yaw rate
   // - Q+E (strL+strR): cancel lateral/strafe velocity
-  if (fwd && rev) {
-    _assistForward.set(0, 0, 1).applyQuaternion(group.quaternion);
-    const vForward = velocity.current.dot(_assistForward);
-    if (Math.abs(vForward) <= CANCEL_LINEAR_EPS) {
-      // Snap longitudinal component to zero so assist does not re-pulse.
-      velocity.current.addScaledVector(_assistForward, -vForward);
-      fwd = false;
-      rev = false;
-    } else if (vForward > 0) {
-      // Moving +forward → apply opposite acceleration (-forward)
-      fwd = true;
-      rev = false;
-    } else {
-      fwd = false;
-      rev = true;
-    }
-  }
 
-  if (yawLeft && yawRight) {
-    const yawRate = angularVelocity.current;
-    if (Math.abs(yawRate) <= CANCEL_YAW_EPS) {
-      // Clamp residual angular drift at threshold.
-      angularVelocity.current = 0;
-      yawLeft = false;
-      yawRight = false;
-    } else if (yawRate > 0) {
-      // Positive yaw rate → apply yaw-left torque
-      yawLeft = true;
-      yawRight = false;
-    } else {
-      yawLeft = false;
-      yawRight = true;
-    }
-  }
-
-  if (strL && strR) {
-    _assistRight.set(1, 0, 0).applyQuaternion(group.quaternion);
-    const vRight = velocity.current.dot(_assistRight);
-    if (Math.abs(vRight) <= CANCEL_LINEAR_EPS) {
-      // Snap lateral component to zero so assist does not re-pulse.
-      velocity.current.addScaledVector(_assistRight, -vRight);
-      strL = false;
-      strR = false;
-    } else if (vRight > 0) {
-      // Moving +right → apply strafe-left
-      strL = true;
-      strR = false;
-    } else {
-      strL = false;
-      strR = true;
-    }
-  }
-
-  ({ fwd, rev } = gateLongitudinalThrustForOverspeed(
-    velocity.current,
-    group.quaternion,
+  ({ fwd, rev } = cancelLongitudinalMovement({
+    velocity,
+    _assistForward,
     fwd,
-    rev
-  ));
+    rev,
+    CANCEL_LINEAR_EPS,
+    group,
+  }));
+
+  ({ yawLeft, yawRight } = cancelYawMovement({
+    angularVelocity,
+    yawLeft,
+    yawRight,
+    CANCEL_YAW_EPS,
+  }));
+
+  ({ strL, strR } = cancelLateralMovement({
+    velocity,
+    group,
+    strL,
+    strR,
+    _assistRight,
+    CANCEL_LINEAR_EPS,
+  }));
+
+  ({ fwd, rev } = gateLongitudinalThrustForOverspeed(velocity.current, group.quaternion, fwd, rev));
 
   // Publish effective thruster states so ThrusterParticles shows the correct
   // visual for cancel-assist and stabilizer thrusts, not just raw key presses.
@@ -324,30 +270,6 @@ export function runPrimaryPhysicsFrame({
   vesselState.effectiveYawRight.current = yawRight;
   vesselState.effectiveThrustStrL.current = strL;
   vesselState.effectiveThrustStrR.current = strR;
-
-  const manualInput = getManualInput({
-    thrustForward,
-    thrustReverse,
-    thrustLeft,
-    thrustRight,
-    thrustStrafeLeft,
-    thrustStrafeRight,
-    thrustRadialOut,
-    thrustRadialIn,
-  });
-
-  if (publishToPlayerRefs && cinematicAutopilotActive.current) {
-    if (manualInput) {
-      cinematicAutopilotActive.current = false;
-      cinematicThrustForward.current = false;
-      cinematicThrustReverse.current = false;
-    }
-  }
-
-  if (publishToPlayerRefs && autopilotActive.current && (manualInput || stabilizerActive.current)) {
-    disableAutopilot();
-    window.dispatchEvent(new CustomEvent('AutopilotChanged', { detail: { active: false } }));
-  }
 
   const activeMainEngines = getActiveMainEngines(vesselState);
   const mainThrust = fwd || (rev && activeMainEngines > 0);
@@ -484,6 +406,7 @@ export function runPrimaryPhysicsFrame({
     radIn,
     rawDelta,
   });
+
   applyRadiationDamage(
     vesselId,
     vesselState,
