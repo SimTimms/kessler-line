@@ -28,9 +28,7 @@ export const DRONE_ATMOSPHERE_COLORS = [
 ] as const;
 
 export const SalvageConfigData = {
-  cameraPosition: [0, 40, 100] as Vec3,
-  cameraTarget: [0, 0, 0] as Vec3,
-  gridSize: 1200,
+  gridSize: 3000,
   gridDivisions: 1,
   playerShipUrl: '/models/shuttle-low-british.glb',
   playerShipScale: 1,
@@ -141,8 +139,8 @@ function buildSalvageAsteroidField(): Array<{
   rotation: Vec3;
   scale: number;
 }> {
-  const count = 20;
-  const spacing = 1000;
+  const count = 30;
+  const spacing = 10000;
   const cols = 6;
   const rows = 5;
 
@@ -153,13 +151,13 @@ function buildSalvageAsteroidField(): Array<{
     const row = Math.floor(i / cols);
     const x = (col - (cols - 1) / 2) * spacing + Math.random() * 100;
     const z = (row - (rows - 1) / 2) * spacing + Math.random() * 100;
-    const y = -1300 + Math.random() * 1000;
+    const y = -20000 + Math.random() * 15000;
     // Deterministic varied yaw so the field doesn't look tiled.
     const rotY = ((i * 2.399963) % (Math.PI * 2)) as number;
     asteroids.push({
       position: [x, y, z],
       rotation: [0, rotY, 0],
-      scale: 300 * Math.random(),
+      scale: 1000 + 1600 * Math.random(),
     });
   }
 

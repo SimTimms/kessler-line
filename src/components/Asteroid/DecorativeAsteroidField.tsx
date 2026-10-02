@@ -19,7 +19,7 @@ const _dummy = new THREE.Object3D();
 export default function DecorativeAsteroidField({
   url = '/models/asteroid-low.glb',
   asteroids,
-  normalScale = 0.6,
+  normalScale = 0.1,
 }: {
   url?: string;
   asteroids: DecorativeAsteroidDef[];
@@ -44,7 +44,7 @@ export default function DecorativeAsteroidField({
       return cloned;
     }
 
-    return new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0.8 });
+    return new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0.8 });
   }, [gltf.scene, normalScale]);
 
   const geometry = useMemo(() => {

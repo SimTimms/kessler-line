@@ -65,18 +65,7 @@ export default function SalvageConfigScene() {
       shadows={true}
     >
       <CameraCapture />
-      <fogExp2 attach="fog" args={[scene.fogColor, 0.000001]} />
-      <ambientLight intensity={scene.ambientIntensity} />
-      <directionalLight
-        position={scene.keyLight.position}
-        intensity={scene.keyLight.intensity}
-        color={scene.keyLight.color}
-      />
-      <directionalLight
-        position={scene.fillLight.position}
-        intensity={scene.fillLight.intensity}
-        color={scene.fillLight.color}
-      />
+
       <gridHelper
         args={[SalvageConfigData.gridSize, SalvageConfigData.gridDivisions, '#aa7744', '#553311']}
       />

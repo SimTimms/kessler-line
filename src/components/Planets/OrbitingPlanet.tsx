@@ -1,14 +1,31 @@
 import { useRef, useEffect, useMemo, Suspense } from 'react';
 import { useTexture } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { solarPlanetPositions } from '../../context/SolarSystemMinimap';
 import { gravityBodies } from '../../context/GravityRegistry';
 import { useRegisterPlanetCollider } from '../../hooks/useRegisterPlanetCollider';
+import { loadMarsCap } from './helpers/loadMarsCap';
 
 const _planetWorldPos = new THREE.Vector3();
 const _camPos = new THREE.Vector3();
+const _planetWorldScale = new THREE.Vector3();
 const VISIBILITY_DIST = 15_000_000; // world-space units; ~15M covers cross-system visibility
+const MARS_CAP_SPLIT = 0.75; // uv.y threshold; the cap covers the top 25% of the map (90°N–45°N)
+const MARS_CAP_BLEND = 0.02; //crossfade width in uv.y
+const MARS_CAP_LOAD_RADII = 2; // camera distance in planet radii that triggers the texture download
+// (VISIBILITY_DIST is ~20.7 Mars radii, so above ~20 the planet is not drawn at all)
+const MARS_CAP_FADE_SECONDS = 0.5; // fade in time once decoded
+
+const CAP_PLACEHOLDER = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+CAP_PLACEHOLDER.needsUpdate = true;
+
+export interface CapUniforms {
+  uCapMap: { value: THREE.Texture };
+  uCapSplit: { value: number };
+  uCapBlend: { value: number };
+  uCapStrength: { value: number };
+}
 
 interface PlanetSurfaceMaterialProps {
   textureUrl: string;
@@ -23,6 +40,8 @@ interface PlanetSurfaceMaterialProps {
   displacementMap: THREE.Texture | null;
   displacementScale: number;
   displacementBias: number;
+  capUniformsRef?: { current: CapUniforms | null };
+  useCap?: boolean;
 }
 
 function PlanetSurfaceMaterial({
@@ -35,6 +54,8 @@ function PlanetSurfaceMaterial({
   roughness,
   bumpMap,
   bumpScale,
+  capUniformsRef,
+  useCap = false,
 }: PlanetSurfaceMaterialProps) {
   const [map, normalMap] = useTexture([textureUrl, normalMapUrl ?? textureUrl]);
   map.colorSpace = THREE.SRGBColorSpace;
@@ -46,18 +67,46 @@ function PlanetSurfaceMaterial({
       emissive={emissive}
       emissiveMap={emissiveMap}
       emissiveIntensity={emissiveIntensity}
-      roughness={roughness}
+      roughness={1}
+      metalness={0.0}
       map={map}
       normalMap={materialNormalMap}
       bumpMap={bumpMap}
       bumpScale={bumpScale}
       fog={false}
+      customProgramCacheKey={() => (useCap ? 'cap' : 'no-cap')}
       onBeforeCompile={(shader) => {
-        // DEBUG: intentionally break the fragment shader for Spector.js testing
-        shader.fragmentShader = shader.fragmentShader.replace(
-          '#include <output_fragment>',
-          `gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0); // MAGENTA DEBUG BREAK`
-        );
+        if (!useCap || !capUniformsRef) return;
+
+        const capUniforms: CapUniforms = capUniformsRef.current ?? {
+          uCapMap: { value: CAP_PLACEHOLDER },
+          uCapSplit: { value: MARS_CAP_SPLIT },
+          uCapBlend: { value: MARS_CAP_BLEND },
+          uCapStrength: { value: 0 },
+        };
+
+        capUniformsRef.current = capUniforms;
+        Object.assign(shader.uniforms, capUniforms);
+
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            '#include <common>',
+            `#include <common>
+uniform sampler2D uCapMap;
+uniform float uCapSplit;
+uniform float uCapBlend;
+uniform float uCapStrength;`
+          )
+          .replace(
+            '#include <map_fragment>',
+            `#ifdef USE_MAP
+vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+vec2 capUv = vec2( vMapUv.x, clamp( ( vMapUv.y - uCapSplit ) / ( 1.0 - uCapSplit ), 0.0, 1.0 ) );
+float capMix = smoothstep( uCapSplit, uCapSplit + uCapBlend, vMapUv.y ) * uCapStrength;
+sampledDiffuseColor = mix( sampledDiffuseColor, texture2D( uCapMap, capUv ), capMix );
+diffuseColor *= sampledDiffuseColor;
+#endif`
+          );
       }}
     />
   );
@@ -117,6 +166,9 @@ export default function OrbitingPlanet({
   const planetMeshRef = useRef<THREE.Mesh>(null);
   const prevWorldPosRef = useRef(new THREE.Vector3());
   const hasPrevWorldPosRef = useRef(false);
+  const capUniformsRef = useRef<CapUniforms | null>(null);
+  const capRequestedRef = useRef(false);
+  const gl = useThree((state) => state.gl);
 
   const colliderSurfaceRadius = planetName === 'Mars' ? undefined : gravitySurfaceRadius;
   useRegisterPlanetCollider(planetCenterRef, planetName, colliderSurfaceRadius);
@@ -163,7 +215,7 @@ export default function OrbitingPlanet({
   const materialRoughness = isNeptune ? 0.62 : 0.2;
   const materialBumpScale = useBumpMap ? (isNeptune ? -0.35 : -0.6) : 0;
   const resolvedBumpMap = planetName === 'Mars' ? marsNormalTexture : bumpTexture;
-  const resolvedBumpScale = planetName === 'Mars' ? 0.6 : materialBumpScale;
+  const resolvedBumpScale = planetName === 'Mars' ? 0.1 : materialBumpScale;
   const resolvedDisplacementMap = useBumpMap ? resolvedBumpMap : null;
   const resolvedDisplacementScale = useBumpMap ? 0.0 : 0;
   const resolvedDisplacementBias = useBumpMap ? 100.0 : 0;
@@ -273,8 +325,39 @@ export default function OrbitingPlanet({
         planetCenterRef.current.getWorldPosition(_planetWorldPos);
       }
       camera.getWorldPosition(_camPos);
+      const camDist = _camPos.distanceTo(_planetWorldPos);
       const visibilityDist = isNeptune ? Number.POSITIVE_INFINITY : VISIBILITY_DIST;
-      meshVisRef.current.visible = _camPos.distanceTo(_planetWorldPos) < visibilityDist;
+      meshVisRef.current.visible = camDist < visibilityDist;
+
+      // Fetch the high-res cap once the camera is close enough to resolve it.
+      // radius is local to the SolarSystem group; camDist is world-space, so scale it up.
+      planetCenterRef.current.getWorldScale(_planetWorldScale);
+      const worldRadius = radius * _planetWorldScale.x;
+      if (
+        planetName === 'Mars' &&
+        !capRequestedRef.current &&
+        camDist < worldRadius * MARS_CAP_LOAD_RADII
+      ) {
+        capRequestedRef.current = true;
+        loadMarsCap(gl).then((texture) => {
+          if (texture && capUniformsRef.current) {
+            capUniformsRef.current.uCapMap.value = texture;
+          }
+        });
+      }
+    }
+
+    //Ramp capStrength from 0 to 1 over MARS_CAP_FADE_SECONDS
+    const capUniforms = capUniformsRef.current;
+    if (
+      capUniforms &&
+      capUniforms.uCapMap.value !== CAP_PLACEHOLDER &&
+      capUniforms.uCapStrength.value < 1
+    ) {
+      capUniforms.uCapStrength.value = Math.min(
+        1,
+        capUniforms.uCapStrength.value + delta / MARS_CAP_FADE_SECONDS
+      );
     }
   });
 
@@ -296,7 +379,7 @@ export default function OrbitingPlanet({
                           emissiveMap={coloniesTexture}
                           emissiveIntensity={materialEmissiveIntensity}
                           roughness={materialRoughness}
-                          metalness={1.0}
+                          metalness={0.3}
                           bumpMap={resolvedBumpMap as THREE.Texture | null}
                           bumpScale={resolvedBumpScale}
                           displacementMap={resolvedDisplacementMap as THREE.Texture | null}
@@ -307,6 +390,8 @@ export default function OrbitingPlanet({
                       }
                     >
                       <PlanetSurfaceMaterial
+                        capUniformsRef={capUniformsRef}
+                        useCap={planetName === 'Mars'}
                         textureUrl={textureUrl}
                         normalMapUrl={normalMapUrl}
                         color={materialColor}

@@ -88,7 +88,7 @@ export const BILL_CHURCHILL: DockContact = {
       handoff: {
         id: 'handoff',
         npcText:
-          'I have opened the cargo transfer panel, take the Sealed Parcel, fly it to Bakerfield Falls and hand it directly to Hank Johnson.',
+          'I have opened the negotiation panel, take the Sealed Parcel and fly it to Bakerfield Falls. You must hand it directly to Hank Johnson.',
         trade: BILL_PARCEL_HANDOFF_TRADE,
         playerOptions: [],
       },

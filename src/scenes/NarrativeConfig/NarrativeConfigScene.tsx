@@ -229,9 +229,9 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
         <CommsBufferSatellite />
         <CarrierGRB
           position={[
-            primaryFieldOrigin[0] + 1000,
+            primaryFieldOrigin[0] + 4200,
             primaryFieldOrigin[1] - 200,
-            primaryFieldOrigin[2] - 500,
+            primaryFieldOrigin[2] + 200,
           ]}
           scale={5}
         />
@@ -245,8 +245,9 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   return (
     <NarrativeConfigCanvas>
       <Perf position="top-right" />
-      <directionalLight position={[2, 3, -20]} intensity={2} color={0xffffff} castShadow />
-      <fogExp2 attach="fog" args={[fogColor, 0.0005]} />
+      <directionalLight position={[20, 3, -20]} intensity={2} color={0xffffff} castShadow />
+      <ambientLight intensity={0.002} color={0xffffff} />
+      <fogExp2 attach="fog" args={[fogColor, 0.000005]} />
       <TutorialFollowCamera
         followTarget={shipPosRef}
         followOffset={tutorialFollowOffset}

@@ -5,6 +5,7 @@ import DecorativeAsteroidField from '../../components/Asteroid/DecorativeAsteroi
 import Asteroid from '../../components/Asteroid/Asteroid';
 import { SalvageConfigData } from './SalvageConfigFile';
 import type { DockConfig } from '../../config/dockConfig';
+import AsteroidStation from '../../components/Asteroid/AsteroidStation';
 
 export type SalvageFieldOrigin = [number, number, number];
 
@@ -68,7 +69,6 @@ export default function SalvageField({
 }: SalvageFieldProps) {
   const { dock, dropOffPad, asteroids, mineableAsteroids } = SalvageConfigData;
 
-  const dockMineable = mineableAsteroids.find((a) => a.parent === 'dock');
   const freeMineables = mineableAsteroids.filter((a) => a.parent !== 'dock');
 
   return (
@@ -92,7 +92,7 @@ export default function SalvageField({
             <LandingPad
               id={`${idPrefix}${dock.id}`}
               label={dockLabelOverride ?? dock.label}
-              scale={SalvageConfigData.landingPadScale}
+              scale={2.6}
               dock={dockConfigOverride ?? dock.dock}
               landingPadThreshold={SalvageConfigData.landingPadThreshold}
               radioBroadcastEnabled={dockRadioBroadcastEnabled}
@@ -100,16 +100,15 @@ export default function SalvageField({
               radioDockingBay={dockRadioDockingBay}
               driveSignatureEnabled={dockDriveSignatureEnabled}
             />
-            {showDockMineable && dockMineable ? (
-              <Asteroid
-                key={`${idPrefix}${dockMineable.id}`}
-                position={dockMineable.position}
-                rotation={dockMineable.rotation}
-                scale={dockMineable.scale}
-                mineableId={`${idPrefix}${dockMineable.id}`}
-                label={dockMineable.label}
-              />
-            ) : null}
+            <AsteroidStation
+              key={`${idPrefix}asteroid-station`}
+              position={[80, -142, 243]}
+              rotation={[0, 0, 0]}
+              scale={580}
+              mineableId={`${idPrefix}asteroid-station`}
+              label="Asteroid Station"
+              normalScale={SalvageConfigData.asteroidNormalScale}
+            />
           </group>
         ) : null}
 
@@ -123,7 +122,7 @@ export default function SalvageField({
           </group>
         ) : null}
 
-        <group position={[0, -300, 0]}>
+        <group position={[0, -5000, 0]}>
           <DecorativeAsteroidField
             key={`${idPrefix}decorative-asteroid-field`}
             asteroids={asteroids}

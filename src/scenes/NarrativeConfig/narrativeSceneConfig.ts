@@ -213,7 +213,7 @@ export const NARRATIVE_CONFIG = {
   toneMappingExposure: TONE_MAPPING_EXPOSURE,
   solarSystemScale: SOLAR_SYSTEM_SCALE,
   tutorialFollowOffset: [0, 100, 120] as Vec3,
-  tutorialCameraZoomMax: 820,
+  tutorialCameraZoomMax: 1000820,
   planetImpactCameraHoldMaxAltitude: 5_000,
   shipParticleCount: 100,
   lighting: {
