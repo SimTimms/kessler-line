@@ -4,7 +4,7 @@ import * as THREE from 'three';
 
 const DEFAULT_URL = '/models/asteroid-station.glb';
 /** Same as decorative salvage rocks — authored GLB normals are too strong at world scale. */
-const DEFAULT_NORMAL_SCALE = 0.05;
+const DEFAULT_NORMAL_SCALE = 1;
 
 export interface AsteroidStationProps {
   url?: string;
@@ -21,7 +21,7 @@ export interface AsteroidStationProps {
 function applyAsteroidSurface(material: THREE.Material, normalScale: number): THREE.Material {
   const cloned = material.clone();
   if (cloned instanceof THREE.MeshStandardMaterial) {
-    cloned.normalScale.set(normalScale, normalScale);
+    cloned.normalScale.set(0.05, 0.05);
     // Huge unique meshes read as black metal once the specular highlight shrinks.
     cloned.roughness = Math.max(cloned.roughness, 0.88);
     cloned.metalness = Math.min(cloned.metalness, 0.2);
@@ -44,8 +44,6 @@ export default function AsteroidStation({
   useEffect(() => {
     modelScene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
-      // GLB meshes often import with receiveShadow. A 500× rock then self-shadows
-      // into a black blob as soon as the tiny default shadow camera can see it.
       child.castShadow = false;
       child.receiveShadow = false;
       const source = child.material;

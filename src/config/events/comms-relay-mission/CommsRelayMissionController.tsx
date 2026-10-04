@@ -1,19 +1,3 @@
-/**
- * CommsRelayMissionController — renders null.
- *
- * 1. Listens for MissionStateChanged — when either prerequisite mission appears
- *    in completedMissionsRef, arms the hail (currently commented out; the scene
- *    arms it directly instead).
- * 2. The Elias Voss emergency-broadcast hail now lives in
- *    src/eventTrigger/events/elias-voss-hail.ts and is armed by the scene via
- *    registerTimedEvent(). This controller only reacts to its outcome.
- * 3. Monitors ChatUpdated on the hail contact to detect accept/decline.
- * 4. On accept → addActiveMission + push alert.
- * 5. On decline → addDeclinedMission.
- * 6. When the mission appears in completedMissionsRef, delivers buffer log messages.
- * 7. Resupply turn → tops up fuel, O2, and power.
- */
-
 import { useRef, useEffect } from 'react';
 import { completedMissionsRef } from '../../../context/MissionState';
 import { addActiveMission, addDeclinedMission } from '../../../context/MissionState';
@@ -71,49 +55,6 @@ export default function CommsRelayMissionController() {
     window.addEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
     return () => window.removeEventListener(EVENT_REQUEST_UNDOCK, onRequestUndock);
   }, []);
-
-  // ── Listen for prerequisite mission completion → start hail timer ──────
-  // Superseded by the timed-event trigger: the scene arms ELIAS_VOSS_HAIL_EVENT_ID.
-  // To restore prerequisite-gating, call setTimedEventDelay(ELIAS_VOSS_HAIL_EVENT_ID,
-  // COMMS_RELAY_HAIL_DELAY_MS) from here instead of the setTimeout below.
-  // NOTE: to uncomment this, restore hailFiredRef / timerRef and the imports for
-  // fireNarrativeHail, NARRATIVE_DONINGTON_STATION_ID and COMMS_RELAY_DIALOGUE_TREE_ID.
-  /*
-  useEffect(() => {
-    const onMissionChanged = () => {
-      if (hailFiredRef.current) return;
-
-      const hasPrerequisite = COMMS_RELAY_PREREQUISITE_MISSIONS.some((id) =>
-        completedMissionsRef.current.includes(id),
-      );
-      if (!hasPrerequisite) return;
-
-      // Don't fire if the mission is already active, completed, or declined
-      // (handles save/load where prerequisite was already done).
-      if (completedMissionsRef.current.includes(COMMS_RELAY_MISSION_ID)) return;
-
-      hailFiredRef.current = true;
-
-      timerRef.current = setTimeout(() => {
-        fireNarrativeHail({
-          contactId: COMMS_RELAY_HAIL_CONTACT_ID,
-          dialogueTreeId: COMMS_RELAY_DIALOGUE_TREE_ID,
-          shipName: 'Donington Station',
-          captainName: 'Elias Voss',
-          personId: 'elias-voss',
-        });
-      }, COMMS_RELAY_HAIL_DELAY_MS);
-    };
-
-    window.addEventListener('MissionStateChanged', onMissionChanged);
-    // Check immediately in case the prerequisite was already completed (e.g. loaded save).
-    onMissionChanged();
-    return () => {
-      window.removeEventListener('MissionStateChanged', onMissionChanged);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-  */
 
   // ── Listen for ChatUpdated to detect accept / decline / resupply ───────
   useEffect(() => {

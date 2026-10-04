@@ -2,33 +2,31 @@
 
 ## 3D Models
 
-| File                                              | Source                                                                  | Author         | License |
-| ------------------------------------------------- | ----------------------------------------------------------------------- | -------------- | ------- |
-| `models/spaceship.glb`                            | [Sketchfab](https://skfb.ly/LzKz)                                       | haohao2210     | Unknown |
-| `models/shuttle.glb` / `models/shuttle-low.glb`   | Sketchfab — Sci Fi Space Shuttle "Vanguard"                             | markkingsnorth | Unknown |
-| `models/shuttle-low-british.glb`                  | Unknown                                                                 | Unknown        | Unknown |
-| `models/battleship-british.glb`                   | Unknown                                                                 | Unknown        | Unknown |
-| `models/type-004_aircraft_carrier.glb`            | Unknown                                                                 | Unknown        | Unknown |
-| `models/space_station.glb`                        | Unknown                                                                 | Unknown        | Unknown |
-| `models/fuel-station.glb`                         | Unknown                                                                 | Unknown        | Unknown |
-| `models/asteroid.glb` / `models/asteroid-low.glb` | Unknown                                                                 | Unknown        | Unknown |
-| `models/asteroid_with_minerals.glb`               | Unknown                                                                 | Unknown        | Unknown |
-| `models/container.glb`                            | Unknown                                                                 | Unknown        | Unknown |
-| `models/container-british.glb`                    | Unknown                                                                 | Unknown        | Unknown |
-| `models/neptune.glb`                              | Unknown                                                                 | Unknown        | Unknown |
-| `models/man.glb`                                  | Unknown                                                                 | Unknown        | Unknown |
-| `models/person.glb`                               | Unknown                                                                 | Unknown        | Unknown |
-| `models/supportDrone.glb`                         | Sketchfab (unreliable in-scene, replaced by models/drone/untitled.gltf) | Unknown        | Unknown |
-| `models/drone/untitled.gltf`                      | Unknown                                                                 | Unknown        | Unknown |
-| `models/debris/debris-1.glb`                      | Unknown                                                                 | Unknown        | Unknown |
-| `models/debris/debris-2.glb`                      | Unknown                                                                 | Unknown        | Unknown |
-| `models/debris/debris-3.glb`                      | Unknown                                                                 | Unknown        | Unknown |
-| `models/satellite.glb`                            | Unknown                                                                 | Unknown        | Unknown |
-| `models/skyscraper_window.glb`                    | Unknown                                                                 | Unknown        | Unknown |
-| `models/landing-pad.glb`                          | Unknown                                                                 | Unknown        | Unknown |
-| `models/salvage-bay.glb`                          | Unknown                                                                 | Unknown        | Unknown |
-| `models/colony.glb`                               | Unknown                                                                 | Unknown        | Unknown |
-| `models/freighter.gltf`                           | Unknown                                                                 | Unknown        | Unknown |
+| File                                            | Source                                                                  | Author         | License |
+| ----------------------------------------------- | ----------------------------------------------------------------------- | -------------- | ------- |
+| `models/spaceship.glb`                          | [Sketchfab](https://skfb.ly/LzKz)                                       | haohao2210     | Unknown |
+| `models/shuttle.glb` / `models/shuttle-low.glb` | Sketchfab — Sci Fi Space Shuttle "Vanguard"                             | markkingsnorth | Unknown |
+| `models/shuttle-low-british.glb`                | Unknown                                                                 | Unknown        | Unknown |
+| `models/battleship-british.glb`                 | Unknown                                                                 | Unknown        | Unknown |
+| `models/type-004_aircraft_carrier.glb`          | Unknown                                                                 | Unknown        | Unknown |
+| `models/space_station.glb`                      | Unknown                                                                 | Unknown        | Unknown |
+| `models/fuel-station.glb`                       | Unknown                                                                 | Unknown        | Unknown |
+| `models/container.glb`                          | Unknown                                                                 | Unknown        | Unknown |
+| `models/container-british.glb`                  | Unknown                                                                 | Unknown        | Unknown |
+| `models/neptune.glb`                            | Unknown                                                                 | Unknown        | Unknown |
+| `models/man.glb`                                | Unknown                                                                 | Unknown        | Unknown |
+| `models/person.glb`                             | Unknown                                                                 | Unknown        | Unknown |
+| `models/supportDrone.glb`                       | Sketchfab (unreliable in-scene, replaced by models/drone/untitled.gltf) | Unknown        | Unknown |
+| `models/drone/untitled.gltf`                    | Unknown                                                                 | Unknown        | Unknown |
+| `models/debris/debris-1.glb`                    | Unknown                                                                 | Unknown        | Unknown |
+| `models/debris/debris-2.glb`                    | Unknown                                                                 | Unknown        | Unknown |
+| `models/debris/debris-3.glb`                    | Unknown                                                                 | Unknown        | Unknown |
+| `models/satellite.glb`                          | Unknown                                                                 | Unknown        | Unknown |
+| `models/skyscraper_window.glb`                  | Unknown                                                                 | Unknown        | Unknown |
+| `models/landing-pad.glb`                        | Unknown                                                                 | Unknown        | Unknown |
+| `models/salvage-bay.glb`                        | Unknown                                                                 | Unknown        | Unknown |
+| `models/colony.glb`                             | Unknown                                                                 | Unknown        | Unknown |
+| `models/freighter.gltf`                         | Unknown                                                                 | Unknown        | Unknown |
 
 ### Referenced but not shipped
 

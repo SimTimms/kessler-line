@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MapPin, CheckCircle } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { useMissionJournal } from '../../../hooks/useMissionJournal';
 import { getMissionDef, MISSION_DEFS } from '../../../config/missionConfig';
 import { setNavTarget } from '../../../context/NavTarget';
@@ -8,6 +8,7 @@ function handleSetNav(missionId: string) {
   const def = getMissionDef(missionId);
   if (!def?.waypoint) return;
   const pos = new THREE.Vector3(def.waypoint[0], def.waypoint[1], def.waypoint[2]);
+  console.log('def', def);
   setNavTarget(def.waypointCollidableId ?? def.waypointLabel ?? def.id, pos);
 }
 

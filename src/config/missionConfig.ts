@@ -44,7 +44,7 @@ export const MISSION_DEFS: Record<string, MissionDef> = {
       'Dock with the comms buffer satellite in Mars orbit and download the emergency communication logs.',
     waypoint: [...MARS_DEF.position],
     waypointLabel: 'Comms Buffer Satellite',
-    waypointCollidableId: `docking-bay-${COMMS_BUFFER_SATELLITE_ID}`,
+    waypointCollidableId: `cb-mrs-412`,
   },
 };
 
