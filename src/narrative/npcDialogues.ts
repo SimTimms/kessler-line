@@ -265,7 +265,7 @@ const SATURN_STARTER_TREE: DialogueTree = {
     rendezvous: {
       id: 'rendezvous',
       npcText:
-        "Survey cutter out of Titan orbit. Precise crew. Never misses a window. This time we got nothing — no ping, no delay notice, no debris trace. Just silence.",
+        'Survey cutter out of Titan orbit. Precise crew. Never misses a window. This time we got nothing — no ping, no delay notice, no debris trace. Just silence.',
       playerOptions: [
         {
           id: 'rendezvous-goal',
@@ -1334,8 +1334,7 @@ export const DIALOGUE_TREES: DialogueTree[] = [
     turns: {
       intro: {
         id: 'intro',
-        npcText:
-          'DRONE UNIT RESPONDING. Comms channel open. State request.',
+        npcText: 'DRONE UNIT RESPONDING. Comms channel open. State request.',
         playerOptions: [
           {
             id: 'intro-status',
@@ -1425,15 +1424,14 @@ export const DIALOGUE_TREES: DialogueTree[] = [
           {
             id: 'ask-earth',
             label: 'ANYTHING FROM EARTH?',
-            text: "Have you had any contact from Earth recently? Anything at all?",
+            text: 'Have you had any contact from Earth recently? Anything at all?',
             nextTurnId: 'earth',
           },
         ],
       },
       closing: {
         id: 'closing',
-        npcText:
-          "Appreciate the work, pilot. Donington out.",
+        npcText: 'Appreciate the work, pilot. Donington out.',
         playerOptions: [],
       },
       earth: {

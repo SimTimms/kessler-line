@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState, Suspense } from 'react';
 import {
   hasSlot,
   NARRATIVE_AUTOSAVE_SLOT,
@@ -10,6 +10,9 @@ import { TUTORIAL_MENU_ITEMS } from './const/tutorialMenuItems';
 import { ASTEROID_DATA } from './const/asteroidData';
 import { AMBIENT_ON_SELECT } from './const/gameModes';
 import { type TutorialMenuItem } from './const/tutorialMenuItems';
+import { Canvas } from '@react-three/fiber';
+import OrbitingPlanet from '../../Planets/OrbitingPlanet';
+import { PLANET_GLOW_TEXTURE_URL } from '../../../config/visualConfig';
 
 interface StartOverlayProps {
   onStart: () => void;
@@ -37,20 +40,13 @@ const StartOverlay = memo(function StartOverlay({
     <div className={`start-overlay${dismissing ? ' dismissing' : ''}`}>
       <div className="start-panel">
         <div className="start-title-group">
-          <img
-            src="/textures/supervivencia.png"
-            alt=""
-            className="start-hero-ship"
-            aria-hidden="true"
-          />
           <div className="start-title">
-            {'supervivencia'.split('').map((letter, i) => (
+            {'Obnixus'.split('').map((letter, i) => (
               <span key={i} className="kessler-letter">
                 {letter}
               </span>
             ))}
           </div>
-          <div className="start-subtitle">terca</div>
         </div>
 
         <div className="start-menu-slider">
