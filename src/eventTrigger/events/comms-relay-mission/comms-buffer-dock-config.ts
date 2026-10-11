@@ -1,8 +1,4 @@
-// Dock configuration for the Comms Buffer Satellite.
-// The satellite is unmanned — no fuel/O2, minimal power.
-// A single "Buffer System" contact provides the log download dialogue.
-
-import type { DockConfig } from '../../dockConfig';
+import type { DockConfig } from '../../../types/dialogueTypes';
 import type { DialogueEffect } from '../../../narrative/dialogueEffects';
 import { COMMS_RELAY_MISSION_ID, COMMS_BUFFER_SATELLITE_LABEL } from './comms-relay-config';
 
@@ -17,9 +13,7 @@ export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
   power: { amount: 12, capacity: 20 },
   inventory: {
     label: 'Object Inventory',
-    slots: [
-      { itemId: 'comms-buffer', quantity: 1, salvagedBy: 'cb-mrs-412' },
-    ],
+    slots: [{ itemId: 'comms-buffer', quantity: 1, salvagedBy: 'cb-mrs-412' }],
   },
   contacts: [
     {
@@ -54,8 +48,7 @@ export const COMMS_BUFFER_DOCK_CONFIG: DockConfig = {
           },
           downloading: {
             id: 'downloading',
-            npcText:
-              'TRANSFER COMPLETE.\n\nPlaying back 4 cached transmissions...',
+            npcText: 'TRANSFER COMPLETE.\n\nPlaying back 4 cached transmissions...',
             playerOptions: [],
           },
           diagnostics: {

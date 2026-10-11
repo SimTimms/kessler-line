@@ -1,4 +1,4 @@
-import type { DialogueTree } from './npcDialogues';
+import type { DialogueTree } from '../types/dialogueTypes';
 
 const AST_SIGN_OFF = '— AST-47718';
 
@@ -19,7 +19,7 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
           {
             id: 'status',
             label: 'Request status.',
-            text: 'What\'s your colony status?',
+            text: "What's your colony status?",
             nextTurnId: 'status',
           },
           {
@@ -33,7 +33,7 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
       status: {
         id: 'status',
         npcText:
-          'Colony is operational. Ore extraction nominal. We\'ll ping if supply needs change.',
+          "Colony is operational. Ore extraction nominal. We'll ping if supply needs change.",
         playerOptions: [],
       },
       signed_off: {
@@ -53,7 +53,7 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
       open: {
         id: 'open',
         npcText:
-          'Thanks for picking up. Our food reserves are running low — we\'re requesting supplemental rations if you can spare any.',
+          "Thanks for picking up. Our food reserves are running low — we're requesting supplemental rations if you can spare any.",
         playerOptions: [
           {
             id: 'help',
@@ -64,7 +64,7 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
           {
             id: 'decline',
             label: "Can't help right now.",
-            text: 'Sorry, I can\'t help right now.',
+            text: "Sorry, I can't help right now.",
             nextTurnId: 'declined',
           },
         ],
@@ -77,7 +77,7 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
           {
             id: 'agree',
             label: 'Initiate transfer.',
-            text: 'Stand by — I\'ll initiate a food transfer.',
+            text: "Stand by — I'll initiate a food transfer.",
             nextTurnId: 'agreed',
           },
           {
@@ -126,20 +126,19 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
           {
             id: 'decline',
             label: "Can't help.",
-            text: 'I can\'t assist right now.',
+            text: "I can't assist right now.",
             nextTurnId: 'declined',
           },
         ],
       },
       food_need: {
         id: 'food_need',
-        npcText:
-          'Any amount helps. Without resupply we\'ll start losing crew within the hour.',
+        npcText: "Any amount helps. Without resupply we'll start losing crew within the hour.",
         playerOptions: [
           {
             id: 'agree',
             label: 'Sending supplies.',
-            text: 'Hang on — I\'m preparing an emergency food transfer.',
+            text: "Hang on — I'm preparing an emergency food transfer.",
             nextTurnId: 'agreed',
           },
           {
@@ -182,21 +181,20 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
           {
             id: 'help',
             label: 'Sending aid.',
-            text: 'I\'m on it. Tell me what you need.',
+            text: "I'm on it. Tell me what you need.",
             nextTurnId: 'food_need',
           },
           {
             id: 'decline',
             label: "Can't help.",
-            text: 'I can\'t help right now.',
+            text: "I can't help right now.",
             nextTurnId: 'declined',
           },
         ],
       },
       food_need: {
         id: 'food_need',
-        npcText:
-          'We need food now — any amount. Crew casualties are mounting.',
+        npcText: 'We need food now — any amount. Crew casualties are mounting.',
         playerOptions: [
           {
             id: 'agree',
@@ -239,15 +237,14 @@ export const BROADCAST_DIALOGUE_TREES: DialogueTree[] = [
           {
             id: 'decline',
             label: "Can't help.",
-            text: 'Sorry, I can\'t help right now.',
+            text: "Sorry, I can't help right now.",
             nextTurnId: 'declined',
           },
         ],
       },
       water_need: {
         id: 'water_need',
-        npcText:
-          'Eighty units would restore safe reserves. Ore credits available on transfer.',
+        npcText: 'Eighty units would restore safe reserves. Ore credits available on transfer.',
         playerOptions: [
           {
             id: 'agree',

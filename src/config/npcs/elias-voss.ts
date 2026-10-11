@@ -1,22 +1,15 @@
 import type { DockContact } from '../dockConfig';
+export const ELIAS_VOSS_ID = 'elias-voss';
 
-export const ELIAS_VOSS: DockContact = {
-  id: 'elias-voss',
-  name: 'Elias Voss',
-  role: 'comms-officer',
+export const satelliteMission = {
   missionId: 'elias-voss-satellite-deployment',
-  age: 44,
-  company: 'Donington Station Communications Chief',
-  portrait: '/textures/profiles/elias-voss.jpg',
-  bio: 'Comms officer assigned to Donington traffic control and orbital deployment clearances.',
-  platform: 'REACH',
-  dialogue: {
+  missionDialogue: {
     id: 'elias-voss-satellite-deployment',
     openingTurnId: 'intro',
     turns: {
       intro: {
         id: 'intro',
-        npcText: `Communications Chief Elias Voss. We have an urgent matter requiring immediate attention. We would not ordinarily impose such a task on a civilian contractor. We have lost communication with our dear Mother Earth. We'd be incredibly grateful if you'd be so kind as to undertake the task of positioning an orbital communications satellite in the hopes that we can re-establish communication. A single cargo crate containing a communication satellite to be positioned in orbit around Mars.`,
+        npcText: `We have an urgent matter requiring immediate attention. We would not ordinarily impose such a task on a civilian contractor. We have lost communication with our dear Mother Earth. We'd be incredibly grateful if you'd be so kind as to undertake the task of positioning an orbital communications satellite in the hopes that we can re-establish communication. A single cargo crate containing a communication satellite to be positioned in orbit around Mars.`,
         audio: 'elias-voss.mp3',
         playerOptions: [
           {
@@ -57,6 +50,36 @@ export const ELIAS_VOSS: DockContact = {
             label: 'Acknowledge',
             text: 'Copy. I will report once the satellite is deployed.',
             nextTurnId: null,
+          },
+        ],
+      },
+    },
+  },
+};
+
+export const ELIAS_VOSS_DIALOGUE: DockContact = {
+  id: ELIAS_VOSS_ID,
+  name: 'Elias Voss',
+  role: 'comms-officer',
+  missionId: [],
+  age: 44,
+  company: 'Donington Station Communications Chief',
+  portrait: '/textures/profiles/elias-voss.jpg',
+  bio: 'Comms officer assigned to Donington traffic control and orbital deployment clearances.',
+  platform: 'REACH',
+  dialogue: {
+    id: 'elias-voss-intro',
+    openingTurnId: 'intro',
+    turns: {
+      intro: {
+        id: 'intro',
+        npcText: `Hi`,
+        playerOptions: [
+          {
+            id: 'Hi',
+            label: 'Hi',
+            text: 'Hi',
+            nextTurnId: 'brief',
           },
         ],
       },

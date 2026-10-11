@@ -1,15 +1,12 @@
 // Comms Relay Mission — constants and configuration.
 
 import { getPlanet, SOLAR_SYSTEM_SCALE } from '../../../components/Planets/SolarSystem';
+import { ELIAS_VOSS_ID } from '../../../config/npcs/elias-voss';
 
 export const COMMS_RELAY_MISSION_ID = 'elias-voss-comms-relay';
-/**
- * Must stay equal to the Donington Station dock contact id (`ELIAS_VOSS.id`) —
- * that shared id is what lets the emergency hail and the station conversation
- * resolve to one person (portrait, role, dossier and merged history).
- */
-export const COMMS_RELAY_HAIL_CONTACT_ID = 'elias-voss';
-export const COMMS_RELAY_DIALOGUE_TREE_ID = 'elias-voss';
+
+export const COMMS_RELAY_HAIL_CONTACT_ID = ELIAS_VOSS_ID;
+export const COMMS_RELAY_DIALOGUE_TREE_ID = ELIAS_VOSS_ID;
 export const COMMS_BUFFER_SATELLITE_ID = 'comms-buffer-satellite';
 export const COMMS_BUFFER_SATELLITE_LABEL = 'CB MRS-412';
 

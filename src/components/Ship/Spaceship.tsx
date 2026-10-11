@@ -116,7 +116,7 @@ export default function Spaceship({
   const groupRef = useRef<THREE.Group>(null!);
   const leanRef = useRef<THREE.Group>(null!);
   const shadowLightTarget = useRef(new THREE.Object3D());
-
+  console.log('initialDockedTo', initialDockedTo);
   useEffect(() => {
     if (!modulesInstalled) return;
     setVesselModules(vesselId, modulesInstalled);

@@ -1,13 +1,3 @@
-/**
- * CommsBufferSatellite — dockable satellite orbiting Mars.
- *
- * Uses the shared gravity integrator (`src/physics/`) so that all orbiting
- * objects share the same reference-frame tracking pipeline as the ship.
- * Registers a collidable with velocity tracking so the docking system can
- * compute correct relative speed. Uses useRegisterDock for the dock config
- * registration.
- */
-
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
@@ -20,7 +10,7 @@ import {
 } from '../../../context/RadioBroadcastRegistry';
 import { selectTarget } from '../../../context/TargetSelection';
 import { useRegisterDock } from '../../../hooks/useRegisterDockablePartner';
-import { DEFAULT_DOCK_CAPTURE_PROFILE } from '../../dockCaptureConfig';
+import { DEFAULT_DOCK_CAPTURE_PROFILE } from '../../../config/dockCaptureConfig';
 import { COMMS_BUFFER_DOCK_CONFIG } from './comms-buffer-dock-config';
 import {
   COMMS_BUFFER_SATELLITE_ID,

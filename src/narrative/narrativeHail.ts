@@ -3,40 +3,25 @@ import { createThread, addChatMessage, setChatTurn } from '../context/ChatStore'
 import { setIncomingHail } from '../context/IncomingHailState';
 
 export interface NarrativeHailParams {
-  /** Unique contact ID for the hail (used as ChatThread key). */
-  contactId: string;
-  /** Dialogue tree ID from npcDialogues.ts. */
+  shipId: string;
   dialogueTreeId: string;
-  /** Display name of the ship/station (e.g. "Donington Station"). */
   shipName: string;
-  /** Captain/NPC name (e.g. "Elias Voss"). */
   captainName: string;
-  /**
-   * Dock contact id of the person hailing, when they are someone the player can
-   * also meet aboard a station. Ties this thread to their identity and history.
-   */
   personId?: string;
 }
 
-/**
- * Fire an incoming narrative hail from any character.
- *
- * Pass `personId` when the caller is a character the player can also meet at a
- * dock: the panel then resolves that person's portrait, role and dossier and
- * merges their other conversations in as history — see
- * `narrative/contactIdentity.ts` — so no copying is needed here.
- */
 export function fireNarrativeHail(params: NarrativeHailParams): void {
-  const { contactId, dialogueTreeId, shipName, captainName, personId } = params;
+  const { shipId, dialogueTreeId, shipName, captainName, personId } = params;
 
-  // Assign the narrative dialogue tree before the hail fires
-  assignDialogueTree(contactId, dialogueTreeId);
+  /** Assign the dialogue tree to the ship. */
+  assignDialogueTree(shipId, dialogueTreeId);
 
   const tree = getDialogueTreeById(dialogueTreeId);
+  console.log('dialogueTreeId', tree);
+
   if (tree) {
-    // Pre-create the chat thread so CommsChat finds it with history + opening message
     createThread(
-      contactId,
+      shipId,
       tree.vesselName || shipName,
       tree.captainName || captainName,
       dialogueTreeId,
@@ -44,18 +29,17 @@ export function fireNarrativeHail(params: NarrativeHailParams): void {
       personId
     );
 
-    // Add the opening NPC message from the new dialogue
     const firstTurn = tree.turns[tree.openingTurnId];
     if (firstTurn) {
-      addChatMessage(contactId, {
-        id: `npc-${contactId}-open`,
+      addChatMessage(shipId, {
+        id: `npc-${shipId}-open`,
         role: 'npc',
         text: firstTurn.npcText,
         timestamp: Date.now(),
       });
-      setChatTurn(contactId, tree.openingTurnId, false);
+      setChatTurn(shipId, tree.openingTurnId, false);
     }
   }
 
-  setIncomingHail(contactId);
+  setIncomingHail(shipId);
 }

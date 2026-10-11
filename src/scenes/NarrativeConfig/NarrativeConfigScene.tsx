@@ -1,14 +1,8 @@
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import Spaceship from '../../components/Ship/Spaceship';
 import TutorialFollowCamera from '../../components/TutorialShared/TutorialFollowCamera';
-import TutorialNavShipIndicator from '../../components/TutorialShared/TutorialNavShipIndicator';
 import { shipPosRef } from '../../context/ShipPos';
-import DeployedSatellite from '../../config/events/satellite-mission/DeployedSatellite';
-import LaserRay from '../../components/Combat/LaserRay';
-import PlayerBullets from '../../components/Combat/PlayerBullets';
-import PlayerCannonHitDamage from '../../components/Combat/PlayerCannonHitDamage';
-import BreakupVfx from '../../components/Combat/BreakupVfx';
+import DeployedSatellite from '../../eventTrigger/events/satellite-mission/DeployedSatellite';
 import SharedInteractionSceneTools from '../../components/SharedInteractionSceneTools';
 import CollisionDebug from '../../components/Debug/CollisionDebug';
 import { useSaveSystem } from '../../hooks/useSaveSystem';
@@ -18,40 +12,30 @@ import SolarSystem from '../../components/Planets/SolarSystem';
 import SunGravity from '../../components/Environment/SunGravity';
 import { FloatingOrigin } from '../../components/Environment/FloatingOrigin';
 import { SANDBOX_USE_FLOATING_ORIGIN } from '../../config/debugConfig';
-import { GARBAGE_SCOW_MODULES } from '../../config/miningConfig';
-import SalvageField from '../SalvageConfig/SalvageField';
-import NormalTravelZoneRing from '../../components/FastTravel/NormalTravelZoneRing';
-import { NarrativeSatelliteMissionController } from '../../config/events/satellite-mission/deploy-satellite';
-import OrbitalSatellite from '../../config/events/satellite-mission/OrbitalSatellite';
-import CommsRelayMissionController from '../../config/events/comms-relay-mission/CommsRelayMissionController';
-import CommsBufferSatellite from '../../config/events/comms-relay-mission/CommsBufferSatellite';
-import CarrierGRB from '../../components/Ships/CarrierGRB';
+import { NarrativeSatelliteMissionController } from '../../eventTrigger/events/satellite-mission/deploy-satellite';
+import OrbitalSatellite from '../../eventTrigger/events/satellite-mission/OrbitalSatellite';
+import CommsRelayMissionController from '../../eventTrigger/events/comms-relay-mission/CommsRelayMissionController';
+import CommsBufferSatellite from '../../eventTrigger/events/comms-relay-mission/CommsBufferSatellite';
 import DerelictField from '../../components/Ship/DerelictField';
 import { spawnShip } from './helpers/spawnShip';
+import Bakersfield from './Bakersfield';
+import Donington from './Donington';
+import PlayerShip from './PlayerShip';
 import { registerTimedEvent, resetTimedEvents } from '../../eventTrigger/event-trigger';
 import { ELIAS_VOSS_HAIL_EVENT_ID } from '../../eventTrigger/events';
 
 import {
-  getNarrativeMarsNormalTravelRadius,
-  getNarrativeMarsZoneCenter,
   getNarrativePrimaryFieldOrigin,
   getNarrativeSecondaryFieldOrigin,
   getNarrativeShipSpawn,
   NARRATIVE_CONFIG,
-  NARRATIVE_BAKERFIELD_ID_PREFIX,
-  NARRATIVE_DONINGTON_DOCK_ID,
   NARRATIVE_DONINGTON_STATION_ID,
-  NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS,
-  NARRATIVE_MARS_ZONE_ID,
-  NARRATIVE_PRIMARY_ZONE_ID,
   NARRATIVE_SATELLITE_CONTAINER_LOCAL_ID,
-  NARRATIVE_SECONDARY_ZONE_ID,
+  NARRATIVE_DONINGTON_DOCK_ID,
 } from './narrativeSceneConfig';
 import { DONINGTON_STATION_DOCK_CONFIG } from '../../config/landingPads/donington-station';
-import { BAKERFIELD_FALLS_DOCK_CONFIG } from '../../config/landingPads/bakerfield-falls';
 import { registerDock } from '../../context/DockablePartnerStore';
 import NarrativeConfigCanvas from './NarrativeConfigCanvas';
-import { Perf } from 'r3f-perf';
 
 const CAMERA_FRAME_PRIORITY = SANDBOX_USE_FLOATING_ORIGIN ? 4 : 0;
 
@@ -74,9 +58,6 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
     solarSystemScale,
     tutorialFollowOffset,
     tutorialCameraZoomMax,
-    planetImpactCameraHoldMaxAltitude,
-    shipParticleCount,
-    lighting,
     satelliteMissionConfig,
   } = NARRATIVE_CONFIG;
 
@@ -109,18 +90,8 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
     return [o.x, o.y, o.z];
   }, []);
 
-  const marsZoneCenter = useMemo((): [number, number, number] => {
-    const o = getNarrativeMarsZoneCenter();
-    return [o.x, o.y, o.z];
-  }, []);
-
-  const marsZoneRadius = useMemo(() => getNarrativeMarsNormalTravelRadius(), []);
-
-  // ── Timed narrative events ───────────────────────────────────────────────
-  // Arm on scene start; resetTimedEvents() clears every pending timer on teardown
-  // so nothing fires into the next scene.
   useEffect(() => {
-    registerTimedEvent(ELIAS_VOSS_HAIL_EVENT_ID, 30_000);
+    registerTimedEvent(ELIAS_VOSS_HAIL_EVENT_ID, 3_000);
     return () => resetTimedEvents();
   }, []);
 
@@ -136,56 +107,25 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
 
   const worldContent = (
     <>
+      <PlayerShip
+        effectiveSpawn={effectiveSpawn}
+        savedSpawn={savedSpawn ?? { velocity: [0, 0, 0] }}
+        spaceshipGroupRef={spaceshipGroupRef as unknown as React.RefObject<THREE.Group>}
+        initialDockedTo={NARRATIVE_DONINGTON_DOCK_ID}
+      />
+
       <Suspense fallback={null}>
-        <Spaceship
-          url="/models/shuttle-low-british.glb"
-          shipGroupRef={spaceshipGroupRef}
-          initialPosition={effectiveSpawn.position}
-          initialRotation={effectiveSpawn.rotation}
-          initialDockedTo={
-            savedSpawn || shipSpawn.skipDock ? undefined : NARRATIVE_DONINGTON_DOCK_ID
-          }
-          scale={1}
-          initialVelocity={savedSpawn?.velocity ?? [0, 0, 0]}
-          modulesInstalled={GARBAGE_SCOW_MODULES}
-          shipParticleCloudProps={{
-            count: shipParticleCount,
-            enableSpeedGate: true,
-            speedGateMin: 100000,
-            speedGateMax: 100000,
-          }}
-          physicsOptions={{
-            enabled: true,
-            inputEnabled: true,
-            thrusterPhysicsEnabled: true,
-            orbitalPhysicsEnabled: true,
-            dockingPhysicsEnabled: true,
-          }}
-        />
-      </Suspense>
-      <Suspense fallback={null}>
-        <LaserRay shipGroupRef={spaceshipGroupRef} detectSettlement />
-        <PlayerBullets shipGroupRef={spaceshipGroupRef} />
-        <PlayerCannonHitDamage />
-        <BreakupVfx />
         <SolarSystem scale={solarSystemScale} />
-        <SalvageField
-          origin={primaryFieldOrigin}
-          idPrefix={''}
-          showDroneFleet={false}
-          dockLabelOverride="Donington Station"
-          dockConfigOverride={DONINGTON_STATION_DOCK_CONFIG}
-          dockRadioBroadcastEnabled
-          dockDriveSignatureEnabled
-          dockRadioDialogue={[
-            'DONINGTON STATION BROADCASTING.',
-            'BILL CHURCHILL AVAILABLE FOR PARCEL HANDOFF.',
-          ]}
-          dockRadioDockingBay="A1"
-        />
+      </Suspense>
 
-        <TutorialNavShipIndicator shipGroupRef={spaceshipGroupRef} />
+      <Donington
+        primaryFieldOrigin={primaryFieldOrigin}
+        secondaryFieldOrigin={secondaryFieldOrigin}
+      />
 
+      <Bakersfield secondaryFieldOrigin={secondaryFieldOrigin} />
+
+      <Suspense fallback={null}>
         <group position={primaryFieldOrigin} name="narrative-primary-field-cargo-containers">
           <OrbitalSatellite
             satelliteContainerId={satelliteContainerId}
@@ -193,49 +133,12 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
           />
         </group>
 
-        <SalvageField
-          origin={secondaryFieldOrigin}
-          idPrefix={NARRATIVE_BAKERFIELD_ID_PREFIX}
-          showDroneFleet={false}
-          showDroneAtmosphere
-          dockLabelOverride="Bakerfield Falls"
-          dockConfigOverride={BAKERFIELD_FALLS_DOCK_CONFIG}
-          dockRadioBroadcastEnabled
-          dockDriveSignatureEnabled
-          dockRadioDialogue={[
-            'BAKERFIELD FALLS BROADCASTING.',
-            'DOCKMASTER HANK JOHNSON STANDING BY FOR PARCEL RECEIPT.',
-          ]}
-          dockRadioDockingBay="B1"
-        />
-        <NormalTravelZoneRing
-          id={NARRATIVE_PRIMARY_ZONE_ID}
-          center={primaryFieldOrigin}
-          radius={NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS}
-        />
-        <NormalTravelZoneRing
-          id={NARRATIVE_SECONDARY_ZONE_ID}
-          center={secondaryFieldOrigin}
-          radius={NARRATIVE_FIELD_NORMAL_TRAVEL_RADIUS}
-        />
-        <NormalTravelZoneRing
-          id={NARRATIVE_MARS_ZONE_ID}
-          center={marsZoneCenter}
-          radius={marsZoneRadius}
-        />
         <NarrativeSatelliteMissionController satelliteContainerId={satelliteContainerId} />
         <DeployedSatellite />
         <CommsRelayMissionController />
         <CommsBufferSatellite />
-        <CarrierGRB
-          position={[
-            primaryFieldOrigin[0] + 4200,
-            primaryFieldOrigin[1] - 200,
-            primaryFieldOrigin[2] + 200,
-          ]}
-          scale={5}
-        />
       </Suspense>
+
       <Suspense fallback={null}>
         <DerelictField />
       </Suspense>
@@ -254,7 +157,6 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
         attachTo={spaceshipGroupRef}
         flattenBanking
         lockPolarAngle
-        planetImpactCameraHoldMaxAltitude={planetImpactCameraHoldMaxAltitude}
         framePriority={CAMERA_FRAME_PRIORITY}
       />
       {SANDBOX_USE_FLOATING_ORIGIN ? <FloatingOrigin>{worldContent}</FloatingOrigin> : worldContent}

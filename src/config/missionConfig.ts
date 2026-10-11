@@ -1,5 +1,5 @@
 import { MARS_DEF } from './worldConfig';
-import { COMMS_BUFFER_SATELLITE_ID } from './events/comms-relay-mission/comms-relay-config';
+import { COMMS_BUFFER_SATELLITE_ID } from '../eventTrigger/events/comms-relay-mission/comms-relay-config';
 import { NARRATIVE_DONINGTON_DOCK_ID } from '../scenes/NarrativeConfig/narrativeSceneConfig';
 
 export interface MissionDef {

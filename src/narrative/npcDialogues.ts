@@ -1,61 +1,12 @@
 // NPC dialogue trees for drive-signature ships in radio range.
 // Each tree is assigned to a ship ID once per session and not re-used.
 
-import type { ShipClass, ShipFaction, ShipAgenda, ShipRegion, ShipRecord } from './shipRegistry';
+import type { ShipRegion, ShipRecord } from './shipRegistry';
 import { getPlayerRegion } from './shipRegistry';
-import type { MessagePlatform, InboxMessage, ReplyOption } from '../context/MessageStore';
+import type { InboxMessage, ReplyOption } from '../context/MessageStore';
 import { BROADCAST_DIALOGUE_TREES } from './broadcastDialogues';
 import { PILOT_PROFILE } from './pilotProfile';
-import { COMMS_RELAY_DIALOGUE_TREE } from '../config/events/comms-relay-mission/comms-relay-dialogue';
-
-export interface PlayerOption {
-  id: string;
-  label: string; // short button label
-  text: string; // full player message text
-  nextTurnId: string | null; // null = end of tree
-  /** For inbox messages: shown when the reply cannot be delivered. */
-  deliveryNote?: string;
-}
-
-export interface DialogueTurn {
-  id: string;
-  npcText: string;
-  playerOptions: PlayerOption[];
-}
-
-/** Conditions that determine which ships this dialogue tree is appropriate for. */
-export interface DialogueConditions {
-  shipClasses?: ShipClass[];
-  factions?: ShipFaction[];
-  agendas?: ShipAgenda[];
-  destinations?: ShipRegion[];
-  /** Player must be in one of these regions for the tree to be selectable. */
-  playerRegions?: ShipRegion[];
-}
-
-export interface DialogueTree {
-  id: string;
-  captainName: string;
-  vesselName: string;
-  openingTurnId: string;
-  /** If set, plays this audio file for the opening NPC message instead of TTS. */
-  audioFile?: string;
-  /**
-   * 'inbox' — narrative inbox message; excluded from NPC ship assignment.
-   * 'broadcast' — fixed world-object hail trees; excluded from random NPC assignment.
-   * 'radio' / undefined — real-time radio conversation.
-   */
-  kind?: 'radio' | 'inbox' | 'broadcast';
-  /** Inbox message metadata — only used when kind === 'inbox'. */
-  from?: string;
-  subject?: string;
-  platform?: MessagePlatform;
-  senderLocationId?: string;
-  audioVoice?: string;
-  /** If set, this tree is only matched to ships whose profile aligns with these conditions. */
-  conditions?: DialogueConditions;
-  turns: Record<string, DialogueTurn>;
-}
+import type { DialogueTree } from '../types/dialogueTypes';
 
 export const CAPTAIN_NAMES = [
   'Yeva Sorn',
@@ -79,10 +30,6 @@ export const CAPTAIN_NAMES = [
   'Aria Voss',
   'Kade Roran',
 ];
-
-// ── Inbox message trees ────────────────────────────────────────────────────
-// These use the same DialogueTree structure but kind:'inbox' excludes them from
-// NPC ship assignment. Convert to InboxMessage via treeToInboxMessage().
 
 export const MSG_DISPATCH_INTRO: DialogueTree = {
   id: 'dispatch-intro-1',
@@ -1449,8 +1396,6 @@ export const DIALOGUE_TREES: DialogueTree[] = [
       },
     },
   },
-  // ── Comms relay emergency broadcast (kind:'broadcast') ──────────────────
-  COMMS_RELAY_DIALOGUE_TREE,
 ];
 
 // ── Session-local tree assignment ─────────────────────────────────────────────

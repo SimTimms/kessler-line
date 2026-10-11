@@ -4,12 +4,8 @@ import {
   SHIP_CREW_CAPACITY,
   SHIP_RESOURCE_MAX,
 } from '../config/dockTransferConfig';
-import type {
-  DockableResourceSlot,
-  DockContact,
-  DockJob,
-  RegisteredDockConfig,
-} from '../config/dockConfig';
+import type { DockContact, DockJob, RegisteredDockConfig } from '../config/dockConfig';
+import type { DockableResourceSlot } from '../types/dialogueTypes';
 import { fuel, o2, power, setFuel, setO2, setPower, shipCrew, setShipCrew } from './ShipState';
 import {
   registerDockInventories,
@@ -60,17 +56,17 @@ function cloneDock(config: RegisteredDockConfig): RegisteredDockConfig {
 export function registerDock(config: RegisteredDockConfig) {
   const cloned = cloneDock(config);
   docks.set(cloned.id, cloned);
-  registerDockInventories(
-    cloned.id,
-    cloned.label,
-    cloned.inventory,
-    cloned.contacts?.map((c) => ({
+  registerDockInventories({
+    dockId: cloned.id,
+    dockLabel: cloned.label,
+    dockInventory: cloned.inventory,
+    dockContactList: cloned.contacts?.map((c) => ({
       id: c.id,
       name: c.name,
       inventory: c.inventory,
     })),
-    cloned.inventoryOwnerId
-  );
+    inventoryOwnerId: cloned.inventoryOwnerId,
+  });
 }
 
 export function unregisterDock(dockId: string) {

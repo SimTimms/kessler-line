@@ -1,6 +1,6 @@
-import type { DockConfig } from '../dockConfig';
+import type { DockConfig } from '../../types/dialogueTypes';
 import { BILL_CHURCHILL } from '../npcs/bill-churchill';
-import { ELIAS_VOSS } from '../npcs/elias-voss';
+import { ELIAS_VOSS_DIALOGUE } from '../npcs/elias-voss';
 import { CHEIA_DOOLHARDY } from '../npcs/cheia-doolhardy';
 import { INVENTORY_ITEMS } from '../inventoryCatalog';
 
@@ -26,6 +26,6 @@ export const DONINGTON_STATION_DOCK_CONFIG: DockConfig = {
       },
     ],
   },
-  contacts: [BILL_CHURCHILL, ELIAS_VOSS, CHEIA_DOOLHARDY],
+  contacts: [BILL_CHURCHILL, ELIAS_VOSS_DIALOGUE, CHEIA_DOOLHARDY],
   jobBoard: [],
 };

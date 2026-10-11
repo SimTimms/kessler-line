@@ -1,12 +1,8 @@
-// Module-level chat thread store (same pattern as MessageStore).
-// One ChatThread per ship ID; threads persist for the session.
-
 export interface ChatMessage {
   id: string;
   role: 'player' | 'npc';
   text: string;
   timestamp: number;
-  /** Resolved src of a recorded voice clip, played on demand from the panel. */
   audioSrc?: string;
 }
 
@@ -15,16 +11,9 @@ export interface ChatThread {
   shipName: string;
   captainName: string;
   dialogueTreeId: string;
-  /**
-   * Who this thread is with, when one character is reachable on several
-   * channels (station directory, emergency broadcast, mission follow-up).
-   * Threads sharing a personId share an identity and a history.
-   */
   personId?: string;
   messages: ChatMessage[];
-  /** Which dialogue turn is currently active (null = conversation ended). */
   currentTurnId: string | null;
-  /** True while we're waiting for the NPC response to arrive. */
   awaitingNpc: boolean;
 }
 
@@ -71,6 +60,8 @@ export function addChatMessage(shipId: string, msg: ChatMessage): void {
 /** Update the active turn and awaiting flag after a player choice or NPC delivery. */
 export function setChatTurn(shipId: string, turnId: string | null, awaitingNpc: boolean): void {
   const thread = _threads.get(shipId);
+
+  console.log('setChatTurn 3', _threads, shipId);
   if (!thread) return;
   thread.currentTurnId = turnId;
   thread.awaitingNpc = awaitingNpc;

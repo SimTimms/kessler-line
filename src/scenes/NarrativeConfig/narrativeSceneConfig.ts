@@ -3,11 +3,7 @@ import { CANVAS_FAR, CANVAS_NEAR, TONE_MAPPING_EXPOSURE } from '../../config/vis
 import { getPlanetPosition, getPlanetWorldRadius } from '../../config/planetPosition';
 import { PLANET_SOI_MULTIPLIER, SOLAR_SYSTEM_SCALE } from '../../config/solarConfig';
 import { inventoryItems, type InventoryItem } from '../../inventory/inventory-types';
-import { DEV_COMMS_BUFFER_SATELLITE_TEST, DEV_NEPTUNE_TEST } from '../../config/debugConfig';
-import {
-  BUFFER_ORBIT_RADIUS,
-  BUFFER_ORBIT_PHASE,
-} from '../../config/events/comms-relay-mission/comms-relay-config';
+import { DEV_NEPTUNE_TEST } from '../../config/debugConfig';
 import { ScannerHUDElements } from '../../components/Huds/HUD/ScannerHUD';
 
 type Vec3 = [number, number, number];
@@ -132,13 +128,6 @@ export const NARRATIVE_DONINGTON_DOCK_ID = `docking-bay-${NARRATIVE_DONINGTON_ST
 /** Prefix so Bakerfield Falls SalvageField ids do not collide with Donington. */
 export const NARRATIVE_BAKERFIELD_ID_PREFIX = 'bakerfield-';
 
-/**
- * Spawn position at the Donington Station dock bay so the ship starts docked.
- * Dock local offset `[300, -20, 0]` relative to the primary field origin.
- *
- * When {@link DEV_COMMS_BUFFER_SATELLITE_TEST} is enabled, spawns 50 units from
- * the Comms Buffer Satellite's initial orbit position instead.
- */
 export function getNarrativeShipSpawn(): {
   position: Vec3;
   rotation: Vec3;
@@ -158,26 +147,7 @@ export function getNarrativeShipSpawn(): {
     };
   }
 
-  if (DEV_COMMS_BUFFER_SATELLITE_TEST) {
-    const marsPos = getPlanetPosition('Mars');
-    const satX = marsPos.x + BUFFER_ORBIT_RADIUS * Math.cos(BUFFER_ORBIT_PHASE);
-    const satZ = marsPos.z + BUFFER_ORBIT_RADIUS * Math.sin(BUFFER_ORBIT_PHASE);
-    // Offset 50 units outward along the radial from Mars
-    const dx = satX - marsPos.x;
-    const dz = satZ - marsPos.z;
-    const len = Math.sqrt(dx * dx + dz * dz);
-    const shipX = satX + (dx / len) * 50;
-    const shipZ = satZ + (dz / len) * 50;
-    const yaw = Math.atan2(satX - shipX, satZ - shipZ);
-    return {
-      position: [shipX, 0, shipZ],
-      rotation: [0, yaw, 0],
-      skipDock: true,
-    };
-  }
-
   const primary = getNarrativePrimaryFieldOrigin();
-  // Dock bay is at [300, -20, 0] relative to the primary field origin.
   const spawn = primary.clone().add(new THREE.Vector3(300, -20, 0));
   return {
     position: [spawn.x, spawn.y, spawn.z],

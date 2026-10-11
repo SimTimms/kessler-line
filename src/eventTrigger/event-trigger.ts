@@ -48,6 +48,7 @@ function fire(entry: TimedEventEntry): void {
   } catch (err) {
     console.error(`[event-trigger] "${entry.id}" threw during run()`, err);
   }
+  console.log('fire', entry.id);
   window.dispatchEvent(
     new CustomEvent<TimedEventFiredDetail>(EVENT_TIMED_EVENT_FIRED, {
       detail: { id: entry.id, label: entry.def.label },
@@ -70,16 +71,19 @@ function arm(entry: TimedEventEntry, delayMs: EventDelay): void {
 }
 
 // Arm an event from the catalogue. Re-registering an armed id just re-times it.
-export function registerTimedEvent(id: string, delayMs: EventDelay = null): TimedEventEntry | null {
-  const def = TIMED_EVENTS.find((d) => d.id === id);
+export function registerTimedEvent(
+  eventId: string,
+  delayMs: EventDelay = null
+): TimedEventEntry | null {
+  const def = TIMED_EVENTS.find((d) => d.id === eventId);
   if (!def) {
-    console.warn(`[event-trigger] no event defined with id "${id}" — check events/index.ts`);
+    console.warn(`[event-trigger] no event defined with id "${eventId}" — check events/index.ts`);
     return null;
   }
 
-  let entry = schedule.find((e) => e.id === id);
+  let entry = schedule.find((e) => e.id === eventId);
   if (!entry) {
-    entry = { id, def, delayMs: null, status: 'waiting', armedAt: null, timer: null };
+    entry = { id: eventId, def, delayMs: null, status: 'waiting', armedAt: null, timer: null };
     schedule.push(entry);
   }
   arm(entry, delayMs);

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { type DockConfig } from '../../../config/dockConfig';
+import { type DockConfig } from '../../../types/dialogueTypes';
 import { CARGO_CONTAINER_DOCK } from '../../../config/docks/cargoContainerDockConfig';
 import { NARRATIVE_SATELLITE_CONTAINER_LABEL } from '../../../scenes/NarrativeConfig/narrativeSceneConfig';
 import CargoContainer from '../../../components/CargoContainer/CargoContainer';

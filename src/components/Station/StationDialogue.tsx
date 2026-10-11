@@ -8,11 +8,11 @@ import {
 } from '../../context/ChatStore';
 import { applyDialogueEffects } from '../../narrative/dialogueEffects';
 import type {
-  DockContact,
   DockDialogueTree,
   DockTradeTurnConfig,
   DockTradeResourceKind,
-} from '../../config/dockConfig';
+} from '../../types/dialogueTypes';
+import type { DockContact } from '../../config/dockConfig';
 import { parseDockThreadId, resolveDockDialogueReentry } from '../../config/dockConfig';
 import { getInventoryItemDef } from '../../config/inventoryCatalog';
 import { PLAYER_SALVAGED_BY } from '../../config/inventoryTypes';

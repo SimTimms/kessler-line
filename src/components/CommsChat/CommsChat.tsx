@@ -15,7 +15,10 @@ import { getOrCreateShipRecord, addContactEvent } from '../../narrative/shipRegi
 import type { HailStatus } from '../../context/HailState';
 import DialogueThread from './DialogueThread';
 import './CommsChat.css';
-import { getRadioBroadcasts, resolveRadioDialogueTreeId } from '../../context/RadioBroadcastRegistry';
+import {
+  getRadioBroadcasts,
+  resolveRadioDialogueTreeId,
+} from '../../context/RadioBroadcastRegistry';
 import type { StaticContact } from '../../narrative/contacts';
 import type { MessagePlatform } from '../../context/MessageStore';
 import { RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
@@ -154,7 +157,8 @@ export default function CommsChat({
   const isEnded = !!thread && thread.currentTurnId === null && !thread.awaitingNpc;
   const canRequestRendezvous = !staticContact && effectiveHailStatus === 'accepted';
   const isRendezvousActive = hasShipRendezvous(shipId);
-  const canRequestDock = !staticContact && effectiveHailStatus === 'accepted' && canRequestDockPermission;
+  const canRequestDock =
+    !staticContact && effectiveHailStatus === 'accepted' && canRequestDockPermission;
 
   const handleOption = (optionId: string) => {
     if (!thread) return;

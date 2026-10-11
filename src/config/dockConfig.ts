@@ -1,31 +1,9 @@
 import type { MessagePlatform } from '../context/MessageStore';
-import type { DialogueEffect } from '../narrative/dialogueEffects';
 import type { InventoryBlueprint } from './inventoryTypes';
 import { activeMissionRef, completedMissionsRef } from '../context/MissionState';
 import { getThread } from '../context/ChatStore';
-
-export type DockableResourceSlot = {
-  amount: number;
-  capacity: number;
-};
-
-export type DockCharacterRole =
-  | 'dockmaster'
-  | 'entente-cordiale-liaison'
-  | 'communications-chief'
-  | 'gangster'
-  | 'merchant'
-  | 'official'
-  | 'comms-officer'
-  | 'drifter'
-  | 'trader'
-  | 'system'
-  | 'quartermaster'
-  | 'capitaine-de-fregate'
-  | 'second-maitre'
-  | 'police';
-
-export type DockTradeResourceKind = 'fuel' | 'o2' | 'power' | 'crew';
+import type { DockCharacterRole, DockDialogueTree } from '../types/dialogueTypes';
+import type { DockConfig } from '../types/dialogueTypes';
 
 export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   dockmaster: 'Dockmaster',
@@ -43,138 +21,6 @@ export const DOCK_ROLE_LABELS: Record<DockCharacterRole, string> = {
   'capitaine-de-fregate': 'Capitaine de fregate',
   'second-maitre': 'Second-maître',
 };
-
-export interface DockTradeTurnConfig {
-  /**
-   * Two-sided cargo barter (player offer ↔ contact offer).
-   * When true, the negotiation panel uses inventories instead of fuel/O2/power/crew.
-   */
-  cargoBarter?: boolean;
-  /**
-   * Allow contact->player cargo handoff without any player offer.
-   * Intended for mission item pickup flows.
-   */
-  allowAskingWithoutOffer?: boolean;
-  /**
-   * Contact offers their entire inventory immediately when the trade
-   * panel opens. The deal starts pre-populated in THEY GIVE with
-   * AGREE / DECLINE shown directly — no player composing step needed.
-   */
-  contactOffersAll?: boolean;
-  /**
-   * Claim negotiation over player-tagged salvage in the dock depot.
-   * Allows requesting goods without offering first; pulls from dock inventory
-   * (via inventoryOwnerId) rather than the contact's personal hold.
-   */
-  salvageClaim?: boolean;
-  /**
-   * Max fraction of tagged depot value the player may claim for an accept
-   * (salvageClaim). Default 0.5.
-   */
-  playerShareRatio?: number;
-  /** Contact accepts when value received / value given >= this (cargo barter). Default 1. */
-  acceptRatio?: number;
-  /** Contact insults when value ratio falls below this (cargo barter). Default 0.4. */
-  insultRatio?: number;
-  /** Contact counters aiming for this value ratio (cargo barter). Default 1.15. */
-  counterTargetRatio?: number;
-  /** Weighted offer score needed for direct acceptance. */
-  acceptThreshold: number;
-  /** Offers below this score are treated as insulting lowballs. */
-  insultThreshold: number;
-  /** Counteroffer multiplier applied to a non-insulting low offer. */
-  counterMultiplier: number;
-  /** Accept threshold increase per negative stance point. */
-  acceptPenaltyPerNegativeStance: number;
-  /** Insult threshold increase per negative stance point. */
-  insultPenaltyPerNegativeStance: number;
-  /** Insult threshold decrease per positive stance point. */
-  insultReliefPerPositiveStance: number;
-  /** Floor for insult threshold after stance adjustments. */
-  minimumInsultThreshold: number;
-  /** Per-resource weighting used to score offers. */
-  weights?: Partial<Record<DockTradeResourceKind, number>>;
-  /** Status line shown when the panel opens. */
-  panelStatusOpen: string;
-  /** Status line shown when user clears offer. */
-  panelStatusCleared: string;
-  /** Status line shown for empty offers. */
-  panelStatusEmptyOffer: string;
-  /** Status line shown when NPC is insulted. */
-  panelStatusInsult: string;
-  /** Status line shown for accepted offers pending confirmation. */
-  panelStatusAccepted: string;
-  /** Status line shown when NPC sends a counter. Use `{offer}` token. */
-  panelStatusCounter: string;
-  /** Status line shown after successful transfer. Use `{offer}` token. */
-  panelStatusSuccess: string;
-  /** Status line shown when player declines a counteroffer. */
-  panelStatusCounterDeclined: string;
-  /** NPC line when offer is insulting. */
-  npcInsultText: string;
-  /** NPC line when offer is accepted. */
-  npcAcceptText: string;
-  /** NPC line when countering. Use `{offer}` token. */
-  npcCounterText: string;
-  /** NPC line after transfer completes. */
-  npcCompleteText: string;
-  /** NPC line after player declines counteroffer. */
-  npcCounterDeclinedAckText: string;
-  /** Effects fired after a successful trade completion (e.g. accept/complete a mission). */
-  onCompleteEffects?: DialogueEffect[];
-  /** Player line when submitting an offer. Use `{offer}` token. */
-  playerOfferText: string;
-  /** Player line when accepting a direct acceptance. Use `{offer}` token. */
-  playerAcceptText: string;
-  /** Player line when accepting a counteroffer. Use `{offer}` token. */
-  playerCounterAcceptText: string;
-  /** Player line when declining a counteroffer. */
-  playerCounterDeclineText: string;
-}
-
-export interface DockPlayerOption {
-  id: string;
-  label: string;
-  text: string;
-  nextTurnId: string | null;
-  effects?: DialogueEffect[];
-}
-
-export interface DockDialogueTurn {
-  id: string;
-  npcText: string;
-  playerOptions: DockPlayerOption[];
-  trade?: DockTradeTurnConfig;
-  /**
-   * Recorded voice clip for this NPC line. Bare filenames resolve against
-   * `public/audio/npc/`. Never autoplays — the comms panel shows a play button, and
-   * TTS is suppressed for turns that carry a clip.
-   */
-  audio?: string;
-}
-
-/**
- * An alternative opening for a conversation that already ended, so a contact can
- * come back with follow-up business — typically work handed out by someone else.
- * Gates are ANDed; give every entry at least one or it will reopen forever.
- */
-export interface DockDialogueReentry {
-  /** Turn to reopen the conversation at. */
-  turnId: string;
-  /** Applies only while every one of these missions is active. */
-  whileMissionActive?: string[];
-  /** Applies only once every one of these missions is completed. */
-  afterMissionCompleted?: string[];
-}
-
-/** Branching dialogue tree — defined inline on each dock contact. */
-export interface DockDialogueTree {
-  id: string;
-  openingTurnId: string;
-  /** Checked in order when the player reopens a finished conversation. */
-  reentryTurns?: DockDialogueReentry[];
-  turns: Record<string, DockDialogueTurn>;
-}
 
 /**
  * Which turn a finished conversation should reopen at, or null to leave it
@@ -194,10 +40,6 @@ export function resolveDockDialogueReentry(tree: DockDialogueTree): string | nul
   return null;
 }
 
-/**
- * True when this contact has something new to say — an unopened conversation or
- * a re-entry the player has not seen yet. Drives the directory CALLING flag.
- */
 export function hasPendingDockDialogue(threadId: string, tree: DockDialogueTree): boolean {
   const thread = getThread(threadId);
   if (!thread) return false;
@@ -217,15 +59,9 @@ export interface DockContact {
   bio?: string;
   platform?: MessagePlatform;
   dialogue: DockDialogueTree;
-  /** Personal hold used for barter / supply-demand with this contact. */
   inventory?: InventoryBlueprint;
-  /**
-   * When true, claim negotiations are likelier to refuse / hold tagged salvage
-   * even when the ask is within a fair share.
-   */
   unscrupulous?: boolean;
-  /** Links this contact to a mission for the "AVAILABLE MISSION" flag. */
-  missionId?: string;
+  missionId?: string[];
 }
 
 /** Optional job-board entry shown alongside dock contacts while docked. */
@@ -243,42 +79,6 @@ export interface DockJob {
 /** Landing pads hail and grant dock permission unless a dock overrides these. */
 export const DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE = 1;
 export const DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE = 1;
-
-export interface DockConfig {
-  /** Display name for this dock / station. */
-  label: string;
-  /**
-   * Chance an inbound hail is accepted on first response (0..1).
-   * Landing pads default to {@link DEFAULT_DOCK_HAIL_ACCEPTANCE_CHANCE}.
-   */
-  hailAcceptanceChance?: number;
-  /**
-   * Chance a dock permission request is granted after comms are established (0..1).
-   * Landing pads default to {@link DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE}.
-   */
-  dockRequestAcceptanceChance?: number;
-  /**
-   * Public URL for the dock transfer HUD background (e.g. `/textures/station.jpg`).
-   * Falls back to `/textures/station.jpg` when omitted.
-   */
-  backgroundImage?: string;
-  /**
-   * Optional shared inventory bag id. When set, this dock reads/writes
-   * `dock:${inventoryOwnerId}` instead of `dock:${id}` so multiple pads can
-   * share one depot.
-   */
-  inventoryOwnerId?: string;
-  fuel?: DockableResourceSlot;
-  o2?: DockableResourceSlot;
-  power?: DockableResourceSlot;
-  crew?: DockableResourceSlot;
-  /** Shared dock depot / warehouse inventory (separate from contacts). */
-  inventory?: InventoryBlueprint;
-  /** People the player can talk to while docked (interior comms). */
-  contacts?: DockContact[];
-  /** Side jobs / contracts posted at this dock. */
-  jobBoard?: DockJob[];
-}
 
 /** Default dock transfer HUD backdrop when a dock omits `backgroundImage`. */
 export const DEFAULT_DOCK_BACKGROUND_IMAGE = '/textures/station.jpg';

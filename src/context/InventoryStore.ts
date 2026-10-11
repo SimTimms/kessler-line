@@ -360,18 +360,25 @@ function releaseDockBag(bagId: string): boolean {
   return false;
 }
 
+interface RegisteredDockInventoryParams {
+  dockId: string;
+  dockLabel: string;
+  dockInventory: InventoryBlueprint | undefined;
+  dockContactList: Array<{ id: string; name: string; inventory?: InventoryBlueprint }> | undefined;
+  inventoryOwnerId?: string;
+}
 /** Register / refresh dock + contact inventories from dock config. */
-export function registerDockInventories(
-  dockId: string,
-  dockLabel: string,
-  dockInventory: InventoryBlueprint | undefined,
-  contacts: Array<{ id: string; name: string; inventory?: InventoryBlueprint }> | undefined,
-  inventoryOwnerId?: string
-): void {
+export function registerDockInventories({
+  dockId,
+  dockLabel,
+  dockInventory,
+  dockContactList,
+  inventoryOwnerId,
+}: RegisteredDockInventoryParams): void {
   const bagId = inventoryOwnerId ?? dockId;
   retainDockBag(bagId);
-  ensureInventory({ kind: 'dock', dockId: bagId }, dockInventory, dockLabel);
-  for (const contact of contacts ?? []) {
+  ensureInventory({ kind: 'dock', dockId }, dockInventory, dockLabel);
+  for (const contact of dockContactList ?? []) {
     ensureInventory(
       { kind: 'contact', dockId, contactId: contact.id },
       contact.inventory,

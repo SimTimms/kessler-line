@@ -47,17 +47,14 @@ import {
   DOCK_ROLE_LABELS,
   DEFAULT_DOCK_REQUEST_ACCEPTANCE_CHANCE,
   parseDockThreadId,
-  type DockContact,
-  type DockDialogueTree,
 } from '../../config/dockConfig';
 import {
   getDock,
-  getDockContact,
   getDockContacts,
-  getDockJob,
   getDockJobs,
   hasDockablePartner,
 } from '../../context/DockablePartnerStore';
+import { resolveDockInteriorChat } from '../../utils/dockInteriorChat';
 import DockInteriorDialogue from '../Station/StationDialogue';
 import { getThread } from '../../context/ChatStore';
 import { resolvePersonContact } from '../../narrative/contactIdentity';
@@ -129,39 +126,6 @@ export type ContactsTriggerApi = {
   onSave: (id: string) => void;
   onSelect: (id: string) => void;
 };
-
-function resolveDockInteriorChat(threadId: string): {
-  contact: DockContact;
-  dialogue: DockDialogueTree;
-} | null {
-  const parsed = parseDockThreadId(threadId);
-  if (!parsed) return null;
-
-  if (parsed.jobId) {
-    const job = getDockJob(parsed.dockId, parsed.jobId);
-    if (!job?.dialogue) return null;
-    return {
-      contact: {
-        id: parsed.jobId,
-        name: job.title,
-        role: 'official',
-        portrait: '/textures/Image_0.jpg',
-        bio: job.summary,
-        platform: 'HERALD',
-        dialogue: job.dialogue,
-      },
-      dialogue: job.dialogue,
-    };
-  }
-
-  if (parsed.contactId) {
-    const contact = getDockContact(parsed.dockId, parsed.contactId);
-    if (!contact) return null;
-    return { contact, dialogue: contact.dialogue };
-  }
-
-  return null;
-}
 
 /**
  * Narrative hails reuse a dock contact's id, so a hail row shows that person's
@@ -548,13 +512,9 @@ export default function ContactsHUD({
   const dockInteriorItems: SelectionItem[] = dockedPartnerId
     ? [
         ...getDockContacts(dockedPartnerId).map((contact) => {
-          const mid = contact.missionId;
+          const missionId = contact.missionId;
           const threadId = dockContactThreadId(dockedPartnerId, contact.id);
-          const missionAvailable =
-            mid != null &&
-            !declinedMissionsRef.current.includes(mid) &&
-            !completedMissionsRef.current.includes(mid) &&
-            !activeMissionRef.current.includes(mid);
+          const missionAvailable = missionId && missionId.length > 0;
           const hasFollowUp = hasPendingDockDialogue(threadId, contact.dialogue);
           return {
             id: threadId,
