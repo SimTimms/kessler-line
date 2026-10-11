@@ -49,6 +49,7 @@ import {
   parseDockThreadId,
 } from '../../config/dockConfig';
 import {
+  DOCKABLE_PARTNER_CHANGED,
   getDock,
   getDockContacts,
   getDockJobs,
@@ -168,6 +169,7 @@ export default function ContactsHUD({
   const [dockPermissionCandidate, setDockPermissionCandidateState] =
     useState<DockPermissionCandidate | null>(() => getDockPermissionCandidate());
   const [, bumpDockPermissionVersion] = useState(0);
+  const [, bumpDockContactsVersion] = useState(0);
 
   const prevBcastSigRef = useRef('');
   const fuelStationHailFiredRef = useRef(false);
@@ -263,6 +265,15 @@ export default function ContactsHUD({
       window.removeEventListener(EVENT_DOCK_PERMISSION_CANDIDATE_CHANGED, onCandidateChanged);
       window.removeEventListener(EVENT_DOCK_PERMISSION_CHANGED, onPermissionChanged);
     };
+  }, []);
+
+  // A contact's dialogue tree can be swapped at runtime (a mission handed out
+  // mid-flight). Re-render so the interior comms list and any open dialogue
+  // panel pick up the new tree instead of the one they mounted with.
+  useEffect(() => {
+    const onDockChanged = () => bumpDockContactsVersion((v) => v + 1);
+    window.addEventListener(DOCKABLE_PARTNER_CHANGED, onDockChanged);
+    return () => window.removeEventListener(DOCKABLE_PARTNER_CHANGED, onDockChanged);
   }, []);
 
   // Track docked partner for interior comms contacts

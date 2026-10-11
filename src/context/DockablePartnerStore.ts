@@ -5,7 +5,7 @@ import {
   SHIP_RESOURCE_MAX,
 } from '../config/dockTransferConfig';
 import type { DockContact, DockJob, RegisteredDockConfig } from '../config/dockConfig';
-import type { DockableResourceSlot } from '../types/dialogueTypes';
+import type { DockableResourceSlot, DockDialogueTree } from '../types/dialogueTypes';
 import { fuel, o2, power, setFuel, setO2, setPower, shipCrew, setShipCrew } from './ShipState';
 import {
   registerDockInventories,
@@ -139,6 +139,33 @@ export function findDockContactById(
     if (contact) return { dockId, contact };
   }
   return undefined;
+}
+
+/**
+ * Swap a registered contact's dialogue tree at runtime — for when something
+ * off-screen hands them new business (a mission offer, say).
+ *
+ * `registerDock` keeps its own shallow copy of every contact, so reassigning
+ * `dialogue` on the source config object never reaches the copy the UI reads.
+ * Callers should update both: the source config so a re-registered dock keeps
+ * the new tree, and the live copy via this function so an open panel sees it.
+ * Mission ids are pushed into the existing array, which both copies share.
+ */
+export function setDockContactDialogue(
+  contactId: string,
+  dialogue: DockDialogueTree,
+  missionId?: string
+): { dockId: string; contact: DockContact } | undefined {
+  const found = findDockContactById(contactId);
+  if (!found) return undefined;
+
+  found.contact.dialogue = dialogue;
+  if (missionId) {
+    if (!found.contact.missionId) found.contact.missionId = [];
+    if (!found.contact.missionId.includes(missionId)) found.contact.missionId.push(missionId);
+  }
+  notifyChanged();
+  return found;
 }
 
 export function listPartnerResources(dockId: string): DockableResourceKind[] {

@@ -68,6 +68,18 @@ export function setChatTurn(shipId: string, turnId: string | null, awaitingNpc: 
   emit(shipId);
 }
 
+/**
+ * Point an existing thread at a different dialogue tree. Only used when a
+ * contact's tree is swapped mid-conversation; dock panels look turns up in the
+ * tree they are handed, so this just keeps the saved thread coherent.
+ */
+export function setThreadDialogueTree(shipId: string, dialogueTreeId: string): void {
+  const thread = _threads.get(shipId);
+  if (!thread) return;
+  thread.dialogueTreeId = dialogueTreeId;
+  emit(shipId);
+}
+
 /** Snapshot all threads for save serialisation. */
 export function getAllThreads(): Map<string, ChatThread> {
   return _threads;

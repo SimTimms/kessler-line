@@ -1,5 +1,12 @@
 import { parseDockThreadId, type DockContact } from '../config/dockConfig';
 import { getDockContact, getDockJob } from '../context/DockablePartnerStore';
+import {
+  addChatMessage,
+  getThread,
+  setChatTurn,
+  setThreadDialogueTree,
+} from '../context/ChatStore';
+import { resolveNpcVoiceClipSrc } from '../sound/npcVoiceClips';
 import type { DockDialogueTree } from '../types/dialogueTypes';
 
 export type DockInteriorChat = {
@@ -39,4 +46,44 @@ export function resolveDockInteriorChat(threadId: string): DockInteriorChat | nu
   }
 
   return null;
+}
+
+/**
+ * Deliver a dialogue turn into an existing dock thread: the NPC line lands
+ * after a short beat, then the player gets that turn's options.
+ *
+ * `DockInteriorDialogue` only opens a conversation once per mount, so a tree
+ * swapped in while the panel is open needs the new turn pushed in from here.
+ * Returns false when no thread exists yet — the panel will open the new tree
+ * from its opening turn on its own in that case.
+ */
+export function deliverDockDialogueTurn(
+  threadId: string,
+  dialogue: DockDialogueTree,
+  turnId: string,
+  delayMs = 700 + Math.random() * 900
+): boolean {
+  const thread = getThread(threadId);
+  if (!thread) return false;
+
+  const turn = dialogue.turns[turnId];
+  if (!turn) {
+    console.warn(`[dockInteriorChat] "${dialogue.id}" has no turn "${turnId}"`);
+    return false;
+  }
+
+  setThreadDialogueTree(threadId, dialogue.id);
+  setChatTurn(threadId, turnId, true);
+  const clipSrc = resolveNpcVoiceClipSrc(turn.audio);
+  setTimeout(() => {
+    addChatMessage(threadId, {
+      id: `npc-${threadId}-${turnId}-${Date.now()}`,
+      role: 'npc',
+      text: turn.npcText,
+      timestamp: Date.now(),
+      audioSrc: clipSrc,
+    });
+    setChatTurn(threadId, turnId, false);
+  }, delayMs);
+  return true;
 }
