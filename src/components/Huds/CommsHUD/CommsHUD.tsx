@@ -20,11 +20,6 @@ import {
 import { setRadioScannerState } from '../../../context/scannerStateMutators';
 import { setScannerRingHovered } from '../../../context/ScannerRingHover';
 import {
-  EVENT_PAD_SCAN_ENDED,
-  EVENT_PAD_SCAN_STARTED,
-  padScanActiveRef,
-} from '../../../context/PadScanState';
-import {
   areShipSystemsForcedOffline,
   EVENT_SHIP_POWER_DEPLETED,
 } from '../../../context/shipPowerSystems';
@@ -38,52 +33,12 @@ import './CommsHUD.css';
 
 type CommsTabId = 'radio' | 'journal' | 'contacts' | 'messages';
 
-const PAD_SCAN_WAVE_BARS = 12;
 const RADIO_ID = 'radio' as const;
-
-function usePadScanActive(): boolean {
-  const [active, setActive] = useState(() => padScanActiveRef.current);
-  useEffect(() => {
-    const onStart = () => setActive(true);
-    const onEnd = () => setActive(false);
-    window.addEventListener(EVENT_PAD_SCAN_STARTED, onStart);
-    window.addEventListener(EVENT_PAD_SCAN_ENDED, onEnd);
-    return () => {
-      window.removeEventListener(EVENT_PAD_SCAN_STARTED, onStart);
-      window.removeEventListener(EVENT_PAD_SCAN_ENDED, onEnd);
-    };
-  }, []);
-  return active;
-}
 
 function useRadioContacts(): NavScanContact[] {
   const [contacts, setContacts] = useState(() => getContactsByScanner().radio);
   useEffect(() => subscribeContactStore(() => setContacts(getContactsByScanner().radio)), []);
   return contacts;
-}
-
-function PadScanWaveform({ active }: { active: boolean }) {
-  return (
-    <div
-      className={`helmet-pad-scan${active ? ' helmet-pad-scan--active' : ''}`}
-      title={active ? 'Inbound pad scan' : 'Pad link'}
-      aria-label={active ? 'Receiving pad scan' : 'Pad link idle'}
-    >
-      <div className="helmet-pad-scan-icon" aria-hidden>
-        <RadioTower size={15} strokeWidth={1.75} />
-      </div>
-      <div className="helmet-pad-scan-wave" aria-hidden>
-        {Array.from({ length: PAD_SCAN_WAVE_BARS }, (_, i) => (
-          <span
-            key={i}
-            className="helmet-pad-scan-bar"
-            style={{ animationDelay: `${i * 0.07}s` }}
-          />
-        ))}
-      </div>
-      <span className="helmet-pad-scan-label">{active ? 'RX' : 'LNK'}</span>
-    </div>
-  );
 }
 
 export interface CommsHUDProps {
@@ -106,7 +61,6 @@ export default function CommsHUD({
   sceneRadioContactsOnly = false,
 }: CommsHUDProps) {
   void radioOn;
-  const padScanActive = usePadScanActive();
   const radioContacts = useRadioContacts();
   const [activeTab, setActiveTab] = useState<CommsTabId>('radio');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);

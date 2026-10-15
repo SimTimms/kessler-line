@@ -75,10 +75,8 @@ function ThreadDetail({ thread }: { thread: ChatThread }) {
     <div className="history-detail-scroll" ref={scrollRef}>
       {thread.messages.map((msg) => (
         <div key={msg.id} className={`comms-chat-row comms-chat-row--${msg.role}`}>
-          {msg.role === 'npc' && (
-            <div className="comms-chat-sender">{thread.captainName}</div>
-          )}
-          <div className={`chat-log-text comms-chat-bubble--${msg.role}`}>{msg.text}</div>
+          {msg.role === 'npc' && <div className="comms-chat-sender">{thread.captainName}</div>}
+          <div className={`hud-chat-standard comms-chat-bubble--${msg.role}`}>{msg.text}</div>
         </div>
       ))}
     </div>
@@ -100,16 +98,23 @@ function InboxDetail({ sender }: { sender: string }) {
       {msgs.map((msg) => (
         <div key={msg.id} className="comms-chat-row comms-chat-row--npc">
           <div className="comms-chat-sender">{msg.subject}</div>
-          <div className="chat-log-text comms-chat-bubble--npc">{msg.body}</div>
-          {msg.repliedWith && msg.replies && (() => {
-            const reply = msg.replies.find((r) => r.id === msg.repliedWith);
-            if (!reply) return null;
-            return (
-              <div className="comms-chat-row comms-chat-row--player" style={{ alignSelf: 'flex-end', marginTop: 6 }}>
-                <div className="chat-log-text comms-chat-bubble--player">{reply.playerText}</div>
-              </div>
-            );
-          })()}
+          <div className="hud-chat-standard comms-chat-bubble--npc">{msg.body}</div>
+          {msg.repliedWith &&
+            msg.replies &&
+            (() => {
+              const reply = msg.replies.find((r) => r.id === msg.repliedWith);
+              if (!reply) return null;
+              return (
+                <div
+                  className="comms-chat-row comms-chat-row--player"
+                  style={{ alignSelf: 'flex-end', marginTop: 6 }}
+                >
+                  <div className="hud-chat-standard comms-chat-bubble--player">
+                    {reply.playerText}
+                  </div>
+                </div>
+              );
+            })()}
         </div>
       ))}
     </div>
@@ -148,17 +153,13 @@ export default function HistoryPanel() {
 
   if (selected) {
     const threadId = selected.kind === 'thread' ? selected.id.replace('thread:', '') : null;
-    const thread = threadId ? getAllThreads().get(threadId) ?? null : null;
+    const thread = threadId ? (getAllThreads().get(threadId) ?? null) : null;
     const inboxSender = selected.kind === 'inbox' ? selected.id.replace('inbox:', '') : null;
 
     return (
       <div className="comms-history-panel">
         <div className="history-detail-header">
-          <button
-            type="button"
-            className="history-back-btn"
-            onClick={() => setSelected(null)}
-          >
+          <button type="button" className="history-back-btn" onClick={() => setSelected(null)}>
             &lt; BACK
           </button>
           <span className="history-detail-title">{selected.label}</span>

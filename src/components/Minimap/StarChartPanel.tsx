@@ -46,12 +46,17 @@ const ORBIT_RADIUS_PX = 18;
 const ORBIT_ICON_SIZE = 14;
 const CENTER_DOT_SIZE = 2;
 
-function handleMarkerTargetClick(marker: { label: string; x: number; z: number; entityId?: string }) {
+function handleMarkerTargetClick(marker: {
+  label: string;
+  x: number;
+  z: number;
+  entityId?: string;
+}) {
   selectTarget(
     marker.label,
     undefined,
     new THREE.Vector3(marker.x, 0, marker.z),
-    marker.entityId ?? marker.label,
+    marker.entityId ?? marker.label
   );
 }
 
@@ -104,6 +109,17 @@ function UnifiedMarkerRings({ marker }: { marker: VisibleUnifiedMarker }) {
   );
 }
 
+interface StarChartPanelProps {
+  orbitRings: OrbitRing[];
+  scannerRings: ScannerRings | null;
+  chartNavLine: ChartNavLine | null;
+  chartVelocityPath: ChartVelocityPath | null;
+  visibleMarkers: (VisibleMarker | VisibleUnifiedMarker)[];
+  shipHeadingDeg: number;
+  setHoverCard: React.Dispatch<React.SetStateAction<HoverCardState | null>> | null;
+  hoverCard: HoverCardState | null;
+}
+
 export default function StarChartPanel({
   orbitRings,
   scannerRings,
@@ -113,16 +129,7 @@ export default function StarChartPanel({
   shipHeadingDeg,
   setHoverCard,
   hoverCard,
-}: {
-  orbitRings: OrbitRing[];
-  scannerRings: ScannerRings | null;
-  chartNavLine: ChartNavLine | null;
-  chartVelocityPath: ChartVelocityPath | null;
-  visibleMarkers: (VisibleMarker | VisibleUnifiedMarker)[];
-  shipHeadingDeg: number;
-  setHoverCard: React.Dispatch<React.SetStateAction<HoverCardState | null>>;
-  hoverCard: HoverCardState | null;
-}) {
+}: StarChartPanelProps) {
   return (
     <>
       {(chartNavLine || chartVelocityPath) && (
@@ -193,11 +200,11 @@ export default function StarChartPanel({
               }
               title={marker.label}
               onClick={() => handleMarkerTargetClick(marker)}
-              onMouseEnter={(e) => setHoverCard({ marker, x: e.clientX, y: e.clientY })}
+              onMouseEnter={(e) => setHoverCard?.({ marker, x: e.clientX, y: e.clientY })}
               onMouseMove={(e) =>
-                setHoverCard((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev))
+                setHoverCard?.((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev))
               }
-              onMouseLeave={() => setHoverCard(null)}
+              onMouseLeave={() => setHoverCard?.(null)}
             >
               <UnifiedMarkerRings marker={marker} />
             </div>
@@ -230,11 +237,11 @@ export default function StarChartPanel({
                 ? () => handleMarkerTargetClick(plain)
                 : undefined
             }
-            onMouseEnter={(e) => setHoverCard({ marker: plain, x: e.clientX, y: e.clientY })}
+            onMouseEnter={(e) => setHoverCard?.({ marker: plain, x: e.clientX, y: e.clientY })}
             onMouseMove={(e) =>
-              setHoverCard((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev))
+              setHoverCard?.((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev))
             }
-            onMouseLeave={() => setHoverCard(null)}
+            onMouseLeave={() => setHoverCard?.(null)}
           >
             {plain.kind === 'radio' && (
               <RadioTower size={12} strokeWidth={2} className="sandbox-map-marker-radio-icon" />

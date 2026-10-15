@@ -74,12 +74,7 @@ type BezierPoint = { x: number; z: number };
  * Convert a true anomaly on the conic to world XZ coordinates relative to the body.
  * Uses the perifocal frame rotated by argumentOfPeriapsis.
  */
-function conicToWorld(
-  nu: number,
-  p: number,
-  e: number,
-  argPe: number
-): { x: number; z: number } {
+function conicToWorld(nu: number, p: number, e: number, argPe: number): { x: number; z: number } {
   const r = p / (1 + e * Math.cos(nu));
   // Perifocal coords (P toward periapsis, Q perpendicular)
   const px = r * Math.cos(nu);
@@ -135,11 +130,11 @@ function fitBezierSegment(
   const rx = 8 * (mid.x - 0.5 * p0.x - 0.5 * p3.x);
   const rz = 8 * (mid.z - 0.5 * p0.z - 0.5 * p3.z);
   // Solve 2x2: α*t0x − β*t3x = rx,  α*t0z − β*t3z = rz
-  const det = t0.x * (-t3.z) - (-t3.x) * t0.z;
+  const det = t0.x * -t3.z - -t3.x * t0.z;
   let alpha: number;
   let beta: number;
   if (Math.abs(det) > 1e-12) {
-    alpha = (rx * (-t3.z) - (-t3.x) * rz) / det;
+    alpha = (rx * -t3.z - -t3.x * rz) / det;
     beta = (t0.x * rz - rx * t0.z) / det;
   } else {
     // Degenerate — fall back to chord-length heuristic
@@ -464,9 +459,7 @@ function isShipInsidePlanetSoi(ship: THREE.Vector3): boolean {
 }
 
 /** Prefer the body the orbit tracker already locked onto, else strongest pull inside SOI. */
-function findPrimaryGravityBody(
-  ship: THREE.Vector3
-): { id: string; body: GravityBody } | null {
+function findPrimaryGravityBody(ship: THREE.Vector3): { id: string; body: GravityBody } | null {
   const statusId = orbitStatusRef.current.bodyId;
   if (statusId && statusId !== 'Sun') {
     const statusBody = gravityBodies.get(statusId);
@@ -659,7 +652,7 @@ export function useMinimapTelemetry({
   useFrameUpdate(() => {
     const ship = shipPosRef.current;
     if (followShip) {
-      setPanCenter({ x: ship.x, z: ship.z });
+      // setPanCenter({ x: ship.x, z: ship.z });
     }
     const heading = shipHeadingDegFromQuaternion();
     setShipHeadingDeg(heading);
@@ -773,10 +766,7 @@ export function useMinimapTelemetry({
     setMarkers(mergeMarkersByEntity(next));
 
     if (nearestDock) {
-      if (
-        nearestDock.captureMode === 'hover' &&
-        lastPadScanDockIdRef.current !== nearestDock.id
-      ) {
+      if (nearestDock.captureMode === 'hover' && lastPadScanDockIdRef.current !== nearestDock.id) {
         lastPadScanDockIdRef.current = nearestDock.id;
         beginPadScan(nearestDock.id);
       } else if (nearestDock.captureMode !== 'hover') {

@@ -20,7 +20,6 @@ import {
 } from '../../narrative/commsDelay';
 import { ASTEROID_DOCK_DEF } from '../../config/worldConfig';
 import { waypointPromptDef } from '../../context/WaypointPrompt';
-import { getOrCreateShipRecord, formatShipClass, formatAgenda } from '../../narrative/shipRegistry';
 import { SETTLEMENT_BY_OBJECT_ID } from '../../config/settlementConfig';
 import { DOCK_ROLE_LABELS, type DockContact } from '../../config/dockConfig';
 import ContactDossier from './ContactDossier';
@@ -99,8 +98,6 @@ interface DialogueThreadProps {
   contact?: StaticContact;
   /** Dock interior NPC — portrait + dossier header instead of a ship profile. */
   character?: DockContact;
-  /** Broadcast / world-object hail — hide random NPC ship profile line. */
-  hideShipProfile?: boolean;
   commsPlatform?: MessagePlatform;
   // Pre-hail
   showHailPrompt?: boolean;
@@ -162,7 +159,6 @@ export default function DialogueThread({
   inline = false,
   contact,
   character,
-  hideShipProfile = false,
   commsPlatform = RADIO_COMMS_PLATFORM,
   showHailPrompt = false,
   effectiveHailStatus,
@@ -363,12 +359,8 @@ export default function DialogueThread({
     }
   };
 
-  // Skip the ship registry for station characters so their ids don't get
-  // assigned ship profiles / radio dialogue trees.
-  const record = contact || identityContact ? null : getOrCreateShipRecord(shipId, shipName);
-
   // Ship / broadcast contacts have no portrait or dossier, so their identity
-  // block carries the captain up top and the vessel details underneath.
+  // block carries the captain up top and the vessel name underneath.
   const platformName = PLATFORM_UI[RADIO_COMMS_PLATFORM].fullName;
   const vesselIdentity = {
     name: (thread?.captainName ?? shipName).toUpperCase(),
@@ -376,11 +368,6 @@ export default function DialogueThread({
       thread && thread.captainName !== shipName
         ? `${shipName.toUpperCase()} · ${platformName}`
         : platformName,
-      thread && !hideShipProfile && record
-        ? `${formatShipClass(record.shipClass)} · ${formatAgenda(record.agenda)}${
-            record.destination !== 'none' ? ` → ${record.destination.toUpperCase()}` : ''
-          } · ${record.faction.toUpperCase()}`
-        : null,
     ],
   };
 
@@ -425,11 +412,6 @@ export default function DialogueThread({
       className={`comms-chat${inline ? ' comms-chat--inline' : ''}`}
       data-platform={commsPlatform}
     >
-      {/* ── Channel title bar ── */}
-      <div className="comms-chat-titlebar">
-        <span className="hud-title">{isPreHail ? 'COMMS' : 'COMMS OPEN'}</span>
-      </div>
-
       {/* ── Header ── */}
       {identityContact ? (
         <CommsIdentityHeader

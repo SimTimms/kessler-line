@@ -11,7 +11,6 @@ import type { DroneFlightMode } from './DroneStore';
 import type { InventorySlot } from '../config/inventoryTypes';
 import type { ChatThread } from './ChatStore';
 import type { HailStatus } from './HailState';
-import type { ShipRecord } from '../narrative/shipRegistry';
 import type { ScannerElementId } from '../config/scanRanges';
 
 export const SAVE_VERSION = 2;
@@ -107,7 +106,6 @@ export interface SaveData {
   // Radio comms state (optional — absent in older saves)
   chatThreads?: Record<string, ChatThread>;
   hailStates?: { states: Record<string, HailStatus>; declinedAt: Record<string, number> };
-  shipRegistry?: Record<string, ShipRecord>;
   // Scanner power levels (optional — absent in older saves)
   scannerPowerLevels?: Partial<Record<ScannerElementId, number>>;
   // Cargo container sim-space positions (optional — absent in older saves)

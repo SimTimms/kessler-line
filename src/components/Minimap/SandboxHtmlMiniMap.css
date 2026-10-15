@@ -22,6 +22,11 @@
   border: 1px solid #444;
 }
 
+.sandbox-map-overlay--full-width {
+  width: 100%;
+  height: 100%;
+}
+
 .mech-chart-bezel {
   position: relative;
   background: var(--mech-bezel-bg);

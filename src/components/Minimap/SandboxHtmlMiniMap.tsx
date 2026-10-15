@@ -14,15 +14,24 @@ import {
 import { useMinimapProjections } from './useMinimapProjections';
 import { useMinimapTelemetry } from './useMinimapTelemetry';
 import { useMinimapViewport } from './useMinimapViewport';
+import MinimapOptions from './MinimapOptions';
 import './SandboxHtmlMiniMap.css';
 
-type PanelMode = 'chart' | 'dock' | 'pad' | 'orbit';
+export type PanelMode = 'chart' | 'dock' | 'pad' | 'orbit';
 
 interface SandboxHtmlMiniMapProps {
   showSolarSystem?: boolean;
+  showOptions?: boolean;
+  fullWidth?: boolean;
+  defaultMode?: PanelMode;
 }
 
-export default function SandboxHtmlMiniMap({ showSolarSystem = true }: SandboxHtmlMiniMapProps) {
+export default function SandboxHtmlMiniMap({
+  showSolarSystem = true,
+  showOptions = true,
+  fullWidth = false,
+  defaultMode = 'chart',
+}: SandboxHtmlMiniMapProps) {
   const [hoverCard, setHoverCard] = useState<HoverCardState | null>(null);
   const clearHoverCard = useCallback(() => setHoverCard(null), []);
 
@@ -52,7 +61,7 @@ export default function SandboxHtmlMiniMap({ showSolarSystem = true }: SandboxHt
   });
 
   // Panel toggle — lets the user switch between chart, dock, pad, and orbit views.
-  const [panelMode, setPanelMode] = useState<PanelMode>('chart');
+  const [panelMode, setPanelMode] = useState<PanelMode>(defaultMode);
 
   const hasDock = Boolean(dockingAssist && dockingAssist.captureMode === 'nose');
   const hasPad = Boolean(dockingAssist && dockingAssist.captureMode === 'hover');
@@ -61,6 +70,10 @@ export default function SandboxHtmlMiniMap({ showSolarSystem = true }: SandboxHt
   // Auto-switch when an assist panel appears; fall back to chart when data disappears.
   const prevAssistRef = useRef({ dock: false, pad: false, orbit: false });
   useEffect(() => {
+    if (defaultMode) {
+      setPanelMode(defaultMode);
+      return;
+    }
     const prev = prevAssistRef.current;
     if (hasDock && !prev.dock) setPanelMode('dock');
     else if (hasPad && !prev.pad) setPanelMode('pad');
@@ -145,79 +158,25 @@ export default function SandboxHtmlMiniMap({ showSolarSystem = true }: SandboxHt
   return (
     <div
       ref={overlayRef}
-      className={`sandbox-map-overlay mech-chart${fullscreen ? ' sandbox-map-overlay--fullscreen' : ''}${isDragging ? ' sandbox-map-overlay--dragging' : ''}${overlayModeClass}`}
+      className={`${fullWidth ? ' sandbox-map-overlay--full-width' : 'sandbox-map-overlay mech-chart'}${fullscreen ? ' sandbox-map-overlay--fullscreen' : ''}${isDragging ? ' sandbox-map-overlay--dragging' : ''}${overlayModeClass}`}
     >
       <div className="mech-chart-bezel">
-        <div className="mech-chart-tabs">
-          <button
-            type="button"
-            className={`event-log-tab${panelMode === 'chart' ? ' event-log-tab--active' : ''}`}
-            onClick={() => setPanelMode('chart')}
-          >
-            MAP
-          </button>
-          {hasDock && (
-            <button
-              type="button"
-              className={`event-log-tab${panelMode === 'dock' ? ' event-log-tab--active' : ''}`}
-              onClick={() => setPanelMode('dock')}
-            >
-              DOCK
-            </button>
-          )}
-          {hasPad && (
-            <button
-              type="button"
-              className={`event-log-tab${panelMode === 'pad' ? ' event-log-tab--active' : ''}`}
-              onClick={() => setPanelMode('pad')}
-            >
-              PAD
-            </button>
-          )}
-          {hasOrbit && (
-            <button
-              type="button"
-              className={`event-log-tab${panelMode === 'orbit' ? ' event-log-tab--active' : ''}`}
-              onClick={() => setPanelMode('orbit')}
-            >
-              ORB
-            </button>
-          )}
-          <div className="mech-chart-tab-actions">
-            {!displayingAssist && showSolarSystem && !fullscreen ? (
-              <button
-                type="button"
-                className="event-log-tab"
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={openFullscreen}
-                title="Open full-screen star chart"
-              >
-                FLL
-              </button>
-            ) : null}
-            {fullscreen ? (
-              <button
-                type="button"
-                className="event-log-tab"
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={closeFullscreen}
-                title="Exit full screen (Esc)"
-              >
-                CLS
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className={`event-log-tab${followShip ? ' event-log-tab--active' : ''}`}
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={toggleFollowShip}
-              title={followShip ? 'Auto-follow ship enabled' : 'Auto-follow ship disabled'}
-              disabled={displayingAssist}
-            >
-              CTR
-            </button>
-          </div>
-        </div>
+        {showOptions && (
+          <MinimapOptions
+            panelMode={panelMode}
+            setPanelMode={setPanelMode}
+            hasDock={hasDock}
+            hasPad={hasPad}
+            hasOrbit={hasOrbit}
+            fullscreen={fullscreen}
+            followShip={followShip}
+            openFullscreen={openFullscreen}
+            closeFullscreen={closeFullscreen}
+            displayingAssist={displayingAssist}
+            showSolarSystem={showSolarSystem}
+            toggleFollowShip={toggleFollowShip}
+          />
+        )}
         <div
           ref={containerRef}
           className={`mech-chart-crt${chartActive ? ' mech-chart-crt--3d' : ''}`}

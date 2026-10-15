@@ -1,5 +1,27 @@
-export const COMMS_RELAY_DIALOGUE_TREE = {
-  missionId: 'elias-voss-comms-relay-mission',
+// Emergency broadcast dialogue — Elias Voss hands out the comms relay mission.
+// Accepting / declining is what logs it in the journal, so the ids here must be
+// the shared COMMS_RELAY_MISSION_ID: MISSION_DEFS is keyed on it, and
+// JournalPanel drops any active mission it cannot find a definition for.
+
+import type { DockDialogueTree } from '../../../types/dialogueTypes';
+import type { DialogueEffect } from '../../../narrative/dialogueEffects';
+import { COMMS_RELAY_MISSION_ID } from './comms-relay-config';
+
+const acceptMissionEffect: DialogueEffect = {
+  type: 'acceptMission',
+  missionId: COMMS_RELAY_MISSION_ID,
+};
+
+const declineMissionEffect: DialogueEffect = {
+  type: 'declineMission',
+  missionId: COMMS_RELAY_MISSION_ID,
+};
+
+export const COMMS_RELAY_DIALOGUE_TREE: {
+  missionId: string;
+  missionDialogue: DockDialogueTree;
+} = {
+  missionId: COMMS_RELAY_MISSION_ID,
   missionDialogue: {
     id: 'elias-voss-comms-relay-mission',
     openingTurnId: 'intro',
@@ -14,12 +36,14 @@ export const COMMS_RELAY_DIALOGUE_TREE = {
             label: "I'LL DO IT",
             text: "I'll find the satellite and get those logs.",
             nextTurnId: 'accepted',
+            effects: [acceptMissionEffect],
           },
           {
             id: 'decline',
             label: 'NOT NOW',
             text: "I can't take this on right now.",
             nextTurnId: 'declined',
+            effects: [declineMissionEffect],
           },
         ],
       },

@@ -8,7 +8,6 @@ function handleSetNav(missionId: string) {
   const def = getMissionDef(missionId);
   if (!def?.waypoint) return;
   const pos = new THREE.Vector3(def.waypoint[0], def.waypoint[1], def.waypoint[2]);
-  console.log('def', def);
   setNavTarget(def.waypointCollidableId ?? def.waypointLabel ?? def.id, pos);
 }
 
@@ -22,23 +21,26 @@ export default function JournalPanel() {
     <div className="comms-journal">
       <div className="comms-journal-scroll">
         {activeDefs.length > 0 ? (
-          activeDefs.map((def) => (
-            <div key={def.id} className="comms-journal-entry">
-              <div className="hud-subtitle">{def.title}</div>
-              <div className="comms-journal-entry-desc">{def.description}</div>
-              {def.waypoint && (
-                <button
-                  type="button"
-                  className="comms-journal-waypoint-btn"
-                  onClick={() => handleSetNav(def.id)}
-                  title={`Set nav to ${def.waypointLabel ?? def.title}`}
-                >
-                  <MapPin size={10} strokeWidth={2} />
-                  <span>SET NAV</span>
-                </button>
-              )}
-            </div>
-          ))
+          activeDefs.map((def) => {
+            if (!def) return null;
+            return (
+              <div key={def.id} className="comms-journal-entry">
+                <div className="hud-chat-standard">{def.title}</div>
+                <div className="hud-chat-standard-grey">{def.description}</div>
+                {def.waypoint && (
+                  <button
+                    type="button"
+                    className="event-log-tab"
+                    onClick={() => handleSetNav(def.id)}
+                    title={`Set nav to ${def.waypointLabel ?? def.title}`}
+                  >
+                    <MapPin size={10} strokeWidth={2} />
+                    <span>SET NAV TARGET</span>
+                  </button>
+                )}
+              </div>
+            );
+          })
         ) : (
           <div className="event-log-empty">No active mission</div>
         )}

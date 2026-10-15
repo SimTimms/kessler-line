@@ -55,54 +55,46 @@ export default function TransferRow({ partnerId, kind }: TransferRowProps) {
 
   return (
     <div className="dock-transfer-hud__row">
-      <span className="event-log-text">
+      <span className="event-log-text resource-label">
         <Icon size={11} strokeWidth={1.5} />
         {meta.label}
       </span>
-      <div>
+      <div className="dock-transfer-wrapper">
         <div className="resource-bar-val" style={{ width: 60 }}>
           {shipVal} / {meta.shipMax}
         </div>
-      </div>
-      <div className="dock-transfer-hud__controls">
-        <button
-          type="button"
-          className="dock-transfer-hud__btn"
-          title={`Take ${meta.label} from dock`}
-          disabled={!toShipOk}
-          onClick={() => transferDockableStep(partnerId, kind, 'toShip')}
-          onPointerDown={(e) => {
-            if (e.button !== 0 || !toShipOk) return;
-            e.preventDefault();
-            startHold('toShip');
-          }}
-          onPointerUp={stopHold}
-          onPointerLeave={stopHold}
-          onPointerCancel={stopHold}
-        >
-          ◀
-        </button>
-        <button
-          type="button"
-          className="dock-transfer-hud__btn"
-          title={`Send ${meta.label} to dock`}
-          disabled={!toPartnerOk}
-          onClick={() => transferDockableStep(partnerId, kind, 'toPartner')}
-          onPointerDown={(e) => {
-            if (e.button !== 0 || !toPartnerOk) return;
-            e.preventDefault();
-            startHold('toPartner');
-          }}
-          onPointerUp={stopHold}
-          onPointerLeave={stopHold}
-          onPointerCancel={stopHold}
-        >
-          ▶
-        </button>
-      </div>
-      <div>
-        <div className="resource-bar-val" style={{ width: 60 }}>
-          {Math.floor(partnerVal)} / {Math.floor(partnerCap)}
+        <div className="dock-transfer-hud__controls">
+          <button
+            type="button"
+            className="dock-transfer-hud__btn"
+            title={`Take ${meta.label} from dock`}
+            disabled={!toShipOk}
+            onClick={() => transferDockableStep(partnerId, kind, 'toShip')}
+            onPointerDown={(e) => {
+              if (e.button !== 0 || !toShipOk) return;
+              e.preventDefault();
+              startHold('toShip');
+            }}
+            onPointerUp={stopHold}
+            onPointerLeave={stopHold}
+            onPointerCancel={stopHold}
+          >
+            ◀
+          </button>
+          <button
+            type="button"
+            className="dock-transfer-hud__btn"
+            title={`Send ${meta.label} to dock`}
+            disabled={!toPartnerOk}
+            onClick={() => transferDockableStep(partnerId, kind, 'toPartner')}
+          >
+            ▶
+          </button>
+        </div>
+        <div>
+          <div className="resource-bar-val" style={{ width: 60 }}>
+            {Math.floor(partnerVal)} / {Math.floor(partnerCap)}
+          </div>
         </div>
       </div>
     </div>

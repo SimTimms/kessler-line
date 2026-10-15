@@ -3,22 +3,18 @@ import {
   getThread,
   createThread,
   addChatMessage,
-  setChatTurn,
   type ChatThread,
 } from '../../context/ChatStore';
+import { getAssignedDialogueTree } from '../../narrative/npcDialogues';
 import {
-  getOrAssignDialogueTree,
-  getOrAssignCaptainName,
-  resolveDialogueText,
-} from '../../narrative/npcDialogues';
-import { getOrCreateShipRecord, addContactEvent } from '../../narrative/shipRegistry';
+  chooseDialogueOption,
+  deliverTurn,
+  radioOpeningDelayMs,
+  radioReplyDelayMs,
+} from '../../narrative/dialogueTurn';
 import type { HailStatus } from '../../context/HailState';
 import DialogueThread from './DialogueThread';
 import './CommsChat.css';
-import {
-  getRadioBroadcasts,
-  resolveRadioDialogueTreeId,
-} from '../../context/RadioBroadcastRegistry';
 import type { StaticContact } from '../../narrative/contacts';
 import type { MessagePlatform } from '../../context/MessageStore';
 import { RADIO_COMMS_PLATFORM } from '../../config/commsConfig';
@@ -70,7 +66,6 @@ export default function CommsChat({
   onBack,
 }: CommsChatProps) {
   const [thread, setThread] = useState<ChatThread | null>(null);
-  const closedRef = useRef(false);
   const threadInitRef = useRef(false);
 
   const effectiveHailStatus: HailStatus = hailStatus ?? 'accepted';
@@ -104,50 +99,33 @@ export default function CommsChat({
     const status = hailStatus ?? 'accepted';
     if (status !== 'accepted') return;
     if (threadInitRef.current) return;
+
+    // No authored tree pinned to this entity — nothing to say, so no thread.
+    // The guard is only set once a tree exists, so one pinned later still opens.
+    const tree = getAssignedDialogueTree(shipId);
+    if (!tree) return;
     threadInitRef.current = true;
 
-    if (!t) {
-      const record = getOrCreateShipRecord(shipId, shipName);
-      const tree = getOrAssignDialogueTree(shipId, record);
-      t = createThread(
-        shipId,
-        tree.vesselName || shipName,
-        tree.captainName || getOrAssignCaptainName(shipId),
-        tree.id,
-        tree.openingTurnId
-      );
+    t = createThread(
+      shipId,
+      tree.vesselName || shipName,
+      tree.captainName || shipName,
+      tree.id,
+      tree.openingTurnId
+    );
 
-      const firstTurn = tree.turns[tree.openingTurnId];
-      if (firstTurn) {
-        const delay = 1200 + Math.random() * 1800;
-        const openingText = resolveDialogueText(firstTurn.npcText, record);
-        setTimeout(() => {
-          addChatMessage(shipId, {
-            id: `npc-${shipId}-open`,
-            role: 'npc',
-            text: openingText,
-            timestamp: Date.now(),
-          });
-          setChatTurn(shipId, tree.openingTurnId, false);
-        }, delay);
-      }
-    }
+    deliverTurn({
+      threadId: shipId,
+      turns: tree.turns,
+      turnId: tree.openingTurnId,
+      delayMs: radioOpeningDelayMs(),
+    });
+
     setThread({ ...t, messages: [...t.messages] });
   }, [shipId, shipName, hailStatus, staticContact]);
 
-  // Log a contact event when the conversation ends
-  useEffect(() => {
-    if (staticContact || !thread || closedRef.current) return;
-    const ended =
-      thread.currentTurnId === null && !thread.awaitingNpc && thread.messages.length > 0;
-    if (ended) {
-      closedRef.current = true;
-      addContactEvent(shipId, `Channel closed. ${thread.messages.length} messages exchanged.`);
-    }
-  }, [thread?.currentTurnId, thread?.awaitingNpc, thread?.messages.length, shipId, staticContact]);
-
   // ── Dialogue tree (handles pre-hail and accepted states) ─────────────────────
-  const tree = !staticContact && thread ? getOrAssignDialogueTree(shipId) : null;
+  const tree = !staticContact && thread ? getAssignedDialogueTree(shipId) : null;
   const currentTurn = thread?.currentTurnId && tree ? tree.turns[thread.currentTurnId] : null;
   const showOptions =
     !!thread &&
@@ -161,41 +139,14 @@ export default function CommsChat({
     !staticContact && effectiveHailStatus === 'accepted' && canRequestDockPermission;
 
   const handleOption = (optionId: string) => {
-    if (!thread) return;
-    const dialogueTree = getOrAssignDialogueTree(shipId);
-    const record = getOrCreateShipRecord(shipId, shipName);
-    const activeTurn = thread.currentTurnId ? dialogueTree.turns[thread.currentTurnId] : null;
-    if (!activeTurn) return;
-
-    const option = activeTurn.playerOptions.find((o) => o.id === optionId);
-    if (!option) return;
-
-    addChatMessage(shipId, {
-      id: `player-${shipId}-${optionId}-${Date.now()}`,
-      role: 'player',
-      text: resolveDialogueText(option.text, record),
-      timestamp: Date.now(),
+    if (!thread || !tree) return;
+    chooseDialogueOption({
+      threadId: shipId,
+      turns: tree.turns,
+      currentTurnId: thread.currentTurnId,
+      optionId,
+      delayMs: radioReplyDelayMs(),
     });
-
-    setChatTurn(shipId, option.nextTurnId, option.nextTurnId !== null);
-
-    if (option.nextTurnId !== null) {
-      const nextTurn = dialogueTree.turns[option.nextTurnId];
-      if (nextTurn) {
-        const delay = 2000 + Math.random() * 3000;
-        const npcText = resolveDialogueText(nextTurn.npcText, record);
-        setTimeout(() => {
-          addChatMessage(shipId, {
-            id: `npc-${shipId}-${option.nextTurnId}-${Date.now()}`,
-            role: 'npc',
-            text: npcText,
-            timestamp: Date.now(),
-          });
-          const isTerminal = nextTurn.playerOptions.length === 0;
-          setChatTurn(shipId, isTerminal ? null : option.nextTurnId!, false);
-        }, delay);
-      }
-    }
   };
 
   const handleRequestRendezvous = () => {
@@ -236,10 +187,6 @@ export default function CommsChat({
     });
   };
 
-  const isBroadcastContact = getRadioBroadcasts().some(
-    (e) => e.id === shipId && resolveRadioDialogueTreeId(e)
-  );
-
   // Force a single comms skin across all channels.
   const uiPlatform: MessagePlatform = RADIO_COMMS_PLATFORM;
 
@@ -248,7 +195,6 @@ export default function CommsChat({
       shipId={shipId}
       shipName={shipName}
       contact={staticContact}
-      hideShipProfile={isBroadcastContact}
       commsPlatform={uiPlatform}
       effectiveHailStatus={effectiveHailStatus}
       showHailPrompt={showHailPrompt}

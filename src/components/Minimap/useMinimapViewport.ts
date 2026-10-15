@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type MouseEvent as ReactMouseEvent,
-} from 'react';
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { shipPosRef } from '../../context/ShipPos';
 import {
   PAN_LIMIT,
@@ -115,7 +110,7 @@ export function useMinimapViewport({
     const prevScale = chartScale(rect, zoomHalfSpan);
     const worldUnderCursorX = panCenter.x + (cursorX - rect.width / 2) / prevScale;
     const worldUnderCursorZ = panCenter.z + (cursorY - rect.height / 2) / prevScale;
-    const factor = e.deltaY > 0 ? 1.15 : 0.86;
+    const factor = e.deltaY > 0 ? 1.02 : 0.98;
     const nextZoom = clamp(zoomHalfSpan * factor, ZOOM_MIN_HALF_SPAN, ZOOM_MAX_HALF_SPAN);
     const nextScale = chartScale(rect, nextZoom);
     const nextPanX = worldUnderCursorX - (cursorX - rect.width / 2) / nextScale;

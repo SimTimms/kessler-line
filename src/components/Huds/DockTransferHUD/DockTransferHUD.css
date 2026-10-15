@@ -310,13 +310,22 @@
   font-size: var(--hud-fs-xs);
   color: rgba(0, 200, 255, 0.4);
 }
+.resource-label {
+  width: 80px;
+}
 
 .dock-transfer-hud__row {
-  display: grid;
-  grid-template-columns: 52px 1fr auto 1fr;
-  gap: 6px 8px;
+  display: flex;
   align-items: center;
   margin-bottom: 6px;
+}
+
+.dock-transfer-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .dock-transfer-hud__label {
@@ -346,14 +355,19 @@
 
 .dock-transfer-hud__btn {
   padding: 0;
-  color: #fff;
+  color: #ccc;
   font-family: inherit;
   font-size: var(--hud-fs-s);
   line-height: 1;
   cursor: pointer;
   border-radius: 0px;
   background: transparent;
-  margin: 4px;
+}
+
+.dock-transfer-hud__btn:hover {
+  color: #000;
+  background: rgba(255, 255, 255, 1);
+  cursor: pointer;
 }
 
 .dock-transfer-hud__btn:disabled {

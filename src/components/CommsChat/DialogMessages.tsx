@@ -200,7 +200,7 @@ export default function DialogMessages({
                   {row.role === 'npc' && row.senderName && (
                     <div className="comms-chat-sender">{row.senderName}</div>
                   )}
-                  <div className={`chat-log-text comms-chat-bubble--${row.role}`}>
+                  <div className={`hud-chat-standard comms-chat-bubble--${row.role}`}>
                     {row.content}
                   </div>
                   <div className="comms-chat-row-footer">

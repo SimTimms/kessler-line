@@ -389,12 +389,24 @@
 
 /* ── Bubbles ─────────────────────────────────────────────────────────────── */
 
-.chat-log-text {
+.hud-chat-standard {
   min-width: 0;
   font-size: var(--hud-fs-xs);
   letter-spacing: 0.08em;
   line-height: 1.35;
   color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+}
+
+.hud-chat-standard-grey {
+  min-width: 0;
+  font-size: var(--hud-fs-xs);
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  color: #bbb;
   display: flex;
   align-items: center;
   gap: 6px;

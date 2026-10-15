@@ -8,7 +8,6 @@ import { ELIAS_VOSS_DIALOGUE } from '../../config/npcs/elias-voss';
 import { dockContactThreadId } from '../../config/dockConfig';
 import { setDockContactDialogue } from '../../context/DockablePartnerStore';
 import { deliverDockDialogueTurn } from '../../utils/dockInteriorChat';
-import type { DockDialogueTree } from '../../types/dialogueTypes';
 import type { TimedEventDef } from '../event-trigger';
 
 export const ELIAS_VOSS_HAIL_EVENT_ID = 'elias-voss-hail';
@@ -28,7 +27,7 @@ export function fireEliasVossEmergencyHail(): void {
   // Nothing to ask for if the player already finished the relay mission.
   if (completedMissionsRef.current.includes(COMMS_RELAY_MISSION_ID)) return;
 
-  const tree = COMMS_RELAY_DIALOGUE_TREE.missionDialogue as DockDialogueTree;
+  const tree = COMMS_RELAY_DIALOGUE_TREE.missionDialogue;
   const missionId = COMMS_RELAY_DIALOGUE_TREE.missionId;
 
   ELIAS_VOSS_DIALOGUE.dialogue = tree;

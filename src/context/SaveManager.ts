@@ -40,7 +40,6 @@ import {
 } from './InventoryStore';
 import { getAllThreads, restoreThreads } from './ChatStore';
 import { getAllHailStates, restoreHailStates } from './HailState';
-import { getAllShipRecords, restoreShipRecords } from '../narrative/shipRegistry';
 import {
   scannerPowerLevelRefs,
   getScannerRange,
@@ -185,7 +184,6 @@ export function capture(): SaveData {
     dockInventories,
     chatThreads,
     hailStates: getAllHailStates(),
-    shipRegistry: getAllShipRecords(),
     scannerPowerLevels: Object.fromEntries(
       (Object.keys(scannerPowerLevelRefs) as ScannerElementId[]).map(
         (id) => [id, scannerPowerLevelRefs[id].current]
@@ -291,11 +289,6 @@ export function apply(data: SaveData): void {
   // Hail states
   if (data.hailStates) {
     restoreHailStates(data.hailStates);
-  }
-
-  // Ship registry
-  if (data.shipRegistry) {
-    restoreShipRecords(data.shipRegistry);
   }
 
   // Scanner power levels → also sync on/off and range refs

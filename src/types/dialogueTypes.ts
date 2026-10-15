@@ -1,4 +1,3 @@
-import type { ShipClass, ShipFaction, ShipAgenda, ShipRegion } from '../narrative/shipRegistry';
 import type { MessagePlatform } from '../context/MessageStore';
 import type { DialogueEffect } from '../narrative/dialogueEffects';
 import type { InventoryBlueprint } from '../config/inventoryTypes';
@@ -127,7 +126,6 @@ export interface DialogueTree {
   platform?: MessagePlatform;
   senderLocationId?: string;
   audioVoice?: string;
-  conditions?: DialogueConditions;
   turns: Record<string, DialogueTurn>;
 }
 
@@ -145,10 +143,3 @@ export interface DialogueTurn {
   playerOptions: PlayerOption[];
 }
 
-export interface DialogueConditions {
-  shipClasses?: ShipClass[];
-  factions?: ShipFaction[];
-  agendas?: ShipAgenda[];
-  destinations?: ShipRegion[];
-  playerRegions?: ShipRegion[];
-}

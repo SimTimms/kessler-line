@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  getThread,
-  createThread,
-  addChatMessage,
-  setChatTurn,
-  type ChatThread,
-} from '../../context/ChatStore';
+import { getThread, createThread, addChatMessage, type ChatThread } from '../../context/ChatStore';
 import { applyDialogueEffects } from '../../narrative/dialogueEffects';
+import {
+  chooseDialogueOption,
+  deliverTurn,
+  dockReplyDelayMs,
+  dockTurnDelayMs,
+} from '../../narrative/dialogueTurn';
 import type {
   DockDialogueTree,
+  DockDialogueTurn,
   DockTradeTurnConfig,
   DockTradeResourceKind,
 } from '../../types/dialogueTypes';
@@ -35,7 +36,6 @@ import {
   type InventoryOwnerRef,
 } from '../../context/InventoryStore';
 import { SHIP_MIN_CREW_ONBOARD } from '../../config/dockTransferConfig';
-import { resolveNpcVoiceClipSrc } from '../../sound/npcVoiceClips';
 import DialogueThread from '../CommsChat/DialogueThread';
 import '../CommsChat/CommsChat.css';
 import {
@@ -257,6 +257,20 @@ export default function DockInteriorDialogue({
     return getDockInventoryOwner(parsed.dockId);
   }, [threadId]);
 
+  /**
+   * Trade panel follows whichever turn the NPC just landed on: a turn with a
+   * trade config opens it, anything else (including a closing line) clears it.
+   */
+  const syncTradePanelToTurn = (turn: DockDialogueTurn | null) => {
+    if (turn?.trade) {
+      setTradeOpen(true);
+      setTradeStatus(turn.trade.panelStatusOpen);
+    } else {
+      setTradeOpen(false);
+      setTradeStatus('');
+    }
+  };
+
   useEffect(() => {
     const onUpdate = (e: Event) => {
       const { shipId: sid } = (e as CustomEvent<{ shipId: string }>).detail;
@@ -286,26 +300,14 @@ export default function DockInteriorDialogue({
       // of leaving the player staring at a closed transcript.
       if (existing.currentTurnId === null && !existing.awaitingNpc) {
         const reentryTurnId = resolveDockDialogueReentry(dialogue);
-        const reentryTurn = reentryTurnId ? dialogue.turns[reentryTurnId] : null;
-        if (reentryTurnId && reentryTurn) {
-          setChatTurn(threadId, reentryTurnId, true);
-          setTimeout(
-            () => {
-              addChatMessage(threadId, {
-                id: `npc-${threadId}-${reentryTurnId}-${Date.now()}`,
-                role: 'npc',
-                text: reentryTurn.npcText,
-                timestamp: Date.now(),
-                audioSrc: resolveNpcVoiceClipSrc(reentryTurn.audio),
-              });
-              setChatTurn(threadId, reentryTurnId, false);
-              if (reentryTurn.trade) {
-                setTradeOpen(true);
-                setTradeStatus(reentryTurn.trade.panelStatusOpen);
-              }
-            },
-            700 + Math.random() * 900
-          );
+        if (reentryTurnId) {
+          deliverTurn({
+            threadId,
+            turns: dialogue.turns,
+            turnId: reentryTurnId,
+            delayMs: dockTurnDelayMs(),
+            onDelivered: syncTradePanelToTurn,
+          });
         }
       }
       return;
@@ -319,26 +321,13 @@ export default function DockInteriorDialogue({
       dialogue.openingTurnId,
       contact.id
     );
-    const firstTurn = dialogue.turns[dialogue.openingTurnId];
-    if (!firstTurn) return;
-
-    const delay = 700 + Math.random() * 900;
-    const openingClipSrc = resolveNpcVoiceClipSrc(firstTurn.audio);
-    setTimeout(() => {
-      addChatMessage(threadId, {
-        id: `npc-${threadId}-open`,
-        role: 'npc',
-        text: firstTurn.npcText,
-        timestamp: Date.now(),
-        audioSrc: openingClipSrc,
-      });
-      setChatTurn(threadId, dialogue.openingTurnId, false);
-
-      if (firstTurn.trade) {
-        setTradeOpen(true);
-        setTradeStatus(firstTurn.trade.panelStatusOpen);
-      }
-    }, delay);
+    deliverTurn({
+      threadId,
+      turns: dialogue.turns,
+      turnId: dialogue.openingTurnId,
+      delayMs: dockTurnDelayMs(),
+      onDelivered: syncTradePanelToTurn,
+    });
   }, [threadId, contact, dialogue]);
 
   useEffect(() => {
@@ -755,61 +744,20 @@ export default function DockInteriorDialogue({
 
   const handleOption = (optionId: string) => {
     if (!thread) return;
-    const activeTurn = thread.currentTurnId ? dialogue.turns[thread.currentTurnId] : null;
-    if (!activeTurn) return;
-    const option = activeTurn.playerOptions.find((o) => o.id === optionId);
-    if (!option) return;
-
-    addChatMessage(threadId, {
-      id: `player-${threadId}-${optionId}-${Date.now()}`,
-      role: 'player',
-      text: option.text,
-      timestamp: Date.now(),
+    chooseDialogueOption({
+      threadId,
+      turns: dialogue.turns,
+      currentTurnId: thread.currentTurnId,
+      optionId,
+      delayMs: dockReplyDelayMs(),
+      onBeforeAdvance: () => {
+        setPendingResourceTrade(null);
+        setPendingCargoTrade(null);
+        setTradeOffer(EMPTY_TRADE_OFFER);
+        setCargoDeal(emptyBarterDeal());
+      },
+      onDelivered: syncTradePanelToTurn,
     });
-    setPendingResourceTrade(null);
-    setPendingCargoTrade(null);
-    setTradeOffer(EMPTY_TRADE_OFFER);
-    setCargoDeal(emptyBarterDeal());
-    setChatTurn(threadId, option.nextTurnId, true);
-
-    const outcomes = applyDialogueEffects(option.effects).filter((o) => o.text);
-    const nextTurn = option.nextTurnId ? dialogue.turns[option.nextTurnId] : null;
-    const delay = 900 + Math.random() * 1100;
-
-    setTimeout(() => {
-      outcomes.forEach((o, i) => {
-        addChatMessage(threadId, {
-          id: `fx-${threadId}-${optionId}-${i}-${Date.now()}`,
-          role: 'npc',
-          text: `» ${o.text}`,
-          timestamp: Date.now(),
-        });
-      });
-
-      if (nextTurn) {
-        const clipSrc = resolveNpcVoiceClipSrc(nextTurn.audio);
-        addChatMessage(threadId, {
-          id: `npc-${threadId}-${option.nextTurnId}-${Date.now()}`,
-          role: 'npc',
-          text: nextTurn.npcText,
-          timestamp: Date.now(),
-          audioSrc: clipSrc,
-        });
-        const isTerminal = nextTurn.playerOptions.length === 0 && !nextTurn.trade;
-        setChatTurn(threadId, isTerminal ? null : option.nextTurnId!, false);
-        if (nextTurn.trade) {
-          setTradeOpen(true);
-          setTradeStatus(nextTurn.trade.panelStatusOpen);
-        } else {
-          setTradeOpen(false);
-          setTradeStatus('');
-        }
-      } else {
-        setChatTurn(threadId, null, false);
-        setTradeOpen(false);
-        setTradeStatus('');
-      }
-    }, delay);
   };
 
   const cargoCanSubmit =
@@ -821,7 +769,6 @@ export default function DockInteriorDialogue({
       shipName={contact.name}
       inline={inline}
       character={contact}
-      hideShipProfile
       commsPlatform={contact.platform ?? 'REACH'}
       effectiveHailStatus="accepted"
       isRadioActive

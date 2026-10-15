@@ -60,8 +60,6 @@ export function addChatMessage(shipId: string, msg: ChatMessage): void {
 /** Update the active turn and awaiting flag after a player choice or NPC delivery. */
 export function setChatTurn(shipId: string, turnId: string | null, awaitingNpc: boolean): void {
   const thread = _threads.get(shipId);
-
-  console.log('setChatTurn 3', _threads, shipId);
   if (!thread) return;
   thread.currentTurnId = turnId;
   thread.awaitingNpc = awaitingNpc;

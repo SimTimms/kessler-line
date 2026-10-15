@@ -91,7 +91,7 @@ export default function NarrativeConfigScene({ loadSave }: NarrativeConfigSceneP
   }, []);
 
   useEffect(() => {
-    registerTimedEvent(ELIAS_VOSS_HAIL_EVENT_ID, 300_000);
+    registerTimedEvent(ELIAS_VOSS_HAIL_EVENT_ID, 3_000);
     return () => resetTimedEvents();
   }, []);
 

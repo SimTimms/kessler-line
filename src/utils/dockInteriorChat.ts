@@ -1,12 +1,6 @@
 import { parseDockThreadId, type DockContact } from '../config/dockConfig';
 import { getDockContact, getDockJob } from '../context/DockablePartnerStore';
-import {
-  addChatMessage,
-  getThread,
-  setChatTurn,
-  setThreadDialogueTree,
-} from '../context/ChatStore';
-import { resolveNpcVoiceClipSrc } from '../sound/npcVoiceClips';
+import { deliverTurn, dockTurnDelayMs } from '../narrative/dialogueTurn';
 import type { DockDialogueTree } from '../types/dialogueTypes';
 
 export type DockInteriorChat = {
@@ -61,29 +55,13 @@ export function deliverDockDialogueTurn(
   threadId: string,
   dialogue: DockDialogueTree,
   turnId: string,
-  delayMs = 700 + Math.random() * 900
+  delayMs = dockTurnDelayMs()
 ): boolean {
-  const thread = getThread(threadId);
-  if (!thread) return false;
-
-  const turn = dialogue.turns[turnId];
-  if (!turn) {
-    console.warn(`[dockInteriorChat] "${dialogue.id}" has no turn "${turnId}"`);
-    return false;
-  }
-
-  setThreadDialogueTree(threadId, dialogue.id);
-  setChatTurn(threadId, turnId, true);
-  const clipSrc = resolveNpcVoiceClipSrc(turn.audio);
-  setTimeout(() => {
-    addChatMessage(threadId, {
-      id: `npc-${threadId}-${turnId}-${Date.now()}`,
-      role: 'npc',
-      text: turn.npcText,
-      timestamp: Date.now(),
-      audioSrc: clipSrc,
-    });
-    setChatTurn(threadId, turnId, false);
-  }, delayMs);
-  return true;
+  return deliverTurn({
+    threadId,
+    turns: dialogue.turns,
+    turnId,
+    treeId: dialogue.id,
+    delayMs,
+  });
 }
